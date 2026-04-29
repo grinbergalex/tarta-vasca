@@ -264,6 +264,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(
         <div class="form-group">
           <label class="form-label">Canal de venta</label>
           <select class="form-select" id="venta-canal"></select>
+          <div id="canal-aviso" style="display:none;align-items:center;gap:8px;margin-top:10px;background:#e8f5e9;border-radius:10px;padding:10px 14px;font-size:13px;color:var(--accent2)">
+            <span>✓</span>
+            <span>Venta de plataforma — no se pedirán datos del cliente</span>
+          </div>
         </div>
         <div class="form-group">
           <label class="form-label">Método de pago</label>
@@ -634,9 +638,11 @@ async function cargarCatalogo() {
   llenarSelect("item-tamano", tam);
   llenarSelect("venta-sucursal", suc);
 
-  // Canales activos en venta
-  llenarSelect("venta-canal", can);
+  // Canales — fallback si el Sheet aún no tiene filas de Canal
+  const canalesFinales = can.length > 0 ? can : ["Tienda", "Domicilio", "Rappi"];
+  llenarSelect("venta-canal", canalesFinales);
   actualizarMetodoPago();
+  actualizarUICanal();
 
   // Ocultar sucursal en venta si es Vendedor
   if (S.rol === "Vendedor") L("venta-suc-group").style.display = "none";
@@ -648,18 +654,35 @@ function llenarSelect(id, opciones) {
   sel.innerHTML = opciones.map(o => `<option value="${o}">${o}</option>`).join("");
 }
 
+function esPlataforma(canal) {
+  return canal === "Rappi" || canal === "Uber Eats";
+}
+
 function actualizarMetodoPago() {
   const canal = L("venta-canal")?.value;
-  const metodos = ["Efectivo", "Tarjeta", "Transferencia"];
-  if (canal === "Rappi") metodos.length = 0, metodos.push("Rappi");
-  else if (canal === "Uber Eats") metodos.length = 0, metodos.push("Uber Eats");
+  if (!canal) return;
+  const metodos = esPlataforma(canal)
+    ? [canal]
+    : ["Efectivo", "Tarjeta", "Transferencia"];
   llenarSelect("venta-metodo", metodos);
 }
 
-L("venta-canal")?.addEventListener("change", actualizarMetodoPago);
-// Necesitamos esperar a que el DOM esté listo para este listener
+function actualizarUICanal() {
+  const canal = L("venta-canal")?.value;
+  if (!canal) return;
+  const aviso = L("canal-aviso");
+  if (esPlataforma(canal)) {
+    if (aviso) aviso.style.display = "flex";
+    L("venta-metodo").disabled = true;
+  } else {
+    if (aviso) aviso.style.display = "none";
+    L("venta-metodo").disabled = false;
+  }
+}
+
+L("venta-canal")?.addEventListener("change", () => { actualizarMetodoPago(); actualizarUICanal(); });
 document.addEventListener("DOMContentLoaded", () => {
-  L("venta-canal")?.addEventListener("change", actualizarMetodoPago);
+  L("venta-canal")?.addEventListener("change", () => { actualizarMetodoPago(); actualizarUICanal(); });
 });
 
 // ============================================================
