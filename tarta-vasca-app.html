@@ -4,190 +4,175 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#1a1a1a">
 <title>Tarta Vasca</title>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,500;0,700;1,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,500;0,700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-  --ink: #1a1a1a; --cream: #faf7f2; --warm: #f0ebe0;
-  --accent: #c8602a; --accent2: #2e5c4a;
-  --muted: #8a8070; --border: #e0d8cc;
-  --danger: #c0392b; --success: #27ae60; --warning: #e67e22;
-  --card: #ffffff; --shadow: 0 2px 16px rgba(0,0,0,0.08);
+  --ink:#1a1a1a; --cream:#faf7f2; --warm:#f0ebe0;
+  --accent:#c8602a; --green:#2e5c4a;
+  --muted:#8a8070; --border:#e0d8cc;
+  --danger:#c0392b; --success:#27ae60; --warning:#e67e22;
+  --card:#fff; --shadow:0 2px 16px rgba(0,0,0,0.08);
 }
-* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--ink); min-height: 100dvh; }
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);min-height:100dvh}
 
 /* LOGIN */
-#login-screen {
-  min-height: 100dvh; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; padding: 32px 24px;
-  background: var(--ink); position: relative; overflow: hidden;
-}
-#login-screen::before {
-  content: ''; position: absolute; width: 400px; height: 400px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(200,96,42,0.15) 0%, transparent 70%);
-  top: -100px; right: -100px;
-}
-.login-logo { font-family: 'Fraunces', serif; font-size: 42px; font-weight: 300; color: var(--cream); letter-spacing: -1px; margin-bottom: 4px; position: relative; z-index: 1; }
-.login-tagline { font-size: 13px; color: var(--muted); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 48px; position: relative; z-index: 1; }
-.login-card { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 32px 28px; width: 100%; max-width: 360px; position: relative; z-index: 1; }
-.field-label { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; display: block; }
-.field-input { width: 100%; padding: 14px 16px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; color: white; font-family: 'DM Sans', sans-serif; font-size: 16px; margin-bottom: 20px; outline: none; transition: border-color 0.2s; }
-.field-input:focus { border-color: var(--accent); }
-.field-input::placeholder { color: rgba(255,255,255,0.3); }
-.btn-primary { width: 100%; padding: 16px; background: var(--accent); border: none; border-radius: 12px; color: white; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
-.btn-primary:active { transform: scale(0.98); }
-.btn-primary:disabled { opacity: 0.5; }
-.login-error { background: rgba(192,57,43,0.15); border: 1px solid rgba(192,57,43,0.3); color: #ff7675; padding: 12px 16px; border-radius: 10px; font-size: 13px; margin-top: 16px; display: none; }
+#login-screen{min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;background:var(--ink);position:relative;overflow:hidden}
+#login-screen::before{content:'';position:absolute;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(200,96,42,.15) 0%,transparent 70%);top:-100px;right:-100px}
+.login-logo{font-family:'Fraunces',serif;font-size:42px;font-weight:300;color:var(--cream);letter-spacing:-1px;margin-bottom:4px;position:relative;z-index:1}
+.login-tagline{font-size:13px;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-bottom:48px;position:relative;z-index:1}
+.login-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:32px 28px;width:100%;max-width:360px;position:relative;z-index:1}
+.field-label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;display:block}
+.field-input{width:100%;padding:14px 16px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:12px;color:white;font-family:'DM Sans',sans-serif;font-size:16px;margin-bottom:20px;outline:none;transition:border-color .2s}
+.field-input:focus{border-color:var(--accent)}
+.field-input::placeholder{color:rgba(255,255,255,.3)}
+.btn-login{width:100%;padding:16px;background:var(--accent);border:none;border-radius:12px;color:white;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer}
+.btn-login:disabled{opacity:.5}
+.login-error{background:rgba(192,57,43,.15);border:1px solid rgba(192,57,43,.3);color:#ff7675;padding:12px 16px;border-radius:10px;font-size:13px;margin-top:16px;display:none}
 
 /* APP */
-#app { display: none; min-height: 100dvh; flex-direction: column; }
-.app-header { background: var(--ink); color: white; padding: 16px 20px 14px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
-.header-logo { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 300; }
-.user-badge { background: rgba(255,255,255,0.1); border-radius: 20px; padding: 5px 12px; font-size: 12px; color: rgba(255,255,255,0.7); }
-.user-badge span { color: white; font-weight: 500; }
-.btn-logout { background: none; border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.5); padding: 6px 12px; border-radius: 8px; font-size: 12px; cursor: pointer; font-family: 'DM Sans', sans-serif; }
-.app-nav { background: var(--card); border-bottom: 1px solid var(--border); display: flex; overflow-x: auto; scrollbar-width: none; padding: 0 4px; position: sticky; top: 56px; z-index: 99; }
-.app-nav::-webkit-scrollbar { display: none; }
-.nav-tab { flex-shrink: 0; padding: 14px 18px; font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap; }
-.nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-.app-content { flex: 1; padding: 20px 16px 100px; }
-.card { background: var(--card); border-radius: 16px; padding: 20px; margin-bottom: 12px; box-shadow: var(--shadow); border: 1px solid var(--border); }
-.card-title { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 500; margin-bottom: 4px; }
-.card-sub { font-size: 12px; color: var(--muted); margin-bottom: 16px; }
+#app{display:none;min-height:100dvh;flex-direction:column}
+.app-header{background:var(--ink);color:white;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.header-logo{font-family:'Fraunces',serif;font-size:22px;font-weight:300}
+.user-badge{background:rgba(255,255,255,.1);border-radius:20px;padding:5px 12px;font-size:12px;color:rgba(255,255,255,.7)}
+.user-badge span{color:white;font-weight:500}
+.btn-logout{background:none;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.5);padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif}
+.app-nav{background:var(--card);border-bottom:1px solid var(--border);display:flex;overflow-x:auto;scrollbar-width:none;padding:0 4px;position:sticky;top:52px;z-index:99}
+.app-nav::-webkit-scrollbar{display:none}
+.nav-tab{flex-shrink:0;padding:14px 18px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap}
+.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.app-content{flex:1;padding:20px 16px 100px}
 
-/* STOCK */
-.summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
-.summary-card { background: var(--warm); border-radius: 14px; padding: 16px; text-align: center; }
-.summary-num { font-family: 'Fraunces', serif; font-size: 32px; font-weight: 500; line-height: 1; }
-.summary-label { font-size: 11px; color: var(--muted); margin-top: 4px; }
-.stock-search { width: 100%; padding: 12px 16px; border: 1px solid var(--border); border-radius: 12px; font-family: 'DM Sans', sans-serif; font-size: 14px; background: white; outline: none; margin-bottom: 12px; color: var(--ink); }
-.stock-search:focus { border-color: var(--accent); }
-.filter-row { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
-.filter-chip { padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border); background: white; font-size: 12px; font-family: 'DM Sans', sans-serif; cursor: pointer; color: var(--muted); transition: all 0.15s; }
-.filter-chip.active { background: var(--ink); color: white; border-color: var(--ink); }
-.stock-table { width: 100%; border-collapse: collapse; }
-.stock-table th { text-align: left; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); padding: 8px 0; border-bottom: 1px solid var(--border); }
-.stock-table td { padding: 11px 0; font-size: 13px; border-bottom: 1px solid var(--warm); vertical-align: middle; }
-.stock-table tr:last-child td { border-bottom: none; }
-.qty-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
-.qty-ok { background: #e8f5e9; color: #27ae60; }
-.qty-low { background: #fff3e0; color: #e67e22; }
-.cad-badge { font-size: 11px; padding: 2px 7px; border-radius: 10px; }
-.cad-ok { background: #e8f5e9; color: #27ae60; }
-.cad-warn { background: #fff3e0; color: #e67e22; }
-.cad-bad { background: #ffebee; color: #c0392b; }
-.suc-tag { font-size: 10px; padding: 2px 7px; border-radius: 8px; background: var(--warm); color: var(--muted); }
+/* CARDS */
+.card{background:var(--card);border-radius:16px;padding:20px;margin-bottom:12px;box-shadow:var(--shadow);border:1px solid var(--border)}
+.card-title{font-family:'Fraunces',serif;font-size:18px;font-weight:500;margin-bottom:4px}
+.card-sub{font-size:12px;color:var(--muted);margin-bottom:16px}
 
 /* FORMS */
-.form-group { margin-bottom: 16px; }
-.form-label { display: block; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
-.form-select, .form-input { width: 100%; padding: 13px 16px; border: 1px solid var(--border); border-radius: 12px; font-family: 'DM Sans', sans-serif; font-size: 15px; background: white; color: var(--ink); outline: none; appearance: none; transition: border-color 0.2s; }
-.form-select:focus, .form-input:focus { border-color: var(--accent); }
-.btn-accent { width: 100%; padding: 15px; background: var(--accent); border: none; border-radius: 12px; color: white; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500; cursor: pointer; transition: all 0.2s; margin-top: 4px; }
-.btn-accent:active { transform: scale(0.98); }
-.btn-accent:disabled { opacity: 0.5; }
-.btn-green { background: var(--accent2); }
-.btn-outline { width: 100%; padding: 13px; background: transparent; border: 1px solid var(--border); border-radius: 12px; color: var(--ink); font-family: 'DM Sans', sans-serif; font-size: 14px; cursor: pointer; margin-top: 8px; transition: all 0.15s; }
-.btn-outline:active { background: var(--warm); }
+.form-group{margin-bottom:14px}
+.form-label{display:block;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+.form-select,.form-input{width:100%;padding:12px 16px;border:1px solid var(--border);border-radius:12px;font-family:'DM Sans',sans-serif;font-size:15px;background:white;color:var(--ink);outline:none;appearance:none;transition:border-color .2s}
+.form-select:focus,.form-input:focus{border-color:var(--accent)}
+.btn-main{width:100%;padding:15px;background:var(--accent);border:none;border-radius:12px;color:white;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;transition:all .2s;margin-top:4px}
+.btn-main:active{transform:scale(.98)}
+.btn-main:disabled{opacity:.5}
+.btn-green{background:var(--green)}
+.btn-outline{width:100%;padding:12px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--ink);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;margin-top:8px}
 
-/* CARRITO */
-.carrito-section { margin-bottom: 20px; }
-.carrito-titulo { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
-.carrito-item { display: flex; align-items: center; justify-content: space-between; background: var(--warm); border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; }
-.carrito-info { flex: 1; }
-.carrito-nombre { font-size: 14px; font-weight: 500; }
-.carrito-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
-.carrito-precio { font-family: 'Fraunces', serif; font-size: 16px; color: var(--accent); margin-right: 12px; }
-.btn-remove { background: none; border: none; color: var(--muted); font-size: 18px; cursor: pointer; padding: 4px; line-height: 1; }
-.carrito-total { background: var(--ink); color: white; border-radius: 12px; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-.carrito-total-label { font-size: 13px; opacity: 0.7; }
-.carrito-total-num { font-family: 'Fraunces', serif; font-size: 22px; }
-.add-item-btn { width: 100%; padding: 12px; background: var(--warm); border: 1px dashed var(--border); border-radius: 12px; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; margin-bottom: 16px; transition: all 0.15s; }
-.add-item-btn:hover { border-color: var(--accent); color: var(--accent); }
+/* STOCK */
+.summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.summary-card{background:var(--warm);border-radius:14px;padding:16px;text-align:center}
+.summary-num{font-family:'Fraunces',serif;font-size:32px;font-weight:500;line-height:1}
+.summary-label{font-size:11px;color:var(--muted);margin-top:4px}
+.stock-search{width:100%;padding:11px 16px;border:1px solid var(--border);border-radius:12px;font-family:'DM Sans',sans-serif;font-size:14px;background:white;outline:none;margin-bottom:10px;color:var(--ink)}
+.filter-row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.chip{padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:white;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;color:var(--muted);transition:all .15s}
+.chip.active{background:var(--ink);color:white;border-color:var(--ink)}
+.stock-table{width:100%;border-collapse:collapse}
+.stock-table th{text-align:left;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);padding:8px 0;border-bottom:1px solid var(--border)}
+.stock-table td{padding:10px 0;font-size:13px;border-bottom:1px solid var(--warm);vertical-align:middle}
+.stock-table tr:last-child td{border-bottom:none}
+.qty-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:500}
+.qty-ok{background:#e8f5e9;color:#27ae60}
+.qty-low{background:#fff3e0;color:#e67e22}
+.cad-badge{font-size:11px;padding:2px 7px;border-radius:10px}
+.cad-ok{background:#e8f5e9;color:#27ae60}
+.cad-warn{background:#fff3e0;color:#e67e22}
+.cad-bad{background:#ffebee;color:#c0392b}
+.suc-tag{font-size:10px;padding:2px 7px;border-radius:8px;background:var(--warm);color:var(--muted)}
+
+/* VENTA — UNA SOLA PANTALLA */
+.venta-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.canal-aviso{display:none;align-items:center;gap:8px;margin-top:8px;background:#e8f5e9;border-radius:10px;padding:10px 14px;font-size:13px;color:var(--green)}
+.separador{height:1px;background:var(--border);margin:18px 0}
+.carrito-vacio{text-align:center;padding:24px;color:var(--muted);font-size:13px;background:var(--warm);border-radius:12px;margin-bottom:12px}
+.carrito-item{display:flex;align-items:center;background:var(--warm);border-radius:12px;padding:12px 14px;margin-bottom:8px}
+.carrito-info{flex:1}
+.carrito-nombre{font-size:14px;font-weight:500}
+.carrito-sub{font-size:12px;color:var(--muted);margin-top:2px}
+.carrito-precio{font-family:'Fraunces',serif;font-size:16px;color:var(--accent);margin-right:12px}
+.btn-remove{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:2px 6px;line-height:1}
+.carrito-total-bar{background:var(--ink);color:white;border-radius:12px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.total-label{font-size:13px;opacity:.7}
+.total-num{font-family:'Fraunces',serif;font-size:22px}
+.disp-badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:8px;margin-top:4px}
+.disp-ok{background:#e8f5e9;color:var(--success)}
+.disp-low{background:#fff3e0;color:var(--warning)}
+.disp-out{background:#ffebee;color:var(--danger)}
+.add-item-box{background:var(--warm);border-radius:14px;padding:16px;margin-bottom:14px}
+.add-item-box .form-group{margin-bottom:10px}
+.add-item-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 
 /* CLIENTE */
-.cliente-section { background: var(--warm); border-radius: 14px; padding: 16px; margin-bottom: 16px; }
-.cliente-encontrado { display: flex; align-items: center; gap: 10px; }
-.cliente-avatar { width: 36px; height: 36px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 500; font-size: 14px; flex-shrink: 0; }
-.cliente-nombre { font-size: 14px; font-weight: 500; }
-.cliente-meta { font-size: 11px; color: var(--muted); }
-.sugerencias { position: absolute; background: white; border: 1px solid var(--border); border-radius: 12px; width: calc(100% - 32px); z-index: 50; box-shadow: var(--shadow); max-height: 180px; overflow-y: auto; }
-.sugerencia-item { padding: 12px 16px; cursor: pointer; font-size: 13px; border-bottom: 1px solid var(--warm); }
-.sugerencia-item:last-child { border-bottom: none; }
-.sugerencia-item:active { background: var(--warm); }
+.cliente-box{background:var(--warm);border-radius:14px;padding:16px;margin-bottom:14px}
+.cliente-encontrado-row{display:flex;align-items:center;gap:10px}
+.cli-avatar{width:34px;height:34px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:500;font-size:14px;flex-shrink:0}
+.cli-nombre{font-size:14px;font-weight:500}
+.cli-meta{font-size:11px;color:var(--muted)}
+.sugerencias{position:absolute;background:white;border:1px solid var(--border);border-radius:12px;width:100%;z-index:50;box-shadow:var(--shadow);max-height:180px;overflow-y:auto;top:100%;left:0}
+.sug-item{padding:12px 16px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--warm)}
+.sug-item:last-child{border-bottom:none}
+.sug-item:active{background:var(--warm)}
 
 /* HISTORIAL */
-.historial-item { padding: 14px 0; border-bottom: 1px solid var(--warm); }
-.historial-item:last-child { border-bottom: none; }
-.historial-fecha { font-size: 11px; color: var(--muted); }
-.historial-productos { font-size: 13px; margin: 4px 0; }
-.historial-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
-.tag { font-size: 10px; padding: 2px 8px; border-radius: 8px; background: var(--warm); color: var(--muted); }
-.tag-total { background: #e8f5e9; color: var(--success); }
+.historial-item{padding:13px 0;border-bottom:1px solid var(--warm)}
+.historial-item:last-child{border-bottom:none}
+.hist-fecha{font-size:11px;color:var(--muted)}
+.hist-productos{font-size:13px;margin:3px 0}
+.hist-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.tag{font-size:10px;padding:2px 8px;border-radius:8px;background:var(--warm);color:var(--muted)}
+.tag-total{background:#e8f5e9;color:var(--success)}
 
-/* CATALOGO */
-.catalogo-item { display: flex; align-items: center; justify-content: space-between; padding: 13px 0; border-bottom: 1px solid var(--warm); }
-.catalogo-item:last-child { border-bottom: none; }
-.btn-sm { padding: 6px 14px; border-radius: 8px; font-size: 12px; border: 1px solid var(--border); background: white; cursor: pointer; font-family: 'DM Sans', sans-serif; }
-.btn-sm-danger { border-color: #ffcdd2; color: var(--danger); background: #fff5f5; }
-.btn-sm-success { border-color: #c8e6c9; color: var(--success); background: #f1f8e9; }
+/* CATÁLOGO */
+.cat-item{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--warm)}
+.cat-item:last-child{border-bottom:none}
+.btn-sm{padding:6px 12px;border-radius:8px;font-size:12px;border:1px solid var(--border);background:white;cursor:pointer;font-family:'DM Sans',sans-serif}
+.btn-sm-danger{border-color:#ffcdd2;color:var(--danger);background:#fff5f5}
+.btn-sm-success{border-color:#c8e6c9;color:var(--success);background:#f1f8e9}
 
 /* PRECIOS */
-.precio-row { background: var(--warm); border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-.precio-label { font-size: 14px; font-weight: 500; }
-.precio-val { font-family: 'Fraunces', serif; font-size: 18px; color: var(--accent); cursor: pointer; padding: 4px 8px; border-radius: 6px; }
+.precio-row{background:var(--warm);border-radius:12px;padding:13px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.precio-label{font-size:14px;font-weight:500}
+.precio-val{font-family:'Fraunces',serif;font-size:18px;color:var(--accent);cursor:pointer;padding:4px 8px;border-radius:6px;border:1px solid transparent;transition:border-color .15s}
+.precio-val:active{border-color:var(--accent)}
+.precio-nota{font-size:11px;color:var(--muted);margin-top:4px;margin-bottom:12px}
 
 /* USUARIOS */
-.usuario-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid var(--warm); }
-.usuario-row:last-child { border-bottom: none; }
-.usuario-info { flex: 1; }
-.usuario-name { font-size: 14px; font-weight: 500; }
-.usuario-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
-.rol-chip { padding: 3px 10px; border-radius: 10px; font-size: 11px; font-weight: 500; margin-right: 8px; }
-.rol-owner { background: #fff3cd; color: #856404; }
-.rol-vendedor { background: #d1ecf1; color: #0c5460; }
-.toggle-btn { padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); background: white; font-size: 12px; cursor: pointer; font-family: 'DM Sans', sans-serif; }
-.toggle-btn.activo { background: var(--success); color: white; border-color: var(--success); }
-
-/* AUDITORÍA */
-.audit-row { padding: 12px 0; border-bottom: 1px solid var(--warm); }
-.audit-row:last-child { border-bottom: none; }
-.audit-accion { font-size: 11px; font-weight: 500; color: var(--accent); text-transform: uppercase; letter-spacing: 0.5px; }
-.audit-detalle { font-size: 13px; margin: 3px 0; }
-.audit-meta { font-size: 11px; color: var(--muted); }
+.usuario-row{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--warm)}
+.usuario-row:last-child{border-bottom:none}
+.rol-chip{padding:3px 10px;border-radius:10px;font-size:11px;font-weight:500;margin-right:8px}
+.rol-owner{background:#fff3cd;color:#856404}
+.rol-vendedor{background:#d1ecf1;color:#0c5460}
+.toggle-btn{padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:white;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif}
+.toggle-btn.activo{background:var(--success);color:white;border-color:var(--success)}
 
 /* MODAL */
-.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; display: none; align-items: flex-end; justify-content: center; }
-.modal-overlay.show { display: flex; }
-.modal { background: var(--card); border-radius: 24px 24px 0 0; padding: 28px 24px 40px; width: 100%; max-width: 480px; animation: slideUp 0.3s ease; max-height: 90dvh; overflow-y: auto; }
-@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-.modal-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
-.modal-title { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 500; margin-bottom: 20px; }
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:flex-end;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:var(--card);border-radius:24px 24px 0 0;padding:28px 24px 40px;width:100%;max-width:480px;animation:slideUp .3s ease;max-height:90dvh;overflow-y:auto}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 20px}
+.modal-title{font-family:'Fraunces',serif;font-size:20px;font-weight:500;margin-bottom:20px}
 
 /* TOAST */
-.toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--ink); color: white; padding: 13px 22px; border-radius: 24px; font-size: 13px; font-weight: 500; opacity: 0; transition: all 0.3s; z-index: 1000; max-width: 320px; text-align: center; pointer-events: none; }
-.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-.toast.error { background: var(--danger); }
-.toast.success { background: var(--success); }
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:white;padding:13px 22px;border-radius:24px;font-size:13px;font-weight:500;opacity:0;transition:all .3s;z-index:1000;max-width:320px;text-align:center;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.error{background:var(--danger)}
+.toast.success{background:var(--success)}
 
-/* LOADING */
-.loading { display: flex; align-items: center; justify-content: center; padding: 40px; color: var(--muted); gap: 10px; font-size: 13px; }
-.spinner { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.6s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-.empty-state { text-align: center; padding: 40px 20px; color: var(--muted); }
-.empty-icon { font-size: 40px; margin-bottom: 12px; }
-
-/* DISPONIBILIDAD EN VENTA */
-.disp-badge { display: inline-block; font-size: 12px; padding: 3px 10px; border-radius: 10px; margin-top: 6px; }
-.disp-ok { background: #e8f5e9; color: var(--success); }
-.disp-low { background: #fff3e0; color: var(--warning); }
-.disp-out { background: #ffebee; color: var(--danger); }
-
-/* DIVIDER */
-.divider { height: 1px; background: var(--border); margin: 16px 0; }
+/* MISC */
+.loading{display:flex;align-items:center;justify-content:center;padding:40px;color:var(--muted);gap:10px;font-size:13px}
+.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted)}
+.empty-icon{font-size:40px;margin-bottom:12px}
+.audit-row{padding:11px 0;border-bottom:1px solid var(--warm)}
+.audit-row:last-child{border-bottom:none}
+.audit-accion{font-size:11px;font-weight:500;color:var(--accent);text-transform:uppercase;letter-spacing:.5px}
+.audit-detalle{font-size:13px;margin:3px 0}
+.audit-meta{font-size:11px;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -201,7 +186,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(
     <input class="field-input" type="text" id="login-user" placeholder="tu usuario" autocapitalize="none">
     <label class="field-label">Contraseña</label>
     <input class="field-input" type="password" id="login-pass" placeholder="••••••••">
-    <button class="btn-primary" id="btn-login">Entrar</button>
+    <button class="btn-login" id="btn-login">Entrar</button>
     <div class="login-error" id="login-error"></div>
   </div>
 </div>
@@ -211,7 +196,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(
   <header class="app-header">
     <div class="header-logo">Tarta Vasca</div>
     <div style="display:flex;align-items:center;gap:10px">
-      <div class="user-badge">Hola, <span id="header-usuario"></span></div>
+      <div class="user-badge">Hola, <span id="hdr-usuario"></span></div>
       <button class="btn-logout" id="btn-logout">Salir</button>
     </div>
   </header>
@@ -235,14 +220,8 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(
         <div class="card-title">Inventario actual</div>
         <div class="card-sub" id="stock-sub">Cargando...</div>
         <div class="summary-grid" id="stock-summary" style="display:none">
-          <div class="summary-card">
-            <div class="summary-num" id="sum-total">0</div>
-            <div class="summary-label">Piezas disponibles</div>
-          </div>
-          <div class="summary-card">
-            <div class="summary-num" id="sum-vencer" style="color:var(--warning)">0</div>
-            <div class="summary-label">Por vencer hoy</div>
-          </div>
+          <div class="summary-card"><div class="summary-num" id="sum-total">0</div><div class="summary-label">Piezas disponibles</div></div>
+          <div class="summary-card"><div class="summary-num" id="sum-vencer" style="color:var(--warning)">0</div><div class="summary-label">Por vencer hoy</div></div>
         </div>
         <input class="stock-search" type="text" id="stock-search" placeholder="Buscar sabor...">
         <div class="filter-row" id="filtros-suc"></div>
@@ -251,40 +230,38 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(
       </div>
     </div>
 
-    <!-- VENTA -->
+    <!-- VENTA — UNA SOLA PANTALLA -->
     <div id="tab-venta" class="tab-pane" style="display:none">
-      <!-- PASO 1: Canal y sucursal -->
-      <div class="card" id="venta-paso1">
+      <div class="card">
         <div class="card-title">Nueva venta</div>
-        <div class="card-sub">Paso 1 — Canal y sucursal</div>
-        <div class="form-group" id="venta-suc-group">
+
+        <!-- CANAL Y PAGO -->
+        <div class="venta-grid">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Canal</label>
+            <select class="form-select" id="venta-canal"></select>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Método de pago</label>
+            <select class="form-select" id="venta-metodo"></select>
+          </div>
+        </div>
+        <div class="canal-aviso" id="canal-aviso">
+          <span>✓</span><span>Plataforma — no se piden datos del cliente</span>
+        </div>
+
+        <div class="separador"></div>
+
+        <!-- SUCURSAL (solo Owner) -->
+        <div class="form-group owner-only" id="venta-suc-group">
           <label class="form-label">Sucursal</label>
           <select class="form-select" id="venta-sucursal"></select>
         </div>
-        <div class="form-group">
-          <label class="form-label">Canal de venta</label>
-          <select class="form-select" id="venta-canal"></select>
-          <div id="canal-aviso" style="display:none;align-items:center;gap:8px;margin-top:10px;background:#e8f5e9;border-radius:10px;padding:10px 14px;font-size:13px;color:var(--accent2)">
-            <span>✓</span>
-            <span>Venta de plataforma — no se pedirán datos del cliente</span>
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Método de pago</label>
-          <select class="form-select" id="venta-metodo"></select>
-        </div>
-        <button class="btn-accent" id="btn-paso2">Continuar →</button>
-      </div>
 
-      <!-- PASO 2: Productos -->
-      <div id="venta-paso2" style="display:none">
-        <div class="card">
-          <div class="card-title">Productos</div>
-          <div class="card-sub">Agrega los pasteles de esta venta</div>
-          <!-- Items del carrito -->
-          <div id="carrito-items"></div>
-          <!-- Agregar item -->
-          <div id="agregar-item-form">
+        <!-- AGREGAR PRODUCTO -->
+        <div class="add-item-box">
+          <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:12px">Agregar producto</div>
+          <div class="add-item-row">
             <div class="form-group">
               <label class="form-label">Sabor</label>
               <select class="form-select" id="item-sabor"></select>
@@ -293,64 +270,67 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(
               <label class="form-label">Tamaño</label>
               <select class="form-select" id="item-tamano"></select>
             </div>
+          </div>
+          <div class="add-item-row">
             <div class="form-group">
               <label class="form-label">Cantidad</label>
               <input class="form-input" type="number" id="item-cantidad" min="1" value="1">
             </div>
-            <div id="item-disponibilidad"></div>
-            <button class="btn-outline" id="btn-agregar-item">+ Agregar al carrito</button>
-          </div>
-          <!-- Total -->
-          <div id="carrito-total-section" style="display:none">
-            <div class="divider"></div>
-            <div class="carrito-total">
-              <span class="carrito-total-label">Total</span>
-              <span class="carrito-total-num" id="carrito-total-num">$0</span>
+            <div style="display:flex;align-items:flex-end;padding-bottom:14px">
+              <div id="item-disp"></div>
             </div>
           </div>
-          <button class="btn-accent" id="btn-paso3" style="display:none">Continuar → Cliente</button>
-          <button class="btn-outline" id="btn-volver-paso1">← Volver</button>
+          <button class="btn-outline" id="btn-agregar-item" style="margin-top:0">+ Agregar al carrito</button>
         </div>
-      </div>
 
-      <!-- PASO 3: Cliente -->
-      <div id="venta-paso3" style="display:none">
-        <div class="card">
-          <div class="card-title">Datos del cliente</div>
-          <div class="card-sub" id="cliente-paso-sub">Nombre obligatorio</div>
-          <!-- Resumen carrito -->
-          <div id="resumen-carrito-mini" style="background:var(--warm);border-radius:12px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:var(--muted)"></div>
-          <!-- Búsqueda cliente -->
-          <div class="form-group" style="position:relative">
-            <label class="form-label">Nombre del cliente</label>
-            <input class="form-input" type="text" id="cliente-nombre" placeholder="Buscar o escribir nombre...">
-            <div class="sugerencias" id="sugerencias-cliente" style="display:none"></div>
+        <!-- CARRITO -->
+        <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Carrito</div>
+        <div id="carrito-items"><div class="carrito-vacio">Sin productos — agrega uno arriba</div></div>
+        <div id="carrito-total-bar" class="carrito-total-bar" style="display:none">
+          <span class="total-label">Total</span>
+          <span class="total-num" id="total-num">$0</span>
+        </div>
+
+        <div class="separador"></div>
+
+        <!-- CLIENTE -->
+        <div id="cliente-section">
+          <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Cliente</div>
+          <div style="position:relative">
+            <div class="form-group" style="margin-bottom:8px">
+              <input class="form-input" type="text" id="cli-nombre" placeholder="Buscar o escribir nombre...">
+              <div class="sugerencias" id="sugerencias" style="display:none"></div>
+            </div>
           </div>
-          <div id="cliente-encontrado-section" style="display:none">
-            <div class="cliente-section">
-              <div class="cliente-encontrado">
-                <div class="cliente-avatar" id="cliente-avatar">?</div>
-                <div>
-                  <div class="cliente-nombre" id="cliente-nombre-display"></div>
-                  <div class="cliente-meta" id="cliente-meta-display"></div>
+          <div id="cli-encontrado" style="display:none">
+            <div class="cliente-box">
+              <div class="cliente-encontrado-row">
+                <div class="cli-avatar" id="cli-avatar">?</div>
+                <div style="flex:1">
+                  <div class="cli-nombre" id="cli-nombre-disp"></div>
+                  <div class="cli-meta" id="cli-meta-disp"></div>
                 </div>
-                <button onclick="limpiarCliente()" style="background:none;border:none;color:var(--muted);cursor:pointer;margin-left:auto;font-size:18px">×</button>
+                <button onclick="limpiarCliente()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:20px">×</button>
               </div>
             </div>
           </div>
-          <div id="cliente-nuevo-section">
-            <div class="form-group">
-              <label class="form-label">Teléfono <span style="color:var(--muted);font-weight:300">(opcional)</span></label>
-              <input class="form-input" type="tel" id="cliente-telefono" placeholder="55 1234 5678">
+          <div id="cli-nuevo" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Tel <span style="font-weight:300;text-transform:none;letter-spacing:0">(opcional)</span></label>
+              <input class="form-input" type="tel" id="cli-tel" placeholder="55 0000 0000">
             </div>
-            <div class="form-group">
-              <label class="form-label">Email <span style="color:var(--muted);font-weight:300">(opcional)</span></label>
-              <input class="form-input" type="email" id="cliente-email" placeholder="correo@ejemplo.com">
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Email <span style="font-weight:300;text-transform:none;letter-spacing:0">(opcional)</span></label>
+              <input class="form-input" type="email" id="cli-email" placeholder="correo@...">
             </div>
           </div>
-          <button class="btn-accent btn-green" id="btn-confirmar-venta">Confirmar venta ✓</button>
-          <button class="btn-outline" id="btn-volver-paso2">← Volver</button>
         </div>
+
+        <div class="separador"></div>
+
+        <!-- CONFIRMAR -->
+        <button class="btn-main btn-green" id="btn-confirmar" style="margin-top:0">Confirmar venta ✓</button>
+        <button class="btn-outline" id="btn-limpiar-venta">Limpiar todo</button>
       </div>
     </div>
 
@@ -358,24 +338,12 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(
     <div id="tab-produccion" class="tab-pane" style="display:none">
       <div class="card">
         <div class="card-title">Cargar producción</div>
-        <div class="card-sub">Alta de pasteles producidos</div>
-        <div class="form-group">
-          <label class="form-label">Sabor</label>
-          <select class="form-select" id="prod-sabor"></select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Tamaño</label>
-          <select class="form-select" id="prod-tamano"></select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Sucursal</label>
-          <select class="form-select" id="prod-sucursal"></select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Cantidad</label>
-          <input class="form-input" type="number" id="prod-cantidad" min="1" value="1">
-        </div>
-        <button class="btn-accent btn-green" id="btn-cargar-prod">Cargar producción</button>
+        <div class="card-sub">Alta de pasteles producidos hoy</div>
+        <div class="form-group"><label class="form-label">Sabor</label><select class="form-select" id="prod-sabor"></select></div>
+        <div class="form-group"><label class="form-label">Tamaño</label><select class="form-select" id="prod-tamano"></select></div>
+        <div class="form-group"><label class="form-label">Sucursal</label><select class="form-select" id="prod-sucursal"></select></div>
+        <div class="form-group"><label class="form-label">Cantidad</label><input class="form-input" type="number" id="prod-cantidad" min="1" value="1"></div>
+        <button class="btn-main btn-green" id="btn-cargar-prod">Cargar producción</button>
       </div>
     </div>
 
@@ -383,7 +351,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(
     <div id="tab-ventas" class="tab-pane" style="display:none">
       <div class="card">
         <div class="card-title">Historial de ventas</div>
-        <div class="card-sub">Últimas 200 operaciones</div>
+        <div class="card-sub">Últimas operaciones</div>
         <div id="ventas-list"><div class="loading"><div class="spinner"></div></div></div>
       </div>
     </div>
@@ -402,7 +370,6 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(
       </div>
       <div class="card">
         <div class="card-title">Canales de venta</div>
-        <div class="card-sub">Activa o desactiva canales</div>
         <div id="cat-canales"><div class="loading"><div class="spinner"></div></div></div>
       </div>
     </div>
@@ -411,7 +378,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(
     <div id="tab-precios" class="tab-pane" style="display:none">
       <div class="card">
         <div class="card-title">Precios</div>
-        <div class="card-sub">Toca un precio para editarlo</div>
+        <p class="precio-nota">Los precios son por tamaño y aplican a todos los sabores. Toca un precio para editarlo.</p>
         <div id="precios-content"><div class="loading"><div class="spinner"></div></div></div>
       </div>
     </div>
@@ -425,15 +392,9 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(
       </div>
       <div class="card">
         <div class="card-title">Cambiar mi contraseña</div>
-        <div class="form-group">
-          <label class="form-label">Contraseña actual</label>
-          <input class="form-input" type="password" id="pw-actual" placeholder="••••••••">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Nueva contraseña</label>
-          <input class="form-input" type="password" id="pw-nueva" placeholder="••••••••">
-        </div>
-        <button class="btn-accent" id="btn-cambiar-pw">Cambiar contraseña</button>
+        <div class="form-group"><label class="form-label">Contraseña actual</label><input class="form-input" type="password" id="pw-actual" placeholder="••••••••"></div>
+        <div class="form-group"><label class="form-label">Nueva contraseña</label><input class="form-input" type="password" id="pw-nueva" placeholder="••••••••"></div>
+        <button class="btn-main" id="btn-cambiar-pw">Cambiar contraseña</button>
       </div>
     </div>
 
@@ -454,25 +415,20 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(
   <div class="modal">
     <div class="modal-handle"></div>
     <div class="modal-title" id="modal-precio-title">Editar precio</div>
-    <div class="form-group">
-      <label class="form-label">Nuevo precio ($)</label>
-      <input class="form-input" type="number" id="modal-precio-input" min="0">
-    </div>
-    <button class="btn-accent" id="btn-guardar-precio">Guardar</button>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Este precio aplica a todos los sabores de este tamaño.</p>
+    <div class="form-group"><label class="form-label">Nuevo precio ($)</label><input class="form-input" type="number" id="modal-precio-input" min="0"></div>
+    <button class="btn-main" id="btn-guardar-precio">Guardar</button>
     <button class="btn-outline" onclick="document.getElementById('modal-precio').classList.remove('show')">Cancelar</button>
   </div>
 </div>
 
-<!-- MODAL NUEVO ITEM CATÁLOGO -->
+<!-- MODAL NUEVO ITEM -->
 <div class="modal-overlay" id="modal-nuevo-item">
   <div class="modal">
     <div class="modal-handle"></div>
     <div class="modal-title" id="modal-item-title">Nuevo sabor</div>
-    <div class="form-group">
-      <label class="form-label" id="modal-item-label">Nombre</label>
-      <input class="form-input" type="text" id="modal-item-input" placeholder="Ej: Frutos rojos">
-    </div>
-    <button class="btn-accent" id="btn-guardar-item">Agregar</button>
+    <div class="form-group"><label class="form-label" id="modal-item-label">Nombre</label><input class="form-input" type="text" id="modal-item-input" placeholder="Ej: Frutos rojos"></div>
+    <button class="btn-main" id="btn-guardar-item">Agregar</button>
     <button class="btn-outline" onclick="document.getElementById('modal-nuevo-item').classList.remove('show')">Cancelar</button>
   </div>
 </div>
@@ -482,41 +438,12 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(
   <div class="modal">
     <div class="modal-handle"></div>
     <div class="modal-title">Nuevo usuario</div>
-    <div class="form-group">
-      <label class="form-label">Usuario</label>
-      <input class="form-input" type="text" id="nu-usuario" autocapitalize="none">
-    </div>
-    <div class="form-group">
-      <label class="form-label">Contraseña temporal</label>
-      <input class="form-input" type="text" id="nu-password">
-    </div>
-    <div class="form-group">
-      <label class="form-label">Rol</label>
-      <select class="form-select" id="nu-rol">
-        <option value="Vendedor">Vendedor</option>
-        <option value="Owner">Owner</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Sucursal</label>
-      <select class="form-select" id="nu-sucursal">
-        <option value="Cuajimalpa">Cuajimalpa</option>
-        <option value="Polanco">Polanco</option>
-        <option value="Ambas">Ambas</option>
-      </select>
-    </div>
-    <button class="btn-accent" id="btn-guardar-usuario">Crear usuario</button>
+    <div class="form-group"><label class="form-label">Usuario</label><input class="form-input" type="text" id="nu-usuario" autocapitalize="none"></div>
+    <div class="form-group"><label class="form-label">Contraseña temporal</label><input class="form-input" type="text" id="nu-password"></div>
+    <div class="form-group"><label class="form-label">Rol</label><select class="form-select" id="nu-rol"><option value="Vendedor">Vendedor</option><option value="Owner">Owner</option></select></div>
+    <div class="form-group"><label class="form-label">Sucursal</label><select class="form-select" id="nu-sucursal"><option value="Cuajimalpa">Cuajimalpa</option><option value="Polanco">Polanco</option><option value="Ambas">Ambas</option></select></div>
+    <button class="btn-main" id="btn-guardar-usuario">Crear usuario</button>
     <button class="btn-outline" onclick="document.getElementById('modal-nuevo-usuario').classList.remove('show')">Cancelar</button>
-  </div>
-</div>
-
-<!-- MODAL HISTORIAL CLIENTE -->
-<div class="modal-overlay" id="modal-historial">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title" id="modal-historial-titulo">Historial</div>
-    <div id="modal-historial-content"><div class="loading"><div class="spinner"></div></div></div>
-    <button class="btn-outline" onclick="document.getElementById('modal-historial').classList.remove('show')" style="margin-top:16px">Cerrar</button>
   </div>
 </div>
 
@@ -524,241 +451,204 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(
 
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycby1ECfvL3fi9oJC4RaXQ7DbWr58ObZriANw9lKaZ-wQ_cKd5FcLbSeuhmXYf7i5avU4/exec";
+const LECTURA = ["getCatalogo","getStock","getPrecios","getUsuarios","getAuditoria","buscarCliente","getHistorialCliente","getVentas"];
 
 let S = {
-  token: null, usuario: null, rol: null, sucursal: null,
-  catalogo: null, precios: null, stock: null,
-  filtroSuc: null, filtroTam: null,
-  carrito: [], // [{sabor, tamano, cantidad, precio, subtotal}]
-  clienteSeleccionado: null,
-  precioEditar: null,
-  itemTipo: null,
+  token:null, usuario:null, rol:null, sucursal:null,
+  catalogo:null, precios:null, stock:null,
+  carrito:[], clienteSel:null,
+  filtroSuc:null, filtroTam:null, precioEditar:null, itemTipo:null
 };
 
-// ============================================================
 // API
-// ============================================================
-// Acciones de solo lectura — usan GET
-const ACCIONES_LECTURA = ["getCatalogo","getStock","getPrecios","getUsuarios","getAuditoria","buscarCliente","getHistorialCliente","getVentas"];
-
-async function api(accion, body = {}) {
-  const payload = { accion, token: S.token, ...body };
+async function api(accion, body={}) {
+  const payload = {accion, token:S.token, ...body};
   try {
-    if (ACCIONES_LECTURA.includes(accion)) {
-      // GET para lecturas
-      const res = await fetch(API_URL + "?data=" + encodeURIComponent(JSON.stringify(payload)), {
-        redirect: "follow"
-      });
-      const text = await res.text();
-      return JSON.parse(text);
+    if (LECTURA.includes(accion)) {
+      const r = await fetch(API_URL+"?data="+encodeURIComponent(JSON.stringify(payload)), {redirect:"follow"});
+      return JSON.parse(await r.text());
     } else {
-      // POST para escrituras (registrarVenta, altaProduccion, updatePrecio, etc.)
-      const res = await fetch(API_URL, {
-        method: "POST",
-        body: JSON.stringify(payload),
-        redirect: "follow"
-      });
-      const text = await res.text();
-      try {
-        return JSON.parse(text);
-      } catch(e) {
-        // Si falla el parse, intentar con GET como fallback
-        const res2 = await fetch(API_URL + "?data=" + encodeURIComponent(JSON.stringify(payload)), { redirect: "follow" });
-        return JSON.parse(await res2.text());
+      const r = await fetch(API_URL, {method:"POST", body:JSON.stringify(payload), redirect:"follow"});
+      const txt = await r.text();
+      try { return JSON.parse(txt); }
+      catch(e) {
+        const r2 = await fetch(API_URL+"?data="+encodeURIComponent(JSON.stringify(payload)), {redirect:"follow"});
+        return JSON.parse(await r2.text());
       }
     }
-  } catch(e) {
-    return { ok: false, error: "Error de conexión. Verifica tu internet." };
-  }
-}
-
-function toast(msg, tipo = "success") {
-  const el = document.getElementById("toast");
-  el.textContent = msg;
-  el.className = "toast " + tipo;
-  el.classList.add("show");
-  setTimeout(() => el.classList.remove("show"), 3200);
+  } catch(e) { return {ok:false, error:"Error de conexión."}; }
 }
 
 function L(id) { return document.getElementById(id); }
 
-// ============================================================
+function toast(msg, tipo="success") {
+  const el = L("toast");
+  el.textContent = msg;
+  el.className = "toast "+tipo;
+  el.classList.add("show");
+  setTimeout(()=>el.classList.remove("show"), 3200);
+}
+
 // LOGIN
-// ============================================================
 L("btn-login").addEventListener("click", doLogin);
-L("login-pass").addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });
+L("login-pass").addEventListener("keydown", e=>{ if(e.key==="Enter") doLogin(); });
 
 async function doLogin() {
   const usuario = L("login-user").value.trim();
   const password = L("login-pass").value;
-  const errEl = L("login-error");
+  const err = L("login-error");
   const btn = L("btn-login");
-  if (!usuario || !password) { errEl.textContent = "Ingresa usuario y contraseña."; errEl.style.display = "block"; return; }
-  btn.disabled = true; btn.textContent = "Entrando..."; errEl.style.display = "none";
-  const res = await api("login", { usuario, password });
+  if (!usuario||!password) { err.textContent="Ingresa usuario y contraseña."; err.style.display="block"; return; }
+  btn.disabled=true; btn.textContent="Entrando..."; err.style.display="none";
+  const res = await api("login", {usuario, password});
   if (res.ok) {
-    S.token = res.token; S.usuario = res.usuario; S.rol = res.rol; S.sucursal = res.sucursal;
+    S.token=res.token; S.usuario=res.usuario; S.rol=res.rol; S.sucursal=res.sucursal;
     iniciarApp();
   } else {
-    errEl.textContent = res.error || "Error al iniciar sesión.";
-    errEl.style.display = "block";
+    err.textContent=res.error||"Error al iniciar sesión."; err.style.display="block";
   }
-  btn.disabled = false; btn.textContent = "Entrar";
+  btn.disabled=false; btn.textContent="Entrar";
 }
 
-// ============================================================
 // APP
-// ============================================================
 function iniciarApp() {
-  L("login-screen").style.display = "none";
-  L("app").style.display = "flex";
-  L("header-usuario").textContent = S.usuario;
-  if (S.rol !== "Owner") {
-    document.querySelectorAll(".owner-only").forEach(el => el.style.display = "none");
-  }
+  L("login-screen").style.display="none";
+  L("app").style.display="flex";
+  L("hdr-usuario").textContent=S.usuario;
+  if (S.rol!=="Owner") document.querySelectorAll(".owner-only").forEach(el=>el.style.display="none");
   setupNav();
   cargarCatalogo();
   cargarStock();
 }
 
 function setupNav() {
-  document.querySelectorAll(".nav-tab").forEach(tab => {
-    tab.addEventListener("click", () => {
-      document.querySelectorAll(".nav-tab").forEach(t => t.classList.remove("active"));
+  document.querySelectorAll(".nav-tab").forEach(tab=>{
+    tab.addEventListener("click", ()=>{
+      document.querySelectorAll(".nav-tab").forEach(t=>t.classList.remove("active"));
       tab.classList.add("active");
-      document.querySelectorAll(".tab-pane").forEach(p => p.style.display = "none");
-      L("tab-" + tab.dataset.tab).style.display = "block";
-      const t = tab.dataset.tab;
-      if (t === "stock") cargarStock();
-      else if (t === "precios") cargarPrecios();
-      else if (t === "usuarios") cargarUsuarios();
-      else if (t === "auditoria") cargarAuditoria();
-      else if (t === "catalogo") cargarCatalogoPantalla();
-      else if (t === "ventas") cargarVentas();
-      else if (t === "venta") resetVenta();
+      document.querySelectorAll(".tab-pane").forEach(p=>p.style.display="none");
+      L("tab-"+tab.dataset.tab).style.display="block";
+      const t=tab.dataset.tab;
+      if(t==="stock") cargarStock();
+      else if(t==="precios") cargarPrecios();
+      else if(t==="usuarios") cargarUsuarios();
+      else if(t==="auditoria") cargarAuditoria();
+      else if(t==="catalogo") cargarCatalogoPantalla();
+      else if(t==="ventas") cargarVentas();
+      else if(t==="venta") iniciarVenta();
     });
   });
 }
 
-// ============================================================
 // CATÁLOGO
-// ============================================================
 async function cargarCatalogo() {
   const res = await api("getCatalogo");
   if (!res.ok) return;
   S.catalogo = res;
-  const sab = res.sabores.filter(s => s.activo).map(s => s.nombre);
-  const tam = res.tamanos.filter(t => t.activo).map(t => t.nombre);
-  const suc = res.sucursales.filter(s => s.activo).map(s => s.nombre);
-  const can = (res.canales || []).filter(c => c.activo).map(c => c.nombre);
+  await cargarPrecios(true); // cargar precios silenciosamente
+  poblarSelectsVenta();
+}
 
-  llenarSelect("prod-sabor", sab);
-  llenarSelect("prod-tamano", tam);
-  llenarSelect("prod-sucursal", suc);
-  llenarSelect("item-sabor", sab);
-  llenarSelect("item-tamano", tam);
-  llenarSelect("venta-sucursal", suc);
+function poblarSelectsVenta() {
+  const sab = stockConDisponibilidad("sabor");
+  const tam = stockConDisponibilidad("tamano");
+  const suc = (S.catalogo.sucursales||[]).filter(s=>s.activo).map(s=>s.nombre);
+  const can = (S.catalogo.canales||[]).filter(c=>c.activo).map(c=>c.nombre);
+  const canFinal = can.length>0 ? can : ["Tienda","Domicilio","Rappi"];
 
-  // Canales — fallback si el Sheet aún no tiene filas de Canal
-  const canalesFinales = can.length > 0 ? can : ["Tienda", "Domicilio", "Rappi"];
-  llenarSelect("venta-canal", canalesFinales);
+  llenar("item-sabor", sab.length>0 ? sab : (S.catalogo.sabores||[]).filter(s=>s.activo).map(s=>s.nombre));
+  llenar("item-tamano", tam.length>0 ? tam : (S.catalogo.tamanos||[]).filter(t=>t.activo).map(t=>t.nombre));
+  llenar("prod-sabor", (S.catalogo.sabores||[]).filter(s=>s.activo).map(s=>s.nombre));
+  llenar("prod-tamano", (S.catalogo.tamanos||[]).filter(t=>t.activo).map(t=>t.nombre));
+  llenar("prod-sucursal", suc);
+  llenar("venta-sucursal", suc);
+  llenar("venta-canal", canFinal);
   actualizarMetodoPago();
   actualizarUICanal();
-
-  // Ocultar sucursal en venta si es Vendedor
-  if (S.rol === "Vendedor") L("venta-suc-group").style.display = "none";
+  if (S.rol==="Vendedor") L("venta-suc-group").style.display="none";
 }
 
-function llenarSelect(id, opciones) {
+// Solo mostrar sabores/tamaños que tienen stock disponible
+function stockConDisponibilidad(campo) {
+  if (!S.stock) return [];
+  const sucursal = S.rol==="Vendedor" ? S.sucursal : null;
+  const disponibles = S.stock.filter(s=>!s.vencido && s.cantActual>0 && (!sucursal||s.sucursal===sucursal));
+  const unicos = [...new Set(disponibles.map(s=>s[campo]))];
+  return unicos;
+}
+
+function llenar(id, opciones) {
   const sel = L(id);
   if (!sel) return;
-  sel.innerHTML = opciones.map(o => `<option value="${o}">${o}</option>`).join("");
+  sel.innerHTML = opciones.map(o=>`<option value="${o}">${o}</option>`).join("");
 }
 
-function esPlataforma(canal) {
-  return canal === "Rappi" || canal === "Uber Eats";
-}
+function esPlataforma(canal) { return canal==="Rappi"||canal==="Uber Eats"; }
 
 function actualizarMetodoPago() {
   const canal = L("venta-canal")?.value;
   if (!canal) return;
-  const metodos = esPlataforma(canal)
-    ? [canal]
-    : ["Efectivo", "Tarjeta", "Transferencia"];
-  llenarSelect("venta-metodo", metodos);
+  llenar("venta-metodo", esPlataforma(canal) ? [canal] : ["Efectivo","Tarjeta","Transferencia"]);
 }
 
 function actualizarUICanal() {
   const canal = L("venta-canal")?.value;
   if (!canal) return;
   const aviso = L("canal-aviso");
+  const clienteSection = L("cliente-section");
   if (esPlataforma(canal)) {
-    if (aviso) aviso.style.display = "flex";
-    L("venta-metodo").disabled = true;
+    aviso.style.display="flex";
+    if (clienteSection) clienteSection.style.display="none";
   } else {
-    if (aviso) aviso.style.display = "none";
-    L("venta-metodo").disabled = false;
+    aviso.style.display="none";
+    if (clienteSection) clienteSection.style.display="block";
   }
 }
 
-L("venta-canal")?.addEventListener("change", () => { actualizarMetodoPago(); actualizarUICanal(); });
-document.addEventListener("DOMContentLoaded", () => {
-  L("venta-canal")?.addEventListener("change", () => { actualizarMetodoPago(); actualizarUICanal(); });
-});
+L("venta-canal")?.addEventListener("change", ()=>{ actualizarMetodoPago(); actualizarUICanal(); });
 
-// ============================================================
 // STOCK
-// ============================================================
 async function cargarStock() {
-  L("stock-content").innerHTML = `<div class="loading"><div class="spinner"></div>Cargando...</div>`;
+  L("stock-content").innerHTML=`<div class="loading"><div class="spinner"></div>Cargando...</div>`;
   const res = await api("getStock");
-  if (!res.ok) { L("stock-content").innerHTML = `<div class="empty-state"><div class="empty-text">Error al cargar</div></div>`; return; }
-  S.stock = res.stock;
+  if (!res.ok) { L("stock-content").innerHTML=`<div class="empty-state"><div class="empty-text">Error al cargar</div></div>`; return; }
+  S.stock=res.stock;
   renderStock();
+  poblarSelectsVenta(); // actualizar selects con stock real
 }
 
 function renderStock() {
-  const stock = S.stock || [];
-  const busqueda = L("stock-search").value.toLowerCase();
-  let filtrado = stock.filter(s => !s.vencido && s.cantActual > 0);
-  if (S.filtroSuc) filtrado = filtrado.filter(s => s.sucursal === S.filtroSuc);
-  if (S.filtroTam) filtrado = filtrado.filter(s => s.tamano === S.filtroTam);
-  if (busqueda) filtrado = filtrado.filter(s => s.sabor.toLowerCase().includes(busqueda));
+  const stock=S.stock||[];
+  const busqueda=L("stock-search").value.toLowerCase();
+  let f=stock.filter(s=>!s.vencido&&s.cantActual>0);
+  if(S.filtroSuc) f=f.filter(s=>s.sucursal===S.filtroSuc);
+  if(S.filtroTam) f=f.filter(s=>s.tamano===S.filtroTam);
+  if(busqueda) f=f.filter(s=>s.sabor.toLowerCase().includes(busqueda));
 
-  L("sum-total").textContent = filtrado.reduce((s, i) => s + i.cantActual, 0);
-  L("sum-vencer").textContent = filtrado.filter(s => s.porVencer).length;
-  L("stock-summary").style.display = "grid";
-  L("stock-sub").textContent = S.filtroSuc || (S.rol === "Vendedor" ? S.sucursal : "todas las sucursales");
+  L("sum-total").textContent=f.reduce((s,i)=>s+i.cantActual,0);
+  L("sum-vencer").textContent=f.filter(s=>s.porVencer).length;
+  L("stock-summary").style.display="grid";
+  L("stock-sub").textContent=S.filtroSuc||(S.rol==="Vendedor"?S.sucursal:"todas las sucursales");
 
-  if (S.catalogo && S.rol === "Owner") {
-    const sucs = S.catalogo.sucursales.filter(s => s.activo).map(s => s.nombre);
-    L("filtros-suc").innerHTML = `<div class="filter-chip ${!S.filtroSuc?'active':''}" data-suc="">Todas</div>` +
-      sucs.map(s => `<div class="filter-chip ${S.filtroSuc===s?'active':''}" data-suc="${s}">${s}</div>`).join("");
-    L("filtros-suc").querySelectorAll(".filter-chip").forEach(c =>
-      c.addEventListener("click", () => { S.filtroSuc = c.dataset.suc || null; renderStock(); }));
+  if(S.catalogo&&S.rol==="Owner") {
+    const sucs=(S.catalogo.sucursales||[]).filter(s=>s.activo).map(s=>s.nombre);
+    L("filtros-suc").innerHTML=`<div class="chip ${!S.filtroSuc?'active':''}" data-suc="">Todas</div>`+sucs.map(s=>`<div class="chip ${S.filtroSuc===s?'active':''}" data-suc="${s}">${s}</div>`).join("");
+    L("filtros-suc").querySelectorAll(".chip").forEach(c=>c.addEventListener("click",()=>{S.filtroSuc=c.dataset.suc||null;renderStock();}));
+  }
+  if(S.catalogo) {
+    const tams=(S.catalogo.tamanos||[]).filter(t=>t.activo).map(t=>t.nombre);
+    L("filtros-tam").innerHTML=`<div class="chip ${!S.filtroTam?'active':''}" data-tam="">Todos</div>`+tams.map(t=>`<div class="chip ${S.filtroTam===t?'active':''}" data-tam="${t}">${t}</div>`).join("");
+    L("filtros-tam").querySelectorAll(".chip").forEach(c=>c.addEventListener("click",()=>{S.filtroTam=c.dataset.tam||null;renderStock();}));
   }
 
-  if (S.catalogo) {
-    const tams = S.catalogo.tamanos.filter(t => t.activo).map(t => t.nombre);
-    L("filtros-tam").innerHTML = `<div class="filter-chip ${!S.filtroTam?'active':''}" data-tam="">Todos</div>` +
-      tams.map(t => `<div class="filter-chip ${S.filtroTam===t?'active':''}" data-tam="${t}">${t}</div>`).join("");
-    L("filtros-tam").querySelectorAll(".filter-chip").forEach(c =>
-      c.addEventListener("click", () => { S.filtroTam = c.dataset.tam || null; renderStock(); }));
-  }
+  if(f.length===0) { L("stock-content").innerHTML=`<div class="empty-state"><div class="empty-icon">📦</div><div class="empty-text">Sin stock disponible</div></div>`; return; }
 
-  if (filtrado.length === 0) {
-    L("stock-content").innerHTML = `<div class="empty-state"><div class="empty-icon">📦</div><div class="empty-text">Sin stock disponible</div></div>`;
-    return;
-  }
-
-  L("stock-content").innerHTML = `<table class="stock-table">
-    <thead><tr>
-      <th>Sabor</th><th>Tam.</th>${S.rol==="Owner"?"<th>Suc.</th>":""}<th>Cant.</th><th>Vence</th>
-    </tr></thead>
-    <tbody>${filtrado.map(s => {
-      const qCls = s.cantActual <= 2 ? "qty-low" : "qty-ok";
-      const cCls = s.vencido ? "cad-bad" : s.porVencer ? "cad-warn" : "cad-ok";
-      const cTxt = s.vencido ? "Vencido" : s.diasRestantes === 1 ? "Hoy" : s.diasRestantes + "d";
+  L("stock-content").innerHTML=`<table class="stock-table">
+    <thead><tr><th>Sabor</th><th>Tam.</th>${S.rol==="Owner"?"<th>Suc.</th>":""}<th>Cant.</th><th>Vence</th></tr></thead>
+    <tbody>${f.map(s=>{
+      const qCls=s.cantActual<=2?"qty-low":"qty-ok";
+      const cCls=s.vencido?"cad-bad":s.porVencer?"cad-warn":"cad-ok";
+      const cTxt=s.vencido?"Vencido":s.diasRestantes===1?"Hoy":s.diasRestantes+"d";
       return `<tr>
         <td><strong>${s.sabor}</strong></td>
         <td style="color:var(--muted);font-size:12px">${s.tamano}</td>
@@ -771,459 +661,362 @@ function renderStock() {
 
 L("stock-search").addEventListener("input", renderStock);
 
-// ============================================================
-// VENTA — FLUJO MULTI-PASO
-// ============================================================
-function resetVenta() {
-  S.carrito = [];
-  S.clienteSeleccionado = null;
-  mostrarPasoVenta(1);
-  L("cliente-nombre").value = "";
-  L("cliente-telefono").value = "";
-  L("cliente-email").value = "";
-  L("item-cantidad").value = "1";
-  actualizarMetodoPago();
+// VENTA
+function iniciarVenta() {
+  actualizarUICanal();
+  actualizarDisp();
 }
 
-function mostrarPasoVenta(paso) {
-  L("venta-paso1").style.display = paso === 1 ? "block" : "none";
-  L("venta-paso2").style.display = paso === 2 ? "block" : "none";
-  L("venta-paso3").style.display = paso === 3 ? "block" : "none";
+function getSucursalVenta() {
+  return S.rol==="Vendedor" ? S.sucursal : (L("venta-sucursal")?.value||S.sucursal);
 }
 
-// PASO 1 → 2
-L("btn-paso2").addEventListener("click", () => {
-  const canal = L("venta-canal").value;
-  const metodo = L("venta-metodo").value;
-  if (!canal || !metodo) { toast("Selecciona canal y método de pago", "error"); return; }
-  renderCarrito();
-  actualizarDisponibilidad();
-  mostrarPasoVenta(2);
-});
-
-L("btn-volver-paso1").addEventListener("click", () => mostrarPasoVenta(1));
-
-// AGREGAR ITEM AL CARRITO
-L("btn-agregar-item").addEventListener("click", () => {
-  const sabor = L("item-sabor").value;
-  const tamano = L("item-tamano").value;
-  const cantidad = parseInt(L("item-cantidad").value);
-  if (!sabor || !tamano || cantidad < 1) { toast("Completa el producto", "error"); return; }
-
-  // Verificar disponibilidad en stock
-  const sucursal = S.rol === "Vendedor" ? S.sucursal : L("venta-sucursal").value;
-  const disponible = calcularDisponibleLocal(sabor, tamano, sucursal);
-  const yaEnCarrito = S.carrito.filter(i => i.sabor === sabor && i.tamano === tamano).reduce((s, i) => s + i.cantidad, 0);
-  if (yaEnCarrito + cantidad > disponible) {
-    toast(`Solo hay ${disponible - yaEnCarrito} disponibles de ${sabor} ${tamano}`, "error"); return;
-  }
-
-  // Obtener precio
-  const precio = getPrecioLocal(sabor, tamano);
-  S.carrito.push({ sabor, tamano, cantidad, precio, subtotal: precio * cantidad });
-  L("item-cantidad").value = "1";
-  renderCarrito();
-  actualizarDisponibilidad();
-  toast(`${sabor} ${tamano} agregado`, "success");
-});
-
-L("item-sabor").addEventListener("change", actualizarDisponibilidad);
-L("item-tamano").addEventListener("change", actualizarDisponibilidad);
-
-function actualizarDisponibilidad() {
-  const sabor = L("item-sabor").value;
-  const tamano = L("item-tamano").value;
-  if (!sabor || !tamano || !S.stock) { L("item-disponibilidad").innerHTML = ""; return; }
-  const sucursal = S.rol === "Vendedor" ? S.sucursal : L("venta-sucursal").value;
-  const disponible = calcularDisponibleLocal(sabor, tamano, sucursal);
-  const yaEnCarrito = S.carrito.filter(i => i.sabor === sabor && i.tamano === tamano).reduce((s, i) => s + i.cantidad, 0);
-  const restante = disponible - yaEnCarrito;
-  const cls = restante <= 0 ? "disp-out" : restante <= 2 ? "disp-low" : "disp-ok";
-  const txt = restante <= 0 ? "Sin stock" : `Disponible: ${restante}`;
-  L("item-disponibilidad").innerHTML = `<span class="disp-badge ${cls}">${txt}</span>`;
-}
-
-function calcularDisponibleLocal(sabor, tamano, sucursal) {
+function calcDisp(sabor, tamano) {
   if (!S.stock) return 0;
-  return S.stock
-    .filter(s => s.sabor === sabor && s.tamano === tamano && s.sucursal === sucursal && !s.vencido && s.cantActual > 0)
-    .reduce((sum, s) => sum + s.cantActual, 0);
+  const suc = getSucursalVenta();
+  const enCarrito = S.carrito.filter(i=>i.sabor===sabor&&i.tamano===tamano).reduce((s,i)=>s+i.cantidad,0);
+  const enStock = S.stock.filter(s=>s.sabor===sabor&&s.tamano===tamano&&s.sucursal===suc&&!s.vencido&&s.cantActual>0).reduce((s,i)=>s+i.cantActual,0);
+  return Math.max(0, enStock-enCarrito);
 }
 
-function getPrecioLocal(sabor, tamano) {
+function getPrecio(tamano) {
   if (!S.precios) return 0;
-  const p = S.precios.find(p => p.sabor === sabor && p.tamano === tamano);
+  // Precio por tamaño — tomar el primero que coincida
+  const p = S.precios.find(p=>p.tamano===tamano);
   return p ? p.precio : 0;
 }
 
+function actualizarDisp() {
+  const sabor=L("item-sabor")?.value;
+  const tamano=L("item-tamano")?.value;
+  if (!sabor||!tamano) { L("item-disp").innerHTML=""; return; }
+  const d=calcDisp(sabor,tamano);
+  const cls=d<=0?"disp-out":d<=2?"disp-low":"disp-ok";
+  const txt=d<=0?"Sin stock":`${d} disponibles`;
+  L("item-disp").innerHTML=`<span class="disp-badge ${cls}">${txt}</span>`;
+}
+
+L("item-sabor")?.addEventListener("change", actualizarDisp);
+L("item-tamano")?.addEventListener("change", actualizarDisp);
+L("venta-sucursal")?.addEventListener("change", ()=>{ actualizarDisp(); poblarSelectsVenta(); });
+
+L("btn-agregar-item").addEventListener("click", ()=>{
+  const sabor=L("item-sabor").value;
+  const tamano=L("item-tamano").value;
+  const cantidad=parseInt(L("item-cantidad").value)||1;
+  if (!sabor||!tamano) { toast("Selecciona sabor y tamaño","error"); return; }
+  const disp=calcDisp(sabor,tamano);
+  if (disp<cantidad) { toast(`Solo hay ${disp} de ${sabor} ${tamano}`,"error"); return; }
+  const precio=getPrecio(tamano);
+  S.carrito.push({sabor,tamano,cantidad,precio,subtotal:precio*cantidad});
+  L("item-cantidad").value="1";
+  renderCarrito();
+  actualizarDisp();
+  toast(`${sabor} ${tamano} × ${cantidad} agregado`);
+});
+
 function renderCarrito() {
-  const items = L("carrito-items");
-  if (S.carrito.length === 0) {
-    items.innerHTML = "";
-    L("carrito-total-section").style.display = "none";
-    L("btn-paso3").style.display = "none";
+  const items=L("carrito-items");
+  if (S.carrito.length===0) {
+    items.innerHTML=`<div class="carrito-vacio">Sin productos — agrega uno arriba</div>`;
+    L("carrito-total-bar").style.display="none";
     return;
   }
-
-  items.innerHTML = S.carrito.map((item, idx) => `
+  items.innerHTML=S.carrito.map((item,i)=>`
     <div class="carrito-item">
       <div class="carrito-info">
         <div class="carrito-nombre">${item.sabor} ${item.tamano}</div>
-        <div class="carrito-sub">${item.cantidad} pieza${item.cantidad > 1 ? 's' : ''} × $${item.precio.toLocaleString()}</div>
+        <div class="carrito-sub">${item.cantidad} × $${item.precio.toLocaleString()}</div>
       </div>
       <span class="carrito-precio">$${item.subtotal.toLocaleString()}</span>
-      <button class="btn-remove" onclick="removerItem(${idx})">×</button>
-    </div>
-  `).join("");
-
-  const total = S.carrito.reduce((s, i) => s + i.subtotal, 0);
-  L("carrito-total-num").textContent = "$" + total.toLocaleString();
-  L("carrito-total-section").style.display = "block";
-  L("btn-paso3").style.display = "block";
+      <button class="btn-remove" onclick="quitarItem(${i})">×</button>
+    </div>`).join("");
+  const total=S.carrito.reduce((s,i)=>s+i.subtotal,0);
+  L("total-num").textContent="$"+total.toLocaleString();
+  L("carrito-total-bar").style.display="flex";
 }
 
-function removerItem(idx) {
-  S.carrito.splice(idx, 1);
+function quitarItem(idx) {
+  S.carrito.splice(idx,1);
   renderCarrito();
-  actualizarDisponibilidad();
+  actualizarDisp();
 }
 
-// PASO 2 → 3
-L("btn-paso3").addEventListener("click", () => {
-  if (S.carrito.length === 0) { toast("Agrega al menos un producto", "error"); return; }
-  const canal = L("venta-canal").value;
-  const esPlataforma = canal === "Rappi" || canal === "Uber Eats";
-
-  // Mostrar u ocultar sección de cliente
-  L("cliente-paso-sub").textContent = esPlataforma
-    ? "Venta de plataforma — no se requiere cliente"
-    : "Nombre obligatorio";
-  L("cliente-nuevo-section").style.display = esPlataforma ? "none" : "block";
-  L("venta-paso3").querySelector(".form-group").style.display = esPlataforma ? "none" : "block";
-
-  // Resumen mini
-  const total = S.carrito.reduce((s, i) => s + i.subtotal, 0);
-  L("resumen-carrito-mini").innerHTML = S.carrito.map(i => `${i.cantidad}× ${i.sabor} ${i.tamano}`).join("  ·  ") +
-    `<br><strong style="color:var(--ink)">Total: $${total.toLocaleString()}</strong>`;
-
-  mostrarPasoVenta(3);
-});
-
-L("btn-volver-paso2").addEventListener("click", () => mostrarPasoVenta(2));
-
-// BÚSQUEDA DE CLIENTE
-let searchTimeout;
-L("cliente-nombre").addEventListener("input", () => {
-  clearTimeout(searchTimeout);
-  const val = L("cliente-nombre").value.trim();
-  if (val.length < 2) { L("sugerencias-cliente").style.display = "none"; return; }
-  searchTimeout = setTimeout(() => buscarCliente(val), 350);
+// Búsqueda cliente
+let searchTO;
+L("cli-nombre")?.addEventListener("input", ()=>{
+  clearTimeout(searchTO);
+  const v=L("cli-nombre").value.trim();
+  if (v.length<2) { L("sugerencias").style.display="none"; return; }
+  searchTO=setTimeout(()=>buscarCliente(v), 350);
 });
 
 async function buscarCliente(term) {
-  const res = await api("buscarCliente", { busqueda: term });
-  if (!res.ok || res.clientes.length === 0) { L("sugerencias-cliente").style.display = "none"; return; }
-  const sugs = L("sugerencias-cliente");
-  sugs.innerHTML = res.clientes.map(c => `
-    <div class="sugerencia-item" onclick="seleccionarCliente(${JSON.stringify(c).replace(/"/g, '&quot;')})">
-      <strong>${c.nombre}</strong>
-      ${c.telefono ? ` · ${c.telefono}` : ""}
-      ${c.email ? ` · ${c.email}` : ""}
-    </div>
-  `).join("");
-  sugs.style.display = "block";
+  const res=await api("buscarCliente",{busqueda:term});
+  if (!res.ok||res.clientes.length===0) { L("sugerencias").style.display="none"; return; }
+  L("sugerencias").innerHTML=res.clientes.map(c=>`
+    <div class="sug-item" onclick='selCliente(${JSON.stringify(c).replace(/'/g,"\\'")})''>
+      <strong>${c.nombre}</strong>${c.telefono?` · ${c.telefono}`:""}
+    </div>`).join("");
+  L("sugerencias").style.display="block";
 }
 
-function seleccionarCliente(c) {
-  S.clienteSeleccionado = c;
-  L("cliente-nombre").value = c.nombre;
-  L("sugerencias-cliente").style.display = "none";
-  L("cliente-encontrado-section").style.display = "block";
-  L("cliente-nuevo-section").style.display = "none";
-  L("cliente-avatar").textContent = c.nombre[0].toUpperCase();
-  L("cliente-nombre-display").textContent = c.nombre;
-  L("cliente-meta-display").textContent = [c.telefono, c.email].filter(Boolean).join(" · ") || "Sin datos adicionales";
+function selCliente(c) {
+  S.clienteSel=c;
+  L("cli-nombre").value=c.nombre;
+  L("sugerencias").style.display="none";
+  L("cli-encontrado").style.display="block";
+  L("cli-nuevo").style.display="none";
+  L("cli-avatar").textContent=c.nombre[0].toUpperCase();
+  L("cli-nombre-disp").textContent=c.nombre;
+  L("cli-meta-disp").textContent=[c.telefono,c.email].filter(Boolean).join(" · ")||"Sin datos adicionales";
 }
 
 function limpiarCliente() {
-  S.clienteSeleccionado = null;
-  L("cliente-nombre").value = "";
-  L("cliente-encontrado-section").style.display = "none";
-  L("cliente-nuevo-section").style.display = "block";
+  S.clienteSel=null;
+  L("cli-nombre").value="";
+  L("cli-encontrado").style.display="none";
+  L("cli-nuevo").style.display="grid";
 }
 
-// Cerrar sugerencias al tocar fuera
-document.addEventListener("click", e => {
-  if (!e.target.closest("#cliente-nombre") && !e.target.closest("#sugerencias-cliente")) {
-    L("sugerencias-cliente").style.display = "none";
-  }
+document.addEventListener("click", e=>{
+  if (!e.target.closest("#cli-nombre")&&!e.target.closest("#sugerencias"))
+    L("sugerencias").style.display="none";
 });
 
 // CONFIRMAR VENTA
-L("btn-confirmar-venta").addEventListener("click", async () => {
-  const canal = L("venta-canal").value;
-  const esPlataforma = canal === "Rappi" || canal === "Uber Eats";
-  const sucursal = S.rol === "Vendedor" ? S.sucursal : L("venta-sucursal").value;
+L("btn-confirmar").addEventListener("click", async ()=>{
+  const canal=L("venta-canal").value;
+  const metodo=L("venta-metodo").value;
+  const sucursal=getSucursalVenta();
 
-  let cliente = null;
-  if (!esPlataforma) {
-    const nombre = L("cliente-nombre").value.trim();
-    if (!nombre) { toast("El nombre del cliente es obligatorio", "error"); return; }
-    if (S.clienteSeleccionado) {
-      cliente = S.clienteSeleccionado;
-    } else {
-      cliente = {
-        nombre,
-        telefono: L("cliente-telefono").value.trim(),
-        email: L("cliente-email").value.trim()
-      };
-    }
+  if (!canal) { toast("Selecciona un canal","error"); return; }
+  if (S.carrito.length===0) { toast("Agrega al menos un producto","error"); return; }
+
+  const plataforma=esPlataforma(canal);
+  let cliente=null;
+  if (!plataforma) {
+    const nombre=L("cli-nombre").value.trim();
+    if (!nombre) { toast("El nombre del cliente es obligatorio","error"); return; }
+    cliente=S.clienteSel||{nombre, telefono:L("cli-tel").value.trim(), email:L("cli-email").value.trim()};
   }
 
-  const btn = L("btn-confirmar-venta");
-  btn.disabled = true; btn.textContent = "Registrando...";
+  const btn=L("btn-confirmar");
+  btn.disabled=true; btn.textContent="Registrando...";
 
-  const res = await api("registrarVenta", {
-    items: S.carrito.map(i => ({ sabor: i.sabor, tamano: i.tamano, cantidad: i.cantidad })),
-    canal,
-    metodoPago: L("venta-metodo").value,
-    sucursal,
-    cliente
+  const res=await api("registrarVenta",{
+    items:S.carrito.map(i=>({sabor:i.sabor,tamano:i.tamano,cantidad:i.cantidad})),
+    canal, metodoPago:metodo, sucursal, cliente
   });
 
   if (res.ok) {
-    const total = S.carrito.reduce((s, i) => s + i.subtotal, 0);
-    toast(`✅ Venta $${total.toLocaleString()} registrada`, "success");
-    resetVenta();
+    const total=S.carrito.reduce((s,i)=>s+i.subtotal,0);
+    toast(`✅ Venta $${total.toLocaleString()} registrada`,"success");
+    limpiarVenta();
     cargarStock();
-    // Ir a tab de ventas
-    document.querySelector('.nav-tab[data-tab="ventas"]').click();
+    setTimeout(()=>document.querySelector('.nav-tab[data-tab="ventas"]').click(), 800);
   } else {
-    toast(res.error, "error");
+    toast(res.error,"error");
   }
-
-  btn.disabled = false; btn.textContent = "Confirmar venta ✓";
+  btn.disabled=false; btn.textContent="Confirmar venta ✓";
 });
 
-// ============================================================
+function limpiarVenta() {
+  S.carrito=[]; S.clienteSel=null;
+  renderCarrito();
+  L("cli-nombre").value=""; L("cli-tel").value=""; L("cli-email").value="";
+  L("cli-encontrado").style.display="none"; L("cli-nuevo").style.display="grid";
+  L("item-cantidad").value="1";
+  L("item-disp").innerHTML="";
+}
+
+L("btn-limpiar-venta").addEventListener("click", ()=>{ limpiarVenta(); toast("Venta limpiada"); });
+
 // PRODUCCIÓN
-// ============================================================
-L("btn-cargar-prod").addEventListener("click", async () => {
-  const sabor = L("prod-sabor").value;
-  const tamano = L("prod-tamano").value;
-  const sucursal = L("prod-sucursal").value;
-  const cantidad = parseInt(L("prod-cantidad").value);
-  if (!sabor || !tamano || !sucursal || cantidad < 1) { toast("Completa todos los campos", "error"); return; }
-  const btn = L("btn-cargar-prod");
-  btn.disabled = true; btn.textContent = "Cargando...";
-  const res = await api("altaProduccion", { sabor, tamano, sucursal, cantidad });
-  if (res.ok) { toast(res.mensaje); L("prod-cantidad").value = "1"; cargarStock(); }
-  else toast(res.error, "error");
-  btn.disabled = false; btn.textContent = "Cargar producción";
+L("btn-cargar-prod").addEventListener("click", async ()=>{
+  const sabor=L("prod-sabor").value, tamano=L("prod-tamano").value;
+  const sucursal=L("prod-sucursal").value, cantidad=parseInt(L("prod-cantidad").value);
+  if(!sabor||!tamano||!sucursal||cantidad<1) { toast("Completa todos los campos","error"); return; }
+  const btn=L("btn-cargar-prod");
+  btn.disabled=true; btn.textContent="Cargando...";
+  const res=await api("altaProduccion",{sabor,tamano,sucursal,cantidad});
+  if(res.ok){toast(res.mensaje); L("prod-cantidad").value="1"; cargarStock();}
+  else toast(res.error,"error");
+  btn.disabled=false; btn.textContent="Cargar producción";
 });
 
-// ============================================================
 // VENTAS HISTORIAL
-// ============================================================
 async function cargarVentas() {
-  L("ventas-list").innerHTML = `<div class="loading"><div class="spinner"></div></div>`;
-  const res = await api("getVentas");
-  if (!res.ok) return;
+  L("ventas-list").innerHTML=`<div class="loading"><div class="spinner"></div></div>`;
+  const res=await api("getVentas");
+  if(!res.ok) return;
+  if(res.ventas.length===0){L("ventas-list").innerHTML=`<div class="empty-state"><div class="empty-text">Sin ventas registradas</div></div>`;return;}
 
-  if (res.ventas.length === 0) {
-    L("ventas-list").innerHTML = `<div class="empty-state"><div class="empty-text">Sin ventas registradas</div></div>`;
-    return;
-  }
-
-  // Agrupar por idVenta
-  const grupos = {};
-  res.ventas.forEach(v => {
-    if (!grupos[v.idVenta]) grupos[v.idVenta] = { ...v, items: [] };
-    grupos[v.idVenta].items.push({ sabor: v.sabor, tamano: v.tamano, cantidad: v.cantidad, subtotal: v.subtotal });
+  const grupos={};
+  res.ventas.forEach(v=>{
+    if(!grupos[v.idVenta]) grupos[v.idVenta]={...v,items:[]};
+    grupos[v.idVenta].items.push({sabor:v.sabor,tamano:v.tamano,cantidad:v.cantidad,subtotal:v.subtotal});
   });
 
-  L("ventas-list").innerHTML = Object.values(grupos).map(g => `
+  L("ventas-list").innerHTML=Object.values(grupos).map(g=>`
     <div class="historial-item">
-      <div class="historial-fecha">${g.fecha ? g.fecha.substring(0,16).replace('T',' ') : ''}</div>
-      <div class="historial-productos">${g.items.map(i => `${i.cantidad}× ${i.sabor} ${i.tamano}`).join(" · ")}</div>
-      <div class="historial-meta">
+      <div class="hist-fecha">${g.fecha?g.fecha.substring(0,16).replace('T',' '):''}</div>
+      <div class="hist-productos">${g.items.map(i=>`${i.cantidad}× ${i.sabor} ${i.tamano}`).join(" · ")}</div>
+      <div class="hist-meta">
         <span class="tag">${g.canal}</span>
         <span class="tag">${g.metodoPago}</span>
         <span class="tag">${g.sucursal}</span>
-        ${g.clienteNombre ? `<span class="tag">${g.clienteNombre}</span>` : ""}
+        ${g.clienteNombre?`<span class="tag">${g.clienteNombre}</span>`:""}
         <span class="tag tag-total">$${g.items.reduce((s,i)=>s+i.subtotal,0).toLocaleString()}</span>
       </div>
-    </div>
-  `).join("");
+    </div>`).join("");
 }
 
-// ============================================================
 // CATÁLOGO PANTALLA
-// ============================================================
 async function cargarCatalogoPantalla() {
-  const res = await api("getCatalogo");
-  if (!res.ok) return;
-  S.catalogo = res;
-
-  const renderItems = (items, tipo, containerId) => {
-    L(containerId).innerHTML = items.map(item => `
-      <div class="catalogo-item">
-        <span style="font-size:14px;font-weight:500">${item.nombre}
-          ${!item.activo ? '<span style="color:var(--muted);font-size:11px"> (inactivo)</span>' : ''}
-        </span>
+  const res=await api("getCatalogo");
+  if(!res.ok) return;
+  S.catalogo=res;
+  const renderList=(items,tipo,id)=>{
+    L(id).innerHTML=items.map(item=>`
+      <div class="cat-item">
+        <span style="font-size:14px;font-weight:500">${item.nombre}${!item.activo?'<span style="color:var(--muted);font-size:11px"> (inactivo)</span>':''}</span>
         ${item.activo
-          ? `<button class="btn-sm btn-sm-danger" onclick="toggleCatalogo('${tipo}','${item.nombre}',false)">Dar de baja</button>`
-          : `<button class="btn-sm btn-sm-success" onclick="toggleCatalogo('${tipo}','${item.nombre}',true)">Reactivar</button>`
-        }
-      </div>
-    `).join("");
+          ?`<button class="btn-sm btn-sm-danger" onclick="togCat('${tipo}','${item.nombre}',false)">Dar de baja</button>`
+          :`<button class="btn-sm btn-sm-success" onclick="togCat('${tipo}','${item.nombre}',true)">Reactivar</button>`}
+      </div>`).join("");
   };
-
-  renderItems(res.sabores, "Sabor", "cat-sabores");
-  renderItems(res.tamanos, "Tamaño", "cat-tamanos");
-  renderItems(res.canales || [], "Canal", "cat-canales");
+  renderList(res.sabores,"Sabor","cat-sabores");
+  renderList(res.tamanos,"Tamaño","cat-tamanos");
+  renderList(res.canales||[],"Canal","cat-canales");
 }
 
-async function toggleCatalogo(tipo, nombre, activar) {
-  if (!activar && !confirm(`¿${activar ? 'Activar' : 'Dar de baja'} "${nombre}"?`)) return;
-  const accionMap = { Sabor: activar ? "altaSabor" : "bajaSabor", Tamaño: activar ? "altaTamano" : "bajaTamano", Canal: activar ? "altaCanal" : "bajaCanal" };
-  const res = await api(accionMap[tipo], { nombre });
-  if (res.ok) { toast(res.mensaje); cargarCatalogoPantalla(); cargarCatalogo(); }
-  else toast(res.error, "error");
+async function togCat(tipo,nombre,activar) {
+  if(!activar&&!confirm(`¿Dar de baja "${nombre}"?`)) return;
+  const mapa={Sabor:activar?"altaSabor":"bajaSabor",Tamaño:activar?"altaTamano":"bajaTamano",Canal:activar?"altaCanal":"bajaCanal"};
+  const res=await api(mapa[tipo],{nombre});
+  if(res.ok){toast(res.mensaje);cargarCatalogoPantalla();cargarCatalogo();}
+  else toast(res.error,"error");
 }
 
 function abrirModalItem(tipo) {
-  S.itemTipo = tipo;
-  L("modal-item-title").textContent = `Nuevo ${tipo.toLowerCase()}`;
-  L("modal-item-label").textContent = `Nombre del ${tipo.toLowerCase()}`;
-  L("modal-item-input").value = "";
+  S.itemTipo=tipo;
+  L("modal-item-title").textContent=`Nuevo ${tipo.toLowerCase()}`;
+  L("modal-item-label").textContent=`Nombre del ${tipo.toLowerCase()}`;
+  L("modal-item-input").value="";
   L("modal-nuevo-item").classList.add("show");
 }
 
-L("btn-guardar-item").addEventListener("click", async () => {
-  const nombre = L("modal-item-input").value.trim();
-  if (!nombre) { toast("Ingresa un nombre", "error"); return; }
-  const accionMap = { Sabor: "altaSabor", Tamaño: "altaTamano" };
-  const res = await api(accionMap[S.itemTipo], { nombre });
-  if (res.ok) { toast(res.mensaje); L("modal-nuevo-item").classList.remove("show"); cargarCatalogoPantalla(); cargarCatalogo(); }
-  else toast(res.error, "error");
+L("btn-guardar-item").addEventListener("click", async ()=>{
+  const nombre=L("modal-item-input").value.trim();
+  if(!nombre){toast("Ingresa un nombre","error");return;}
+  const mapa={Sabor:"altaSabor",Tamaño:"altaTamano"};
+  const res=await api(mapa[S.itemTipo],{nombre});
+  if(res.ok){toast(res.mensaje);L("modal-nuevo-item").classList.remove("show");cargarCatalogoPantalla();cargarCatalogo();}
+  else toast(res.error,"error");
 });
 
-// ============================================================
 // PRECIOS
-// ============================================================
-async function cargarPrecios() {
-  L("precios-content").innerHTML = `<div class="loading"><div class="spinner"></div></div>`;
-  const [resP, resC] = await Promise.all([api("getPrecios"), api("getCatalogo")]);
-  if (!resP.ok || !resC.ok) return;
-  S.precios = resP.precios;
+async function cargarPrecios(silencioso=false) {
+  if(!silencioso) L("precios-content").innerHTML=`<div class="loading"><div class="spinner"></div></div>`;
+  const [resP,resC]=await Promise.all([api("getPrecios"),api("getCatalogo")]);
+  if(!resP.ok||!resC.ok) return;
+  S.precios=resP.precios;
+  if(silencioso) return;
 
-  const sabores = resC.sabores.filter(s => s.activo).map(s => s.nombre);
-  const tamanos = resC.tamanos.filter(t => t.activo).map(t => t.nombre);
-  const getP = (s, t) => { const p = resP.precios.find(p => p.sabor === s && p.tamano === t); return p ? p.precio : 0; };
+  const tamanos=(resC.tamanos||[]).filter(t=>t.activo).map(t=>t.nombre);
+  const getP=t=>{ const p=resP.precios.find(p=>p.tamano===t); return p?p.precio:0; };
 
-  let html = "";
-  sabores.forEach(sabor => {
-    html += `<div style="margin-bottom:12px"><div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">${sabor}</div>`;
-    tamanos.forEach(tamano => {
-      const precio = getP(sabor, tamano);
-      html += `<div class="precio-row"><span class="precio-label">${tamano}</span><span class="precio-val" onclick="abrirModalPrecio('${sabor}','${tamano}',${precio})">$${precio.toLocaleString()}</span></div>`;
-    });
-    html += `</div>`;
-  });
-  L("precios-content").innerHTML = html;
+  L("precios-content").innerHTML=tamanos.map(tamano=>`
+    <div class="precio-row">
+      <span class="precio-label">${tamano}</span>
+      <span class="precio-val" onclick="abrirModalPrecio('${tamano}',${getP(tamano)})">$${getP(tamano).toLocaleString()}</span>
+    </div>`).join("");
 }
 
-function abrirModalPrecio(sabor, tamano, precioActual) {
-  S.precioEditar = { sabor, tamano };
-  L("modal-precio-title").textContent = `${sabor} — ${tamano}`;
-  L("modal-precio-input").value = precioActual;
+function abrirModalPrecio(tamano, precioActual) {
+  S.precioEditar=tamano;
+  L("modal-precio-title").textContent=`Precio — ${tamano}`;
+  L("modal-precio-input").value=precioActual;
   L("modal-precio").classList.add("show");
-  setTimeout(() => L("modal-precio-input").focus(), 100);
+  setTimeout(()=>L("modal-precio-input").focus(),100);
 }
 
-L("btn-guardar-precio").addEventListener("click", async () => {
-  const precio = parseFloat(L("modal-precio-input").value);
-  if (isNaN(precio) || precio < 0) { toast("Precio inválido", "error"); return; }
-  const res = await api("updatePrecio", { ...S.precioEditar, precio });
-  if (res.ok) { toast(res.mensaje); L("modal-precio").classList.remove("show"); cargarPrecios(); S.precios = null; }
-  else toast(res.error, "error");
+L("btn-guardar-precio").addEventListener("click", async ()=>{
+  const precio=parseFloat(L("modal-precio-input").value);
+  if(isNaN(precio)||precio<0){toast("Precio inválido","error");return;}
+  const tamano=S.precioEditar;
+  // Actualizar precio para todos los sabores con ese tamaño
+  const sabores=(S.catalogo?.sabores||[]).filter(s=>s.activo).map(s=>s.nombre);
+  const promesas=sabores.map(sabor=>api("updatePrecio",{sabor,tamano,precio}));
+  const resultados=await Promise.all(promesas);
+  const ok=resultados.every(r=>r.ok);
+  if(ok){toast(`✅ Precio ${tamano} = $${precio.toLocaleString()}`);L("modal-precio").classList.remove("show");cargarPrecios();}
+  else toast("Error al guardar precio","error");
 });
 
-// ============================================================
 // USUARIOS
-// ============================================================
 async function cargarUsuarios() {
-  const res = await api("getUsuarios");
-  if (!res.ok) return;
-  L("usuarios-list").innerHTML = res.usuarios.map(u => `
+  const res=await api("getUsuarios");
+  if(!res.ok) return;
+  L("usuarios-list").innerHTML=res.usuarios.map(u=>`
     <div class="usuario-row">
-      <div class="usuario-info">
-        <div class="usuario-name"><span class="rol-chip ${u.rol==='Owner'?'rol-owner':'rol-vendedor'}">${u.rol}</span>${u.usuario}</div>
-        <div class="usuario-meta">${u.sucursal} · ${u.ultimoAcceso ? u.ultimoAcceso.substring(0,10) : 'Sin acceso aún'}</div>
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:500"><span class="rol-chip ${u.rol==='Owner'?'rol-owner':'rol-vendedor'}">${u.rol}</span>${u.usuario}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${u.sucursal} · ${u.ultimoAcceso?u.ultimoAcceso.substring(0,10):'Sin acceso aún'}</div>
       </div>
-      ${u.usuario !== S.usuario
-        ? `<button class="toggle-btn ${u.activo?'activo':''}" onclick="toggleUsuario('${u.usuario}')">${u.activo?'Activo':'Inactivo'}</button>`
-        : `<span style="font-size:11px;color:var(--muted)">Tú</span>`}
-    </div>
-  `).join("");
+      ${u.usuario!==S.usuario
+        ?`<button class="toggle-btn ${u.activo?'activo':''}" onclick="togUsuario('${u.usuario}')">${u.activo?'Activo':'Inactivo'}</button>`
+        :`<span style="font-size:11px;color:var(--muted)">Tú</span>`}
+    </div>`).join("");
 }
 
-async function toggleUsuario(usuario) {
-  const res = await api("toggleUsuario", { usuario });
-  if (res.ok) { toast(res.mensaje); cargarUsuarios(); }
-  else toast(res.error, "error");
+async function togUsuario(usuario) {
+  const res=await api("toggleUsuario",{usuario});
+  if(res.ok){toast(res.mensaje);cargarUsuarios();}else toast(res.error,"error");
 }
 
-L("btn-guardar-usuario").addEventListener("click", async () => {
-  const usuario = L("nu-usuario").value.trim();
-  const password = L("nu-password").value;
-  const rol = L("nu-rol").value;
-  const sucursal = L("nu-sucursal").value;
-  if (!usuario || !password) { toast("Completa todos los campos", "error"); return; }
-  const res = await api("crearUsuario", { usuario, password, rol, sucursal });
-  if (res.ok) { toast(res.mensaje); L("modal-nuevo-usuario").classList.remove("show"); cargarUsuarios(); }
-  else toast(res.error, "error");
+L("btn-guardar-usuario").addEventListener("click", async ()=>{
+  const usuario=L("nu-usuario").value.trim(), password=L("nu-password").value;
+  const rol=L("nu-rol").value, sucursal=L("nu-sucursal").value;
+  if(!usuario||!password){toast("Completa todos los campos","error");return;}
+  const res=await api("crearUsuario",{usuario,password,rol,sucursal});
+  if(res.ok){toast(res.mensaje);L("modal-nuevo-usuario").classList.remove("show");cargarUsuarios();}
+  else toast(res.error,"error");
 });
 
-L("btn-cambiar-pw").addEventListener("click", async () => {
-  const actual = L("pw-actual").value;
-  const nueva = L("pw-nueva").value;
-  if (!actual || !nueva) { toast("Completa ambos campos", "error"); return; }
-  const res = await api("cambiarPassword", { usuario: S.usuario, passwordActual: actual, passwordNuevo: nueva });
-  if (res.ok) { toast(res.mensaje); L("pw-actual").value = ""; L("pw-nueva").value = ""; }
-  else toast(res.error, "error");
+L("btn-cambiar-pw").addEventListener("click", async ()=>{
+  const actual=L("pw-actual").value, nueva=L("pw-nueva").value;
+  if(!actual||!nueva){toast("Completa ambos campos","error");return;}
+  const res=await api("cambiarPassword",{usuario:S.usuario,passwordActual:actual,passwordNuevo:nueva});
+  if(res.ok){toast(res.mensaje);L("pw-actual").value="";L("pw-nueva").value="";}
+  else toast(res.error,"error");
 });
 
-// ============================================================
 // AUDITORÍA
-// ============================================================
 async function cargarAuditoria() {
-  const res = await api("getAuditoria");
-  if (!res.ok) return;
-  L("auditoria-list").innerHTML = res.registros.length === 0
-    ? `<div class="empty-state"><div class="empty-text">Sin registros</div></div>`
-    : res.registros.map(r => `
+  const res=await api("getAuditoria");
+  if(!res.ok) return;
+  L("auditoria-list").innerHTML=res.registros.length===0
+    ?`<div class="empty-state"><div class="empty-text">Sin registros</div></div>`
+    :res.registros.map(r=>`
       <div class="audit-row">
         <div class="audit-accion">${r.accion}</div>
         <div class="audit-detalle">${r.detalles}</div>
-        <div class="audit-meta">${r.usuario} · ${r.fecha ? r.fecha.substring(0,16).replace('T',' ') : ''}</div>
+        <div class="audit-meta">${r.usuario} · ${r.fecha?r.fecha.substring(0,16).replace('T',' '):''}</div>
       </div>`).join("");
 }
 
-// ============================================================
 // LOGOUT
-// ============================================================
-L("btn-logout").addEventListener("click", () => {
-  S = { token: null, usuario: null, rol: null, sucursal: null, catalogo: null, stock: null, carrito: [], clienteSeleccionado: null, precioEditar: null, filtroSuc: null, filtroTam: null };
-  L("app").style.display = "none";
-  L("login-screen").style.display = "flex";
-  L("login-user").value = ""; L("login-pass").value = "";
+L("btn-logout").addEventListener("click", ()=>{
+  S={token:null,usuario:null,rol:null,sucursal:null,catalogo:null,precios:null,stock:null,carrito:[],clienteSel:null,filtroSuc:null,filtroTam:null};
+  L("app").style.display="none";
+  L("login-screen").style.display="flex";
+  L("login-user").value=""; L("login-pass").value="";
 });
 
-// Cerrar modals al tocar overlay
-document.querySelectorAll(".modal-overlay").forEach(o => {
-  o.addEventListener("click", e => { if (e.target === o) o.classList.remove("show"); });
+document.querySelectorAll(".modal-overlay").forEach(o=>{
+  o.addEventListener("click",e=>{ if(e.target===o) o.classList.remove("show"); });
 });
 </script>
 </body>
