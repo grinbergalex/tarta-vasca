@@ -942,13 +942,34 @@ let state = {
 // ============================================================
 async function api(accion, body = {}) {
   const payload = { accion, token: state.token, ...body };
+  
+  // Apps Script requiere form-urlencoded para evitar CORS preflight
+  const formData = new FormData();
+  formData.append("payload", JSON.stringify(payload));
+  
   const res = await fetch(API_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
     redirect: "follow",
+    mode: "cors",
   });
-  return await res.json();
+  
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch(e) {
+    // Apps Script a veces devuelve HTML en el redirect — intentar con JSONP workaround
+    return await apiGet(accion, payload);
+  }
+}
+
+async function apiGet(accion, payload) {
+  // Fallback: usar GET con parámetro para acciones simples
+  const params = encodeURIComponent(JSON.stringify(payload));
+  const res = await fetch(API_URL + "?data=" + params, { redirect: "follow" });
+  const text = await res.text();
+  try { return JSON.parse(text); } 
+  catch(e) { return { ok: false, error: "Error de comunicación con el servidor." }; }
 }
 
 // ============================================================
