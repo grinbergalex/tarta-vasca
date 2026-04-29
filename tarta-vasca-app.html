@@ -538,14 +538,35 @@ let S = {
 // ============================================================
 // API
 // ============================================================
+// Acciones de solo lectura — usan GET
+const ACCIONES_LECTURA = ["getCatalogo","getStock","getPrecios","getUsuarios","getAuditoria","buscarCliente","getHistorialCliente","getVentas"];
+
 async function api(accion, body = {}) {
   const payload = { accion, token: S.token, ...body };
   try {
-    const res = await fetch(API_URL + "?data=" + encodeURIComponent(JSON.stringify(payload)), {
-      redirect: "follow"
-    });
-    const text = await res.text();
-    return JSON.parse(text);
+    if (ACCIONES_LECTURA.includes(accion)) {
+      // GET para lecturas
+      const res = await fetch(API_URL + "?data=" + encodeURIComponent(JSON.stringify(payload)), {
+        redirect: "follow"
+      });
+      const text = await res.text();
+      return JSON.parse(text);
+    } else {
+      // POST para escrituras (registrarVenta, altaProduccion, updatePrecio, etc.)
+      const res = await fetch(API_URL, {
+        method: "POST",
+        body: JSON.stringify(payload),
+        redirect: "follow"
+      });
+      const text = await res.text();
+      try {
+        return JSON.parse(text);
+      } catch(e) {
+        // Si falla el parse, intentar con GET como fallback
+        const res2 = await fetch(API_URL + "?data=" + encodeURIComponent(JSON.stringify(payload)), { redirect: "follow" });
+        return JSON.parse(await res2.text());
+      }
+    }
   } catch(e) {
     return { ok: false, error: "Error de conexión. Verifica tu internet." };
   }
@@ -975,8 +996,8 @@ L("btn-confirmar-venta").addEventListener("click", async () => {
     toast(`✅ Venta $${total.toLocaleString()} registrada`, "success");
     resetVenta();
     cargarStock();
-    // Cambiar al tab de stock
-    document.querySelector('.nav-tab[data-tab="stock"]').click();
+    // Ir a tab de ventas
+    document.querySelector('.nav-tab[data-tab="ventas"]').click();
   } else {
     toast(res.error, "error");
   }
