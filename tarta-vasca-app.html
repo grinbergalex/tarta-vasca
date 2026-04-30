@@ -588,7 +588,7 @@ function esPlataforma(canal) { return canal==="Rappi"||canal==="Uber Eats"; }
 function actualizarMetodoPago() {
   const canal = L("venta-canal")?.value;
   if (!canal) return;
-  llenar("venta-metodo", esPlataforma(canal) ? [canal] : ["Efectivo","Tarjeta","Transferencia"]);
+  llenar("venta-metodo", esPlataforma(canal) ? [canal] : ["Efectivo","Tarjeta de débito","Tarjeta de crédito","Transferencia"]);
 }
 
 function actualizarUICanal() {
