@@ -83,7 +83,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 .cad-bad{background:#ffebee;color:#c0392b}
 .suc-tag{font-size:10px;padding:2px 7px;border-radius:8px;background:var(--warm);color:var(--muted)}
 
-/* VENTA — UNA SOLA PANTALLA */
+/* VENTA â UNA SOLA PANTALLA */
 .venta-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
 .canal-aviso{display:none;align-items:center;gap:8px;margin-top:8px;background:#e8f5e9;border-radius:10px;padding:10px 14px;font-size:13px;color:var(--green)}
 .separador{height:1px;background:var(--border);margin:18px 0}
@@ -125,7 +125,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 .tag{font-size:10px;padding:2px 8px;border-radius:8px;background:var(--warm);color:var(--muted)}
 .tag-total{background:#e8f5e9;color:var(--success)}
 
-/* CATÁLOGO */
+/* CATÃLOGO */
 .cat-item{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--warm)}
 .cat-item:last-child{border-bottom:none}
 .btn-sm{padding:6px 12px;border-radius:8px;font-size:12px;border:1px solid var(--border);background:white;cursor:pointer;font-family:'DM Sans',sans-serif}
@@ -180,12 +180,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 <!-- LOGIN -->
 <div id="login-screen">
   <div class="login-logo">Tarta Vasca</div>
-  <div class="login-tagline">Sistema de gestión</div>
+  <div class="login-tagline">Sistema de gestiÃ³n</div>
   <div class="login-card">
     <label class="field-label">Usuario</label>
     <input class="field-input" type="text" id="login-user" placeholder="tu usuario" autocapitalize="none">
-    <label class="field-label">Contraseña</label>
-    <input class="field-input" type="password" id="login-pass" placeholder="••••••••">
+    <label class="field-label">ContraseÃ±a</label>
+    <input class="field-input" type="password" id="login-pass" placeholder="â¢â¢â¢â¢â¢â¢â¢â¢">
     <button class="btn-login" id="btn-login">Entrar</button>
     <div class="login-error" id="login-error"></div>
   </div>
@@ -204,12 +204,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
   <nav class="app-nav">
     <div class="nav-tab active" data-tab="stock">Stock</div>
     <div class="nav-tab" data-tab="venta">Nueva venta</div>
-    <div class="nav-tab owner-only" data-tab="produccion">Producción</div>
+    <div class="nav-tab owner-only" data-tab="produccion">ProducciÃ³n</div>
     <div class="nav-tab owner-only" data-tab="ventas">Ventas</div>
-    <div class="nav-tab owner-only" data-tab="catalogo">Catálogo</div>
+    <div class="nav-tab owner-only" data-tab="catalogo">CatÃ¡logo</div>
     <div class="nav-tab owner-only" data-tab="precios">Precios</div>
     <div class="nav-tab owner-only" data-tab="usuarios">Usuarios</div>
-    <div class="nav-tab owner-only" data-tab="auditoria">Auditoría</div>
+    <div class="nav-tab owner-only" data-tab="auditoria">AuditorÃ­a</div>
   </nav>
 
   <main class="app-content">
@@ -230,7 +230,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
       </div>
     </div>
 
-    <!-- VENTA — UNA SOLA PANTALLA -->
+    <!-- VENTA â UNA SOLA PANTALLA -->
     <div id="tab-venta" class="tab-pane" style="display:none">
       <div class="card">
         <div class="card-title">Nueva venta</div>
@@ -242,12 +242,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
             <select class="form-select" id="venta-canal"></select>
           </div>
           <div class="form-group" style="margin-bottom:0">
-            <label class="form-label">Método de pago</label>
+            <label class="form-label">MÃ©todo de pago</label>
             <select class="form-select" id="venta-metodo"></select>
           </div>
         </div>
         <div class="canal-aviso" id="canal-aviso">
-          <span>✓</span><span>Plataforma — no se piden datos del cliente</span>
+          <span>â</span><span>Plataforma â no se piden datos del cliente</span>
         </div>
 
         <div class="separador"></div>
@@ -267,7 +267,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
               <select class="form-select" id="item-sabor"></select>
             </div>
             <div class="form-group">
-              <label class="form-label">Tamaño</label>
+              <label class="form-label">TamaÃ±o</label>
               <select class="form-select" id="item-tamano"></select>
             </div>
           </div>
@@ -285,7 +285,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 
         <!-- CARRITO -->
         <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Carrito</div>
-        <div id="carrito-items"><div class="carrito-vacio">Sin productos — agrega uno arriba</div></div>
+        <div id="carrito-items"><div class="carrito-vacio">Sin productos â agrega uno arriba</div></div>
         <div id="carrito-total-bar" class="carrito-total-bar" style="display:none">
           <span class="total-label">Total</span>
           <span class="total-num" id="total-num">$0</span>
@@ -310,7 +310,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
                   <div class="cli-nombre" id="cli-nombre-disp"></div>
                   <div class="cli-meta" id="cli-meta-disp"></div>
                 </div>
-                <button onclick="limpiarCliente()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:20px">×</button>
+                <button onclick="limpiarCliente()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:20px">Ã</button>
               </div>
             </div>
           </div>
@@ -329,21 +329,21 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <div class="separador"></div>
 
         <!-- CONFIRMAR -->
-        <button class="btn-main btn-green" id="btn-confirmar" style="margin-top:0">Confirmar venta ✓</button>
+        <button class="btn-main btn-green" id="btn-confirmar" style="margin-top:0">Confirmar venta â</button>
         <button class="btn-outline" id="btn-limpiar-venta">Limpiar todo</button>
       </div>
     </div>
 
-    <!-- PRODUCCIÓN -->
+    <!-- PRODUCCIÃN -->
     <div id="tab-produccion" class="tab-pane" style="display:none">
       <div class="card">
-        <div class="card-title">Cargar producción</div>
+        <div class="card-title">Cargar producciÃ³n</div>
         <div class="card-sub">Alta de pasteles producidos hoy</div>
         <div class="form-group"><label class="form-label">Sabor</label><select class="form-select" id="prod-sabor"></select></div>
-        <div class="form-group"><label class="form-label">Tamaño</label><select class="form-select" id="prod-tamano"></select></div>
+        <div class="form-group"><label class="form-label">TamaÃ±o</label><select class="form-select" id="prod-tamano"></select></div>
         <div class="form-group"><label class="form-label">Sucursal</label><select class="form-select" id="prod-sucursal"></select></div>
         <div class="form-group"><label class="form-label">Cantidad</label><input class="form-input" type="number" id="prod-cantidad" min="1" value="1"></div>
-        <button class="btn-main btn-green" id="btn-cargar-prod">Cargar producción</button>
+        <button class="btn-main btn-green" id="btn-cargar-prod">Cargar producciÃ³n</button>
       </div>
     </div>
 
@@ -351,12 +351,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <div id="tab-ventas" class="tab-pane" style="display:none">
       <div class="card">
         <div class="card-title">Historial de ventas</div>
-        <div class="card-sub">Últimas operaciones</div>
+        <div class="card-sub">Ãltimas operaciones</div>
         <div id="ventas-list"><div class="loading"><div class="spinner"></div></div></div>
       </div>
     </div>
 
-    <!-- CATÁLOGO -->
+    <!-- CATÃLOGO -->
     <div id="tab-catalogo" class="tab-pane" style="display:none">
       <div class="card">
         <div class="card-title">Sabores</div>
@@ -364,9 +364,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <button class="btn-outline" onclick="abrirModalItem('Sabor')" style="margin-top:12px">+ Agregar sabor</button>
       </div>
       <div class="card">
-        <div class="card-title">Tamaños</div>
+        <div class="card-title">TamaÃ±os</div>
         <div id="cat-tamanos"><div class="loading"><div class="spinner"></div></div></div>
-        <button class="btn-outline" onclick="abrirModalItem('Tamaño')" style="margin-top:12px">+ Agregar tamaño</button>
+        <button class="btn-outline" onclick="abrirModalItem('TamaÃ±o')" style="margin-top:12px">+ Agregar tamaÃ±o</button>
       </div>
       <div class="card">
         <div class="card-title">Canales de venta</div>
@@ -378,7 +378,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <div id="tab-precios" class="tab-pane" style="display:none">
       <div class="card">
         <div class="card-title">Precios</div>
-        <p class="precio-nota">Los precios son por tamaño y aplican a todos los sabores. Toca un precio para editarlo.</p>
+        <p class="precio-nota">Los precios son por tamaÃ±o y aplican a todos los sabores. Toca un precio para editarlo.</p>
         <div id="precios-content"><div class="loading"><div class="spinner"></div></div></div>
       </div>
     </div>
@@ -391,18 +391,18 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <button class="btn-outline" onclick="document.getElementById('modal-nuevo-usuario').classList.add('show')" style="margin-top:12px">+ Nuevo usuario</button>
       </div>
       <div class="card">
-        <div class="card-title">Cambiar mi contraseña</div>
-        <div class="form-group"><label class="form-label">Contraseña actual</label><input class="form-input" type="password" id="pw-actual" placeholder="••••••••"></div>
-        <div class="form-group"><label class="form-label">Nueva contraseña</label><input class="form-input" type="password" id="pw-nueva" placeholder="••••••••"></div>
-        <button class="btn-main" id="btn-cambiar-pw">Cambiar contraseña</button>
+        <div class="card-title">Cambiar mi contraseÃ±a</div>
+        <div class="form-group"><label class="form-label">ContraseÃ±a actual</label><input class="form-input" type="password" id="pw-actual" placeholder="â¢â¢â¢â¢â¢â¢â¢â¢"></div>
+        <div class="form-group"><label class="form-label">Nueva contraseÃ±a</label><input class="form-input" type="password" id="pw-nueva" placeholder="â¢â¢â¢â¢â¢â¢â¢â¢"></div>
+        <button class="btn-main" id="btn-cambiar-pw">Cambiar contraseÃ±a</button>
       </div>
     </div>
 
-    <!-- AUDITORÍA -->
+    <!-- AUDITORÃA -->
     <div id="tab-auditoria" class="tab-pane" style="display:none">
       <div class="card">
-        <div class="card-title">Auditoría</div>
-        <div class="card-sub">Últimas 100 acciones</div>
+        <div class="card-title">AuditorÃ­a</div>
+        <div class="card-sub">Ãltimas 100 acciones</div>
         <div id="auditoria-list"><div class="loading"><div class="spinner"></div></div></div>
       </div>
     </div>
@@ -415,7 +415,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
   <div class="modal">
     <div class="modal-handle"></div>
     <div class="modal-title" id="modal-precio-title">Editar precio</div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Este precio aplica a todos los sabores de este tamaño.</p>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Este precio aplica a todos los sabores de este tamaÃ±o.</p>
     <div class="form-group"><label class="form-label">Nuevo precio ($)</label><input class="form-input" type="number" id="modal-precio-input" min="0"></div>
     <button class="btn-main" id="btn-guardar-precio">Guardar</button>
     <button class="btn-outline" onclick="document.getElementById('modal-precio').classList.remove('show')">Cancelar</button>
@@ -439,7 +439,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <div class="modal-handle"></div>
     <div class="modal-title">Nuevo usuario</div>
     <div class="form-group"><label class="form-label">Usuario</label><input class="form-input" type="text" id="nu-usuario" autocapitalize="none"></div>
-    <div class="form-group"><label class="form-label">Contraseña temporal</label><input class="form-input" type="text" id="nu-password"></div>
+    <div class="form-group"><label class="form-label">ContraseÃ±a temporal</label><input class="form-input" type="text" id="nu-password"></div>
     <div class="form-group"><label class="form-label">Rol</label><select class="form-select" id="nu-rol"><option value="Vendedor">Vendedor</option><option value="Owner">Owner</option></select></div>
     <div class="form-group"><label class="form-label">Sucursal</label><select class="form-select" id="nu-sucursal"><option value="Cuajimalpa">Cuajimalpa</option><option value="Polanco">Polanco</option><option value="Ambas">Ambas</option></select></div>
     <button class="btn-main" id="btn-guardar-usuario">Crear usuario</button>
@@ -476,7 +476,7 @@ async function api(accion, body={}) {
         return JSON.parse(await r2.text());
       }
     }
-  } catch(e) { return {ok:false, error:"Error de conexión."}; }
+  } catch(e) { return {ok:false, error:"Error de conexiÃ³n."}; }
 }
 
 function L(id) { return document.getElementById(id); }
@@ -498,14 +498,14 @@ async function doLogin() {
   const password = L("login-pass").value;
   const err = L("login-error");
   const btn = L("btn-login");
-  if (!usuario||!password) { err.textContent="Ingresa usuario y contraseña."; err.style.display="block"; return; }
+  if (!usuario||!password) { err.textContent="Ingresa usuario y contraseÃ±a."; err.style.display="block"; return; }
   btn.disabled=true; btn.textContent="Entrando..."; err.style.display="none";
   const res = await api("login", {usuario, password});
   if (res.ok) {
     S.token=res.token; S.usuario=res.usuario; S.rol=res.rol; S.sucursal=res.sucursal;
     iniciarApp();
   } else {
-    err.textContent=res.error||"Error al iniciar sesión."; err.style.display="block";
+    err.textContent=res.error||"Error al iniciar sesiÃ³n."; err.style.display="block";
   }
   btn.disabled=false; btn.textContent="Entrar";
 }
@@ -540,7 +540,7 @@ function setupNav() {
   });
 }
 
-// CATÁLOGO
+// CATÃLOGO
 async function cargarCatalogo() {
   const res = await api("getCatalogo");
   if (!res.ok) return;
@@ -568,7 +568,7 @@ function poblarSelectsVenta() {
   if (S.rol==="Vendedor") L("venta-suc-group").style.display="none";
 }
 
-// Solo mostrar sabores/tamaños que tienen stock disponible
+// Solo mostrar sabores/tamaÃ±os que tienen stock disponible
 function stockConDisponibilidad(campo) {
   if (!S.stock) return [];
   const sucursal = S.rol==="Vendedor" ? S.sucursal : null;
@@ -632,7 +632,7 @@ function renderStock() {
 
   if(S.catalogo&&S.rol==="Owner") {
     const sucs=(S.catalogo.sucursales||[]).filter(s=>s.activo).map(s=>s.nombre);
-    L("filtros-suc").innerHTML=`<div class="chip ${!S.filtroSuc?'active':''}" data-suc="">Todas</div>`+sucs.map(s=>`<div class="chip ${S.filtroSuc===s?'active':''}" data-suc="${s}">${s}</div>`).join("");
+    L("filtros-suc").innerHTML<`<div class="chip ${!S.filtroSuc?'active':''}" data-suc="">Todas</div>`+sucs.map(s=>`<div class="chip ${S.filtroSuc===s?'active':''}" data-suc="${s}">${s}</div>`).join("");
     L("filtros-suc").querySelectorAll(".chip").forEach(c=>c.addEventListener("click",()=>{S.filtroSuc=c.dataset.suc||null;renderStock();}));
   }
   if(S.catalogo) {
@@ -641,7 +641,7 @@ function renderStock() {
     L("filtros-tam").querySelectorAll(".chip").forEach(c=>c.addEventListener("click",()=>{S.filtroTam=c.dataset.tam||null;renderStock();}));
   }
 
-  if(f.length===0) { L("stock-content").innerHTML=`<div class="empty-state"><div class="empty-icon">📦</div><div class="empty-text">Sin stock disponible</div></div>`; return; }
+  if(f.length===0) { L("stock-content").innerHTML=`<div class="empty-state"><div class="empty-icon">ð¦</div><div class="empty-text">Sin stock disponible</div></div>`; return; }
 
   L("stock-content").innerHTML=`<table class="stock-table">
     <thead><tr><th>Sabor</th><th>Tam.</th>${S.rol==="Owner"?"<th>Suc.</th>":""}<th>Cant.</th><th>Vence</th></tr></thead>
@@ -681,7 +681,7 @@ function calcDisp(sabor, tamano) {
 
 function getPrecio(tamano) {
   if (!S.precios) return 0;
-  // Precio por tamaño — tomar el primero que coincida
+  // Precio por tamaÃ±o â tomar el primero que coincida
   const p = S.precios.find(p=>p.tamano===tamano);
   return p ? p.precio : 0;
 }
@@ -693,7 +693,7 @@ function actualizarDisp() {
   const d=calcDisp(sabor,tamano);
   const cls=d<=0?"disp-out":d<=2?"disp-low":"disp-ok";
   const txt=d<=0?"Sin stock":`${d} disponibles`;
-  L("item-disp").innerHTML=`<span class="disp-badge ${cls}">${txt}</span>`;
+  L("item-disp").innerHTML<`<span class="disp-badge ${cls}">${txt}</span>`;
 }
 
 L("item-sabor")?.addEventListener("change", actualizarDisp);
@@ -704,7 +704,7 @@ L("btn-agregar-item").addEventListener("click", ()=>{
   const sabor=L("item-sabor").value;
   const tamano=L("item-tamano").value;
   const cantidad=parseInt(L("item-cantidad").value)||1;
-  if (!sabor||!tamano) { toast("Selecciona sabor y tamaño","error"); return; }
+  if (!sabor||!tamano) { toast("Selecciona sabor y tamaÃ±o","error"); return; }
   const disp=calcDisp(sabor,tamano);
   if (disp<cantidad) { toast(`Solo hay ${disp} de ${sabor} ${tamano}`,"error"); return; }
   const precio=getPrecio(tamano);
@@ -712,13 +712,13 @@ L("btn-agregar-item").addEventListener("click", ()=>{
   L("item-cantidad").value="1";
   renderCarrito();
   actualizarDisp();
-  toast(`${sabor} ${tamano} × ${cantidad} agregado`);
+  toast(`${sabor} ${tamano} Ã ${cantidad} agregado`);
 });
 
 function renderCarrito() {
   const items=L("carrito-items");
   if (S.carrito.length===0) {
-    items.innerHTML=`<div class="carrito-vacio">Sin productos — agrega uno arriba</div>`;
+    items.innerHTML=`<div class="carrito-vacio">Sin productos â agrega uno arriba</div>`;
     L("carrito-total-bar").style.display="none";
     return;
   }
@@ -726,10 +726,10 @@ function renderCarrito() {
     <div class="carrito-item">
       <div class="carrito-info">
         <div class="carrito-nombre">${item.sabor} ${item.tamano}</div>
-        <div class="carrito-sub">${item.cantidad} × $${item.precio.toLocaleString()}</div>
+        <div class="carrito-sub">${item.cantidad} Ã $${item.precio.toLocaleString()}</div>
       </div>
       <span class="carrito-precio">$${item.subtotal.toLocaleString()}</span>
-      <button class="btn-remove" onclick="quitarItem(${i})">×</button>
+      <button class="btn-remove" onclick="quitarItem(${i})">Ã</button>
     </div>`).join("");
   const total=S.carrito.reduce((s,i)=>s+i.subtotal,0);
   L("total-num").textContent="$"+total.toLocaleString();
@@ -742,7 +742,7 @@ function quitarItem(idx) {
   actualizarDisp();
 }
 
-// Búsqueda cliente
+// BÃºsqueda cliente
 let searchTO;
 L("cli-nombre")?.addEventListener("input", ()=>{
   clearTimeout(searchTO);
@@ -756,7 +756,7 @@ async function buscarCliente(term) {
   if (!res.ok||res.clientes.length===0) { L("sugerencias").style.display="none"; return; }
   L("sugerencias").innerHTML=res.clientes.map(c=>`
     <div class="sug-item" onclick='selCliente(${JSON.stringify(c).replace(/'/g,"\\'")})''>
-      <strong>${c.nombre}</strong>${c.telefono?` · ${c.telefono}`:""}
+      <strong>${c.nombre}</strong>${c.telefono?` Â· ${c.telefono}`:""}
     </div>`).join("");
   L("sugerencias").style.display="block";
 }
@@ -769,7 +769,7 @@ function selCliente(c) {
   L("cli-nuevo").style.display="none";
   L("cli-avatar").textContent=c.nombre[0].toUpperCase();
   L("cli-nombre-disp").textContent=c.nombre;
-  L("cli-meta-disp").textContent=[c.telefono,c.email].filter(Boolean).join(" · ")||"Sin datos adicionales";
+  L("cli-meta-disp").textContent=[c.telefono,c.email].filter(Boolean).join(" Â· ")||"Sin datos adicionales";
 }
 
 function limpiarCliente() {
@@ -811,14 +811,14 @@ L("btn-confirmar").addEventListener("click", async ()=>{
 
   if (res.ok) {
     const total=S.carrito.reduce((s,i)=>s+i.subtotal,0);
-    toast(`✅ Venta $${total.toLocaleString()} registrada`,"success");
+    toast(`â Venta $${total.toLocaleString()} registrada`,"success");
     limpiarVenta();
     cargarStock();
     setTimeout(()=>document.querySelector('.nav-tab[data-tab="ventas"]').click(), 800);
   } else {
     toast(res.error,"error");
   }
-  btn.disabled=false; btn.textContent="Confirmar venta ✓";
+  btn.disabled=false; btn.textContent="Confirmar venta â";
 });
 
 function limpiarVenta() {
@@ -832,7 +832,7 @@ function limpiarVenta() {
 
 L("btn-limpiar-venta").addEventListener("click", ()=>{ limpiarVenta(); toast("Venta limpiada"); });
 
-// PRODUCCIÓN
+// PRODUCCIÃN
 L("btn-cargar-prod").addEventListener("click", async ()=>{
   const sabor=L("prod-sabor").value, tamano=L("prod-tamano").value;
   const sucursal=L("prod-sucursal").value, cantidad=parseInt(L("prod-cantidad").value);
@@ -842,15 +842,15 @@ L("btn-cargar-prod").addEventListener("click", async ()=>{
   const res=await api("altaProduccion",{sabor,tamano,sucursal,cantidad});
   if(res.ok){toast(res.mensaje); L("prod-cantidad").value="1"; cargarStock();}
   else toast(res.error,"error");
-  btn.disabled=false; btn.textContent="Cargar producción";
+  btn.disabled=false; btn.textContent="Cargar producciÃ³n";
 });
 
 // VENTAS HISTORIAL
 async function cargarVentas() {
-  L("ventas-list").innerHTML=`<div class="loading"><div class="spinner"></div></div>`;
+  L("ventas-list").innerHTML<`<div class="loading"><div class="spinner"></div></div>`;
   const res=await api("getVentas");
   if(!res.ok) return;
-  if(res.ventas.length===0){L("ventas-list").innerHTML=`<div class="empty-state"><div class="empty-text">Sin ventas registradas</div></div>`;return;}
+  if(res.ventas.length===0){L("ventas-list").innerHTML<`<div class="empty-state"><div class="empty-text">Sin ventas registradas</div></div>`;return;}
 
   const grupos={};
   res.ventas.forEach(v=>{
@@ -861,7 +861,7 @@ async function cargarVentas() {
   L("ventas-list").innerHTML=Object.values(grupos).map(g=>`
     <div class="historial-item">
       <div class="hist-fecha">${g.fecha?g.fecha.substring(0,16).replace('T',' '):''}</div>
-      <div class="hist-productos">${g.items.map(i=>`${i.cantidad}× ${i.sabor} ${i.tamano}`).join(" · ")}</div>
+      <div class="hist-productos">${g.items.map(i=>`${i.cantidad}Ã ${i.sabor} ${i.tamano}`).join(" Â· ")}</div>
       <div class="hist-meta">
         <span class="tag">${g.canal}</span>
         <span class="tag">${g.metodoPago}</span>
@@ -872,28 +872,26 @@ async function cargarVentas() {
     </div>`).join("");
 }
 
-// CATÁLOGO PANTALLA
+// CATÃLOGO PANTALLA
 async function cargarCatalogoPantalla() {
   const res=await api("getCatalogo");
   if(!res.ok) return;
   S.catalogo=res;
   const renderList=(items,tipo,id)=>{
-    L(id).innerHTML=items.map(item=>`
+    L(id).innerHTML=items.filter(item=>item.activo).map(item=>`
       <div class="cat-item">
-        <span style="font-size:14px;font-weight:500">${item.nombre}${!item.activo?'<span style="color:var(--muted);font-size:11px"> (inactivo)</span>':''}</span>
-        ${item.activo
-          ?`<button class="btn-sm btn-sm-danger" onclick="togCat('${tipo}','${item.nombre}',false)">Dar de baja</button>`
-          :`<button class="btn-sm btn-sm-success" onclick="togCat('${tipo}','${item.nombre}',true)">Reactivar</button>`}
+        <span style="font-size:14px;font-weight:500">${item.nombre}</span>
+        <button class="btn-sm btn-sm-danger" onclick="togCat('${tipo}','${item.nombre}',false)">Dar de baja</button>
       </div>`).join("");
   };
   renderList(res.sabores,"Sabor","cat-sabores");
-  renderList(res.tamanos,"Tamaño","cat-tamanos");
+  renderList(res.tamanos,"TamaÃ±o","cat-tamanos");
   renderList(res.canales||[],"Canal","cat-canales");
 }
 
 async function togCat(tipo,nombre,activar) {
-  if(!activar&&!confirm(`¿Dar de baja "${nombre}"?`)) return;
-  const mapa={Sabor:activar?"altaSabor":"bajaSabor",Tamaño:activar?"altaTamano":"bajaTamano",Canal:activar?"altaCanal":"bajaCanal"};
+  if(!activar&&!confirm(`Â¿Dar de baja "${nombre}"?`)) return;
+  const mapa={Sabor:activar?"altaSabor":"bajaSabor",TamaÃ±o:activar?"altaTamano":"bajaTamano",Canal:activar?"altaCanal":"bajaCanal"};
   const res=await api(mapa[tipo],{nombre});
   if(res.ok){toast(res.mensaje);cargarCatalogoPantalla();cargarCatalogo();}
   else toast(res.error,"error");
@@ -910,7 +908,7 @@ function abrirModalItem(tipo) {
 L("btn-guardar-item").addEventListener("click", async ()=>{
   const nombre=L("modal-item-input").value.trim();
   if(!nombre){toast("Ingresa un nombre","error");return;}
-  const mapa={Sabor:"altaSabor",Tamaño:"altaTamano"};
+  const mapa={Sabor:"altaSabor",TamaÃ±o:"altaTamano"};
   const res=await api(mapa[S.itemTipo],{nombre});
   if(res.ok){toast(res.mensaje);L("modal-nuevo-item").classList.remove("show");cargarCatalogoPantalla();cargarCatalogo();}
   else toast(res.error,"error");
@@ -936,7 +934,7 @@ async function cargarPrecios(silencioso=false) {
 
 function abrirModalPrecio(tamano, precioActual) {
   S.precioEditar=tamano;
-  L("modal-precio-title").textContent=`Precio — ${tamano}`;
+  L("modal-precio-title").textContent=`Precio â ${tamano}`;
   L("modal-precio-input").value=precioActual;
   L("modal-precio").classList.add("show");
   setTimeout(()=>L("modal-precio-input").focus(),100);
@@ -944,14 +942,14 @@ function abrirModalPrecio(tamano, precioActual) {
 
 L("btn-guardar-precio").addEventListener("click", async ()=>{
   const precio=parseFloat(L("modal-precio-input").value);
-  if(isNaN(precio)||precio<0){toast("Precio inválido","error");return;}
+  if(isNaN(precio)||precio<0){toast("Precio invÃ¡lido","error");return;}
   const tamano=S.precioEditar;
-  // Actualizar precio para todos los sabores con ese tamaño
+  // Actualizar precio para todos los sabores con ese tamaÃ±o
   const sabores=(S.catalogo?.sabores||[]).filter(s=>s.activo).map(s=>s.nombre);
   const promesas=sabores.map(sabor=>api("updatePrecio",{sabor,tamano,precio}));
   const resultados=await Promise.all(promesas);
   const ok=resultados.every(r=>r.ok);
-  if(ok){toast(`✅ Precio ${tamano} = $${precio.toLocaleString()}`);L("modal-precio").classList.remove("show");cargarPrecios();}
+  if(ok){toast(`â Precio ${tamano} = $${precio.toLocaleString()}`);L("modal-precio").classList.remove("show");cargarPrecios();}
   else toast("Error al guardar precio","error");
 });
 
@@ -959,14 +957,14 @@ L("btn-guardar-precio").addEventListener("click", async ()=>{
 async function cargarUsuarios() {
   const res=await api("getUsuarios");
   if(!res.ok) return;
-  L("usuarios-list").innerHTML=res.usuarios.map(u=>`
+  L("usuarios-list").innerHTML=res.usuarios.filter(u=>u.activo||u.usuario===S.usuario).map(u=>`
     <div class="usuario-row">
       <div style="flex:1">
         <div style="font-size:14px;font-weight:500"><span class="rol-chip ${u.rol==='Owner'?'rol-owner':'rol-vendedor'}">${u.rol}</span>${u.usuario}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px">${u.sucursal} · ${u.ultimoAcceso?u.ultimoAcceso.substring(0,10):'Sin acceso aún'}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${u.sucursal} Â· ${u.ultimoAcceso?u.ultimoAcceso.substring(0,10):'Sin acceso aÃºn'}</div>
       </div>
       ${u.usuario!==S.usuario
-        ?`<button class="toggle-btn ${u.activo?'activo':''}" onclick="togUsuario('${u.usuario}')">${u.activo?'Activo':'Inactivo'}</button>`
+        ?`<button class="btn-sm btn-sm-danger" onclick="togUsuario('${u.usuario}')">Inactivar</button>`
         :`<span style="font-size:11px;color:var(--muted)">Tú</span>`}
     </div>`).join("");
 }
@@ -993,7 +991,7 @@ L("btn-cambiar-pw").addEventListener("click", async ()=>{
   else toast(res.error,"error");
 });
 
-// AUDITORÍA
+// AUDITORÃA
 async function cargarAuditoria() {
   const res=await api("getAuditoria");
   if(!res.ok) return;
@@ -1003,7 +1001,7 @@ async function cargarAuditoria() {
       <div class="audit-row">
         <div class="audit-accion">${r.accion}</div>
         <div class="audit-detalle">${r.detalles}</div>
-        <div class="audit-meta">${r.usuario} · ${r.fecha?r.fecha.substring(0,16).replace('T',' '):''}</div>
+        <div class="audit-meta">${r.usuario} Â· ${r.fecha?r.fecha.substring(0,16).replace('T',' '):''}</div>
       </div>`).join("");
 }
 
