@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1a1a1a">
 <title>Tarta Vasca</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,500;0,700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
@@ -17,8 +17,6 @@
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);min-height:100dvh}
-
-/* LOGIN */
 #login-screen{min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;background:var(--ink);position:relative;overflow:hidden}
 #login-screen::before{content:'';position:absolute;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(200,96,42,.15) 0%,transparent 70%);top:-100px;right:-100px}
 .login-logo{font-family:'Fraunces',serif;font-size:42px;font-weight:300;color:var(--cream);letter-spacing:-1px;margin-bottom:4px;position:relative;z-index:1}
@@ -31,8 +29,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 .btn-login{width:100%;padding:16px;background:var(--accent);border:none;border-radius:12px;color:white;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer}
 .btn-login:disabled{opacity:.5}
 .login-error{background:rgba(192,57,43,.15);border:1px solid rgba(192,57,43,.3);color:#ff7675;padding:12px 16px;border-radius:10px;font-size:13px;margin-top:16px;display:none}
-
-/* APP */
 #app{display:none;min-height:100dvh;flex-direction:column}
 .app-header{background:var(--ink);color:white;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
 .header-logo{font-family:'Fraunces',serif;font-size:22px;font-weight:300}
@@ -44,13 +40,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 .nav-tab{flex-shrink:0;padding:14px 18px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap}
 .nav-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
 .app-content{flex:1;padding:20px 16px 100px}
-
-/* CARDS */
 .card{background:var(--card);border-radius:16px;padding:20px;margin-bottom:12px;box-shadow:var(--shadow);border:1px solid var(--border)}
 .card-title{font-family:'Fraunces',serif;font-size:18px;font-weight:500;margin-bottom:4px}
 .card-sub{font-size:12px;color:var(--muted);margin-bottom:16px}
-
-/* FORMS */
 .form-group{margin-bottom:14px}
 .form-label{display:block;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
 .form-select,.form-input{width:100%;padding:12px 16px;border:1px solid var(--border);border-radius:12px;font-family:'DM Sans',sans-serif;font-size:15px;background:white;color:var(--ink);outline:none;appearance:none;transition:border-color .2s}
@@ -60,8 +52,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 .btn-main:disabled{opacity:.5}
 .btn-green{background:var(--green)}
 .btn-outline{width:100%;padding:12px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--ink);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;margin-top:8px}
-
-/* STOCK */
 .summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
 .summary-card{background:var(--warm);border-radius:14px;padding:16px;text-align:center}
 .summary-num{font-family:'Fraunces',serif;font-size:32px;font-weight:500;line-height:1}
@@ -82,8 +72,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 .cad-warn{background:#fff3e0;color:#e67e22}
 .cad-bad{background:#ffebee;color:#c0392b}
 .suc-tag{font-size:10px;padding:2px 7px;border-radius:8px;background:var(--warm);color:var(--muted)}
-
-/* VENTA — UNA SOLA PANTALLA */
 .venta-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
 .canal-aviso{display:none;align-items:center;gap:8px;margin-top:8px;background:#e8f5e9;border-radius:10px;padding:10px 14px;font-size:13px;color:var(--green)}
 .separador{height:1px;background:var(--border);margin:18px 0}
@@ -104,8 +92,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 .add-item-box{background:var(--warm);border-radius:14px;padding:16px;margin-bottom:14px}
 .add-item-box .form-group{margin-bottom:10px}
 .add-item-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-
-/* CLIENTE */
 .cliente-box{background:var(--warm);border-radius:14px;padding:16px;margin-bottom:14px}
 .cliente-encontrado-row{display:flex;align-items:center;gap:10px}
 .cli-avatar{width:34px;height:34px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:500;font-size:14px;flex-shrink:0}
@@ -115,8 +101,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 .sug-item{padding:12px 16px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--warm)}
 .sug-item:last-child{border-bottom:none}
 .sug-item:active{background:var(--warm)}
-
-/* HISTORIAL */
 .historial-item{padding:13px 0;border-bottom:1px solid var(--warm)}
 .historial-item:last-child{border-bottom:none}
 .hist-fecha{font-size:11px;color:var(--muted)}
@@ -124,22 +108,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 .hist-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
 .tag{font-size:10px;padding:2px 8px;border-radius:8px;background:var(--warm);color:var(--muted)}
 .tag-total{background:#e8f5e9;color:var(--success)}
-
-/* CATÁLOGO */
 .cat-item{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--warm)}
 .cat-item:last-child{border-bottom:none}
 .btn-sm{padding:6px 12px;border-radius:8px;font-size:12px;border:1px solid var(--border);background:white;cursor:pointer;font-family:'DM Sans',sans-serif}
 .btn-sm-danger{border-color:#ffcdd2;color:var(--danger);background:#fff5f5}
 .btn-sm-success{border-color:#c8e6c9;color:var(--success);background:#f1f8e9}
-
-/* PRECIOS */
 .precio-row{background:var(--warm);border-radius:12px;padding:13px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
 .precio-label{font-size:14px;font-weight:500}
 .precio-val{font-family:'Fraunces',serif;font-size:18px;color:var(--accent);cursor:pointer;padding:4px 8px;border-radius:6px;border:1px solid transparent;transition:border-color .15s}
 .precio-val:active{border-color:var(--accent)}
 .precio-nota{font-size:11px;color:var(--muted);margin-top:4px;margin-bottom:12px}
-
-/* USUARIOS */
 .usuario-row{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--warm)}
 .usuario-row:last-child{border-bottom:none}
 .rol-chip{padding:3px 10px;border-radius:10px;font-size:11px;font-weight:500;margin-right:8px}
@@ -147,22 +125,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 .rol-vendedor{background:#d1ecf1;color:#0c5460}
 .toggle-btn{padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:white;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif}
 .toggle-btn.activo{background:var(--success);color:white;border-color:var(--success)}
-
-/* MODAL */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:flex-end;justify-content:center}
 .modal-overlay.show{display:flex}
 .modal{background:var(--card);border-radius:24px 24px 0 0;padding:28px 24px 40px;width:100%;max-width:480px;animation:slideUp .3s ease;max-height:90dvh;overflow-y:auto}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 .modal-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 20px}
 .modal-title{font-family:'Fraunces',serif;font-size:20px;font-weight:500;margin-bottom:20px}
-
-/* TOAST */
 .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:white;padding:13px 22px;border-radius:24px;font-size:13px;font-weight:500;opacity:0;transition:all .3s;z-index:1000;max-width:320px;text-align:center;pointer-events:none}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .toast.error{background:var(--danger)}
 .toast.success{background:var(--success)}
-
-/* MISC */
 .loading{display:flex;align-items:center;justify-content:center;padding:40px;color:var(--muted);gap:10px;font-size:13px}
 .spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -173,6 +145,64 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 .audit-accion{font-size:11px;font-weight:500;color:var(--accent);text-transform:uppercase;letter-spacing:.5px}
 .audit-detalle{font-size:13px;margin:3px 0}
 .audit-meta{font-size:11px;color:var(--muted)}
+
+/* ── CALCULADORA DE COSTOS ── */
+#tab-costos{display:none}
+.calc-tabs{display:flex;gap:2px;margin-bottom:20px;border-bottom:2px solid #D5D0C0}
+.calc-tab{padding:10px 18px;border:none;background:transparent;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#86887D;font-weight:400;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s}
+.calc-tab.active{color:#C9A84C;border-bottom-color:#C9A84C;font-weight:700}
+.calc-section{display:none}
+.calc-section.active{display:block}
+.calc-card{background:white;border-radius:12px;padding:20px 22px;border:1px solid #D5D0C0;box-shadow:0 2px 12px rgba(0,0,0,.05);margin-bottom:16px}
+.calc-card-title{font-size:10px;color:#86887D;text-transform:uppercase;letter-spacing:2.5px;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid #D5D0C0}
+.calc-hero{background:#86BDAD;border-radius:14px;padding:32px 28px;text-align:center;border:2px solid #C9A84C;margin-bottom:16px}
+.calc-hero-label{font-size:11px;color:#D5D0C0;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px}
+.calc-hero-price{font-size:52px;font-weight:400;color:#EFEEE8;line-height:1}
+.calc-hero-sub{font-size:13px;color:#D5D0C0;margin-top:8px}
+.calc-hero-badge{display:inline-block;margin-top:14px;background:#C9A84C;border-radius:20px;padding:6px 20px;font-size:13px;color:#EFEEE8;font-weight:700}
+.calc-grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.calc-grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px}
+.calc-ing-row{display:grid;grid-template-columns:2fr 1.4fr 1.6fr 90px 32px;gap:8px;align-items:center;margin-bottom:6px;padding:7px 10px;border-radius:8px;cursor:pointer;border:1px solid transparent;transition:background .15s}
+.calc-ing-row:hover{background:rgba(134,189,173,.08)}
+.calc-ing-row.expanded{background:rgba(134,189,173,.12);border-color:#86BDAD}
+.calc-ing-expand{background:rgba(134,189,173,.07);border:1px solid #86BDAD;border-radius:10px;padding:16px;margin-bottom:10px}
+.calc-ing-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.calc-sub-card{background:rgba(134,189,173,.12);border-radius:8px;padding:12px 14px}
+.calc-sub-card.gold{background:rgba(201,168,76,.08)}
+.calc-sub-label{font-size:10px;color:#86BDAD;text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;font-weight:700}
+.calc-sub-label.gold{color:#C9A84C}
+.calc-row-input{display:flex;gap:8px}
+.calc-input{background:white;border:1.5px solid #D5D0C0;border-radius:8px;color:#3a3a35;padding:10px 12px;font-family:'DM Sans',sans-serif;font-size:14px;height:42px;outline:none;width:100%;box-sizing:border-box}
+.calc-input:focus{border-color:#86BDAD}
+.calc-select{background:white;border:1.5px solid #D5D0C0;border-radius:8px;color:#3a3a35;padding:10px 12px;font-family:'DM Sans',sans-serif;font-size:14px;height:42px;outline:none;width:100%;box-sizing:border-box;cursor:pointer;appearance:none}
+.calc-result-bar{background:#86BDAD;border-radius:8px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;margin-top:12px}
+.calc-result-label{font-size:12px;color:#EFEEE8}
+.calc-result-val{font-size:20px;font-weight:700;color:#e8c97a}
+.calc-total-row{display:flex;justify-content:flex-end;padding-top:10px;margin-top:4px;border-top:1px dashed #D5D0C0;font-size:13px}
+.calc-pkg-row{display:grid;grid-template-columns:1fr 120px 32px;gap:8px;align-items:center;margin-bottom:8px}
+.calc-metric{background:white;border:1px solid #D5D0C0;border-radius:12px;padding:16px 12px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.calc-metric-emoji{font-size:22px;margin-bottom:6px}
+.calc-metric-val{font-size:17px;font-weight:700;color:#86BDAD}
+.calc-metric-label{font-size:10px;color:#86887D;text-transform:uppercase;letter-spacing:1.5px;margin-top:4px}
+.calc-metric-sub{font-size:11px;color:#B2AA92;margin-top:2px}
+.calc-bar-item{margin-bottom:12px}
+.calc-bar-header{display:flex;justify-content:space-between;margin-bottom:4px;font-size:13px}
+.calc-bar-track{height:8px;background:#D5D0C0;border-radius:4px;overflow:hidden}
+.calc-bar-fill{height:100%;border-radius:4px;transition:width .5s ease}
+.calc-vol-item{background:rgba(134,189,173,.1);border:1px solid #D5D0C0;border-radius:10px;padding:14px 8px;text-align:center}
+.calc-vol-item.highlight{background:#86BDAD;border-color:#C9A84C}
+.calc-slider-wrap{position:relative;height:8px;background:#D5D0C0;border-radius:4px;margin-top:10px}
+.calc-slider-fill{position:absolute;left:0;top:0;height:100%;background:#86BDAD;border-radius:4px;transition:width .1s}
+.calc-slider{position:absolute;top:50%;transform:translateY(-50%);left:0;width:100%;opacity:0;cursor:pointer;height:20px;margin:0;padding:0}
+.calc-add-box{margin-top:14px;padding:12px 14px;background:rgba(134,189,173,.07);border:1px dashed #86BDAD;border-radius:8px}
+.calc-add-title{font-size:10px;color:#86BDAD;text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;font-weight:700}
+.calc-add-row{display:grid;grid-template-columns:1fr 120px auto;gap:8px;align-items:center}
+.calc-add-row3{display:grid;grid-template-columns:1fr 160px auto;gap:8px;align-items:center}
+.calc-btn-add{background:#86BDAD;border:none;color:#EFEEE8;border-radius:8px;cursor:pointer;padding:0 16px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:700;height:42px;letter-spacing:1px;text-transform:uppercase;white-space:nowrap}
+.calc-btn-del{background:none;border:none;color:#B2AA92;cursor:pointer;font-size:15px;padding:0;height:42px;display:flex;align-items:center;justify-content:center}
+.calc-resumen-bar{background:#86BDAD;border-radius:12px;padding:18px 22px;border:2px solid #C9A84C;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-top:4px}
+.calc-info-box{font-size:12px;color:#86887D;padding:10px 14px;background:rgba(134,189,173,.1);border-radius:8px;margin-bottom:16px}
+.calc-equil-item{background:rgba(134,189,173,.1);border:1px solid #86BDAD;border-radius:10px;padding:14px 12px;text-align:center}
 </style>
 </head>
 <body>
@@ -208,6 +238,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <div class="nav-tab owner-only" data-tab="ventas">Ventas</div>
     <div class="nav-tab owner-only" data-tab="catalogo">Catálogo</div>
     <div class="nav-tab owner-only" data-tab="precios">Precios</div>
+    <div class="nav-tab owner-only" data-tab="costos">Costos</div>
     <div class="nav-tab owner-only" data-tab="usuarios">Usuarios</div>
     <div class="nav-tab owner-only" data-tab="auditoria">Auditoría</div>
   </nav>
@@ -230,12 +261,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
       </div>
     </div>
 
-    <!-- VENTA — UNA SOLA PANTALLA -->
+    <!-- VENTA -->
     <div id="tab-venta" class="tab-pane" style="display:none">
       <div class="card">
         <div class="card-title">Nueva venta</div>
-
-        <!-- CANAL Y PAGO -->
         <div class="venta-grid">
           <div class="form-group" style="margin-bottom:0">
             <label class="form-label">Canal</label>
@@ -249,51 +278,30 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <div class="canal-aviso" id="canal-aviso">
           <span>✓</span><span>Plataforma — no se piden datos del cliente</span>
         </div>
-
         <div class="separador"></div>
-
-        <!-- SUCURSAL (solo Owner) -->
         <div class="form-group owner-only" id="venta-suc-group">
           <label class="form-label">Sucursal</label>
           <select class="form-select" id="venta-sucursal"></select>
         </div>
-
-        <!-- AGREGAR PRODUCTO -->
         <div class="add-item-box">
           <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:12px">Agregar producto</div>
           <div class="add-item-row">
-            <div class="form-group">
-              <label class="form-label">Sabor</label>
-              <select class="form-select" id="item-sabor"></select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Tamaño</label>
-              <select class="form-select" id="item-tamano"></select>
-            </div>
+            <div class="form-group"><label class="form-label">Sabor</label><select class="form-select" id="item-sabor"></select></div>
+            <div class="form-group"><label class="form-label">Tamaño</label><select class="form-select" id="item-tamano"></select></div>
           </div>
           <div class="add-item-row">
-            <div class="form-group">
-              <label class="form-label">Cantidad</label>
-              <input class="form-input" type="number" id="item-cantidad" min="1" value="1">
-            </div>
-            <div style="display:flex;align-items:flex-end;padding-bottom:14px">
-              <div id="item-disp"></div>
-            </div>
+            <div class="form-group"><label class="form-label">Cantidad</label><input class="form-input" type="number" id="item-cantidad" min="1" value="1"></div>
+            <div style="display:flex;align-items:flex-end;padding-bottom:14px"><div id="item-disp"></div></div>
           </div>
           <button class="btn-outline" id="btn-agregar-item" style="margin-top:0">+ Agregar al carrito</button>
         </div>
-
-        <!-- CARRITO -->
         <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Carrito</div>
         <div id="carrito-items"><div class="carrito-vacio">Sin productos — agrega uno arriba</div></div>
         <div id="carrito-total-bar" class="carrito-total-bar" style="display:none">
           <span class="total-label">Total</span>
           <span class="total-num" id="total-num">$0</span>
         </div>
-
         <div class="separador"></div>
-
-        <!-- CLIENTE -->
         <div id="cliente-section">
           <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Cliente</div>
           <div style="position:relative">
@@ -325,10 +333,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
             </div>
           </div>
         </div>
-
         <div class="separador"></div>
-
-        <!-- CONFIRMAR -->
         <button class="btn-main btn-green" id="btn-confirmar" style="margin-top:0">Confirmar venta ✓</button>
         <button class="btn-outline" id="btn-limpiar-venta">Limpiar todo</button>
       </div>
@@ -383,6 +388,204 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
       </div>
     </div>
 
+    <!-- COSTOS (Calculadora) -->
+    <div id="tab-costos" class="tab-pane" style="display:none">
+      <div class="card">
+        <div class="card-title">Calculadora de costos</div>
+        <div class="card-sub">Calcula el costo de producción y precio de venta sugerido</div>
+
+        <!-- Config -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Sabor</label>
+            <select class="form-select" id="calc-sabor">
+              <option>Tradicional</option><option>Pistache</option><option>Galleta Lotus</option>
+              <option>Chocolate 70%</option><option>Frambuesa</option><option>Limón</option>
+              <option>Café</option><option>Matcha</option><option>Mango</option>
+              <option>Maracuyá</option><option>Caramelo</option><option>Oreo</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Tamaño</label>
+            <select class="form-select" id="calc-size">
+              <option value="0">Pequeña (12 cm) · 4 porciones</option>
+              <option value="1" selected>Mediana (18 cm) · 8 porciones</option>
+              <option value="2">Grande (24 cm) · 14 porciones</option>
+            </select>
+          </div>
+        </div>
+        <div style="font-size:12px;color:#86887D;padding:10px 14px;background:rgba(134,189,173,.1);border-radius:8px;margin-bottom:16px">
+          💡 Los ingredientes se ajustan automáticamente al tamaño seleccionado
+        </div>
+
+        <!-- Sub-tabs -->
+        <div class="calc-tabs">
+          <button class="calc-tab active" onclick="setCalcTab('receta')">🍮 Receta</button>
+          <button class="calc-tab" onclick="setCalcTab('gastos')">🏪 Gastos fijos</button>
+          <button class="calc-tab" onclick="setCalcTab('resultado')">📊 Resultado</button>
+        </div>
+
+        <!-- TAB RECETA -->
+        <div id="calc-receta" class="calc-section active">
+          <div id="calc-ings-list"></div>
+          <div class="calc-total-row">
+            <span style="color:#86887D">Total ingredientes:&nbsp;<strong style="color:#C9A84C;font-size:16px" id="calc-total-ings">$0.00</strong></span>
+          </div>
+
+          <!-- Empaque -->
+          <div style="margin-top:16px;font-size:10px;color:#86887D;text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;font-weight:700">Empaque y presentación</div>
+          <div id="calc-pkg-list"></div>
+          <div class="calc-total-row">
+            <span style="color:#86887D">Total empaque:&nbsp;<strong style="color:#C9A84C;font-size:16px" id="calc-total-pkg">$0.00</strong></span>
+          </div>
+
+          <!-- Agregar ingrediente -->
+          <div class="calc-add-box" style="margin-top:16px">
+            <div class="calc-add-title">+ Añadir ingrediente</div>
+            <div style="margin-bottom:10px">
+              <label class="form-label">Nombre</label>
+              <input class="calc-input" id="new-ing-name" placeholder="ej. Vainilla" style="width:100%">
+            </div>
+            <div class="calc-grid2" style="margin-bottom:8px">
+              <div style="background:rgba(134,189,173,.12);border-radius:8px;padding:12px">
+                <div style="font-size:10px;color:#86BDAD;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;font-weight:700">📐 Uso en receta</div>
+                <div class="calc-row-input">
+                  <input type="number" class="calc-input" id="new-ing-useqty" placeholder="250" style="width:50%;flex:none;text-align:center">
+                  <select class="calc-select" id="new-ing-useunit" style="width:50%;flex:none">
+                    <option>g</option><option>kg</option><option>ml</option><option>L</option><option>unidad</option><option>docena</option>
+                  </select>
+                </div>
+              </div>
+              <div style="background:rgba(201,168,76,.08);border-radius:8px;padding:12px">
+                <div style="font-size:10px;color:#C9A84C;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;font-weight:700">🛒 Precio compra</div>
+                <div class="calc-row-input" style="margin-bottom:8px">
+                  <input type="number" class="calc-input" id="new-ing-buyqty" placeholder="1" style="width:50%;flex:none;text-align:center">
+                  <select class="calc-select" id="new-ing-buyunit" style="width:50%;flex:none">
+                    <option>kg</option><option>g</option><option>L</option><option>ml</option><option>unidad</option><option>docena</option>
+                  </select>
+                </div>
+                <label class="form-label">Lo pagas ($MXN)</label>
+                <input type="number" class="calc-input" id="new-ing-price" placeholder="0" style="width:100%;box-sizing:border-box;text-align:right">
+              </div>
+            </div>
+            <button onclick="addIngrediente()" style="margin-top:8px;width:100%;background:#86BDAD;border:none;color:#EFEEE8;border-radius:8px;cursor:pointer;padding:10px 0;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase">Añadir ingrediente</button>
+          </div>
+
+          <!-- Agregar empaque -->
+          <div class="calc-add-box" style="margin-top:12px">
+            <div class="calc-add-title">+ Añadir artículo de empaque</div>
+            <div class="calc-add-row">
+              <input class="calc-input" id="new-pkg-name" placeholder="ej. Moño, etiqueta...">
+              <input type="number" min="0" step="1" class="calc-input" id="new-pkg-cost" placeholder="$ costo" style="text-align:right">
+              <button onclick="addEmpaque()" class="calc-btn-add">Añadir</button>
+            </div>
+          </div>
+
+          <!-- Resumen receta -->
+          <div class="calc-resumen-bar" style="margin-top:16px">
+            <div>
+              <div style="font-size:11px;color:#D5D0C0;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px" id="calc-resumen-label">Tradicional · Mediana</div>
+              <div style="font-size:13px;color:#EFEEE8">Ingredientes <strong style="color:#e8c97a" id="calc-res-ings">$0.00</strong> + Empaque <strong style="color:#e8c97a" id="calc-res-pkg">$0.00</strong></div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:11px;color:#D5D0C0;letter-spacing:1px;text-transform:uppercase">Costo producción</div>
+              <div style="font-size:32px;font-weight:700;color:#EFEEE8;line-height:1" id="calc-res-total">$0.00</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB GASTOS -->
+        <div id="calc-gastos" class="calc-section">
+          <div class="calc-info-box">Aquí van los gastos que tienes independientemente de cuántas tartas hagas: renta, personal, servicios, etc. Esta información es solo de referencia — <strong>no se suma al costo de receta</strong>.</div>
+          <div id="calc-gasts-list"></div>
+          <div class="calc-total-row">
+            <span style="color:#86887D">Total gastos fijos mensuales:&nbsp;<strong style="color:#C9A84C;font-size:16px" id="calc-total-gasts">$0.00</strong></span>
+          </div>
+          <div class="calc-add-box" style="margin-top:14px">
+            <div class="calc-add-title">+ Añadir gasto</div>
+            <div class="calc-add-row3">
+              <input class="calc-input" id="new-gast-name" placeholder="ej. Internet, seguro...">
+              <input type="number" min="0" step="10" class="calc-input" id="new-gast-cost" placeholder="$ mensual" style="text-align:right">
+              <button onclick="addGasto()" class="calc-btn-add">Añadir</button>
+            </div>
+          </div>
+          <!-- Punto de equilibrio -->
+          <div id="calc-equilibrio" style="margin-top:16px;display:none">
+            <div style="font-size:10px;color:#86887D;text-transform:uppercase;letter-spacing:2px;margin-bottom:4px;font-weight:700">Referencia: punto de equilibrio</div>
+            <div style="font-size:12px;color:#86887D;margin-bottom:12px">¿Cuántas tartas necesitas vender al mes para cubrir tus gastos fijos?</div>
+            <div id="calc-equil-grid" class="calc-grid3"></div>
+          </div>
+        </div>
+
+        <!-- TAB RESULTADO -->
+        <div id="calc-resultado" class="calc-section">
+          <!-- Margen slider -->
+          <div class="calc-card" style="margin-bottom:16px">
+            <div class="calc-card-title">Margen de beneficio</div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+              <div>
+                <div style="font-size:14px;color:#3a3a35">Margen sobre costo de producción</div>
+                <div style="font-size:11px;color:#B2AA92;margin-top:2px">Solo ingredientes + empaque</div>
+              </div>
+              <div style="font-size:16px;font-weight:700;color:#86BDAD;background:rgba(134,189,173,.1);border:1px solid #86BDAD;border-radius:6px;padding:2px 12px;min-width:80px;text-align:center" id="calc-margin-display">40%</div>
+            </div>
+            <div class="calc-slider-wrap">
+              <div class="calc-slider-fill" id="calc-slider-fill" style="width:40%"></div>
+              <input type="range" min="0" max="100" step="1" value="40" class="calc-slider" id="calc-margin-slider" oninput="onMarginChange(this.value)">
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:10px;color:#B2AA92;margin-top:4px"><span>0</span><span>100</span></div>
+          </div>
+
+          <!-- Hero precio -->
+          <div class="calc-hero" style="margin-bottom:16px">
+            <div class="calc-hero-label" id="calc-hero-label">Tradicional · Mediana (18 cm)</div>
+            <div class="calc-hero-price" id="calc-hero-price">$0.00</div>
+            <div class="calc-hero-sub">Precio de venta sugerido</div>
+            <div class="calc-hero-badge" id="calc-hero-porcion">$0.00 por porción</div>
+          </div>
+
+          <!-- Métricas -->
+          <div class="calc-grid3" style="margin-bottom:16px">
+            <div class="calc-metric">
+              <div class="calc-metric-emoji">🧁</div>
+              <div class="calc-metric-val" id="calc-m-costo">$0.00</div>
+              <div class="calc-metric-label">Costo producción</div>
+              <div class="calc-metric-sub">ingred. + empaque</div>
+            </div>
+            <div class="calc-metric">
+              <div class="calc-metric-emoji">💰</div>
+              <div class="calc-metric-val" id="calc-m-ganancia">$0.00</div>
+              <div class="calc-metric-label">Ganancia</div>
+              <div class="calc-metric-sub" id="calc-m-margen-sub">40% margen</div>
+            </div>
+            <div class="calc-metric">
+              <div class="calc-metric-emoji">🍮</div>
+              <div class="calc-metric-val" id="calc-m-porciones">8</div>
+              <div class="calc-metric-label">Porciones</div>
+              <div class="calc-metric-sub" id="calc-m-size-sub">Mediana</div>
+            </div>
+          </div>
+
+          <!-- Barras -->
+          <div class="calc-card" style="margin-bottom:12px">
+            <div class="calc-card-title">Composición del precio de venta</div>
+            <div id="calc-barras"></div>
+          </div>
+
+          <!-- Volumen -->
+          <div class="calc-card" style="margin-bottom:12px">
+            <div class="calc-card-title">Ingresos por volumen de ventas</div>
+            <div class="calc-grid3" id="calc-vol"></div>
+          </div>
+
+          <!-- Nota gastos -->
+          <div id="calc-nota-gastos" style="display:none;padding:14px 20px;background:rgba(134,136,125,.1);border:1px solid #D5D0C0;border-radius:10px;font-size:13px;color:#86887D">
+            🏪 Tus gastos fijos mensuales son <strong style="color:#3a3a35" id="calc-nota-gasts-val"></strong>. Ve a la pestaña <strong>Gastos fijos</strong> para ver cuántas tartas necesitas vender para cubrirlos.
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- USUARIOS -->
     <div id="tab-usuarios" class="tab-pane" style="display:none">
       <div class="card">
@@ -410,7 +613,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
   </main>
 </div>
 
-<!-- MODAL PRECIO -->
+<!-- MODALES -->
 <div class="modal-overlay" id="modal-precio">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -422,7 +625,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
   </div>
 </div>
 
-<!-- MODAL NUEVO ITEM -->
 <div class="modal-overlay" id="modal-nuevo-item">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -433,7 +635,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
   </div>
 </div>
 
-<!-- MODAL NUEVO USUARIO -->
 <div class="modal-overlay" id="modal-nuevo-usuario">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -450,6 +651,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 <div class="toast" id="toast"></div>
 
 <script>
+// ═══════════════════════════════════════════
+//  TARTA VASCA APP
+// ═══════════════════════════════════════════
 const API_URL = "https://script.google.com/macros/s/AKfycbxtf5Kx4r5qN80jJzSJYjllFlIzXmxJBUM3Rt-3yChMOl24a9CRVBS32oNLlgUUAiyE/exec";
 const LECTURA = ["getCatalogo","getStock","getPrecios","getUsuarios","getAuditoria","buscarCliente","getHistorialCliente","getVentas"];
 
@@ -460,7 +664,6 @@ let S = {
   filtroSuc:null, filtroTam:null, precioEditar:null, itemTipo:null
 };
 
-// API
 async function api(accion, body={}) {
   const payload = {accion, token:S.token, ...body};
   try {
@@ -510,7 +713,6 @@ async function doLogin() {
   btn.disabled=false; btn.textContent="Entrar";
 }
 
-// APP
 function iniciarApp() {
   L("login-screen").style.display="none";
   L("app").style.display="flex";
@@ -536,16 +738,16 @@ function setupNav() {
       else if(t==="catalogo") cargarCatalogoPantalla();
       else if(t==="ventas") cargarVentas();
       else if(t==="venta") iniciarVenta();
+      else if(t==="costos") renderCalc();
     });
   });
 }
 
-// CATÁLOGO
 async function cargarCatalogo() {
   const res = await api("getCatalogo");
   if (!res.ok) return;
   S.catalogo = res;
-  await cargarPrecios(true); // cargar precios silenciosamente
+  await cargarPrecios(true);
   poblarSelectsVenta();
 }
 
@@ -555,7 +757,6 @@ function poblarSelectsVenta() {
   const suc = (S.catalogo.sucursales||[]).filter(s=>s.activo).map(s=>s.nombre);
   const can = (S.catalogo.canales||[]).filter(c=>c.activo).map(c=>c.nombre);
   const canFinal = can.length>0 ? can : ["Tienda","Domicilio","Rappi"];
-
   llenar("item-sabor", sab.length>0 ? sab : (S.catalogo.sabores||[]).filter(s=>s.activo).map(s=>s.nombre));
   llenar("item-tamano", tam.length>0 ? tam : (S.catalogo.tamanos||[]).filter(t=>t.activo).map(t=>t.nombre));
   llenar("prod-sabor", (S.catalogo.sabores||[]).filter(s=>s.activo).map(s=>s.nombre));
@@ -568,13 +769,11 @@ function poblarSelectsVenta() {
   if (S.rol==="Vendedor") L("venta-suc-group").style.display="none";
 }
 
-// Solo mostrar sabores/tamaños que tienen stock disponible
 function stockConDisponibilidad(campo) {
   if (!S.stock) return [];
   const sucursal = S.rol==="Vendedor" ? S.sucursal : null;
   const disponibles = S.stock.filter(s=>!s.vencido && s.cantActual>0 && (!sucursal||s.sucursal===sucursal));
-  const unicos = [...new Set(disponibles.map(s=>s[campo]))];
-  return unicos;
+  return [...new Set(disponibles.map(s=>s[campo]))];
 }
 
 function llenar(id, opciones) {
@@ -607,14 +806,13 @@ function actualizarUICanal() {
 
 L("venta-canal")?.addEventListener("change", ()=>{ actualizarMetodoPago(); actualizarUICanal(); });
 
-// STOCK
 async function cargarStock() {
   L("stock-content").innerHTML=`<div class="loading"><div class="spinner"></div>Cargando...</div>`;
   const res = await api("getStock");
   if (!res.ok) { L("stock-content").innerHTML=`<div class="empty-state"><div class="empty-text">Error al cargar</div></div>`; return; }
   S.stock=res.stock;
   renderStock();
-  poblarSelectsVenta(); // actualizar selects con stock real
+  poblarSelectsVenta();
 }
 
 function renderStock() {
@@ -624,12 +822,10 @@ function renderStock() {
   if(S.filtroSuc) f=f.filter(s=>s.sucursal===S.filtroSuc);
   if(S.filtroTam) f=f.filter(s=>s.tamano===S.filtroTam);
   if(busqueda) f=f.filter(s=>s.sabor.toLowerCase().includes(busqueda));
-
   L("sum-total").textContent=f.reduce((s,i)=>s+i.cantActual,0);
   L("sum-vencer").textContent=f.filter(s=>s.porVencer).length;
   L("stock-summary").style.display="grid";
   L("stock-sub").textContent=S.filtroSuc||(S.rol==="Vendedor"?S.sucursal:"todas las sucursales");
-
   if(S.catalogo&&S.rol==="Owner") {
     const sucs=(S.catalogo.sucursales||[]).filter(s=>s.activo).map(s=>s.nombre);
     L("filtros-suc").innerHTML=`<div class="chip ${!S.filtroSuc?'active':''}" data-suc="">Todas</div>`+sucs.map(s=>`<div class="chip ${S.filtroSuc===s?'active':''}" data-suc="${s}">${s}</div>`).join("");
@@ -640,36 +836,21 @@ function renderStock() {
     L("filtros-tam").innerHTML=`<div class="chip ${!S.filtroTam?'active':''}" data-tam="">Todos</div>`+tams.map(t=>`<div class="chip ${S.filtroTam===t?'active':''}" data-tam="${t}">${t}</div>`).join("");
     L("filtros-tam").querySelectorAll(".chip").forEach(c=>c.addEventListener("click",()=>{S.filtroTam=c.dataset.tam||null;renderStock();}));
   }
-
   if(f.length===0) { L("stock-content").innerHTML=`<div class="empty-state"><div class="empty-icon">📦</div><div class="empty-text">Sin stock disponible</div></div>`; return; }
-
   L("stock-content").innerHTML=`<table class="stock-table">
     <thead><tr><th>Sabor</th><th>Tam.</th>${S.rol==="Owner"?"<th>Suc.</th>":""}<th>Cant.</th><th>Vence</th></tr></thead>
     <tbody>${f.map(s=>{
       const qCls=s.cantActual<=2?"qty-low":"qty-ok";
       const cCls=s.vencido?"cad-bad":s.porVencer?"cad-warn":"cad-ok";
       const cTxt=s.vencido?"Vencido":s.diasRestantes===1?"Hoy":s.diasRestantes+"d";
-      return `<tr>
-        <td><strong>${s.sabor}</strong></td>
-        <td style="color:var(--muted);font-size:12px">${s.tamano}</td>
-        ${S.rol==="Owner"?`<td><span class="suc-tag">${s.sucursal.substring(0,4)}</span></td>`:""}
-        <td><span class="qty-badge ${qCls}">${s.cantActual}</span></td>
-        <td><span class="cad-badge ${cCls}">${cTxt}</span></td>
-      </tr>`;
+      return `<tr><td><strong>${s.sabor}</strong></td><td style="color:var(--muted);font-size:12px">${s.tamano}</td>${S.rol==="Owner"?`<td><span class="suc-tag">${s.sucursal.substring(0,4)}</span></td>`:""}<td><span class="qty-badge ${qCls}">${s.cantActual}</span></td><td><span class="cad-badge ${cCls}">${cTxt}</span></td></tr>`;
     }).join("")}</tbody></table>`;
 }
 
 L("stock-search").addEventListener("input", renderStock);
 
-// VENTA
-function iniciarVenta() {
-  actualizarUICanal();
-  actualizarDisp();
-}
-
-function getSucursalVenta() {
-  return S.rol==="Vendedor" ? S.sucursal : (L("venta-sucursal")?.value||S.sucursal);
-}
+function iniciarVenta() { actualizarUICanal(); actualizarDisp(); }
+function getSucursalVenta() { return S.rol==="Vendedor" ? S.sucursal : (L("venta-sucursal")?.value||S.sucursal); }
 
 function calcDisp(sabor, tamano) {
   if (!S.stock) return 0;
@@ -681,7 +862,6 @@ function calcDisp(sabor, tamano) {
 
 function getPrecio(tamano) {
   if (!S.precios) return 0;
-  // Precio por tamaño — tomar el primero que coincida
   const p = S.precios.find(p=>p.tamano===tamano);
   return p ? p.precio : 0;
 }
@@ -701,8 +881,7 @@ L("item-tamano")?.addEventListener("change", actualizarDisp);
 L("venta-sucursal")?.addEventListener("change", ()=>{ actualizarDisp(); poblarSelectsVenta(); });
 
 L("btn-agregar-item").addEventListener("click", ()=>{
-  const sabor=L("item-sabor").value;
-  const tamano=L("item-tamano").value;
+  const sabor=L("item-sabor").value, tamano=L("item-tamano").value;
   const cantidad=parseInt(L("item-cantidad").value)||1;
   if (!sabor||!tamano) { toast("Selecciona sabor y tamaño","error"); return; }
   const disp=calcDisp(sabor,tamano);
@@ -710,8 +889,7 @@ L("btn-agregar-item").addEventListener("click", ()=>{
   const precio=getPrecio(tamano);
   S.carrito.push({sabor,tamano,cantidad,precio,subtotal:precio*cantidad});
   L("item-cantidad").value="1";
-  renderCarrito();
-  actualizarDisp();
+  renderCarrito(); actualizarDisp();
   toast(`${sabor} ${tamano} × ${cantidad} agregado`);
 });
 
@@ -719,8 +897,7 @@ function renderCarrito() {
   const items=L("carrito-items");
   if (S.carrito.length===0) {
     items.innerHTML=`<div class="carrito-vacio">Sin productos — agrega uno arriba</div>`;
-    L("carrito-total-bar").style.display="none";
-    return;
+    L("carrito-total-bar").style.display="none"; return;
   }
   items.innerHTML=S.carrito.map((item,i)=>`
     <div class="carrito-item">
@@ -736,13 +913,8 @@ function renderCarrito() {
   L("carrito-total-bar").style.display="flex";
 }
 
-function quitarItem(idx) {
-  S.carrito.splice(idx,1);
-  renderCarrito();
-  actualizarDisp();
-}
+function quitarItem(idx) { S.carrito.splice(idx,1); renderCarrito(); actualizarDisp(); }
 
-// Búsqueda cliente
 let searchTO;
 L("cli-nombre")?.addEventListener("input", ()=>{
   clearTimeout(searchTO);
@@ -773,10 +945,8 @@ function selCliente(c) {
 }
 
 function limpiarCliente() {
-  S.clienteSel=null;
-  L("cli-nombre").value="";
-  L("cli-encontrado").style.display="none";
-  L("cli-nuevo").style.display="grid";
+  S.clienteSel=null; L("cli-nombre").value="";
+  L("cli-encontrado").style.display="none"; L("cli-nuevo").style.display="grid";
 }
 
 document.addEventListener("click", e=>{
@@ -784,15 +954,11 @@ document.addEventListener("click", e=>{
     L("sugerencias").style.display="none";
 });
 
-// CONFIRMAR VENTA
 L("btn-confirmar").addEventListener("click", async ()=>{
-  const canal=L("venta-canal").value;
-  const metodo=L("venta-metodo").value;
+  const canal=L("venta-canal").value, metodo=L("venta-metodo").value;
   const sucursal=getSucursalVenta();
-
   if (!canal) { toast("Selecciona un canal","error"); return; }
   if (S.carrito.length===0) { toast("Agrega al menos un producto","error"); return; }
-
   const plataforma=esPlataforma(canal);
   let cliente=null;
   if (!plataforma) {
@@ -800,39 +966,30 @@ L("btn-confirmar").addEventListener("click", async ()=>{
     if (!nombre) { toast("El nombre del cliente es obligatorio","error"); return; }
     cliente=S.clienteSel||{nombre, telefono:L("cli-tel").value.trim(), email:L("cli-email").value.trim()};
   }
-
   const btn=L("btn-confirmar");
   btn.disabled=true; btn.textContent="Registrando...";
-
   const res=await api("registrarVenta",{
     items:S.carrito.map(i=>({sabor:i.sabor,tamano:i.tamano,cantidad:i.cantidad})),
     canal, metodoPago:metodo, sucursal, cliente
   });
-
   if (res.ok) {
     const total=S.carrito.reduce((s,i)=>s+i.subtotal,0);
     toast(`✅ Venta $${total.toLocaleString()} registrada`,"success");
-    limpiarVenta();
-    cargarStock();
+    limpiarVenta(); cargarStock();
     setTimeout(()=>document.querySelector('.nav-tab[data-tab="ventas"]').click(), 800);
-  } else {
-    toast(res.error,"error");
-  }
+  } else { toast(res.error,"error"); }
   btn.disabled=false; btn.textContent="Confirmar venta ✓";
 });
 
 function limpiarVenta() {
-  S.carrito=[]; S.clienteSel=null;
-  renderCarrito();
+  S.carrito=[]; S.clienteSel=null; renderCarrito();
   L("cli-nombre").value=""; L("cli-tel").value=""; L("cli-email").value="";
   L("cli-encontrado").style.display="none"; L("cli-nuevo").style.display="grid";
-  L("item-cantidad").value="1";
-  L("item-disp").innerHTML="";
+  L("item-cantidad").value="1"; L("item-disp").innerHTML="";
 }
 
 L("btn-limpiar-venta").addEventListener("click", ()=>{ limpiarVenta(); toast("Venta limpiada"); });
 
-// PRODUCCIÓN
 L("btn-cargar-prod").addEventListener("click", async ()=>{
   const sabor=L("prod-sabor").value, tamano=L("prod-tamano").value;
   const sucursal=L("prod-sucursal").value, cantidad=parseInt(L("prod-cantidad").value);
@@ -845,34 +1002,28 @@ L("btn-cargar-prod").addEventListener("click", async ()=>{
   btn.disabled=false; btn.textContent="Cargar producción";
 });
 
-// VENTAS HISTORIAL
 async function cargarVentas() {
   L("ventas-list").innerHTML=`<div class="loading"><div class="spinner"></div></div>`;
   const res=await api("getVentas");
   if(!res.ok) return;
   if(res.ventas.length===0){L("ventas-list").innerHTML=`<div class="empty-state"><div class="empty-text">Sin ventas registradas</div></div>`;return;}
-
   const grupos={};
   res.ventas.forEach(v=>{
     if(!grupos[v.idVenta]) grupos[v.idVenta]={...v,items:[]};
     grupos[v.idVenta].items.push({sabor:v.sabor,tamano:v.tamano,cantidad:v.cantidad,subtotal:v.subtotal});
   });
-
   L("ventas-list").innerHTML=Object.values(grupos).map(g=>`
     <div class="historial-item">
       <div class="hist-fecha">${g.fecha?g.fecha.substring(0,16).replace('T',' '):''}</div>
       <div class="hist-productos">${g.items.map(i=>`${i.cantidad}× ${i.sabor} ${i.tamano}`).join(" · ")}</div>
       <div class="hist-meta">
-        <span class="tag">${g.canal}</span>
-        <span class="tag">${g.metodoPago}</span>
-        <span class="tag">${g.sucursal}</span>
+        <span class="tag">${g.canal}</span><span class="tag">${g.metodoPago}</span><span class="tag">${g.sucursal}</span>
         ${g.clienteNombre?`<span class="tag">${g.clienteNombre}</span>`:""}
         <span class="tag tag-total">$${g.items.reduce((s,i)=>s+i.subtotal,0).toLocaleString()}</span>
       </div>
     </div>`).join("");
 }
 
-// CATÁLOGO PANTALLA
 async function cargarCatalogoPantalla() {
   const res=await api("getCatalogo");
   if(!res.ok) return;
@@ -916,17 +1067,14 @@ L("btn-guardar-item").addEventListener("click", async ()=>{
   else toast(res.error,"error");
 });
 
-// PRECIOS
 async function cargarPrecios(silencioso=false) {
   if(!silencioso) L("precios-content").innerHTML=`<div class="loading"><div class="spinner"></div></div>`;
   const [resP,resC]=await Promise.all([api("getPrecios"),api("getCatalogo")]);
   if(!resP.ok||!resC.ok) return;
   S.precios=resP.precios;
   if(silencioso) return;
-
   const tamanos=(resC.tamanos||[]).filter(t=>t.activo).map(t=>t.nombre);
   const getP=t=>{ const p=resP.precios.find(p=>p.tamano===t); return p?p.precio:0; };
-
   L("precios-content").innerHTML=tamanos.map(tamano=>`
     <div class="precio-row">
       <span class="precio-label">${tamano}</span>
@@ -946,7 +1094,6 @@ L("btn-guardar-precio").addEventListener("click", async ()=>{
   const precio=parseFloat(L("modal-precio-input").value);
   if(isNaN(precio)||precio<0){toast("Precio inválido","error");return;}
   const tamano=S.precioEditar;
-  // Actualizar precio para todos los sabores con ese tamaño
   const sabores=(S.catalogo?.sabores||[]).filter(s=>s.activo).map(s=>s.nombre);
   const promesas=sabores.map(sabor=>api("updatePrecio",{sabor,tamano,precio}));
   const resultados=await Promise.all(promesas);
@@ -955,7 +1102,6 @@ L("btn-guardar-precio").addEventListener("click", async ()=>{
   else toast("Error al guardar precio","error");
 });
 
-// USUARIOS
 async function cargarUsuarios() {
   const res=await api("getUsuarios");
   if(!res.ok) return;
@@ -993,7 +1139,6 @@ L("btn-cambiar-pw").addEventListener("click", async ()=>{
   else toast(res.error,"error");
 });
 
-// AUDITORÍA
 async function cargarAuditoria() {
   const res=await api("getAuditoria");
   if(!res.ok) return;
@@ -1007,7 +1152,6 @@ async function cargarAuditoria() {
       </div>`).join("");
 }
 
-// LOGOUT
 L("btn-logout").addEventListener("click", ()=>{
   S={token:null,usuario:null,rol:null,sucursal:null,catalogo:null,precios:null,stock:null,carrito:[],clienteSel:null,filtroSuc:null,filtroTam:null};
   L("app").style.display="none";
@@ -1018,6 +1162,319 @@ L("btn-logout").addEventListener("click", ()=>{
 document.querySelectorAll(".modal-overlay").forEach(o=>{
   o.addEventListener("click",e=>{ if(e.target===o) o.classList.remove("show"); });
 });
+
+// ═══════════════════════════════════════════
+//  CALCULADORA DE COSTOS
+// ═══════════════════════════════════════════
+const CALC_SIZES = [
+  {label:"Pequeña (12 cm)", portions:4, factor:0.7},
+  {label:"Mediana (18 cm)", portions:8, factor:1.0},
+  {label:"Grande (24 cm)", portions:14, factor:1.6}
+];
+const CALC_UNITS = ["g","kg","ml","L","unidad","docena"];
+
+let calcState = {
+  ings: [
+    {id:1,name:"Queso crema",useQty:250,useUnit:"g",buyQty:1,buyUnit:"kg",buyPrice:130},
+    {id:2,name:"Huevos",useQty:5,useUnit:"unidad",buyQty:12,buyUnit:"unidad",buyPrice:54},
+    {id:3,name:"Azúcar",useQty:200,useUnit:"g",buyQty:1,buyUnit:"kg",buyPrice:22},
+    {id:4,name:"Nata líquida",useQty:250,useUnit:"ml",buyQty:1,buyUnit:"L",buyPrice:52},
+    {id:5,name:"Harina",useQty:20,useUnit:"g",buyQty:1,buyUnit:"kg",buyPrice:18}
+  ],
+  pkgs: [
+    {id:1,name:"Caja",cost:28},
+    {id:2,name:"Papel",cost:4},
+    {id:3,name:"Elementos decorativos",cost:12}
+  ],
+  gasts: [
+    {id:1,name:"Renta del local",cost:0},
+    {id:2,name:"Personal / sueldos",cost:0},
+    {id:3,name:"Luz y gas",cost:0}
+  ],
+  expandId: null,
+  marginPct: 40,
+  nextIngId: 6,
+  nextPkgId: 4,
+  nextGastId: 4,
+  activeTab: "receta"
+};
+
+function toBase(qty, unit) {
+  if(unit==="kg") return qty*1000;
+  if(unit==="L") return qty*1000;
+  if(unit==="docena") return qty*12;
+  return qty;
+}
+
+function calcCostoIng(ing, factor) {
+  const usoBase = toBase(ing.useQty, ing.useUnit);
+  const compraBase = toBase(ing.buyQty, ing.buyUnit);
+  if(!compraBase || !ing.buyPrice) return 0;
+  return (usoBase / compraBase) * ing.buyPrice * factor;
+}
+
+function fmtMXN(n) {
+  return new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',minimumFractionDigits:2}).format(n);
+}
+
+function getCalcSize() { return CALC_SIZES[parseInt(L("calc-size").value||1)]; }
+
+function setCalcTab(tab) {
+  calcState.activeTab = tab;
+  document.querySelectorAll(".calc-tab").forEach(t=>{
+    t.classList.toggle("active", t.getAttribute("onclick")===`setCalcTab('${tab}')`);
+  });
+  document.querySelectorAll(".calc-section").forEach(s=>s.classList.remove("active"));
+  L("calc-"+tab).classList.add("active");
+  renderCalc();
+}
+
+function renderCalc() {
+  const size = getCalcSize();
+  const factor = size.factor;
+
+  // Calcular totales
+  const totalIngs = calcState.ings.reduce((s,i)=>s+calcCostoIng(i,factor),0);
+  const totalPkgs = calcState.pkgs.reduce((s,p)=>s+(parseFloat(p.cost)||0),0);
+  const costoReceta = totalIngs + totalPkgs;
+  const totalGastos = calcState.gasts.reduce((s,g)=>s+(parseFloat(g.cost)||0),0);
+  const precioVenta = calcState.marginPct < 100 ? costoReceta / (1 - calcState.marginPct/100) : 0;
+  const ganancia = precioVenta - costoReceta;
+  const precioPorcion = size.portions > 0 ? precioVenta / size.portions : 0;
+
+  // --- RECETA TAB ---
+  // Ingredientes
+  const ingsList = L("calc-ings-list");
+  if(ingsList) {
+    ingsList.innerHTML = calcState.ings.map(ing=>{
+      const costo = calcCostoIng(ing, factor);
+      const open = calcState.expandId === ing.id;
+      return `
+        <div onclick="toggleIngExpand(${ing.id})" style="display:grid;grid-template-columns:2fr 1.4fr 1.6fr 90px 32px;gap:8px;align-items:center;margin-bottom:4px;padding:7px 10px;border-radius:8px;cursor:pointer;background:${open?'rgba(134,189,173,.12)':'transparent'};border:1px solid ${open?'#86BDAD':'transparent'}">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:11px;color:#B2AA92;display:inline-block;transform:${open?'rotate(90deg)':'rotate(0deg)'};transition:transform .2s">▶︎</span>
+            <span style="font-size:14px;font-weight:${open?600:400}">${ing.name}</span>
+          </div>
+          <div style="font-size:13px;color:#86887D"><strong style="color:#3a3a35">${ing.useQty}</strong> ${ing.useUnit}</div>
+          <div style="font-size:13px;color:#86887D"><strong style="color:#3a3a35">${fmtMXN(ing.buyPrice)}</strong> / ${ing.buyQty} ${ing.buyUnit}</div>
+          <div style="text-align:right;font-weight:700;font-size:14px;color:#C9A84C">${fmtMXN(costo)}</div>
+          <button onclick="event.stopPropagation();delIng(${ing.id})" style="background:none;border:none;color:#B2AA92;cursor:pointer;font-size:15px;padding:0;display:flex;align-items:center;justify-content:center;height:32px">✕</button>
+        </div>
+        ${open ? `
+        <div style="margin:0 0 10px;padding:16px;background:rgba(134,189,173,.07);border:1px solid #86BDAD;border-radius:10px">
+          <div style="margin-bottom:12px">
+            <label class="form-label">Nombre</label>
+            <input value="${ing.name}" onchange="updIng(${ing.id},'name',this.value)" class="calc-input" style="width:100%;box-sizing:border-box">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+            <div style="background:rgba(134,189,173,.12);border-radius:8px;padding:12px 14px">
+              <div style="font-size:10px;color:#86BDAD;text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;font-weight:700">📐 Uso en receta</div>
+              <label class="form-label">Cantidad que usas</label>
+              <div style="display:flex;gap:8px">
+                <input type="number" value="${ing.useQty}" onchange="updIng(${ing.id},'useQty',this.value)" class="calc-input" style="width:50%;flex:none;text-align:center" step="1" min="0">
+                <select onchange="updIng(${ing.id},'useUnit',this.value)" class="calc-select" style="width:50%;flex:none">
+                  ${CALC_UNITS.map(u=>`<option${u===ing.useUnit?' selected':''}>${u}</option>`).join('')}
+                </select>
+              </div>
+            </div>
+            <div style="background:rgba(201,168,76,.08);border-radius:8px;padding:12px 14px">
+              <div style="font-size:10px;color:#C9A84C;text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;font-weight:700">🛒 Precio de compra</div>
+              <label class="form-label">Cantidad que compras</label>
+              <div style="display:flex;gap:8px;margin-bottom:8px">
+                <input type="number" value="${ing.buyQty}" onchange="updIng(${ing.id},'buyQty',this.value)" class="calc-input" style="width:50%;flex:none;text-align:center" step="0.1" min="0">
+                <select onchange="updIng(${ing.id},'buyUnit',this.value)" class="calc-select" style="width:50%;flex:none">
+                  ${CALC_UNITS.map(u=>`<option${u===ing.buyUnit?' selected':''}>${u}</option>`).join('')}
+                </select>
+              </div>
+              <label class="form-label">Lo pagas ($MXN)</label>
+              <input type="number" value="${ing.buyPrice}" onchange="updIng(${ing.id},'buyPrice',this.value)" class="calc-input" style="width:100%;box-sizing:border-box;text-align:right" step="1" min="0">
+            </div>
+          </div>
+          <div style="margin-top:12px;padding:10px 14px;background:#86BDAD;border-radius:8px;display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:12px;color:#EFEEE8">Coste en esta receta (${size.label}):</span>
+            <span style="font-size:20px;font-weight:700;color:#e8c97a">${fmtMXN(costo)}</span>
+          </div>
+        </div>` : ''}
+      `;
+    }).join('');
+    L("calc-total-ings").textContent = fmtMXN(totalIngs);
+  }
+
+  // Empaque
+  const pkgList = L("calc-pkg-list");
+  if(pkgList) {
+    pkgList.innerHTML = calcState.pkgs.map(p=>`
+      <div style="display:grid;grid-template-columns:1fr 120px 32px;gap:8px;align-items:center;margin-bottom:8px">
+        <input value="${p.name}" onchange="updPkg(${p.id},'name',this.value)" class="calc-input" placeholder="Artículo">
+        <input type="number" min="0" step="1" value="${p.cost}" onchange="updPkg(${p.id},'cost',this.value)" class="calc-input" style="text-align:right" placeholder="0">
+        <button onclick="delPkg(${p.id})" class="calc-btn-del">✕</button>
+      </div>`).join('');
+    L("calc-total-pkg").textContent = fmtMXN(totalPkgs);
+  }
+
+  // Resumen receta
+  const saborLabel = L("calc-sabor")?.value || "Tradicional";
+  if(L("calc-resumen-label")) L("calc-resumen-label").textContent = `${saborLabel} · ${size.label}`;
+  if(L("calc-res-ings")) L("calc-res-ings").textContent = fmtMXN(totalIngs);
+  if(L("calc-res-pkg")) L("calc-res-pkg").textContent = fmtMXN(totalPkgs);
+  if(L("calc-res-total")) L("calc-res-total").textContent = fmtMXN(costoReceta);
+
+  // --- GASTOS TAB ---
+  const gastsList = L("calc-gasts-list");
+  if(gastsList) {
+    gastsList.innerHTML = calcState.gasts.map(g=>`
+      <div style="display:grid;grid-template-columns:1fr 160px 32px;gap:8px;align-items:center;margin-bottom:8px">
+        <input value="${g.name}" onchange="updGast(${g.id},'name',this.value)" class="calc-input" placeholder="Concepto">
+        <input type="number" min="0" step="10" value="${g.cost}" onchange="updGast(${g.id},'cost',this.value)" class="calc-input" style="text-align:right" placeholder="0">
+        <button onclick="delGast(${g.id})" class="calc-btn-del">✕</button>
+      </div>`).join('');
+    L("calc-total-gasts").textContent = fmtMXN(totalGastos);
+
+    // Punto equilibrio
+    const equilDiv = L("calc-equilibrio");
+    if(equilDiv && totalGastos > 0 && costoReceta > 0) {
+      equilDiv.style.display = "block";
+      const grid = L("calc-equil-grid");
+      grid.innerHTML = CALC_SIZES.map(s=>{
+        const costoS = calcState.ings.reduce((sum,i)=>sum+calcCostoIng(i,s.factor),0) + totalPkgs;
+        const pvpS = calcState.marginPct < 100 ? costoS / (1 - calcState.marginPct/100) : 0;
+        const ganS = pvpS - costoS;
+        const tartasNeeded = ganS > 0 ? Math.ceil(totalGastos / ganS) : "—";
+        return `
+          <div class="calc-equil-item">
+            <div style="font-size:11px;color:#86887D;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">${s.label}</div>
+            <div style="font-size:28px;font-weight:700;color:#86BDAD">${tartasNeeded}</div>
+            <div style="font-size:11px;color:#B2AA92;margin-top:4px">tartas / mes</div>
+            <div style="font-size:11px;color:#C9A84C;margin-top:4px">Ganancia: ${ganS>0?fmtMXN(ganS):"—"}</div>
+          </div>`;
+      }).join('');
+    } else if(equilDiv) {
+      equilDiv.style.display = "none";
+    }
+  }
+
+  // --- RESULTADO TAB ---
+  // Slider
+  if(L("calc-margin-slider")) {
+    L("calc-margin-slider").value = calcState.marginPct;
+    L("calc-margin-display").textContent = calcState.marginPct + "%";
+    L("calc-slider-fill").style.width = calcState.marginPct + "%";
+  }
+
+  // Hero
+  if(L("calc-hero-label")) L("calc-hero-label").textContent = `Tarta Vasca · ${saborLabel} · ${size.label}`;
+  if(L("calc-hero-price")) L("calc-hero-price").textContent = fmtMXN(precioVenta);
+  if(L("calc-hero-porcion")) L("calc-hero-porcion").textContent = `${fmtMXN(precioPorcion)} por porción`;
+
+  // Métricas
+  if(L("calc-m-costo")) L("calc-m-costo").textContent = fmtMXN(costoReceta);
+  if(L("calc-m-ganancia")) L("calc-m-ganancia").textContent = fmtMXN(ganancia);
+  if(L("calc-m-margen-sub")) L("calc-m-margen-sub").textContent = calcState.marginPct + "% margen";
+  if(L("calc-m-porciones")) L("calc-m-porciones").textContent = size.portions;
+  if(L("calc-m-size-sub")) L("calc-m-size-sub").textContent = size.label;
+
+  // Barras
+  const barrasDiv = L("calc-barras");
+  if(barrasDiv && precioVenta > 0) {
+    const items = [
+      {label:"Ingredientes", val:totalIngs, color:"#86BDAD"},
+      {label:"Empaque", val:totalPkgs, color:"#6ea898"},
+      {label:"Ganancia", val:ganancia, color:"#C9A84C"}
+    ];
+    barrasDiv.innerHTML = items.map(item=>`
+      <div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:13px">
+          <span style="color:#86887D">${item.label}</span>
+          <span style="color:#3a3a35">${fmtMXN(item.val)} <span style="color:#B2AA92;font-size:11px">(${((item.val/precioVenta)*100).toFixed(1)}%)</span></span>
+        </div>
+        <div style="height:8px;background:#D5D0C0;border-radius:4px;overflow:hidden">
+          <div style="height:100%;width:${Math.max(0,(item.val/precioVenta)*100)}%;background:${item.color};border-radius:4px;transition:width .5s ease"></div>
+        </div>
+      </div>`).join('');
+  }
+
+  // Volumen
+  const volDiv = L("calc-vol");
+  if(volDiv) {
+    volDiv.innerHTML = [1,5,10,20].map(qty=>`
+      <div style="background:${qty===1?'#86BDAD':'rgba(134,189,173,.1)'};border:1px solid ${qty===1?'#C9A84C':'#D5D0C0'};border-radius:10px;padding:14px 8px;text-align:center">
+        <div style="font-size:10px;color:${qty===1?'#D5D0C0':'#B2AA92'};text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">${qty} tarta${qty>1?'s':''}</div>
+        <div style="font-size:16px;font-weight:700;color:${qty===1?'#EFEEE8':'#3a3a35'}">${fmtMXN(precioVenta*qty)}</div>
+        <div style="font-size:11px;color:${qty===1?'#e8c97a':'#86BDAD'};margin-top:4px">+${fmtMXN(ganancia*qty)}</div>
+      </div>`).join('');
+  }
+
+  // Nota gastos
+  const notaGastos = L("calc-nota-gastos");
+  if(notaGastos) {
+    notaGastos.style.display = totalGastos > 0 ? "block" : "none";
+    const notaVal = L("calc-nota-gasts-val");
+    if(notaVal) notaVal.textContent = fmtMXN(totalGastos);
+  }
+}
+
+function toggleIngExpand(id) {
+  calcState.expandId = calcState.expandId === id ? null : id;
+  renderCalc();
+}
+
+function updIng(id, field, val) {
+  calcState.ings = calcState.ings.map(i=>i.id===id ? {...i,[field]:['name','useUnit','buyUnit'].includes(field)?val:parseFloat(val)||0} : i);
+  renderCalc();
+}
+function delIng(id) { calcState.ings = calcState.ings.filter(i=>i.id!==id); calcState.expandId=null; renderCalc(); }
+
+function updPkg(id, field, val) {
+  calcState.pkgs = calcState.pkgs.map(p=>p.id===id ? {...p,[field]:field==='name'?val:parseFloat(val)||0} : p);
+  renderCalc();
+}
+function delPkg(id) { calcState.pkgs = calcState.pkgs.filter(p=>p.id!==id); renderCalc(); }
+
+function updGast(id, field, val) {
+  calcState.gasts = calcState.gasts.map(g=>g.id===id ? {...g,[field]:field==='name'?val:parseFloat(val)||0} : g);
+  renderCalc();
+}
+function delGast(id) { calcState.gasts = calcState.gasts.filter(g=>g.id!==id); renderCalc(); }
+
+function onMarginChange(val) {
+  calcState.marginPct = parseFloat(val);
+  renderCalc();
+}
+
+function addIngrediente() {
+  const name = L("new-ing-name")?.value.trim();
+  const useQty = parseFloat(L("new-ing-useqty")?.value)||0;
+  const useUnit = L("new-ing-useunit")?.value||"g";
+  const buyQty = parseFloat(L("new-ing-buyqty")?.value)||0;
+  const buyUnit = L("new-ing-buyunit")?.value||"kg";
+  const buyPrice = parseFloat(L("new-ing-price")?.value)||0;
+  if(!name||!useQty||!buyQty||!buyPrice) { toast("Completa todos los campos del ingrediente","error"); return; }
+  calcState.ings.push({id:calcState.nextIngId++, name, useQty, useUnit, buyQty, buyUnit, buyPrice});
+  L("new-ing-name").value=""; L("new-ing-useqty").value=""; L("new-ing-buyqty").value=""; L("new-ing-price").value="";
+  renderCalc();
+}
+
+function addEmpaque() {
+  const name = L("new-pkg-name")?.value.trim();
+  const cost = parseFloat(L("new-pkg-cost")?.value)||0;
+  if(!name||!cost) { toast("Completa nombre y costo","error"); return; }
+  calcState.pkgs.push({id:calcState.nextPkgId++, name, cost});
+  L("new-pkg-name").value=""; L("new-pkg-cost").value="";
+  renderCalc();
+}
+
+function addGasto() {
+  const name = L("new-gast-name")?.value.trim();
+  const cost = parseFloat(L("new-gast-cost")?.value)||0;
+  if(!name||!cost) { toast("Completa nombre y costo","error"); return; }
+  calcState.gasts.push({id:calcState.nextGastId++, name, cost});
+  L("new-gast-name").value=""; L("new-gast-cost").value="";
+  renderCalc();
+}
+
+// Re-render cuando cambian sabor/tamaño
+L("calc-sabor")?.addEventListener("change", renderCalc);
+L("calc-size")?.addEventListener("change", ()=>{ calcState.expandId=null; renderCalc(); });
 </script>
 </body>
 </html>
