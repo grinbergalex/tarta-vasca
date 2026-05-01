@@ -391,7 +391,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <div id="tab-costos" class="tab-pane" style="display:none">
       <div class="card">
         <div class="card-title">Calculadora de costos</div>
-        <div class="card-sub">Calcula el costo de producción y precio de venta sugerido</div>
+        <div class="card-sub">Calcula el costo de producción y precio de venta sugerido &nbsp;<span id="calc-save-status" style="font-size:11px;font-weight:500"></span></div>
 
         <!-- Config -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
@@ -737,7 +737,7 @@ function setupNav() {
       else if(t==="catalogo") cargarCatalogoPantalla();
       else if(t==="ventas") cargarVentas();
       else if(t==="venta") iniciarVenta();
-      else if(t==="costos") renderCalc();
+      else if(t==="costos") { if(!calcState.cargado) cargarCostos(); else renderCalc(); }
     });
   });
 }
@@ -1163,7 +1163,7 @@ document.querySelectorAll(".modal-overlay").forEach(o=>{
 });
 
 // ═══════════════════════════════════════════
-//  CALCULADORA DE COSTOS
+//  CALCULADORA DE COSTOS — conectada a Sheets
 // ═══════════════════════════════════════════
 const CALC_SIZES = [
   {label:"Pequeña (12 cm)", portions:4, factor:0.7},
@@ -1173,30 +1173,69 @@ const CALC_SIZES = [
 const CALC_UNITS = ["g","kg","ml","L","unidad","docena"];
 
 let calcState = {
-  ings: [
-    {id:1,name:"Queso crema",useQty:250,useUnit:"g",buyQty:1,buyUnit:"kg",buyPrice:130},
-    {id:2,name:"Huevos",useQty:5,useUnit:"unidad",buyQty:12,buyUnit:"unidad",buyPrice:54},
-    {id:3,name:"Azúcar",useQty:200,useUnit:"g",buyQty:1,buyUnit:"kg",buyPrice:22},
-    {id:4,name:"Nata líquida",useQty:250,useUnit:"ml",buyQty:1,buyUnit:"L",buyPrice:52},
-    {id:5,name:"Harina",useQty:20,useUnit:"g",buyQty:1,buyUnit:"kg",buyPrice:18}
-  ],
-  pkgs: [
-    {id:1,name:"Caja",cost:28},
-    {id:2,name:"Papel",cost:4},
-    {id:3,name:"Elementos decorativos",cost:12}
-  ],
-  gasts: [
-    {id:1,name:"Renta del local",cost:0},
-    {id:2,name:"Personal / sueldos",cost:0},
-    {id:3,name:"Luz y gas",cost:0}
-  ],
-  expandId: null,
-  marginPct: 40,
-  nextIngId: 6,
-  nextPkgId: 4,
-  nextGastId: 4,
-  activeTab: "receta"
+  ings: [], pkgs: [], gasts: [],
+  expandId: null, marginPct: 40,
+  nextIngId: 100, nextPkgId: 100, nextGastId: 100,
+  activeTab: "receta", cargado: false, guardando: false
 };
+
+let saveDebounceTimer = null;
+
+// Cargar desde Sheets
+async function cargarCostos() {
+  const contenido = L("tab-costos");
+  const card = contenido?.querySelector(".card");
+  if (card) {
+    const titulo = card.querySelector(".card-sub");
+    if (titulo) titulo.textContent = "Cargando desde Google Sheets...";
+  }
+  const res = await api("getCostos");
+  if (!res.ok) { toast("Error al cargar costos: " + res.error, "error"); return; }
+  calcState.ings = res.ings || [];
+  calcState.pkgs = res.pkgs || [];
+  calcState.gasts = res.gasts || [];
+  calcState.marginPct = res.marginPct ?? 40;
+  // nextIds = max id + 1
+  calcState.nextIngId = (calcState.ings.length ? Math.max(...calcState.ings.map(i=>i.id)) + 1 : 1);
+  calcState.nextPkgId = (calcState.pkgs.length ? Math.max(...calcState.pkgs.map(p=>p.id)) + 1 : 1);
+  calcState.nextGastId = (calcState.gasts.length ? Math.max(...calcState.gasts.map(g=>g.id)) + 1 : 1);
+  calcState.cargado = true;
+  if (card) {
+    const titulo = card.querySelector(".card-sub");
+    if (titulo) titulo.textContent = "Calcula el costo de producción y precio de venta sugerido";
+  }
+  renderCalc();
+}
+
+// Guardar a Sheets con debounce (espera 1.5s después del último cambio)
+function autoGuardar() {
+  clearTimeout(saveDebounceTimer);
+  saveDebounceTimer = setTimeout(async () => {
+    if (calcState.guardando) return;
+    calcState.guardando = true;
+    mostrarEstadoGuardado("Guardando...", "#e67e22");
+    const res = await api("saveCostos", {
+      ings: calcState.ings,
+      pkgs: calcState.pkgs,
+      gasts: calcState.gasts,
+      marginPct: calcState.marginPct
+    });
+    calcState.guardando = false;
+    if (res.ok) {
+      mostrarEstadoGuardado("✓ Guardado en Sheets", "#27ae60");
+      setTimeout(() => mostrarEstadoGuardado("", ""), 3000);
+    } else {
+      mostrarEstadoGuardado("⚠ Error al guardar", "#c0392b");
+    }
+  }, 1500);
+}
+
+function mostrarEstadoGuardado(msg, color) {
+  const el = L("calc-save-status");
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = color;
+}
 
 function toBase(qty, unit) {
   if(unit==="kg") return qty*1000;
@@ -1419,25 +1458,25 @@ function toggleIngExpand(id) {
 
 function updIng(id, field, val) {
   calcState.ings = calcState.ings.map(i=>i.id===id ? {...i,[field]:['name','useUnit','buyUnit'].includes(field)?val:parseFloat(val)||0} : i);
-  renderCalc();
+  renderCalc(); autoGuardar();
 }
-function delIng(id) { calcState.ings = calcState.ings.filter(i=>i.id!==id); calcState.expandId=null; renderCalc(); }
+function delIng(id) { calcState.ings = calcState.ings.filter(i=>i.id!==id); calcState.expandId=null; renderCalc(); autoGuardar(); }
 
 function updPkg(id, field, val) {
   calcState.pkgs = calcState.pkgs.map(p=>p.id===id ? {...p,[field]:field==='name'?val:parseFloat(val)||0} : p);
-  renderCalc();
+  renderCalc(); autoGuardar();
 }
-function delPkg(id) { calcState.pkgs = calcState.pkgs.filter(p=>p.id!==id); renderCalc(); }
+function delPkg(id) { calcState.pkgs = calcState.pkgs.filter(p=>p.id!==id); renderCalc(); autoGuardar(); }
 
 function updGast(id, field, val) {
   calcState.gasts = calcState.gasts.map(g=>g.id===id ? {...g,[field]:field==='name'?val:parseFloat(val)||0} : g);
-  renderCalc();
+  renderCalc(); autoGuardar();
 }
-function delGast(id) { calcState.gasts = calcState.gasts.filter(g=>g.id!==id); renderCalc(); }
+function delGast(id) { calcState.gasts = calcState.gasts.filter(g=>g.id!==id); renderCalc(); autoGuardar(); }
 
 function onMarginChange(val) {
   calcState.marginPct = parseFloat(val);
-  renderCalc();
+  renderCalc(); autoGuardar();
 }
 
 function addIngrediente() {
@@ -1450,7 +1489,7 @@ function addIngrediente() {
   if(!name||!useQty||!buyQty||!buyPrice) { toast("Completa todos los campos del ingrediente","error"); return; }
   calcState.ings.push({id:calcState.nextIngId++, name, useQty, useUnit, buyQty, buyUnit, buyPrice});
   L("new-ing-name").value=""; L("new-ing-useqty").value=""; L("new-ing-buyqty").value=""; L("new-ing-price").value="";
-  renderCalc();
+  renderCalc(); autoGuardar();
 }
 
 function addEmpaque() {
@@ -1459,7 +1498,7 @@ function addEmpaque() {
   if(!name||!cost) { toast("Completa nombre y costo","error"); return; }
   calcState.pkgs.push({id:calcState.nextPkgId++, name, cost});
   L("new-pkg-name").value=""; L("new-pkg-cost").value="";
-  renderCalc();
+  renderCalc(); autoGuardar();
 }
 
 function addGasto() {
@@ -1468,7 +1507,7 @@ function addGasto() {
   if(!name||!cost) { toast("Completa nombre y costo","error"); return; }
   calcState.gasts.push({id:calcState.nextGastId++, name, cost});
   L("new-gast-name").value=""; L("new-gast-cost").value="";
-  renderCalc();
+  renderCalc(); autoGuardar();
 }
 
 // Re-render cuando cambian sabor/tamaño
