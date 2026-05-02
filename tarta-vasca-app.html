@@ -388,6 +388,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <div class="card-title">Precios</div>
         <p class="precio-nota">Los precios son por tamaño y aplican a todos los sabores. Toca un precio para editarlo.</p>
         <div id="precios-content"><div class="loading"><div class="spinner"></div></div></div>
+        <button class="btn-outline" onclick="repararPrecios()" style="margin-top:8px;font-size:12px">🔧 Crear precios para sabores sin precio</button>
       </div>
     </div>
 
@@ -1033,6 +1034,13 @@ async function cargarPrecios(silencioso=false){
       <span class="precio-val" onclick="abrirModalPrecio('${tamano}',${getP(tamano)})">$${getP(tamano).toLocaleString()}</span>
     </div>`).join("");
 }
+async function repararPrecios(){
+  const btn=event.target;btn.disabled=true;btn.textContent="Reparando...";
+  const res=await api("repararPreciosSabores",{});
+  if(res.ok){toast(res.mensaje);cargarPrecios();}else toast(res.error,"error");
+  btn.disabled=false;btn.textContent="🔧 Crear precios para sabores sin precio";
+}
+
 function abrirModalPrecio(tamano,precioActual){S.precioEditar=tamano;L("modal-precio-title").textContent=`Precio — ${tamano}`;L("modal-precio-input").value=precioActual;L("modal-precio").classList.add("show");setTimeout(()=>L("modal-precio-input").focus(),100);}
 L("btn-guardar-precio").addEventListener("click",async()=>{
   const precio=parseFloat(L("modal-precio-input").value);
@@ -1340,17 +1348,27 @@ async function cargarAuditoria(){
 // ============================================================
 async function renderTablaUtilidades(){
   L("tabla-util-content").innerHTML=`<div class="loading"><div class="spinner"></div>Calculando...</div>`;
-  // Siempre pedir datos frescos desde la API (recetas/insumos pueden no estar en memoria)
-  const [resR,resI,resP]=await Promise.all([
+  // Traer todo fresco
+  const [resR,resI,resP,resC]=await Promise.all([
     api("getRecetas"),
     api("getInsumos"),
-    S.precios?Promise.resolve({ok:true,precios:S.precios}):api("getPrecios")
+    api("getPrecios"),
+    api("getCatalogo")
   ]);
   if(resR.ok) S.recetas=resR.recetas;
   if(resI.ok) S.insumos=resI.insumos;
   if(resP.ok&&resP.precios) S.precios=resP.precios;
+  if(resC.ok) S.catalogo=resC;
+
+  // Construir mapa de precios por tamaño (primer precio encontrado por tamaño = precio base)
+  const preciosPorTamano={};
+  (S.precios||[]).forEach(p=>{
+    if(!preciosPorTamano[p.tamano]) preciosPorTamano[p.tamano]=p.precio;
+  });
+
   const sabores=(S.catalogo?.sabores||[]).filter(s=>s.activo).map(s=>s.nombre);
   const tamanos=(S.catalogo?.tamanos||[]).filter(t=>t.activo).map(t=>t.nombre);
+
   const filas=[];
   for(const sab of sabores){
     for(const tam of tamanos){
@@ -1360,13 +1378,18 @@ async function renderTablaUtilidades(){
         const ins=S.insumos.find(i=>i.id===ing.insumoId);
         return sum+(ins?ins.costoPorUnidad*ing.cantidad:0);
       },0);
-      const precio=S.precios?.find(p=>p.tamano===tam)?.precio||0;
+      // Buscar precio específico sabor+tamaño primero, si no usa precio base por tamaño
+      const precioEspecifico=(S.precios||[]).find(p=>p.sabor===sab&&p.tamano===tam)?.precio||0;
+      const precio=precioEspecifico||preciosPorTamano[tam]||0;
       const utilidad=precio-costoTotal;
       const margen=precio>0?(utilidad/precio*100):0;
       filas.push({sab,tam,costoTotal,precio,utilidad,margen});
     }
   }
-  if(filas.length===0){L("tabla-util-content").innerHTML=`<div class="empty-state"><div class="empty-icon">📋</div><div>Sin recetas cargadas todavía</div></div>`;return;}
+  if(filas.length===0){
+    L("tabla-util-content").innerHTML=`<div class="empty-state"><div class="empty-icon">📋</div><div>Sin recetas cargadas — ve a Costos → Recetas para cargar ingredientes</div></div>`;
+    return;
+  }
   L("tabla-util-content").innerHTML=`
     <div class="util-row header">
       <span>Producto</span><span style="text-align:right">Costo</span><span style="text-align:right">Precio</span><span style="text-align:right">Utilidad</span><span style="text-align:right">Margen</span>
@@ -1377,7 +1400,7 @@ async function renderTablaUtilidades(){
       return `<div class="util-row">
         <div><div class="util-nombre">${f.sab}</div><div style="font-size:11px;color:var(--muted)">${f.tam}</div></div>
         <div class="util-val">${fmtMXN(f.costoTotal)}</div>
-        <div class="util-val">${f.precio>0?fmtMXN(f.precio):'—'}</div>
+        <div class="util-val">${f.precio>0?fmtMXN(f.precio):'<span style="color:var(--danger);font-size:11px">Sin precio</span>'}</div>
         <div class="util-val ${uCls}">${f.precio>0?fmtMXN(f.utilidad):'—'}</div>
         <div style="text-align:right"><span class="util-margen ${mCls}">${f.precio>0?f.margen.toFixed(1)+'%':'—'}</span></div>
       </div>`;
