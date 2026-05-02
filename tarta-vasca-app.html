@@ -90,7 +90,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 .disp-low{background:#fff3e0;color:var(--warning)}
 .disp-out{background:#ffebee;color:var(--danger)}
 .add-item-box{background:var(--warm);border-radius:14px;padding:16px;margin-bottom:14px}
-.add-item-box .form-group{margin-bottom:10px}
 .add-item-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .cliente-box{background:var(--warm);border-radius:14px;padding:16px;margin-bottom:14px}
 .cliente-encontrado-row{display:flex;align-items:center;gap:10px}
@@ -100,7 +99,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 .sugerencias{position:absolute;background:white;border:1px solid var(--border);border-radius:12px;width:100%;z-index:50;box-shadow:var(--shadow);max-height:180px;overflow-y:auto;top:100%;left:0}
 .sug-item{padding:12px 16px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--warm)}
 .sug-item:last-child{border-bottom:none}
-.sug-item:active{background:var(--warm)}
 .historial-item{padding:13px 0;border-bottom:1px solid var(--warm)}
 .historial-item:last-child{border-bottom:none}
 .hist-fecha{font-size:11px;color:var(--muted)}
@@ -146,62 +144,50 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 .audit-detalle{font-size:13px;margin:3px 0}
 .audit-meta{font-size:11px;color:var(--muted)}
 
-/* ── CALCULADORA DE COSTOS ── */
-.calc-tabs{display:flex;gap:2px;margin-bottom:20px;border-bottom:2px solid #D5D0C0}
-.calc-tab{padding:10px 18px;border:none;background:transparent;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#86887D;font-weight:400;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s}
-.calc-tab.active{color:#C9A84C;border-bottom-color:#C9A84C;font-weight:700}
-.calc-section{display:none}
-.calc-section.active{display:block}
-.calc-card{background:white;border-radius:12px;padding:20px 22px;border:1px solid #D5D0C0;box-shadow:0 2px 12px rgba(0,0,0,.05);margin-bottom:16px}
-.calc-card-title{font-size:10px;color:#86887D;text-transform:uppercase;letter-spacing:2.5px;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid #D5D0C0}
-.calc-hero{background:#86BDAD;border-radius:14px;padding:32px 28px;text-align:center;border:2px solid #C9A84C;margin-bottom:16px}
+/* ── COSTOS v4 ── */
+.costos-tabs{display:flex;gap:2px;margin-bottom:20px;border-bottom:2px solid var(--border)}
+.costos-tab{padding:10px 16px;border:none;background:transparent;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:400;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s}
+.costos-tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:700}
+.costos-section{display:none}
+.costos-section.active{display:block}
+.insumo-row{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:10px 12px;border-radius:10px;margin-bottom:6px;background:var(--warm);border:1px solid transparent;transition:border .15s}
+.insumo-row:hover{border-color:var(--border)}
+.insumo-row.expanded{background:rgba(134,189,173,.1);border-color:#86BDAD}
+.insumo-nombre{font-size:14px;font-weight:500}
+.insumo-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.insumo-costo{font-family:'Fraunces',serif;font-size:16px;color:var(--accent);text-align:right}
+.insumo-costo-label{font-size:10px;color:var(--muted);text-align:right}
+.insumo-expand{background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;padding:4px 6px}
+.insumo-form{background:rgba(134,189,173,.07);border:1px solid #86BDAD;border-radius:10px;padding:16px;margin-bottom:10px}
+.campo-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.campo-grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.mini-input{background:white;border:1.5px solid var(--border);border-radius:8px;color:var(--ink);padding:9px 10px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;width:100%;box-sizing:border-box}
+.mini-input:focus{border-color:#86BDAD}
+.mini-select{background:white;border:1.5px solid var(--border);border-radius:8px;color:var(--ink);padding:9px 10px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;width:100%;box-sizing:border-box;cursor:pointer;appearance:none}
+.mini-select:focus{border-color:#86BDAD}
+.costo-unitario-badge{background:#86BDAD;color:#EFEEE8;border-radius:8px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+.btn-add-small{background:#86BDAD;border:none;color:#EFEEE8;border-radius:8px;cursor:pointer;padding:0 14px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:700;height:40px;letter-spacing:1px;text-transform:uppercase;white-space:nowrap}
+.btn-del-small{background:none;border:none;color:#B2AA92;cursor:pointer;font-size:15px;padding:0;height:40px;display:flex;align-items:center;justify-content:center;width:32px}
+.add-box{margin-top:14px;padding:14px;background:rgba(134,189,173,.07);border:1px dashed #86BDAD;border-radius:8px}
+.add-box-title{font-size:10px;color:#86BDAD;text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;font-weight:700}
+.receta-sabor-select{width:100%;margin-bottom:14px}
+.receta-tam-select{margin-bottom:14px}
+.receta-row{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:center;margin-bottom:6px;padding:8px 10px;background:var(--warm);border-radius:8px}
+.receta-row-nombre{font-size:13px;font-weight:500}
+.receta-row-cant{font-size:13px;color:var(--muted)}
+.receta-row-costo{font-size:13px;font-weight:700;color:var(--accent);text-align:right}
+.calc-hero{background:#86BDAD;border-radius:14px;padding:28px 24px;text-align:center;border:2px solid #C9A84C;margin-bottom:16px}
 .calc-hero-label{font-size:11px;color:#D5D0C0;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px}
-.calc-hero-price{font-size:52px;font-weight:400;color:#EFEEE8;line-height:1}
-.calc-hero-sub{font-size:13px;color:#D5D0C0;margin-top:8px}
-.calc-hero-badge{display:inline-block;margin-top:14px;background:#C9A84C;border-radius:20px;padding:6px 20px;font-size:13px;color:#EFEEE8;font-weight:700}
-.calc-grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
-.calc-grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px}
-.calc-ing-row{display:grid;grid-template-columns:2fr 1.4fr 1.6fr 90px 32px;gap:8px;align-items:center;margin-bottom:6px;padding:7px 10px;border-radius:8px;cursor:pointer;border:1px solid transparent;transition:background .15s}
-.calc-ing-row:hover{background:rgba(134,189,173,.08)}
-.calc-ing-row.expanded{background:rgba(134,189,173,.12);border-color:#86BDAD}
-.calc-ing-expand{background:rgba(134,189,173,.07);border:1px solid #86BDAD;border-radius:10px;padding:16px;margin-bottom:10px}
-.calc-ing-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.calc-sub-card{background:rgba(134,189,173,.12);border-radius:8px;padding:12px 14px}
-.calc-sub-card.gold{background:rgba(201,168,76,.08)}
-.calc-sub-label{font-size:10px;color:#86BDAD;text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;font-weight:700}
-.calc-sub-label.gold{color:#C9A84C}
-.calc-row-input{display:flex;gap:8px}
-.calc-input{background:white;border:1.5px solid #D5D0C0;border-radius:8px;color:#3a3a35;padding:10px 12px;font-family:'DM Sans',sans-serif;font-size:14px;height:42px;outline:none;width:100%;box-sizing:border-box}
-.calc-input:focus{border-color:#86BDAD}
-.calc-select{background:white;border:1.5px solid #D5D0C0;border-radius:8px;color:#3a3a35;padding:10px 12px;font-family:'DM Sans',sans-serif;font-size:14px;height:42px;outline:none;width:100%;box-sizing:border-box;cursor:pointer;appearance:none}
-.calc-result-bar{background:#86BDAD;border-radius:8px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;margin-top:12px}
-.calc-result-label{font-size:12px;color:#EFEEE8}
-.calc-result-val{font-size:20px;font-weight:700;color:#e8c97a}
-.calc-total-row{display:flex;justify-content:flex-end;padding-top:10px;margin-top:4px;border-top:1px dashed #D5D0C0;font-size:13px}
-.calc-pkg-row{display:grid;grid-template-columns:1fr 120px 32px;gap:8px;align-items:center;margin-bottom:8px}
-.calc-metric{background:white;border:1px solid #D5D0C0;border-radius:12px;padding:16px 12px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.05)}
-.calc-metric-emoji{font-size:22px;margin-bottom:6px}
-.calc-metric-val{font-size:17px;font-weight:700;color:#86BDAD}
-.calc-metric-label{font-size:10px;color:#86887D;text-transform:uppercase;letter-spacing:1.5px;margin-top:4px}
-.calc-metric-sub{font-size:11px;color:#B2AA92;margin-top:2px}
-.calc-bar-item{margin-bottom:12px}
-.calc-bar-header{display:flex;justify-content:space-between;margin-bottom:4px;font-size:13px}
-.calc-bar-track{height:8px;background:#D5D0C0;border-radius:4px;overflow:hidden}
-.calc-bar-fill{height:100%;border-radius:4px;transition:width .5s ease}
-.calc-vol-item{background:rgba(134,189,173,.1);border:1px solid #D5D0C0;border-radius:10px;padding:14px 8px;text-align:center}
-.calc-vol-item.highlight{background:#86BDAD;border-color:#C9A84C}
-.calc-slider-wrap{position:relative;height:8px;background:#D5D0C0;border-radius:4px;margin-top:10px}
-.calc-slider-fill{position:absolute;left:0;top:0;height:100%;background:#86BDAD;border-radius:4px;transition:width .1s}
-.calc-slider{position:absolute;top:50%;transform:translateY(-50%);left:0;width:100%;opacity:0;cursor:pointer;height:20px;margin:0;padding:0}
-.calc-add-box{margin-top:14px;padding:12px 14px;background:rgba(134,189,173,.07);border:1px dashed #86BDAD;border-radius:8px}
-.calc-add-title{font-size:10px;color:#86BDAD;text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;font-weight:700}
-.calc-add-row{display:grid;grid-template-columns:1fr 120px auto;gap:8px;align-items:center}
-.calc-add-row3{display:grid;grid-template-columns:1fr 160px auto;gap:8px;align-items:center}
-.calc-btn-add{background:#86BDAD;border:none;color:#EFEEE8;border-radius:8px;cursor:pointer;padding:0 16px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:700;height:42px;letter-spacing:1px;text-transform:uppercase;white-space:nowrap}
-.calc-btn-del{background:none;border:none;color:#B2AA92;cursor:pointer;font-size:15px;padding:0;height:42px;display:flex;align-items:center;justify-content:center}
-.calc-resumen-bar{background:#86BDAD;border-radius:12px;padding:18px 22px;border:2px solid #C9A84C;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-top:4px}
-.calc-info-box{font-size:12px;color:#86887D;padding:10px 14px;background:rgba(134,189,173,.1);border-radius:8px;margin-bottom:16px}
-.calc-equil-item{background:rgba(134,189,173,.1);border:1px solid #86BDAD;border-radius:10px;padding:14px 12px;text-align:center}
+.calc-hero-price{font-size:48px;font-weight:400;color:#EFEEE8;line-height:1}
+.calc-hero-sub{font-size:13px;color:#D5D0C0;margin-top:6px}
+.calc-lineas-table{width:100%;border-collapse:collapse;margin-top:8px}
+.calc-lineas-table th{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);padding:6px 0;border-bottom:1px solid var(--border);text-align:left}
+.calc-lineas-table td{padding:9px 0;font-size:13px;border-bottom:1px solid var(--warm)}
+.calc-lineas-table tr:last-child td{border-bottom:none}
+.calc-total-row{display:flex;justify-content:flex-end;padding-top:10px;margin-top:4px;border-top:1px dashed var(--border);font-size:13px}
+.seccion-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;font-weight:700}
+.bulk-area{width:100%;min-height:80px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;resize:vertical;background:white;color:var(--ink)}
+.bulk-area:focus{border-color:var(--accent)}
 </style>
 </head>
 <body>
@@ -214,7 +200,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <label class="field-label">Usuario</label>
     <input class="field-input" type="text" id="login-user" placeholder="tu usuario" autocapitalize="none">
     <label class="field-label">Contraseña</label>
-    <input class="field-input" type="password" id="login-pass" placeholder="••••••••">
+    <input class="field-input" type="password" id="login-pass" placeholder="••••••••••">
     <button class="btn-login" id="btn-login">Entrar</button>
     <div class="login-error" id="login-error"></div>
   </div>
@@ -274,9 +260,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
             <select class="form-select" id="venta-metodo"></select>
           </div>
         </div>
-        <div class="canal-aviso" id="canal-aviso">
-          <span>✓</span><span>Plataforma — no se piden datos del cliente</span>
-        </div>
+        <div class="canal-aviso" id="canal-aviso"><span>✓</span><span>Plataforma — no se piden datos del cliente</span></div>
         <div class="separador"></div>
         <div class="form-group owner-only" id="venta-suc-group">
           <label class="form-label">Sucursal</label>
@@ -387,201 +371,156 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
       </div>
     </div>
 
-    <!-- COSTOS (Calculadora) -->
+    <!-- COSTOS v4 -->
     <div id="tab-costos" class="tab-pane" style="display:none">
       <div class="card">
-        <div class="card-title">Calculadora de costos</div>
-        <div class="card-sub">Calcula el costo de producción y precio de venta sugerido &nbsp;<span id="calc-save-status" style="font-size:11px;font-weight:500"></span></div>
+        <div class="card-title">Costos</div>
+        <div class="card-sub">Insumos, recetas por sabor y calculadora de costo por pastel &nbsp;<span id="costos-save-status" style="font-size:11px;font-weight:500"></span></div>
 
-        <!-- Config -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
-          <div class="form-group" style="margin-bottom:0">
-            <label class="form-label">Sabor</label>
-            <select class="form-select" id="calc-sabor">
-              <option>Tradicional</option><option>Pistache</option><option>Galleta Lotus</option>
-              <option>Chocolate 70%</option><option>Frambuesa</option><option>Limón</option>
-              <option>Café</option><option>Matcha</option><option>Mango</option>
-              <option>Maracuyá</option><option>Caramelo</option><option>Oreo</option>
-            </select>
-          </div>
-          <div class="form-group" style="margin-bottom:0">
-            <label class="form-label">Tamaño</label>
-            <select class="form-select" id="calc-size">
-              <option value="0">Pequeña (12 cm) · 4 porciones</option>
-              <option value="1" selected>Mediana (18 cm) · 8 porciones</option>
-              <option value="2">Grande (24 cm) · 14 porciones</option>
-            </select>
-          </div>
-        </div>
-        <div style="font-size:12px;color:#86887D;padding:10px 14px;background:rgba(134,189,173,.1);border-radius:8px;margin-bottom:16px">
-          💡 Los ingredientes se ajustan automáticamente al tamaño seleccionado
+        <div class="costos-tabs">
+          <button class="costos-tab active" onclick="setCostosTab('insumos')">📦 Insumos</button>
+          <button class="costos-tab" onclick="setCostosTab('recetas')">📋 Recetas</button>
+          <button class="costos-tab" onclick="setCostosTab('calculadora')">🧮 Calculadora</button>
+          <button class="costos-tab" onclick="setCostosTab('carga')">📤 Carga masiva</button>
         </div>
 
-        <!-- Sub-tabs -->
-        <div class="calc-tabs">
-          <button class="calc-tab active" onclick="setCalcTab('receta')">🍮 Receta</button>
-          <button class="calc-tab" onclick="setCalcTab('gastos')">🏪 Gastos fijos</button>
-          <button class="calc-tab" onclick="setCalcTab('resultado')">📊 Resultado</button>
-        </div>
+        <!-- TAB INSUMOS -->
+        <div id="costos-insumos" class="costos-section active">
+          <div class="seccion-label">Catálogo de insumos</div>
+          <div id="insumos-list"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
 
-        <!-- TAB RECETA -->
-        <div id="calc-receta" class="calc-section active">
-          <div id="calc-ings-list"></div>
-          <div class="calc-total-row">
-            <span style="color:#86887D">Total ingredientes:&nbsp;<strong style="color:#C9A84C;font-size:16px" id="calc-total-ings">$0.00</strong></span>
-          </div>
-
-          <!-- Empaque -->
-          <div style="margin-top:16px;font-size:10px;color:#86887D;text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;font-weight:700">Empaque y presentación</div>
-          <div id="calc-pkg-list"></div>
-          <div class="calc-total-row">
-            <span style="color:#86887D">Total empaque:&nbsp;<strong style="color:#C9A84C;font-size:16px" id="calc-total-pkg">$0.00</strong></span>
-          </div>
-
-          <!-- Agregar ingrediente -->
-          <div class="calc-add-box" style="margin-top:16px">
-            <div class="calc-add-title">+ Añadir ingrediente</div>
-            <div style="margin-bottom:10px">
-              <label class="form-label">Nombre</label>
-              <input class="calc-input" id="new-ing-name" placeholder="ej. Vainilla" style="width:100%">
+          <div class="add-box" style="margin-top:16px">
+            <div class="add-box-title">+ Nuevo insumo</div>
+            <div class="form-group" style="margin-bottom:10px">
+              <label class="form-label">Nombre del insumo</label>
+              <input class="mini-input" id="new-ins-nombre" placeholder="ej. Queso crema, Huevos, Cajas...">
             </div>
-            <div class="calc-grid2" style="margin-bottom:8px">
-              <div style="background:rgba(134,189,173,.12);border-radius:8px;padding:12px">
-                <div style="font-size:10px;color:#86BDAD;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;font-weight:700">📐 Uso en receta</div>
-                <div class="calc-row-input">
-                  <input type="number" class="calc-input" id="new-ing-useqty" placeholder="250" style="width:50%;flex:none;text-align:center">
-                  <select class="calc-select" id="new-ing-useunit" style="width:50%;flex:none">
-                    <option>g</option><option>kg</option><option>ml</option><option>L</option><option>unidad</option><option>docena</option>
-                  </select>
-                </div>
-              </div>
-              <div style="background:rgba(201,168,76,.08);border-radius:8px;padding:12px">
-                <div style="font-size:10px;color:#C9A84C;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;font-weight:700">🛒 Precio compra</div>
-                <div class="calc-row-input" style="margin-bottom:8px">
-                  <input type="number" class="calc-input" id="new-ing-buyqty" placeholder="1" style="width:50%;flex:none;text-align:center">
-                  <select class="calc-select" id="new-ing-buyunit" style="width:50%;flex:none">
-                    <option>kg</option><option>g</option><option>L</option><option>ml</option><option>unidad</option><option>docena</option>
-                  </select>
-                </div>
-                <label class="form-label">Lo pagas ($MXN)</label>
-                <input type="number" class="calc-input" id="new-ing-price" placeholder="0" style="width:100%;box-sizing:border-box;text-align:right">
-              </div>
+            <div class="form-group" style="margin-bottom:10px">
+              <label class="form-label">Descripción (opcional)</label>
+              <input class="mini-input" id="new-ins-desc" placeholder="ej. Philadelphia 190g, marca X...">
             </div>
-            <button onclick="addIngrediente()" style="margin-top:8px;width:100%;background:#86BDAD;border:none;color:#EFEEE8;border-radius:8px;cursor:pointer;padding:10px 0;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase">Añadir ingrediente</button>
-          </div>
-
-          <!-- Agregar empaque -->
-          <div class="calc-add-box" style="margin-top:12px">
-            <div class="calc-add-title">+ Añadir artículo de empaque</div>
-            <div class="calc-add-row">
-              <input class="calc-input" id="new-pkg-name" placeholder="ej. Moño, etiqueta...">
-              <input type="number" min="0" step="1" class="calc-input" id="new-pkg-cost" placeholder="$ costo" style="text-align:right">
-              <button onclick="addEmpaque()" class="calc-btn-add">Añadir</button>
-            </div>
-          </div>
-
-          <!-- Resumen receta -->
-          <div class="calc-resumen-bar" style="margin-top:16px">
-            <div>
-              <div style="font-size:11px;color:#D5D0C0;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px" id="calc-resumen-label">Tradicional · Mediana</div>
-              <div style="font-size:13px;color:#EFEEE8">Ingredientes <strong style="color:#e8c97a" id="calc-res-ings">$0.00</strong> + Empaque <strong style="color:#e8c97a" id="calc-res-pkg">$0.00</strong></div>
-            </div>
-            <div style="text-align:right">
-              <div style="font-size:11px;color:#D5D0C0;letter-spacing:1px;text-transform:uppercase">Costo producción</div>
-              <div style="font-size:32px;font-weight:700;color:#EFEEE8;line-height:1" id="calc-res-total">$0.00</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- TAB GASTOS -->
-        <div id="calc-gastos" class="calc-section">
-          <div class="calc-info-box">Aquí van los gastos que tienes independientemente de cuántas tartas hagas: renta, personal, servicios, etc. Esta información es solo de referencia — <strong>no se suma al costo de receta</strong>.</div>
-          <div id="calc-gasts-list"></div>
-          <div class="calc-total-row">
-            <span style="color:#86887D">Total gastos fijos mensuales:&nbsp;<strong style="color:#C9A84C;font-size:16px" id="calc-total-gasts">$0.00</strong></span>
-          </div>
-          <div class="calc-add-box" style="margin-top:14px">
-            <div class="calc-add-title">+ Añadir gasto</div>
-            <div class="calc-add-row3">
-              <input class="calc-input" id="new-gast-name" placeholder="ej. Internet, seguro...">
-              <input type="number" min="0" step="10" class="calc-input" id="new-gast-cost" placeholder="$ mensual" style="text-align:right">
-              <button onclick="addGasto()" class="calc-btn-add">Añadir</button>
-            </div>
-          </div>
-          <!-- Punto de equilibrio -->
-          <div id="calc-equilibrio" style="margin-top:16px;display:none">
-            <div style="font-size:10px;color:#86887D;text-transform:uppercase;letter-spacing:2px;margin-bottom:4px;font-weight:700">Referencia: punto de equilibrio</div>
-            <div style="font-size:12px;color:#86887D;margin-bottom:12px">¿Cuántas tartas necesitas vender al mes para cubrir tus gastos fijos?</div>
-            <div id="calc-equil-grid" class="calc-grid3"></div>
-          </div>
-        </div>
-
-        <!-- TAB RESULTADO -->
-        <div id="calc-resultado" class="calc-section">
-          <!-- Margen slider -->
-          <div class="calc-card" style="margin-bottom:16px">
-            <div class="calc-card-title">Margen de beneficio</div>
-            <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+            <div style="font-size:10px;color:#86BDAD;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;font-weight:700">📦 ¿Cómo lo compras?</div>
+            <div class="campo-grid3" style="margin-bottom:8px">
               <div>
-                <div style="font-size:14px;color:#3a3a35">Margen sobre costo de producción</div>
-                <div style="font-size:11px;color:#B2AA92;margin-top:2px">Solo ingredientes + empaque</div>
+                <label class="form-label">Cantidad</label>
+                <input type="number" class="mini-input" id="new-ins-buyqty" placeholder="ej. 30" min="0" step="1">
               </div>
-              <div style="font-size:16px;font-weight:700;color:#86BDAD;background:rgba(134,189,173,.1);border:1px solid #86BDAD;border-radius:6px;padding:2px 12px;min-width:80px;text-align:center" id="calc-margin-display">40%</div>
+              <div>
+                <label class="form-label">Unidad</label>
+                <select class="mini-select" id="new-ins-buyunit">
+                  <option>unidad</option><option>g</option><option>kg</option><option>ml</option><option>L</option><option>docena</option>
+                </select>
+              </div>
+              <div>
+                <label class="form-label">Precio ($)</label>
+                <input type="number" class="mini-input" id="new-ins-price" placeholder="ej. 54" min="0" step="1" style="text-align:right">
+              </div>
             </div>
-            <div class="calc-slider-wrap">
-              <div class="calc-slider-fill" id="calc-slider-fill" style="width:40%"></div>
-              <input type="range" min="0" max="100" step="1" value="40" class="calc-slider" id="calc-margin-slider" oninput="onMarginChange(this.value)">
+            <div id="new-ins-costo-preview" style="display:none" class="costo-unitario-badge">
+              <span style="font-size:12px;color:#EFEEE8">Costo por unidad:</span>
+              <span id="new-ins-costo-val" style="font-size:18px;font-weight:700;color:#e8c97a">$0.00</span>
             </div>
-            <div style="display:flex;justify-content:space-between;font-size:10px;color:#B2AA92;margin-top:4px"><span>0</span><span>100</span></div>
-          </div>
-
-          <!-- Hero precio -->
-          <div class="calc-hero" style="margin-bottom:16px">
-            <div class="calc-hero-label" id="calc-hero-label">Tradicional · Mediana (18 cm)</div>
-            <div class="calc-hero-price" id="calc-hero-price">$0.00</div>
-            <div class="calc-hero-sub">Precio de venta sugerido</div>
-            <div class="calc-hero-badge" id="calc-hero-porcion">$0.00 por porción</div>
-          </div>
-
-          <!-- Métricas -->
-          <div class="calc-grid3" style="margin-bottom:16px">
-            <div class="calc-metric">
-              <div class="calc-metric-emoji">🧁</div>
-              <div class="calc-metric-val" id="calc-m-costo">$0.00</div>
-              <div class="calc-metric-label">Costo producción</div>
-              <div class="calc-metric-sub">ingred. + empaque</div>
-            </div>
-            <div class="calc-metric">
-              <div class="calc-metric-emoji">💰</div>
-              <div class="calc-metric-val" id="calc-m-ganancia">$0.00</div>
-              <div class="calc-metric-label">Ganancia</div>
-              <div class="calc-metric-sub" id="calc-m-margen-sub">40% margen</div>
-            </div>
-            <div class="calc-metric">
-              <div class="calc-metric-emoji">🍮</div>
-              <div class="calc-metric-val" id="calc-m-porciones">8</div>
-              <div class="calc-metric-label">Porciones</div>
-              <div class="calc-metric-sub" id="calc-m-size-sub">Mediana</div>
-            </div>
-          </div>
-
-          <!-- Barras -->
-          <div class="calc-card" style="margin-bottom:12px">
-            <div class="calc-card-title">Composición del precio de venta</div>
-            <div id="calc-barras"></div>
-          </div>
-
-          <!-- Volumen -->
-          <div class="calc-card" style="margin-bottom:12px">
-            <div class="calc-card-title">Ingresos por volumen de ventas</div>
-            <div class="calc-grid3" id="calc-vol"></div>
-          </div>
-
-          <!-- Nota gastos -->
-          <div id="calc-nota-gastos" style="display:none;padding:14px 20px;background:rgba(134,136,125,.1);border:1px solid #D5D0C0;border-radius:10px;font-size:13px;color:#86887D">
-            🏪 Tus gastos fijos mensuales son <strong style="color:#3a3a35" id="calc-nota-gasts-val"></strong>. Ve a la pestaña <strong>Gastos fijos</strong> para ver cuántas tartas necesitas vender para cubrirlos.
+            <button onclick="guardarNuevoInsumo()" style="margin-top:10px;width:100%;background:#86BDAD;border:none;color:#EFEEE8;border-radius:8px;cursor:pointer;padding:11px 0;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase">AGREGAR INSUMO</button>
           </div>
         </div>
+
+        <!-- TAB RECETAS -->
+        <div id="costos-recetas" class="costos-section">
+          <div class="seccion-label">Receta por sabor y tamaño</div>
+          <div class="campo-grid2" style="margin-bottom:14px">
+            <div>
+              <label class="form-label">Sabor</label>
+              <select class="mini-select receta-sabor-select" id="receta-sabor" onchange="cargarRecetaActual()"></select>
+            </div>
+            <div>
+              <label class="form-label">Tamaño</label>
+              <select class="mini-select" id="receta-tamano" onchange="cargarRecetaActual()"></select>
+            </div>
+          </div>
+          <div id="receta-ingredientes-list"></div>
+
+          <div class="add-box" style="margin-top:12px">
+            <div class="add-box-title">+ Añadir ingrediente a esta receta</div>
+            <div class="form-group" style="margin-bottom:10px">
+              <label class="form-label">Insumo</label>
+              <select class="mini-select" id="receta-new-insumo" style="width:100%"></select>
+            </div>
+            <div class="campo-grid2" style="margin-bottom:8px">
+              <div>
+                <label class="form-label">Cantidad</label>
+                <input type="number" class="mini-input" id="receta-new-qty" placeholder="ej. 5" min="0" step="0.1">
+              </div>
+              <div>
+                <label class="form-label">Unidad</label>
+                <select class="mini-select" id="receta-new-unit">
+                  <option>unidad</option><option>g</option><option>kg</option><option>ml</option><option>L</option>
+                </select>
+              </div>
+            </div>
+            <button onclick="agregarIngredienteReceta()" style="width:100%;background:#86BDAD;border:none;color:#EFEEE8;border-radius:8px;cursor:pointer;padding:11px 0;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase">AÑADIR A RECETA</button>
+          </div>
+          <button onclick="guardarRecetaCompleta()" class="btn-main btn-green" style="margin-top:12px" id="btn-guardar-receta">Guardar receta</button>
+        </div>
+
+        <!-- TAB CALCULADORA -->
+        <div id="costos-calculadora" class="costos-section">
+          <div class="campo-grid2" style="margin-bottom:16px">
+            <div>
+              <label class="form-label">Sabor</label>
+              <select class="mini-select" id="calc-sabor" onchange="calcularCosto()" style="width:100%"></select>
+            </div>
+            <div>
+              <label class="form-label">Tamaño</label>
+              <select class="mini-select" id="calc-tamano" onchange="calcularCosto()" style="width:100%"></select>
+            </div>
+          </div>
+          <div id="calc-resultado">
+            <div class="empty-state"><div class="empty-icon">🧮</div><div>Selecciona sabor y tamaño para calcular</div></div>
+          </div>
+        </div>
+
+        <!-- TAB CARGA MASIVA -->
+        <div id="costos-carga" class="costos-section">
+          <div style="font-size:12px;color:var(--muted);padding:10px 14px;background:rgba(134,189,173,.1);border-radius:8px;margin-bottom:16px">
+            💡 Puedes cargarme los datos de tus insumos o recetas en cualquier formato: texto, lista, imagen de un documento, audio — y yo los conviero al formato correcto para guardarlos.
+          </div>
+
+          <div class="seccion-label">Carga masiva de insumos</div>
+          <div class="form-group" style="margin-bottom:8px">
+            <label class="form-label">Pega tu lista de insumos</label>
+            <textarea class="bulk-area" id="bulk-insumos-text" placeholder="ej:
+- Queso crema: 1 kg a $130
+- Huevos: cartón de 30 a $75
+- Cajas medianas: paquete de 100 a $350
+- Nata líquida: 1 litro a $52"></textarea>
+          </div>
+          <button onclick="procesarBulkInsumos()" class="btn-main" id="btn-bulk-insumos">Procesar y cargar insumos</button>
+
+          <div class="separador"></div>
+
+          <div class="seccion-label">Carga masiva de receta</div>
+          <div class="campo-grid2" style="margin-bottom:10px">
+            <div>
+              <label class="form-label">Sabor</label>
+              <select class="mini-select" id="bulk-receta-sabor" style="width:100%"></select>
+            </div>
+            <div>
+              <label class="form-label">Tamaño</label>
+              <select class="mini-select" id="bulk-receta-tamano" style="width:100%"></select>
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:8px">
+            <label class="form-label">Lista de ingredientes de esta receta</label>
+            <textarea class="bulk-area" id="bulk-receta-text" placeholder="ej:
+- 250g queso crema
+- 5 huevos
+- 200g azúcar
+- 250ml nata líquida
+- 1 caja"></textarea>
+          </div>
+          <button onclick="procesarBulkReceta()" class="btn-main btn-green" id="btn-bulk-receta">Procesar y guardar receta</button>
+        </div>
+
       </div>
     </div>
 
@@ -594,8 +533,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
       </div>
       <div class="card">
         <div class="card-title">Cambiar mi contraseña</div>
-        <div class="form-group"><label class="form-label">Contraseña actual</label><input class="form-input" type="password" id="pw-actual" placeholder="••••••••"></div>
-        <div class="form-group"><label class="form-label">Nueva contraseña</label><input class="form-input" type="password" id="pw-nueva" placeholder="••••••••"></div>
+        <div class="form-group"><label class="form-label">Contraseña actual</label><input class="form-input" type="password" id="pw-actual" placeholder="••••••••••"></div>
+        <div class="form-group"><label class="form-label">Nueva contraseña</label><input class="form-input" type="password" id="pw-nueva" placeholder="••••••••••"></div>
         <button class="btn-main" id="btn-cambiar-pw">Cambiar contraseña</button>
       </div>
     </div>
@@ -647,38 +586,59 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
   </div>
 </div>
 
+<!-- Editar insumo -->
+<div class="modal-overlay" id="modal-editar-insumo">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Editar insumo</div>
+    <input type="hidden" id="edit-ins-id">
+    <div class="form-group"><label class="form-label">Nombre</label><input class="mini-input" id="edit-ins-nombre" style="width:100%"></div>
+    <div class="form-group"><label class="form-label">Descripción</label><input class="mini-input" id="edit-ins-desc" style="width:100%"></div>
+    <div style="font-size:10px;color:#86BDAD;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;font-weight:700">📦 Dimensión de compra</div>
+    <div class="campo-grid3" style="margin-bottom:10px">
+      <div><label class="form-label">Cantidad</label><input type="number" class="mini-input" id="edit-ins-buyqty" min="0" step="1"></div>
+      <div><label class="form-label">Unidad</label><select class="mini-select" id="edit-ins-buyunit"><option>unidad</option><option>g</option><option>kg</option><option>ml</option><option>L</option><option>docena</option></select></div>
+      <div><label class="form-label">Precio ($)</label><input type="number" class="mini-input" id="edit-ins-price" min="0" step="1" style="text-align:right"></div>
+    </div>
+    <div id="edit-ins-costo-preview" class="costo-unitario-badge" style="margin-bottom:12px">
+      <span style="font-size:12px;color:#EFEEE8">Costo por unidad:</span>
+      <span id="edit-ins-costo-val" style="font-size:18px;font-weight:700;color:#e8c97a">$0.00</span>
+    </div>
+    <button class="btn-main btn-green" id="btn-guardar-editar-insumo">Guardar cambios</button>
+    <button class="btn-outline" onclick="document.getElementById('modal-editar-insumo').classList.remove('show')">Cancelar</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
-// ═══════════════════════════════════════════
-//  TARTA VASCA APP
-// ═══════════════════════════════════════════
 const API_URL = "https://script.google.com/macros/s/AKfycbxtf5Kx4r5qN80jJzSJYjllFlIzXmxJBUM3Rt-3yChMOl24a9CRVBS32oNLlgUUAiyE/exec";
-const LECTURA = ["getCatalogo","getStock","getPrecios","getUsuarios","getAuditoria","buscarCliente","getHistorialCliente","getVentas"];
+const LECTURA = ["getCatalogo","getStock","getPrecios","getUsuarios","getAuditoria","buscarCliente","getHistorialCliente","getVentas","getInsumos","getRecetas","getCalculoCosto"];
 
 let S = {
   token:null, usuario:null, rol:null, sucursal:null,
   catalogo:null, precios:null, stock:null,
   carrito:[], clienteSel:null,
-  filtroSuc:null, filtroTam:null, precioEditar:null, itemTipo:null
+  filtroSuc:null, filtroTam:null, precioEditar:null, itemTipo:null,
+  insumos:[], recetas:[], recetaActual:[]
 };
 
 async function api(accion, body={}) {
   const payload = {accion, token:S.token, ...body};
   try {
     if (LECTURA.includes(accion)) {
-      const r = await fetch(API_URL+"?data="+encodeURIComponent(JSON.stringify(payload)), {redirect:"follow"});
+      const r = await fetch(API_URL+"?data="+encodeURIComponent(JSON.stringify(payload)),{redirect:"follow"});
       return JSON.parse(await r.text());
     } else {
-      const r = await fetch(API_URL, {method:"POST", body:JSON.stringify(payload), redirect:"follow"});
+      const r = await fetch(API_URL,{method:"POST",body:JSON.stringify(payload),redirect:"follow"});
       const txt = await r.text();
       try { return JSON.parse(txt); }
       catch(e) {
-        const r2 = await fetch(API_URL+"?data="+encodeURIComponent(JSON.stringify(payload)), {redirect:"follow"});
+        const r2 = await fetch(API_URL+"?data="+encodeURIComponent(JSON.stringify(payload)),{redirect:"follow"});
         return JSON.parse(await r2.text());
       }
     }
-  } catch(e) { return {ok:false, error:"Error de conexión."}; }
+  } catch(e) { return {ok:false,error:"Error de conexión."}; }
 }
 
 function L(id) { return document.getElementById(id); }
@@ -691,32 +651,30 @@ function toast(msg, tipo="success") {
   setTimeout(()=>el.classList.remove("show"), 3200);
 }
 
+function fmtMXN(n) {
+  return new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',minimumFractionDigits:2}).format(n||0);
+}
+
 // LOGIN
 L("btn-login").addEventListener("click", doLogin);
 L("login-pass").addEventListener("keydown", e=>{ if(e.key==="Enter") doLogin(); });
 
 async function doLogin() {
-  const usuario = L("login-user").value.trim();
-  const password = L("login-pass").value;
-  const err = L("login-error");
-  const btn = L("btn-login");
-  if (!usuario||!password) { err.textContent="Ingresa usuario y contraseña."; err.style.display="block"; return; }
-  btn.disabled=true; btn.textContent="Entrando..."; err.style.display="none";
-  const res = await api("login", {usuario, password});
-  if (res.ok) {
-    S.token=res.token; S.usuario=res.usuario; S.rol=res.rol; S.sucursal=res.sucursal;
-    iniciarApp();
-  } else {
-    err.textContent=res.error||"Error al iniciar sesión."; err.style.display="block";
-  }
-  btn.disabled=false; btn.textContent="Entrar";
+  const usuario=L("login-user").value.trim(), password=L("login-pass").value;
+  const err=L("login-error"), btn=L("btn-login");
+  if(!usuario||!password){err.textContent="Ingresa usuario y contraseña.";err.style.display="block";return;}
+  btn.disabled=true;btn.textContent="Entrando...";err.style.display="none";
+  const res=await api("login",{usuario,password});
+  if(res.ok){S.token=res.token;S.usuario=res.usuario;S.rol=res.rol;S.sucursal=res.sucursal;iniciarApp();}
+  else{err.textContent=res.error||"Error al iniciar sesión.";err.style.display="block";}
+  btn.disabled=false;btn.textContent="Entrar";
 }
 
 function iniciarApp() {
   L("login-screen").style.display="none";
   L("app").style.display="flex";
   L("hdr-usuario").textContent=S.usuario;
-  if (S.rol!=="Owner") document.querySelectorAll(".owner-only").forEach(el=>el.style.display="none");
+  if(S.rol!=="Owner") document.querySelectorAll(".owner-only").forEach(el=>el.style.display="none");
   setupNav();
   cargarCatalogo();
   cargarStock();
@@ -724,7 +682,7 @@ function iniciarApp() {
 
 function setupNav() {
   document.querySelectorAll(".nav-tab").forEach(tab=>{
-    tab.addEventListener("click", ()=>{
+    tab.addEventListener("click",()=>{
       document.querySelectorAll(".nav-tab").forEach(t=>t.classList.remove("active"));
       tab.classList.add("active");
       document.querySelectorAll(".tab-pane").forEach(p=>p.style.display="none");
@@ -737,84 +695,84 @@ function setupNav() {
       else if(t==="catalogo") cargarCatalogoPantalla();
       else if(t==="ventas") cargarVentas();
       else if(t==="venta") iniciarVenta();
-      else if(t==="costos") { if(!calcState.cargado) cargarCostos(); else renderCalc(); }
+      else if(t==="costos") { if(!S.insumos.length) cargarCostos(); else renderCostos(); }
     });
   });
 }
 
+// ============================================================
+// CATÁLOGO
+// ============================================================
 async function cargarCatalogo() {
-  const res = await api("getCatalogo");
-  if (!res.ok) return;
-  S.catalogo = res;
+  const res=await api("getCatalogo");
+  if(!res.ok) return;
+  S.catalogo=res;
   await cargarPrecios(true);
   poblarSelectsVenta();
 }
 
 function poblarSelectsVenta() {
-  const sab = stockConDisponibilidad("sabor");
-  const tam = stockConDisponibilidad("tamano");
-  const suc = (S.catalogo.sucursales||[]).filter(s=>s.activo).map(s=>s.nombre);
-  const can = (S.catalogo.canales||[]).filter(c=>c.activo).map(c=>c.nombre);
-  const canFinal = can.length>0 ? can : ["Tienda","Domicilio","Rappi"];
-  llenar("item-sabor", sab.length>0 ? sab : (S.catalogo.sabores||[]).filter(s=>s.activo).map(s=>s.nombre));
-  llenar("item-tamano", tam.length>0 ? tam : (S.catalogo.tamanos||[]).filter(t=>t.activo).map(t=>t.nombre));
-  llenar("prod-sabor", (S.catalogo.sabores||[]).filter(s=>s.activo).map(s=>s.nombre));
-  llenar("prod-tamano", (S.catalogo.tamanos||[]).filter(t=>t.activo).map(t=>t.nombre));
-  llenar("prod-sucursal", suc);
-  llenar("venta-sucursal", suc);
-  llenar("venta-canal", canFinal);
-  actualizarMetodoPago();
-  actualizarUICanal();
-  if (S.rol==="Vendedor") L("venta-suc-group").style.display="none";
+  const sab=stockConDisponibilidad("sabor");
+  const tam=stockConDisponibilidad("tamano");
+  const suc=(S.catalogo.sucursales||[]).filter(s=>s.activo).map(s=>s.nombre);
+  const can=(S.catalogo.canales||[]).filter(c=>c.activo).map(c=>c.nombre);
+  const canFinal=can.length>0?can:["Tienda","Domicilio","Rappi"];
+  llenar("item-sabor",sab.length>0?sab:(S.catalogo.sabores||[]).filter(s=>s.activo).map(s=>s.nombre));
+  llenar("item-tamano",tam.length>0?tam:(S.catalogo.tamanos||[]).filter(t=>t.activo).map(t=>t.nombre));
+  llenar("prod-sabor",(S.catalogo.sabores||[]).filter(s=>s.activo).map(s=>s.nombre));
+  llenar("prod-tamano",(S.catalogo.tamanos||[]).filter(t=>t.activo).map(t=>t.nombre));
+  llenar("prod-sucursal",suc);
+  llenar("venta-sucursal",suc);
+  llenar("venta-canal",canFinal);
+  actualizarMetodoPago(); actualizarUICanal();
+  if(S.rol==="Vendedor") L("venta-suc-group").style.display="none";
+  // costos selects
+  const sabAll=(S.catalogo.sabores||[]).filter(s=>s.activo).map(s=>s.nombre);
+  const tamAll=(S.catalogo.tamanos||[]).filter(t=>t.activo).map(t=>t.nombre);
+  ["receta-sabor","calc-sabor","bulk-receta-sabor"].forEach(id=>llenar(id,sabAll));
+  ["receta-tamano","calc-tamano","bulk-receta-tamano"].forEach(id=>llenar(id,tamAll));
 }
 
 function stockConDisponibilidad(campo) {
-  if (!S.stock) return [];
-  const sucursal = S.rol==="Vendedor" ? S.sucursal : null;
-  const disponibles = S.stock.filter(s=>!s.vencido && s.cantActual>0 && (!sucursal||s.sucursal===sucursal));
+  if(!S.stock) return [];
+  const sucursal=S.rol==="Vendedor"?S.sucursal:null;
+  const disponibles=S.stock.filter(s=>!s.vencido&&s.cantActual>0&&(!sucursal||s.sucursal===sucursal));
   return [...new Set(disponibles.map(s=>s[campo]))];
 }
 
 function llenar(id, opciones) {
-  const sel = L(id);
-  if (!sel) return;
-  sel.innerHTML = opciones.map(o=>`<option value="${o}">${o}</option>`).join("");
+  const sel=L(id);
+  if(!sel) return;
+  sel.innerHTML=opciones.map(o=>`<option value="${o}">${o}</option>`).join("");
 }
 
-function esPlataforma(canal) { return canal==="Rappi"||canal==="Uber Eats"; }
-
-function actualizarMetodoPago() {
-  const canal = L("venta-canal")?.value;
-  if (!canal) return;
-  llenar("venta-metodo", esPlataforma(canal) ? [canal] : ["Efectivo","Tarjeta","Transferencia"]);
+function esPlataforma(canal){return canal==="Rappi"||canal==="Uber Eats";}
+function actualizarMetodoPago(){
+  const canal=L("venta-canal")?.value;
+  if(!canal) return;
+  llenar("venta-metodo",esPlataforma(canal)?[canal]:["Efectivo","Tarjeta","Transferencia"]);
 }
-
-function actualizarUICanal() {
-  const canal = L("venta-canal")?.value;
-  if (!canal) return;
-  const aviso = L("canal-aviso");
-  const clienteSection = L("cliente-section");
-  if (esPlataforma(canal)) {
-    aviso.style.display="flex";
-    if (clienteSection) clienteSection.style.display="none";
-  } else {
-    aviso.style.display="none";
-    if (clienteSection) clienteSection.style.display="block";
-  }
+function actualizarUICanal(){
+  const canal=L("venta-canal")?.value;
+  if(!canal) return;
+  const aviso=L("canal-aviso"), cli=L("cliente-section");
+  if(esPlataforma(canal)){aviso.style.display="flex";if(cli)cli.style.display="none";}
+  else{aviso.style.display="none";if(cli)cli.style.display="block";}
 }
+L("venta-canal")?.addEventListener("change",()=>{actualizarMetodoPago();actualizarUICanal();});
 
-L("venta-canal")?.addEventListener("change", ()=>{ actualizarMetodoPago(); actualizarUICanal(); });
-
+// ============================================================
+// STOCK
+// ============================================================
 async function cargarStock() {
   L("stock-content").innerHTML=`<div class="loading"><div class="spinner"></div>Cargando...</div>`;
-  const res = await api("getStock");
-  if (!res.ok) { L("stock-content").innerHTML=`<div class="empty-state"><div class="empty-text">Error al cargar</div></div>`; return; }
+  const res=await api("getStock");
+  if(!res.ok){L("stock-content").innerHTML=`<div class="empty-state"><div>Error al cargar</div></div>`;return;}
   S.stock=res.stock;
-  renderStock();
-  poblarSelectsVenta();
+  renderStock(); poblarSelectsVenta();
 }
 
-function renderStock() {
+function renderStock(){
   const stock=S.stock||[];
   const busqueda=L("stock-search").value.toLowerCase();
   let f=stock.filter(s=>!s.vencido&&s.cantActual>0);
@@ -825,17 +783,17 @@ function renderStock() {
   L("sum-vencer").textContent=f.filter(s=>s.porVencer).length;
   L("stock-summary").style.display="grid";
   L("stock-sub").textContent=S.filtroSuc||(S.rol==="Vendedor"?S.sucursal:"todas las sucursales");
-  if(S.catalogo&&S.rol==="Owner") {
+  if(S.catalogo&&S.rol==="Owner"){
     const sucs=(S.catalogo.sucursales||[]).filter(s=>s.activo).map(s=>s.nombre);
     L("filtros-suc").innerHTML=`<div class="chip ${!S.filtroSuc?'active':''}" data-suc="">Todas</div>`+sucs.map(s=>`<div class="chip ${S.filtroSuc===s?'active':''}" data-suc="${s}">${s}</div>`).join("");
     L("filtros-suc").querySelectorAll(".chip").forEach(c=>c.addEventListener("click",()=>{S.filtroSuc=c.dataset.suc||null;renderStock();}));
   }
-  if(S.catalogo) {
+  if(S.catalogo){
     const tams=(S.catalogo.tamanos||[]).filter(t=>t.activo).map(t=>t.nombre);
     L("filtros-tam").innerHTML=`<div class="chip ${!S.filtroTam?'active':''}" data-tam="">Todos</div>`+tams.map(t=>`<div class="chip ${S.filtroTam===t?'active':''}" data-tam="${t}">${t}</div>`).join("");
     L("filtros-tam").querySelectorAll(".chip").forEach(c=>c.addEventListener("click",()=>{S.filtroTam=c.dataset.tam||null;renderStock();}));
   }
-  if(f.length===0) { L("stock-content").innerHTML=`<div class="empty-state"><div class="empty-icon">📦</div><div class="empty-text">Sin stock disponible</div></div>`; return; }
+  if(f.length===0){L("stock-content").innerHTML=`<div class="empty-state"><div class="empty-icon">📦</div><div>Sin stock disponible</div></div>`;return;}
   L("stock-content").innerHTML=`<table class="stock-table">
     <thead><tr><th>Sabor</th><th>Tam.</th>${S.rol==="Owner"?"<th>Suc.</th>":""}<th>Cant.</th><th>Vence</th></tr></thead>
     <tbody>${f.map(s=>{
@@ -845,65 +803,50 @@ function renderStock() {
       return `<tr><td><strong>${s.sabor}</strong></td><td style="color:var(--muted);font-size:12px">${s.tamano}</td>${S.rol==="Owner"?`<td><span class="suc-tag">${s.sucursal.substring(0,4)}</span></td>`:""}<td><span class="qty-badge ${qCls}">${s.cantActual}</span></td><td><span class="cad-badge ${cCls}">${cTxt}</span></td></tr>`;
     }).join("")}</tbody></table>`;
 }
+L("stock-search").addEventListener("input",renderStock);
 
-L("stock-search").addEventListener("input", renderStock);
-
-function iniciarVenta() { actualizarUICanal(); actualizarDisp(); }
-function getSucursalVenta() { return S.rol==="Vendedor" ? S.sucursal : (L("venta-sucursal")?.value||S.sucursal); }
-
-function calcDisp(sabor, tamano) {
-  if (!S.stock) return 0;
-  const suc = getSucursalVenta();
-  const enCarrito = S.carrito.filter(i=>i.sabor===sabor&&i.tamano===tamano).reduce((s,i)=>s+i.cantidad,0);
-  const enStock = S.stock.filter(s=>s.sabor===sabor&&s.tamano===tamano&&s.sucursal===suc&&!s.vencido&&s.cantActual>0).reduce((s,i)=>s+i.cantActual,0);
-  return Math.max(0, enStock-enCarrito);
+// ============================================================
+// VENTA
+// ============================================================
+function iniciarVenta(){actualizarUICanal();actualizarDisp();}
+function getSucursalVenta(){return S.rol==="Vendedor"?S.sucursal:(L("venta-sucursal")?.value||S.sucursal);}
+function calcDisp(sabor,tamano){
+  if(!S.stock) return 0;
+  const suc=getSucursalVenta();
+  const enCarrito=S.carrito.filter(i=>i.sabor===sabor&&i.tamano===tamano).reduce((s,i)=>s+i.cantidad,0);
+  const enStock=S.stock.filter(s=>s.sabor===sabor&&s.tamano===tamano&&s.sucursal===suc&&!s.vencido&&s.cantActual>0).reduce((s,i)=>s+i.cantActual,0);
+  return Math.max(0,enStock-enCarrito);
 }
-
-function getPrecio(tamano) {
-  if (!S.precios) return 0;
-  const p = S.precios.find(p=>p.tamano===tamano);
-  return p ? p.precio : 0;
-}
-
-function actualizarDisp() {
-  const sabor=L("item-sabor")?.value;
-  const tamano=L("item-tamano")?.value;
-  if (!sabor||!tamano) { L("item-disp").innerHTML=""; return; }
+function getPrecio(tamano){if(!S.precios)return 0;const p=S.precios.find(p=>p.tamano===tamano);return p?p.precio:0;}
+function actualizarDisp(){
+  const sabor=L("item-sabor")?.value,tamano=L("item-tamano")?.value;
+  if(!sabor||!tamano){L("item-disp").innerHTML="";return;}
   const d=calcDisp(sabor,tamano);
   const cls=d<=0?"disp-out":d<=2?"disp-low":"disp-ok";
   const txt=d<=0?"Sin stock":`${d} disponibles`;
   L("item-disp").innerHTML=`<span class="disp-badge ${cls}">${txt}</span>`;
 }
-
-L("item-sabor")?.addEventListener("change", actualizarDisp);
-L("item-tamano")?.addEventListener("change", actualizarDisp);
-L("venta-sucursal")?.addEventListener("change", ()=>{ actualizarDisp(); poblarSelectsVenta(); });
-
-L("btn-agregar-item").addEventListener("click", ()=>{
-  const sabor=L("item-sabor").value, tamano=L("item-tamano").value;
+L("item-sabor")?.addEventListener("change",actualizarDisp);
+L("item-tamano")?.addEventListener("change",actualizarDisp);
+L("venta-sucursal")?.addEventListener("change",()=>{actualizarDisp();poblarSelectsVenta();});
+L("btn-agregar-item").addEventListener("click",()=>{
+  const sabor=L("item-sabor").value,tamano=L("item-tamano").value;
   const cantidad=parseInt(L("item-cantidad").value)||1;
-  if (!sabor||!tamano) { toast("Selecciona sabor y tamaño","error"); return; }
+  if(!sabor||!tamano){toast("Selecciona sabor y tamaño","error");return;}
   const disp=calcDisp(sabor,tamano);
-  if (disp<cantidad) { toast(`Solo hay ${disp} de ${sabor} ${tamano}`,"error"); return; }
+  if(disp<cantidad){toast(`Solo hay ${disp} de ${sabor} ${tamano}`,"error");return;}
   const precio=getPrecio(tamano);
   S.carrito.push({sabor,tamano,cantidad,precio,subtotal:precio*cantidad});
   L("item-cantidad").value="1";
-  renderCarrito(); actualizarDisp();
+  renderCarrito();actualizarDisp();
   toast(`${sabor} ${tamano} × ${cantidad} agregado`);
 });
-
-function renderCarrito() {
+function renderCarrito(){
   const items=L("carrito-items");
-  if (S.carrito.length===0) {
-    items.innerHTML=`<div class="carrito-vacio">Sin productos — agrega uno arriba</div>`;
-    L("carrito-total-bar").style.display="none"; return;
-  }
+  if(S.carrito.length===0){items.innerHTML=`<div class="carrito-vacio">Sin productos — agrega uno arriba</div>`;L("carrito-total-bar").style.display="none";return;}
   items.innerHTML=S.carrito.map((item,i)=>`
     <div class="carrito-item">
-      <div class="carrito-info">
-        <div class="carrito-nombre">${item.sabor} ${item.tamano}</div>
-        <div class="carrito-sub">${item.cantidad} × $${item.precio.toLocaleString()}</div>
-      </div>
+      <div class="carrito-info"><div class="carrito-nombre">${item.sabor} ${item.tamano}</div><div class="carrito-sub">${item.cantidad} × $${item.precio.toLocaleString()}</div></div>
       <span class="carrito-precio">$${item.subtotal.toLocaleString()}</span>
       <button class="btn-remove" onclick="quitarItem(${i})">×</button>
     </div>`).join("");
@@ -911,28 +854,22 @@ function renderCarrito() {
   L("total-num").textContent="$"+total.toLocaleString();
   L("carrito-total-bar").style.display="flex";
 }
-
-function quitarItem(idx) { S.carrito.splice(idx,1); renderCarrito(); actualizarDisp(); }
+function quitarItem(idx){S.carrito.splice(idx,1);renderCarrito();actualizarDisp();}
 
 let searchTO;
-L("cli-nombre")?.addEventListener("input", ()=>{
+L("cli-nombre")?.addEventListener("input",()=>{
   clearTimeout(searchTO);
   const v=L("cli-nombre").value.trim();
-  if (v.length<2) { L("sugerencias").style.display="none"; return; }
-  searchTO=setTimeout(()=>buscarCliente(v), 350);
+  if(v.length<2){L("sugerencias").style.display="none";return;}
+  searchTO=setTimeout(()=>buscarCliente(v),350);
 });
-
-async function buscarCliente(term) {
+async function buscarCliente(term){
   const res=await api("buscarCliente",{busqueda:term});
-  if (!res.ok||res.clientes.length===0) { L("sugerencias").style.display="none"; return; }
-  L("sugerencias").innerHTML=res.clientes.map(c=>`
-    <div class="sug-item" onclick='selCliente(${JSON.stringify(c).replace(/'/g,"\\'")})''>
-      <strong>${c.nombre}</strong>${c.telefono?` · ${c.telefono}`:""}
-    </div>`).join("");
+  if(!res.ok||res.clientes.length===0){L("sugerencias").style.display="none";return;}
+  L("sugerencias").innerHTML=res.clientes.map(c=>`<div class="sug-item" onclick='selCliente(${JSON.stringify(c).replace(/'/g,"\\'")})'><strong>${c.nombre}</strong>${c.telefono?` · ${c.telefono}`:""}</div>`).join("");
   L("sugerencias").style.display="block";
 }
-
-function selCliente(c) {
+function selCliente(c){
   S.clienteSel=c;
   L("cli-nombre").value=c.nombre;
   L("sugerencias").style.display="none";
@@ -942,70 +879,51 @@ function selCliente(c) {
   L("cli-nombre-disp").textContent=c.nombre;
   L("cli-meta-disp").textContent=[c.telefono,c.email].filter(Boolean).join(" · ")||"Sin datos adicionales";
 }
-
-function limpiarCliente() {
-  S.clienteSel=null; L("cli-nombre").value="";
-  L("cli-encontrado").style.display="none"; L("cli-nuevo").style.display="grid";
-}
-
-document.addEventListener("click", e=>{
-  if (!e.target.closest("#cli-nombre")&&!e.target.closest("#sugerencias"))
-    L("sugerencias").style.display="none";
-});
-
-L("btn-confirmar").addEventListener("click", async ()=>{
-  const canal=L("venta-canal").value, metodo=L("venta-metodo").value;
+function limpiarCliente(){S.clienteSel=null;L("cli-nombre").value="";L("cli-encontrado").style.display="none";L("cli-nuevo").style.display="grid";}
+document.addEventListener("click",e=>{if(!e.target.closest("#cli-nombre")&&!e.target.closest("#sugerencias"))L("sugerencias").style.display="none";});
+L("btn-confirmar").addEventListener("click",async()=>{
+  const canal=L("venta-canal").value,metodo=L("venta-metodo").value;
   const sucursal=getSucursalVenta();
-  if (!canal) { toast("Selecciona un canal","error"); return; }
-  if (S.carrito.length===0) { toast("Agrega al menos un producto","error"); return; }
+  if(!canal){toast("Selecciona un canal","error");return;}
+  if(S.carrito.length===0){toast("Agrega al menos un producto","error");return;}
   const plataforma=esPlataforma(canal);
   let cliente=null;
-  if (!plataforma) {
+  if(!plataforma){
     const nombre=L("cli-nombre").value.trim();
-    if (!nombre) { toast("El nombre del cliente es obligatorio","error"); return; }
-    cliente=S.clienteSel||{nombre, telefono:L("cli-tel").value.trim(), email:L("cli-email").value.trim()};
+    if(!nombre){toast("El nombre del cliente es obligatorio","error");return;}
+    cliente=S.clienteSel||{nombre,telefono:L("cli-tel").value.trim(),email:L("cli-email").value.trim()};
   }
   const btn=L("btn-confirmar");
-  btn.disabled=true; btn.textContent="Registrando...";
-  const res=await api("registrarVenta",{
-    items:S.carrito.map(i=>({sabor:i.sabor,tamano:i.tamano,cantidad:i.cantidad})),
-    canal, metodoPago:metodo, sucursal, cliente
-  });
-  if (res.ok) {
+  btn.disabled=true;btn.textContent="Registrando...";
+  const res=await api("registrarVenta",{items:S.carrito.map(i=>({sabor:i.sabor,tamano:i.tamano,cantidad:i.cantidad})),canal,metodoPago:metodo,sucursal,cliente});
+  if(res.ok){
     const total=S.carrito.reduce((s,i)=>s+i.subtotal,0);
     toast(`✅ Venta $${total.toLocaleString()} registrada`,"success");
-    limpiarVenta(); cargarStock();
-    setTimeout(()=>document.querySelector('.nav-tab[data-tab="ventas"]').click(), 800);
-  } else { toast(res.error,"error"); }
-  btn.disabled=false; btn.textContent="Confirmar venta ✓";
+    limpiarVenta();cargarStock();
+    setTimeout(()=>document.querySelector('.nav-tab[data-tab="ventas"]').click(),800);
+  } else toast(res.error,"error");
+  btn.disabled=false;btn.textContent="Confirmar venta ✓";
 });
-
-function limpiarVenta() {
-  S.carrito=[]; S.clienteSel=null; renderCarrito();
-  L("cli-nombre").value=""; L("cli-tel").value=""; L("cli-email").value="";
-  L("cli-encontrado").style.display="none"; L("cli-nuevo").style.display="grid";
-  L("item-cantidad").value="1"; L("item-disp").innerHTML="";
-}
-
-L("btn-limpiar-venta").addEventListener("click", ()=>{ limpiarVenta(); toast("Venta limpiada"); });
-
-L("btn-cargar-prod").addEventListener("click", async ()=>{
-  const sabor=L("prod-sabor").value, tamano=L("prod-tamano").value;
-  const sucursal=L("prod-sucursal").value, cantidad=parseInt(L("prod-cantidad").value);
-  if(!sabor||!tamano||!sucursal||cantidad<1) { toast("Completa todos los campos","error"); return; }
-  const btn=L("btn-cargar-prod");
-  btn.disabled=true; btn.textContent="Cargando...";
+function limpiarVenta(){S.carrito=[];S.clienteSel=null;renderCarrito();L("cli-nombre").value="";L("cli-tel").value="";L("cli-email").value="";L("cli-encontrado").style.display="none";L("cli-nuevo").style.display="grid";L("item-cantidad").value="1";L("item-disp").innerHTML="";}
+L("btn-limpiar-venta").addEventListener("click",()=>{limpiarVenta();toast("Venta limpiada");});
+L("btn-cargar-prod").addEventListener("click",async()=>{
+  const sabor=L("prod-sabor").value,tamano=L("prod-tamano").value,sucursal=L("prod-sucursal").value,cantidad=parseInt(L("prod-cantidad").value);
+  if(!sabor||!tamano||!sucursal||cantidad<1){toast("Completa todos los campos","error");return;}
+  const btn=L("btn-cargar-prod");btn.disabled=true;btn.textContent="Cargando...";
   const res=await api("altaProduccion",{sabor,tamano,sucursal,cantidad});
-  if(res.ok){toast(res.mensaje); L("prod-cantidad").value="1"; cargarStock();}
+  if(res.ok){toast(res.mensaje);L("prod-cantidad").value="1";cargarStock();}
   else toast(res.error,"error");
-  btn.disabled=false; btn.textContent="Cargar producción";
+  btn.disabled=false;btn.textContent="Cargar producción";
 });
 
-async function cargarVentas() {
+// ============================================================
+// VENTAS
+// ============================================================
+async function cargarVentas(){
   L("ventas-list").innerHTML=`<div class="loading"><div class="spinner"></div></div>`;
   const res=await api("getVentas");
   if(!res.ok) return;
-  if(res.ventas.length===0){L("ventas-list").innerHTML=`<div class="empty-state"><div class="empty-text">Sin ventas registradas</div></div>`;return;}
+  if(res.ventas.length===0){L("ventas-list").innerHTML=`<div class="empty-state"><div>Sin ventas registradas</div></div>`;return;}
   const grupos={};
   res.ventas.forEach(v=>{
     if(!grupos[v.idVenta]) grupos[v.idVenta]={...v,items:[]};
@@ -1023,496 +941,358 @@ async function cargarVentas() {
     </div>`).join("");
 }
 
-async function cargarCatalogoPantalla() {
-  const res=await api("getCatalogo");
-  if(!res.ok) return;
-  S.catalogo=res;
+// ============================================================
+// CATÁLOGO PANTALLA
+// ============================================================
+async function cargarCatalogoPantalla(){
+  const res=await api("getCatalogo");if(!res.ok)return;S.catalogo=res;
   const renderList=(items,tipo,id)=>{
     L(id).innerHTML=items.map(item=>`
       <div class="cat-item">
         <span style="font-size:14px;font-weight:500">${item.nombre}${!item.activo?'<span style="color:var(--muted);font-size:11px"> (inactivo)</span>':''}</span>
-        ${item.activo
-          ?`<button class="btn-sm btn-sm-danger" onclick="togCat('${tipo}','${item.nombre}',false)">Dar de baja</button>`
-          :`<button class="btn-sm btn-sm-success" onclick="togCat('${tipo}','${item.nombre}',true)">Reactivar</button>`}
+        ${item.activo?`<button class="btn-sm btn-sm-danger" onclick="togCat('${tipo}','${item.nombre}',false)">Dar de baja</button>`:`<button class="btn-sm btn-sm-success" onclick="togCat('${tipo}','${item.nombre}',true)">Reactivar</button>`}
       </div>`).join("");
   };
-  renderList(res.sabores,"Sabor","cat-sabores");
-  renderList(res.tamanos,"Tamaño","cat-tamanos");
-  renderList(res.canales||[],"Canal","cat-canales");
+  renderList(res.sabores,"Sabor","cat-sabores");renderList(res.tamanos,"Tamaño","cat-tamanos");renderList(res.canales||[],"Canal","cat-canales");
 }
-
-async function togCat(tipo,nombre,activar) {
+async function togCat(tipo,nombre,activar){
   if(!activar&&!confirm(`¿Dar de baja "${nombre}"?`)) return;
-  const mapa={Sabor:activar?"altaSabor":"bajaSabor",Tamaño:activar?"altaTamano":"bajaTamano",Canal:activar?"altaCanal":"bajaCanal"};
+  const mapa={Sabor:activar?"altaSabor":"bajaSabor","Tamaño":activar?"altaTamano":"bajaTamano",Canal:activar?"altaCanal":"bajaCanal"};
   const res=await api(mapa[tipo],{nombre});
-  if(res.ok){toast(res.mensaje);cargarCatalogoPantalla();cargarCatalogo();}
-  else toast(res.error,"error");
+  if(res.ok){toast(res.mensaje);cargarCatalogoPantalla();cargarCatalogo();}else toast(res.error,"error");
 }
-
-function abrirModalItem(tipo) {
-  S.itemTipo=tipo;
-  L("modal-item-title").textContent=`Nuevo ${tipo.toLowerCase()}`;
-  L("modal-item-label").textContent=`Nombre del ${tipo.toLowerCase()}`;
-  L("modal-item-input").value="";
-  L("modal-nuevo-item").classList.add("show");
-}
-
-L("btn-guardar-item").addEventListener("click", async ()=>{
+function abrirModalItem(tipo){S.itemTipo=tipo;L("modal-item-title").textContent=`Nuevo ${tipo.toLowerCase()}`;L("modal-item-label").textContent=`Nombre del ${tipo.toLowerCase()}`;L("modal-item-input").value="";L("modal-nuevo-item").classList.add("show");}
+L("btn-guardar-item").addEventListener("click",async()=>{
   const nombre=L("modal-item-input").value.trim();
   if(!nombre){toast("Ingresa un nombre","error");return;}
-  const mapa={Sabor:"altaSabor",Tamaño:"altaTamano"};
+  const mapa={Sabor:"altaSabor","Tamaño":"altaTamano"};
   const res=await api(mapa[S.itemTipo],{nombre});
-  if(res.ok){toast(res.mensaje);L("modal-nuevo-item").classList.remove("show");cargarCatalogoPantalla();cargarCatalogo();}
-  else toast(res.error,"error");
+  if(res.ok){toast(res.mensaje);L("modal-nuevo-item").classList.remove("show");cargarCatalogoPantalla();cargarCatalogo();}else toast(res.error,"error");
 });
 
-async function cargarPrecios(silencioso=false) {
+// ============================================================
+// PRECIOS
+// ============================================================
+async function cargarPrecios(silencioso=false){
   if(!silencioso) L("precios-content").innerHTML=`<div class="loading"><div class="spinner"></div></div>`;
   const [resP,resC]=await Promise.all([api("getPrecios"),api("getCatalogo")]);
   if(!resP.ok||!resC.ok) return;
   S.precios=resP.precios;
   if(silencioso) return;
   const tamanos=(resC.tamanos||[]).filter(t=>t.activo).map(t=>t.nombre);
-  const getP=t=>{ const p=resP.precios.find(p=>p.tamano===t); return p?p.precio:0; };
+  const getP=t=>{const p=resP.precios.find(p=>p.tamano===t);return p?p.precio:0;};
   L("precios-content").innerHTML=tamanos.map(tamano=>`
     <div class="precio-row">
       <span class="precio-label">${tamano}</span>
       <span class="precio-val" onclick="abrirModalPrecio('${tamano}',${getP(tamano)})">$${getP(tamano).toLocaleString()}</span>
     </div>`).join("");
 }
-
-function abrirModalPrecio(tamano, precioActual) {
-  S.precioEditar=tamano;
-  L("modal-precio-title").textContent=`Precio — ${tamano}`;
-  L("modal-precio-input").value=precioActual;
-  L("modal-precio").classList.add("show");
-  setTimeout(()=>L("modal-precio-input").focus(),100);
-}
-
-L("btn-guardar-precio").addEventListener("click", async ()=>{
+function abrirModalPrecio(tamano,precioActual){S.precioEditar=tamano;L("modal-precio-title").textContent=`Precio — ${tamano}`;L("modal-precio-input").value=precioActual;L("modal-precio").classList.add("show");setTimeout(()=>L("modal-precio-input").focus(),100);}
+L("btn-guardar-precio").addEventListener("click",async()=>{
   const precio=parseFloat(L("modal-precio-input").value);
   if(isNaN(precio)||precio<0){toast("Precio inválido","error");return;}
   const tamano=S.precioEditar;
   const sabores=(S.catalogo?.sabores||[]).filter(s=>s.activo).map(s=>s.nombre);
   const promesas=sabores.map(sabor=>api("updatePrecio",{sabor,tamano,precio}));
   const resultados=await Promise.all(promesas);
-  const ok=resultados.every(r=>r.ok);
-  if(ok){toast(`✅ Precio ${tamano} = $${precio.toLocaleString()}`);L("modal-precio").classList.remove("show");cargarPrecios();}
+  if(resultados.every(r=>r.ok)){toast(`✅ Precio ${tamano} = $${precio.toLocaleString()}`);L("modal-precio").classList.remove("show");cargarPrecios();}
   else toast("Error al guardar precio","error");
 });
 
-async function cargarUsuarios() {
-  const res=await api("getUsuarios");
-  if(!res.ok) return;
+// ============================================================
+// COSTOS v4
+// ============================================================
+function setCostosTab(tab){
+  document.querySelectorAll(".costos-tab").forEach(t=>{t.classList.toggle("active",t.getAttribute("onclick")===`setCostosTab('${tab}')`)});
+  document.querySelectorAll(".costos-section").forEach(s=>s.classList.remove("active"));
+  L("costos-"+tab).classList.add("active");
+  if(tab==="recetas") renderRecetaActual();
+  if(tab==="calculadora") calcularCosto();
+}
+
+async function cargarCostos(){
+  L("insumos-list").innerHTML=`<div class="loading"><div class="spinner"></div>Cargando...</div>`;
+  const [resI,resR]=await Promise.all([api("getInsumos"),api("getRecetas")]);
+  if(resI.ok) S.insumos=resI.insumos;
+  if(resR.ok) S.recetas=resR.recetas;
+  renderCostos();
+}
+
+function renderCostos(){
+  renderInsumos();
+  renderRecetaActual();
+  poblarRecetaInsumoSelect();
+}
+
+function renderInsumos(){
+  const activos=S.insumos.filter(i=>i.activo);
+  if(activos.length===0){
+    L("insumos-list").innerHTML=`<div class="empty-state"><div class="empty-icon">📦</div><div>Sin insumos cargados</div></div>`;
+    return;
+  }
+  L("insumos-list").innerHTML=activos.map(ins=>`
+    <div class="insumo-row">
+      <div>
+        <div class="insumo-nombre">${ins.nombre}</div>
+        <div class="insumo-meta">${ins.buyQty} ${ins.buyUnit} = ${fmtMXN(ins.buyPrice)}</div>
+      </div>
+      <div>
+        <div class="insumo-costo">${fmtMXN(ins.costoPorUnidad)}</div>
+        <div class="insumo-costo-label">por ${ins.buyUnit==="unidad"?"unidad":ins.buyUnit}</div>
+      </div>
+      <div style="display:flex;gap:4px">
+        <button class="btn-del-small" onclick="abrirEditarInsumo('${ins.id}')" title="Editar">✏️</button>
+        <button class="btn-del-small" onclick="bajaInsumo('${ins.id}')" title="Dar de baja">✕</button>
+      </div>
+    </div>`).join("");
+}
+
+function poblarRecetaInsumoSelect(){
+  const activos=S.insumos.filter(i=>i.activo);
+  const sel=L("receta-new-insumo");
+  if(!sel) return;
+  sel.innerHTML=activos.map(i=>`<option value="${i.id}">${i.nombre} (${fmtMXN(i.costoPorUnidad)}/${i.buyUnit})</option>`).join("");
+}
+
+// Cálculo automático del costo unitario al tipear
+["new-ins-buyqty","new-ins-price"].forEach(id=>{
+  L(id)?.addEventListener("input",()=>{
+    const qty=parseFloat(L("new-ins-buyqty")?.value)||0;
+    const price=parseFloat(L("new-ins-price")?.value)||0;
+    if(qty>0&&price>0){
+      const cu=price/qty;
+      L("new-ins-costo-preview").style.display="flex";
+      L("new-ins-costo-val").textContent=fmtMXN(cu)+` / ${L("new-ins-buyunit")?.value||"unidad"}`;
+    } else L("new-ins-costo-preview").style.display="none";
+  });
+});
+["edit-ins-buyqty","edit-ins-price"].forEach(id=>{
+  L(id)?.addEventListener("input",()=>{
+    const qty=parseFloat(L("edit-ins-buyqty")?.value)||0;
+    const price=parseFloat(L("edit-ins-price")?.value)||0;
+    if(qty>0&&price>0){L("edit-ins-costo-val").textContent=fmtMXN(price/qty)+` / ${L("edit-ins-buyunit")?.value||"unidad"}`;}
+  });
+});
+
+async function guardarNuevoInsumo(){
+  const nombre=L("new-ins-nombre").value.trim();
+  const buyQty=parseFloat(L("new-ins-buyqty").value)||0;
+  const buyUnit=L("new-ins-buyunit").value;
+  const buyPrice=parseFloat(L("new-ins-price").value)||0;
+  if(!nombre){toast("Ingresa el nombre del insumo","error");return;}
+  if(!buyQty||!buyPrice){toast("Ingresa la dimensión de compra y el precio","error");return;}
+  const res=await api("saveInsumo",{insumo:{nombre,descripcion:L("new-ins-desc").value.trim(),buyQty,buyUnit,buyPrice,activo:true}});
+  if(res.ok){
+    toast(`✅ ${nombre} agregado`);
+    L("new-ins-nombre").value="";L("new-ins-desc").value="";L("new-ins-buyqty").value="";L("new-ins-price").value="";
+    L("new-ins-costo-preview").style.display="none";
+    const resI=await api("getInsumos");if(resI.ok)S.insumos=resI.insumos;
+    renderInsumos();poblarRecetaInsumoSelect();
+  } else toast(res.error,"error");
+}
+
+function abrirEditarInsumo(id){
+  const ins=S.insumos.find(i=>i.id===id);
+  if(!ins) return;
+  L("edit-ins-id").value=id;
+  L("edit-ins-nombre").value=ins.nombre;
+  L("edit-ins-desc").value=ins.descripcion||"";
+  L("edit-ins-buyqty").value=ins.buyQty;
+  L("edit-ins-buyunit").value=ins.buyUnit;
+  L("edit-ins-price").value=ins.buyPrice;
+  L("edit-ins-costo-val").textContent=fmtMXN(ins.costoPorUnidad)+` / ${ins.buyUnit}`;
+  L("modal-editar-insumo").classList.add("show");
+}
+L("btn-guardar-editar-insumo").addEventListener("click",async()=>{
+  const id=L("edit-ins-id").value;
+  const buyQty=parseFloat(L("edit-ins-buyqty").value)||0;
+  const buyPrice=parseFloat(L("edit-ins-price").value)||0;
+  const res=await api("saveInsumo",{insumo:{id,nombre:L("edit-ins-nombre").value.trim(),descripcion:L("edit-ins-desc").value.trim(),buyQty,buyUnit:L("edit-ins-buyunit").value,buyPrice,activo:true}});
+  if(res.ok){toast("✅ Insumo actualizado");L("modal-editar-insumo").classList.remove("show");const resI=await api("getInsumos");if(resI.ok)S.insumos=resI.insumos;renderInsumos();poblarRecetaInsumoSelect();}
+  else toast(res.error,"error");
+});
+async function bajaInsumo(id){
+  if(!confirm("¿Dar de baja este insumo?")) return;
+  const res=await api("deleteInsumo",{id});
+  if(res.ok){toast("Insumo dado de baja");const resI=await api("getInsumos");if(resI.ok)S.insumos=resI.insumos;renderInsumos();poblarRecetaInsumoSelect();}
+  else toast(res.error,"error");
+}
+
+// RECETAS
+function cargarRecetaActual(){renderRecetaActual();}
+function renderRecetaActual(){
+  const sabor=L("receta-sabor")?.value;
+  const tamano=L("receta-tamano")?.value;
+  if(!sabor||!tamano){L("receta-ingredientes-list").innerHTML="";return;}
+  const receta=S.recetas.find(r=>r.sabor===sabor&&r.tamano===tamano);
+  S.recetaActual=receta?JSON.parse(JSON.stringify(receta.ingredientes)):[];
+  renderIngredientesReceta();
+}
+
+function renderIngredientesReceta(){
+  const el=L("receta-ingredientes-list");
+  if(!S.recetaActual||S.recetaActual.length===0){el.innerHTML=`<div style="color:var(--muted);font-size:13px;text-align:center;padding:16px">Sin ingredientes — agrega abajo</div>`;return;}
+  el.innerHTML=S.recetaActual.map((ing,idx)=>{
+    const ins=S.insumos.find(i=>i.id===ing.insumoId);
+    const costoPorUni=ins?ins.costoPorUnidad:0;
+    const costoLinea=costoPorUni*ing.cantidad;
+    return `<div class="receta-row">
+      <div><div class="receta-row-nombre">${ing.insumoNombre||"Insumo"}</div></div>
+      <div class="receta-row-cant">${ing.cantidad} ${ing.unidad}</div>
+      <div class="receta-row-costo">${costoLinea>0?fmtMXN(costoLinea):"—"}</div>
+      <button class="btn-del-small" onclick="quitarIngredienteReceta(${idx})">✕</button>
+    </div>`;
+  }).join("");
+  const costoTotal=S.recetaActual.reduce((s,ing)=>{const ins=S.insumos.find(i=>i.id===ing.insumoId);return s+(ins?ins.costoPorUnidad*ing.cantidad:0);},0);
+  el.innerHTML+=`<div class="calc-total-row"><span style="color:var(--muted)">Subtotal ingredientes:&nbsp;<strong style="color:var(--accent);font-size:16px">${fmtMXN(costoTotal)}</strong></span></div>`;
+}
+
+function agregarIngredienteReceta(){
+  const insumoId=L("receta-new-insumo")?.value;
+  const qty=parseFloat(L("receta-new-qty")?.value)||0;
+  const unit=L("receta-new-unit")?.value||"unidad";
+  if(!insumoId){toast("Selecciona un insumo","error");return;}
+  if(!qty){toast("Ingresa la cantidad","error");return;}
+  const ins=S.insumos.find(i=>i.id===insumoId);
+  S.recetaActual.push({insumoId,insumoNombre:ins?ins.nombre:"",cantidad:qty,unidad:unit});
+  L("receta-new-qty").value="";
+  renderIngredientesReceta();
+}
+function quitarIngredienteReceta(idx){S.recetaActual.splice(idx,1);renderIngredientesReceta();}
+async function guardarRecetaCompleta(){
+  const sabor=L("receta-sabor")?.value;
+  const tamano=L("receta-tamano")?.value;
+  if(!sabor||!tamano){toast("Selecciona sabor y tamaño","error");return;}
+  const btn=L("btn-guardar-receta");btn.disabled=true;btn.textContent="Guardando...";
+  const res=await api("saveReceta",{sabor,tamano,ingredientes:S.recetaActual});
+  if(res.ok){
+    toast(`✅ Receta ${sabor} ${tamano} guardada`);
+    const resR=await api("getRecetas");if(resR.ok)S.recetas=resR.recetas;
+  } else toast(res.error,"error");
+  btn.disabled=false;btn.textContent="Guardar receta";
+}
+
+// CALCULADORA
+async function calcularCosto(){
+  const sabor=L("calc-sabor")?.value;
+  const tamano=L("calc-tamano")?.value;
+  if(!sabor||!tamano) return;
+  L("calc-resultado").innerHTML=`<div class="loading"><div class="spinner"></div>Calculando...</div>`;
+  const res=await api("getCalculoCosto",{sabor,tamano});
+  if(!res.ok){L("calc-resultado").innerHTML=`<div class="empty-state"><div>${res.error}</div></div>`;return;}
+  if(res.lineas.length===0){L("calc-resultado").innerHTML=`<div class="empty-state"><div class="empty-icon">📋</div><div>Sin receta para ${sabor} ${tamano}</div></div>`;return;}
+  const precio=S.precios?.find(p=>p.tamano===tamano)?.precio||0;
+  const margen=precio>0?((precio-res.costoTotal)/precio*100):0;
+  L("calc-resultado").innerHTML=`
+    <div class="calc-hero">
+      <div class="calc-hero-label">${sabor} · ${tamano}</div>
+      <div class="calc-hero-price">${fmtMXN(res.costoTotal)}</div>
+      <div class="calc-hero-sub">Costo de producción${precio>0?` · PVP: ${fmtMXN(precio)} · Margen: ${margen.toFixed(1)}%`:""}</div>
+    </div>
+    <table class="calc-lineas-table">
+      <thead><tr><th>Ingrediente</th><th>Cant.</th><th style="text-align:right">Costo</th></tr></thead>
+      <tbody>${res.lineas.map(l=>`<tr><td>${l.insumoNombre}</td><td style="color:var(--muted)">${l.cantidad} ${l.unidad}</td><td style="text-align:right;font-weight:700;color:var(--accent)">${l.costoLinea>0?fmtMXN(l.costoLinea):"—"}</td></tr>`).join("")}</tbody>
+    </table>
+    <div class="calc-total-row"><span style="color:var(--muted)">Total costo:&nbsp;<strong style="color:var(--accent);font-size:16px">${fmtMXN(res.costoTotal)}</strong></span></div>`;
+}
+
+// CARGA MASIVA — Claude procesa el texto y genera el JSON para subir
+async function procesarBulkInsumos(){
+  const texto=L("bulk-insumos-text").value.trim();
+  if(!texto){toast("Ingresa la lista de insumos","error");return;}
+  const btn=L("btn-bulk-insumos");btn.disabled=true;btn.textContent="Procesando con IA...";
+  try {
+    const response=await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        model:"claude-sonnet-4-20250514",
+        max_tokens:1000,
+        messages:[{role:"user",content:`Convierte esta lista de insumos de pastelería a JSON. Extrae: nombre, descripcion (opcional), buyQty (número), buyUnit (unidad: unidad/g/kg/ml/L/docena), buyPrice (número, precio en MXN). Responde SOLO con un array JSON sin markdown ni texto extra. Lista:\n${texto}`}]
+      })
+    });
+    const data=await response.json();
+    const txt=data.content?.[0]?.text||"";
+    const clean=txt.replace(/```json|```/g,"").trim();
+    const insumos=JSON.parse(clean);
+    const res=await api("bulkLoadInsumos",{insumos});
+    if(res.ok){toast(`✅ ${res.creados.length} insumos cargados`);L("bulk-insumos-text").value="";const resI=await api("getInsumos");if(resI.ok)S.insumos=resI.insumos;renderInsumos();poblarRecetaInsumoSelect();}
+    else toast(res.error,"error");
+  } catch(e){toast("Error al procesar: "+e.message,"error");}
+  btn.disabled=false;btn.textContent="Procesar y cargar insumos";
+}
+
+async function procesarBulkReceta(){
+  const texto=L("bulk-receta-text").value.trim();
+  const sabor=L("bulk-receta-sabor")?.value;
+  const tamano=L("bulk-receta-tamano")?.value;
+  if(!texto||!sabor||!tamano){toast("Completa todos los campos","error");return;}
+  const btn=L("btn-bulk-receta");btn.disabled=true;btn.textContent="Procesando con IA...";
+  const insumosDisponibles=S.insumos.filter(i=>i.activo).map(i=>`${i.id}: ${i.nombre}`).join("\n");
+  try {
+    const response=await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        model:"claude-sonnet-4-20250514",
+        max_tokens:1000,
+        messages:[{role:"user",content:`Tengo esta lista de insumos disponibles con sus IDs:\n${insumosDisponibles}\n\nConvierte esta receta a JSON, mapeando cada ingrediente al insumoId más cercano de los disponibles. Campos: insumoId, insumoNombre, cantidad (número), unidad (unidad/g/kg/ml/L). Responde SOLO con array JSON sin markdown. Receta:\n${texto}`}]
+      })
+    });
+    const data=await response.json();
+    const txt=data.content?.[0]?.text||"";
+    const clean=txt.replace(/```json|```/g,"").trim();
+    const ingredientes=JSON.parse(clean);
+    const res=await api("saveReceta",{sabor,tamano,ingredientes});
+    if(res.ok){toast(`✅ Receta ${sabor} ${tamano} guardada`);L("bulk-receta-text").value="";const resR=await api("getRecetas");if(resR.ok)S.recetas=resR.recetas;}
+    else toast(res.error,"error");
+  } catch(e){toast("Error al procesar: "+e.message,"error");}
+  btn.disabled=false;btn.textContent="Procesar y guardar receta";
+}
+
+// ============================================================
+// USUARIOS
+// ============================================================
+async function cargarUsuarios(){
+  const res=await api("getUsuarios");if(!res.ok)return;
   L("usuarios-list").innerHTML=res.usuarios.map(u=>`
     <div class="usuario-row">
       <div style="flex:1">
         <div style="font-size:14px;font-weight:500"><span class="rol-chip ${u.rol==='Owner'?'rol-owner':'rol-vendedor'}">${u.rol}</span>${u.usuario}</div>
         <div style="font-size:11px;color:var(--muted);margin-top:2px">${u.sucursal} · ${u.ultimoAcceso?u.ultimoAcceso.substring(0,10):'Sin acceso aún'}</div>
       </div>
-      ${u.usuario!==S.usuario
-        ?`<button class="toggle-btn ${u.activo?'activo':''}" onclick="togUsuario('${u.usuario}')">${u.activo?'Activo':'Inactivo'}</button>`
-        :`<span style="font-size:11px;color:var(--muted)">Tú</span>`}
+      ${u.usuario!==S.usuario?`<button class="toggle-btn ${u.activo?'activo':''}" onclick="togUsuario('${u.usuario}')">${u.activo?'Activo':'Inactivo'}</button>`:`<span style="font-size:11px;color:var(--muted)">Tú</span>`}
     </div>`).join("");
 }
-
-async function togUsuario(usuario) {
-  const res=await api("toggleUsuario",{usuario});
-  if(res.ok){toast(res.mensaje);cargarUsuarios();}else toast(res.error,"error");
-}
-
-L("btn-guardar-usuario").addEventListener("click", async ()=>{
-  const usuario=L("nu-usuario").value.trim(), password=L("nu-password").value;
-  const rol=L("nu-rol").value, sucursal=L("nu-sucursal").value;
+async function togUsuario(usuario){const res=await api("toggleUsuario",{usuario});if(res.ok){toast(res.mensaje);cargarUsuarios();}else toast(res.error,"error");}
+L("btn-guardar-usuario").addEventListener("click",async()=>{
+  const usuario=L("nu-usuario").value.trim(),password=L("nu-password").value;
+  const rol=L("nu-rol").value,sucursal=L("nu-sucursal").value;
   if(!usuario||!password){toast("Completa todos los campos","error");return;}
   const res=await api("crearUsuario",{usuario,password,rol,sucursal});
-  if(res.ok){toast(res.mensaje);L("modal-nuevo-usuario").classList.remove("show");cargarUsuarios();}
-  else toast(res.error,"error");
+  if(res.ok){toast(res.mensaje);L("modal-nuevo-usuario").classList.remove("show");cargarUsuarios();}else toast(res.error,"error");
 });
-
-L("btn-cambiar-pw").addEventListener("click", async ()=>{
-  const actual=L("pw-actual").value, nueva=L("pw-nueva").value;
+L("btn-cambiar-pw").addEventListener("click",async()=>{
+  const actual=L("pw-actual").value,nueva=L("pw-nueva").value;
   if(!actual||!nueva){toast("Completa ambos campos","error");return;}
   const res=await api("cambiarPassword",{usuario:S.usuario,passwordActual:actual,passwordNuevo:nueva});
-  if(res.ok){toast(res.mensaje);L("pw-actual").value="";L("pw-nueva").value="";}
-  else toast(res.error,"error");
+  if(res.ok){toast(res.mensaje);L("pw-actual").value="";L("pw-nueva").value="";}else toast(res.error,"error");
 });
 
-async function cargarAuditoria() {
-  const res=await api("getAuditoria");
-  if(!res.ok) return;
-  L("auditoria-list").innerHTML=res.registros.length===0
-    ?`<div class="empty-state"><div class="empty-text">Sin registros</div></div>`
-    :res.registros.map(r=>`
-      <div class="audit-row">
-        <div class="audit-accion">${r.accion}</div>
-        <div class="audit-detalle">${r.detalles}</div>
-        <div class="audit-meta">${r.usuario} · ${r.fecha?r.fecha.substring(0,16).replace('T',' '):''}</div>
-      </div>`).join("");
+// ============================================================
+// AUDITORÍA
+// ============================================================
+async function cargarAuditoria(){
+  const res=await api("getAuditoria");if(!res.ok)return;
+  L("auditoria-list").innerHTML=res.registros.length===0?`<div class="empty-state"><div>Sin registros</div></div>`
+    :res.registros.map(r=>`<div class="audit-row"><div class="audit-accion">${r.accion}</div><div class="audit-detalle">${r.detalles}</div><div class="audit-meta">${r.usuario} · ${r.fecha?r.fecha.substring(0,16).replace('T',' '):''}</div></div>`).join("");
 }
 
-L("btn-logout").addEventListener("click", ()=>{
-  S={token:null,usuario:null,rol:null,sucursal:null,catalogo:null,precios:null,stock:null,carrito:[],clienteSel:null,filtroSuc:null,filtroTam:null};
-  L("app").style.display="none";
-  L("login-screen").style.display="flex";
-  L("login-user").value=""; L("login-pass").value="";
+L("btn-logout").addEventListener("click",()=>{
+  S={token:null,usuario:null,rol:null,sucursal:null,catalogo:null,precios:null,stock:null,carrito:[],clienteSel:null,filtroSuc:null,filtroTam:null,insumos:[],recetas:[],recetaActual:[]};
+  L("app").style.display="none";L("login-screen").style.display="flex";L("login-user").value="";L("login-pass").value="";
 });
-
-document.querySelectorAll(".modal-overlay").forEach(o=>{
-  o.addEventListener("click",e=>{ if(e.target===o) o.classList.remove("show"); });
-});
-
-// ═══════════════════════════════════════════
-//  CALCULADORA DE COSTOS — conectada a Sheets
-// ═══════════════════════════════════════════
-const CALC_SIZES = [
-  {label:"Pequeña (12 cm)", portions:4, factor:0.7},
-  {label:"Mediana (18 cm)", portions:8, factor:1.0},
-  {label:"Grande (24 cm)", portions:14, factor:1.6}
-];
-const CALC_UNITS = ["g","kg","ml","L","unidad","docena"];
-
-let calcState = {
-  ings: [], pkgs: [], gasts: [],
-  expandId: null, marginPct: 40,
-  nextIngId: 100, nextPkgId: 100, nextGastId: 100,
-  activeTab: "receta", cargado: false, guardando: false
-};
-
-let saveDebounceTimer = null;
-
-// Cargar desde Sheets
-async function cargarCostos() {
-  const contenido = L("tab-costos");
-  const card = contenido?.querySelector(".card");
-  if (card) {
-    const titulo = card.querySelector(".card-sub");
-    if (titulo) titulo.textContent = "Cargando desde Google Sheets...";
-  }
-  const res = await api("getCostos");
-  if (!res.ok) { toast("Error al cargar costos: " + res.error, "error"); return; }
-  calcState.ings = res.ings || [];
-  calcState.pkgs = res.pkgs || [];
-  calcState.gasts = res.gasts || [];
-  calcState.marginPct = res.marginPct ?? 40;
-  // nextIds = max id + 1
-  calcState.nextIngId = (calcState.ings.length ? Math.max(...calcState.ings.map(i=>i.id)) + 1 : 1);
-  calcState.nextPkgId = (calcState.pkgs.length ? Math.max(...calcState.pkgs.map(p=>p.id)) + 1 : 1);
-  calcState.nextGastId = (calcState.gasts.length ? Math.max(...calcState.gasts.map(g=>g.id)) + 1 : 1);
-  calcState.cargado = true;
-  if (card) {
-    const titulo = card.querySelector(".card-sub");
-    if (titulo) titulo.textContent = "Calcula el costo de producción y precio de venta sugerido";
-  }
-  renderCalc();
-}
-
-// Guardar a Sheets con debounce (espera 1.5s después del último cambio)
-function autoGuardar() {
-  clearTimeout(saveDebounceTimer);
-  saveDebounceTimer = setTimeout(async () => {
-    if (calcState.guardando) return;
-    calcState.guardando = true;
-    mostrarEstadoGuardado("Guardando...", "#e67e22");
-    const res = await api("saveCostos", {
-      ings: calcState.ings,
-      pkgs: calcState.pkgs,
-      gasts: calcState.gasts,
-      marginPct: calcState.marginPct
-    });
-    calcState.guardando = false;
-    if (res.ok) {
-      mostrarEstadoGuardado("✓ Guardado en Sheets", "#27ae60");
-      setTimeout(() => mostrarEstadoGuardado("", ""), 3000);
-    } else {
-      mostrarEstadoGuardado("⚠ Error al guardar", "#c0392b");
-    }
-  }, 1500);
-}
-
-function mostrarEstadoGuardado(msg, color) {
-  const el = L("calc-save-status");
-  if (!el) return;
-  el.textContent = msg;
-  el.style.color = color;
-}
-
-function toBase(qty, unit) {
-  if(unit==="kg") return qty*1000;
-  if(unit==="L") return qty*1000;
-  if(unit==="docena") return qty*12;
-  return qty;
-}
-
-function calcCostoIng(ing, factor) {
-  const usoBase = toBase(ing.useQty, ing.useUnit);
-  const compraBase = toBase(ing.buyQty, ing.buyUnit);
-  if(!compraBase || !ing.buyPrice) return 0;
-  return (usoBase / compraBase) * ing.buyPrice * factor;
-}
-
-function fmtMXN(n) {
-  return new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',minimumFractionDigits:2}).format(n);
-}
-
-function getCalcSize() { return CALC_SIZES[parseInt(L("calc-size").value||1)]; }
-
-function setCalcTab(tab) {
-  calcState.activeTab = tab;
-  document.querySelectorAll(".calc-tab").forEach(t=>{
-    t.classList.toggle("active", t.getAttribute("onclick")===`setCalcTab('${tab}')`);
-  });
-  document.querySelectorAll(".calc-section").forEach(s=>s.classList.remove("active"));
-  L("calc-"+tab).classList.add("active");
-  renderCalc();
-}
-
-function renderCalc() {
-  const size = getCalcSize();
-  const factor = size.factor;
-
-  // Calcular totales
-  const totalIngs = calcState.ings.reduce((s,i)=>s+calcCostoIng(i,factor),0);
-  const totalPkgs = calcState.pkgs.reduce((s,p)=>s+(parseFloat(p.cost)||0),0);
-  const costoReceta = totalIngs + totalPkgs;
-  const totalGastos = calcState.gasts.reduce((s,g)=>s+(parseFloat(g.cost)||0),0);
-  const precioVenta = calcState.marginPct < 100 ? costoReceta / (1 - calcState.marginPct/100) : 0;
-  const ganancia = precioVenta - costoReceta;
-  const precioPorcion = size.portions > 0 ? precioVenta / size.portions : 0;
-
-  // --- RECETA TAB ---
-  // Ingredientes
-  const ingsList = L("calc-ings-list");
-  if(ingsList) {
-    ingsList.innerHTML = calcState.ings.map(ing=>{
-      const costo = calcCostoIng(ing, factor);
-      const open = calcState.expandId === ing.id;
-      return `
-        <div onclick="toggleIngExpand(${ing.id})" style="display:grid;grid-template-columns:2fr 1.4fr 1.6fr 90px 32px;gap:8px;align-items:center;margin-bottom:4px;padding:7px 10px;border-radius:8px;cursor:pointer;background:${open?'rgba(134,189,173,.12)':'transparent'};border:1px solid ${open?'#86BDAD':'transparent'}">
-          <div style="display:flex;align-items:center;gap:6px">
-            <span style="font-size:11px;color:#B2AA92;display:inline-block;transform:${open?'rotate(90deg)':'rotate(0deg)'};transition:transform .2s">▶︎</span>
-            <span style="font-size:14px;font-weight:${open?600:400}">${ing.name}</span>
-          </div>
-          <div style="font-size:13px;color:#86887D"><strong style="color:#3a3a35">${ing.useQty}</strong> ${ing.useUnit}</div>
-          <div style="font-size:13px;color:#86887D"><strong style="color:#3a3a35">${fmtMXN(ing.buyPrice)}</strong> / ${ing.buyQty} ${ing.buyUnit}</div>
-          <div style="text-align:right;font-weight:700;font-size:14px;color:#C9A84C">${fmtMXN(costo)}</div>
-          <button onclick="event.stopPropagation();delIng(${ing.id})" style="background:none;border:none;color:#B2AA92;cursor:pointer;font-size:15px;padding:0;display:flex;align-items:center;justify-content:center;height:32px">✕</button>
-        </div>
-        ${open ? `
-        <div style="margin:0 0 10px;padding:16px;background:rgba(134,189,173,.07);border:1px solid #86BDAD;border-radius:10px">
-          <div style="margin-bottom:12px">
-            <label class="form-label">Nombre</label>
-            <input value="${ing.name}" onchange="updIng(${ing.id},'name',this.value)" class="calc-input" style="width:100%;box-sizing:border-box">
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-            <div style="background:rgba(134,189,173,.12);border-radius:8px;padding:12px 14px">
-              <div style="font-size:10px;color:#86BDAD;text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;font-weight:700">📐 Uso en receta</div>
-              <label class="form-label">Cantidad que usas</label>
-              <div style="display:flex;gap:8px">
-                <input type="number" value="${ing.useQty}" onchange="updIng(${ing.id},'useQty',this.value)" class="calc-input" style="width:50%;flex:none;text-align:center" step="1" min="0">
-                <select onchange="updIng(${ing.id},'useUnit',this.value)" class="calc-select" style="width:50%;flex:none">
-                  ${CALC_UNITS.map(u=>`<option${u===ing.useUnit?' selected':''}>${u}</option>`).join('')}
-                </select>
-              </div>
-            </div>
-            <div style="background:rgba(201,168,76,.08);border-radius:8px;padding:12px 14px">
-              <div style="font-size:10px;color:#C9A84C;text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;font-weight:700">🛒 Precio de compra</div>
-              <label class="form-label">Cantidad que compras</label>
-              <div style="display:flex;gap:8px;margin-bottom:8px">
-                <input type="number" value="${ing.buyQty}" onchange="updIng(${ing.id},'buyQty',this.value)" class="calc-input" style="width:50%;flex:none;text-align:center" step="0.1" min="0">
-                <select onchange="updIng(${ing.id},'buyUnit',this.value)" class="calc-select" style="width:50%;flex:none">
-                  ${CALC_UNITS.map(u=>`<option${u===ing.buyUnit?' selected':''}>${u}</option>`).join('')}
-                </select>
-              </div>
-              <label class="form-label">Lo pagas ($MXN)</label>
-              <input type="number" value="${ing.buyPrice}" onchange="updIng(${ing.id},'buyPrice',this.value)" class="calc-input" style="width:100%;box-sizing:border-box;text-align:right" step="1" min="0">
-            </div>
-          </div>
-          <div style="margin-top:12px;padding:10px 14px;background:#86BDAD;border-radius:8px;display:flex;justify-content:space-between;align-items:center">
-            <span style="font-size:12px;color:#EFEEE8">Coste en esta receta (${size.label}):</span>
-            <span style="font-size:20px;font-weight:700;color:#e8c97a">${fmtMXN(costo)}</span>
-          </div>
-        </div>` : ''}
-      `;
-    }).join('');
-    L("calc-total-ings").textContent = fmtMXN(totalIngs);
-  }
-
-  // Empaque
-  const pkgList = L("calc-pkg-list");
-  if(pkgList) {
-    pkgList.innerHTML = calcState.pkgs.map(p=>`
-      <div style="display:grid;grid-template-columns:1fr 120px 32px;gap:8px;align-items:center;margin-bottom:8px">
-        <input value="${p.name}" onchange="updPkg(${p.id},'name',this.value)" class="calc-input" placeholder="Artículo">
-        <input type="number" min="0" step="1" value="${p.cost}" onchange="updPkg(${p.id},'cost',this.value)" class="calc-input" style="text-align:right" placeholder="0">
-        <button onclick="delPkg(${p.id})" class="calc-btn-del">✕</button>
-      </div>`).join('');
-    L("calc-total-pkg").textContent = fmtMXN(totalPkgs);
-  }
-
-  // Resumen receta
-  const saborLabel = L("calc-sabor")?.value || "Tradicional";
-  if(L("calc-resumen-label")) L("calc-resumen-label").textContent = `${saborLabel} · ${size.label}`;
-  if(L("calc-res-ings")) L("calc-res-ings").textContent = fmtMXN(totalIngs);
-  if(L("calc-res-pkg")) L("calc-res-pkg").textContent = fmtMXN(totalPkgs);
-  if(L("calc-res-total")) L("calc-res-total").textContent = fmtMXN(costoReceta);
-
-  // --- GASTOS TAB ---
-  const gastsList = L("calc-gasts-list");
-  if(gastsList) {
-    gastsList.innerHTML = calcState.gasts.map(g=>`
-      <div style="display:grid;grid-template-columns:1fr 160px 32px;gap:8px;align-items:center;margin-bottom:8px">
-        <input value="${g.name}" onchange="updGast(${g.id},'name',this.value)" class="calc-input" placeholder="Concepto">
-        <input type="number" min="0" step="10" value="${g.cost}" onchange="updGast(${g.id},'cost',this.value)" class="calc-input" style="text-align:right" placeholder="0">
-        <button onclick="delGast(${g.id})" class="calc-btn-del">✕</button>
-      </div>`).join('');
-    L("calc-total-gasts").textContent = fmtMXN(totalGastos);
-
-    // Punto equilibrio
-    const equilDiv = L("calc-equilibrio");
-    if(equilDiv && totalGastos > 0 && costoReceta > 0) {
-      equilDiv.style.display = "block";
-      const grid = L("calc-equil-grid");
-      grid.innerHTML = CALC_SIZES.map(s=>{
-        const costoS = calcState.ings.reduce((sum,i)=>sum+calcCostoIng(i,s.factor),0) + totalPkgs;
-        const pvpS = calcState.marginPct < 100 ? costoS / (1 - calcState.marginPct/100) : 0;
-        const ganS = pvpS - costoS;
-        const tartasNeeded = ganS > 0 ? Math.ceil(totalGastos / ganS) : "—";
-        return `
-          <div class="calc-equil-item">
-            <div style="font-size:11px;color:#86887D;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">${s.label}</div>
-            <div style="font-size:28px;font-weight:700;color:#86BDAD">${tartasNeeded}</div>
-            <div style="font-size:11px;color:#B2AA92;margin-top:4px">tartas / mes</div>
-            <div style="font-size:11px;color:#C9A84C;margin-top:4px">Ganancia: ${ganS>0?fmtMXN(ganS):"—"}</div>
-          </div>`;
-      }).join('');
-    } else if(equilDiv) {
-      equilDiv.style.display = "none";
-    }
-  }
-
-  // --- RESULTADO TAB ---
-  // Slider
-  if(L("calc-margin-slider")) {
-    L("calc-margin-slider").value = calcState.marginPct;
-    L("calc-margin-display").textContent = calcState.marginPct + "%";
-    L("calc-slider-fill").style.width = calcState.marginPct + "%";
-  }
-
-  // Hero
-  if(L("calc-hero-label")) L("calc-hero-label").textContent = `Tarta Vasca · ${saborLabel} · ${size.label}`;
-  if(L("calc-hero-price")) L("calc-hero-price").textContent = fmtMXN(precioVenta);
-  if(L("calc-hero-porcion")) L("calc-hero-porcion").textContent = `${fmtMXN(precioPorcion)} por porción`;
-
-  // Métricas
-  if(L("calc-m-costo")) L("calc-m-costo").textContent = fmtMXN(costoReceta);
-  if(L("calc-m-ganancia")) L("calc-m-ganancia").textContent = fmtMXN(ganancia);
-  if(L("calc-m-margen-sub")) L("calc-m-margen-sub").textContent = calcState.marginPct + "% margen";
-  if(L("calc-m-porciones")) L("calc-m-porciones").textContent = size.portions;
-  if(L("calc-m-size-sub")) L("calc-m-size-sub").textContent = size.label;
-
-  // Barras
-  const barrasDiv = L("calc-barras");
-  if(barrasDiv && precioVenta > 0) {
-    const items = [
-      {label:"Ingredientes", val:totalIngs, color:"#86BDAD"},
-      {label:"Empaque", val:totalPkgs, color:"#6ea898"},
-      {label:"Ganancia", val:ganancia, color:"#C9A84C"}
-    ];
-    barrasDiv.innerHTML = items.map(item=>`
-      <div style="margin-bottom:12px">
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:13px">
-          <span style="color:#86887D">${item.label}</span>
-          <span style="color:#3a3a35">${fmtMXN(item.val)} <span style="color:#B2AA92;font-size:11px">(${((item.val/precioVenta)*100).toFixed(1)}%)</span></span>
-        </div>
-        <div style="height:8px;background:#D5D0C0;border-radius:4px;overflow:hidden">
-          <div style="height:100%;width:${Math.max(0,(item.val/precioVenta)*100)}%;background:${item.color};border-radius:4px;transition:width .5s ease"></div>
-        </div>
-      </div>`).join('');
-  }
-
-  // Volumen
-  const volDiv = L("calc-vol");
-  if(volDiv) {
-    volDiv.innerHTML = [1,5,10,20].map(qty=>`
-      <div style="background:${qty===1?'#86BDAD':'rgba(134,189,173,.1)'};border:1px solid ${qty===1?'#C9A84C':'#D5D0C0'};border-radius:10px;padding:14px 8px;text-align:center">
-        <div style="font-size:10px;color:${qty===1?'#D5D0C0':'#B2AA92'};text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">${qty} tarta${qty>1?'s':''}</div>
-        <div style="font-size:16px;font-weight:700;color:${qty===1?'#EFEEE8':'#3a3a35'}">${fmtMXN(precioVenta*qty)}</div>
-        <div style="font-size:11px;color:${qty===1?'#e8c97a':'#86BDAD'};margin-top:4px">+${fmtMXN(ganancia*qty)}</div>
-      </div>`).join('');
-  }
-
-  // Nota gastos
-  const notaGastos = L("calc-nota-gastos");
-  if(notaGastos) {
-    notaGastos.style.display = totalGastos > 0 ? "block" : "none";
-    const notaVal = L("calc-nota-gasts-val");
-    if(notaVal) notaVal.textContent = fmtMXN(totalGastos);
-  }
-}
-
-function toggleIngExpand(id) {
-  calcState.expandId = calcState.expandId === id ? null : id;
-  renderCalc();
-}
-
-function updIng(id, field, val) {
-  calcState.ings = calcState.ings.map(i=>i.id===id ? {...i,[field]:['name','useUnit','buyUnit'].includes(field)?val:parseFloat(val)||0} : i);
-  renderCalc(); autoGuardar();
-}
-function delIng(id) { calcState.ings = calcState.ings.filter(i=>i.id!==id); calcState.expandId=null; renderCalc(); autoGuardar(); }
-
-function updPkg(id, field, val) {
-  calcState.pkgs = calcState.pkgs.map(p=>p.id===id ? {...p,[field]:field==='name'?val:parseFloat(val)||0} : p);
-  renderCalc(); autoGuardar();
-}
-function delPkg(id) { calcState.pkgs = calcState.pkgs.filter(p=>p.id!==id); renderCalc(); autoGuardar(); }
-
-function updGast(id, field, val) {
-  calcState.gasts = calcState.gasts.map(g=>g.id===id ? {...g,[field]:field==='name'?val:parseFloat(val)||0} : g);
-  renderCalc(); autoGuardar();
-}
-function delGast(id) { calcState.gasts = calcState.gasts.filter(g=>g.id!==id); renderCalc(); autoGuardar(); }
-
-function onMarginChange(val) {
-  calcState.marginPct = parseFloat(val);
-  renderCalc(); autoGuardar();
-}
-
-function addIngrediente() {
-  const name = L("new-ing-name")?.value.trim();
-  const useQty = parseFloat(L("new-ing-useqty")?.value)||0;
-  const useUnit = L("new-ing-useunit")?.value||"g";
-  const buyQty = parseFloat(L("new-ing-buyqty")?.value)||0;
-  const buyUnit = L("new-ing-buyunit")?.value||"kg";
-  const buyPrice = parseFloat(L("new-ing-price")?.value)||0;
-  if(!name||!useQty||!buyQty||!buyPrice) { toast("Completa todos los campos del ingrediente","error"); return; }
-  calcState.ings.push({id:calcState.nextIngId++, name, useQty, useUnit, buyQty, buyUnit, buyPrice});
-  L("new-ing-name").value=""; L("new-ing-useqty").value=""; L("new-ing-buyqty").value=""; L("new-ing-price").value="";
-  renderCalc(); autoGuardar();
-}
-
-function addEmpaque() {
-  const name = L("new-pkg-name")?.value.trim();
-  const cost = parseFloat(L("new-pkg-cost")?.value)||0;
-  if(!name||!cost) { toast("Completa nombre y costo","error"); return; }
-  calcState.pkgs.push({id:calcState.nextPkgId++, name, cost});
-  L("new-pkg-name").value=""; L("new-pkg-cost").value="";
-  renderCalc(); autoGuardar();
-}
-
-function addGasto() {
-  const name = L("new-gast-name")?.value.trim();
-  const cost = parseFloat(L("new-gast-cost")?.value)||0;
-  if(!name||!cost) { toast("Completa nombre y costo","error"); return; }
-  calcState.gasts.push({id:calcState.nextGastId++, name, cost});
-  L("new-gast-name").value=""; L("new-gast-cost").value="";
-  renderCalc(); autoGuardar();
-}
-
-// Re-render cuando cambian sabor/tamaño
-L("calc-sabor")?.addEventListener("change", renderCalc);
-L("calc-size")?.addEventListener("change", ()=>{ calcState.expandId=null; renderCalc(); });
+document.querySelectorAll(".modal-overlay").forEach(o=>{o.addEventListener("click",e=>{if(e.target===o)o.classList.remove("show");});});
 </script>
 </body>
 </html>
