@@ -187,7 +187,26 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 .calc-total-row{display:flex;justify-content:flex-end;padding-top:10px;margin-top:4px;border-top:1px dashed var(--border);font-size:13px}
 .seccion-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;font-weight:700}
 .bulk-area{width:100%;min-height:80px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;resize:vertical;background:white;color:var(--ink)}
-.bulk-area:focus{border-color:var(--accent)}
+.util-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:8px;align-items:center;padding:10px 12px;border-radius:10px;margin-bottom:6px;background:var(--warm)}
+.util-row.header{background:transparent;padding-bottom:4px;border-bottom:1px solid var(--border);margin-bottom:8px;border-radius:0}
+.util-row.header span{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:500}
+.util-nombre{font-size:14px;font-weight:500}
+.util-val{font-size:13px;text-align:right}
+.util-verde{color:var(--success);font-weight:700}
+.util-rojo{color:var(--danger);font-weight:700}
+.util-margen{font-size:11px;padding:2px 8px;border-radius:10px;text-align:right;font-weight:700}
+.margen-alto{background:#e8f5e9;color:var(--success)}
+.margen-med{background:#fff3e0;color:var(--warning)}
+.margen-bajo{background:#ffebee;color:var(--danger)}
+.op-row{padding:12px 0;border-bottom:1px solid var(--warm)}
+.op-row:last-child{border-bottom:none}
+.op-fecha{font-size:11px;color:var(--muted)}
+.op-prods{font-size:13px;margin:3px 0;font-weight:500}
+.op-nums{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:6px}
+.op-num-card{background:var(--warm);border-radius:8px;padding:8px 10px;text-align:center}
+.op-num-val{font-family:'Fraunces',serif;font-size:16px;font-weight:500}
+.op-num-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+.op-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 </style>
 </head>
 <body>
@@ -224,6 +243,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <div class="nav-tab owner-only" data-tab="catalogo">Catálogo</div>
     <div class="nav-tab owner-only" data-tab="precios">Precios</div>
     <div class="nav-tab owner-only" data-tab="costos">Costos</div>
+    <div class="nav-tab owner-only" data-tab="utilidades">Utilidades</div>
     <div class="nav-tab owner-only" data-tab="usuarios">Usuarios</div>
     <div class="nav-tab owner-only" data-tab="auditoria">Auditoría</div>
   </nav>
@@ -382,6 +402,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           <button class="costos-tab" onclick="setCostosTab('recetas')">📋 Recetas</button>
           <button class="costos-tab" onclick="setCostosTab('calculadora')">🧮 Calculadora</button>
           <button class="costos-tab" onclick="setCostosTab('carga')">📤 Carga masiva</button>
+          <button class="costos-tab" onclick="setCostosTab('tabla-util')">📊 Utilidades</button>
         </div>
 
         <!-- TAB INSUMOS -->
@@ -524,7 +545,26 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
       </div>
     </div>
 
-    <!-- USUARIOS -->
+    <!-- UTILIDADES -->
+    <div id="tab-utilidades" class="tab-pane" style="display:none">
+      <div class="card">
+        <div class="card-title">Utilidades por operación</div>
+        <div class="card-sub">Cada venta cruzada con su costo de receta</div>
+        <div id="util-resumen" style="display:none;margin-bottom:14px">
+          <div class="summary-grid">
+            <div class="summary-card"><div class="summary-num" id="util-sum-ingresos" style="color:var(--green)">$0</div><div class="summary-label">Ingresos totales</div></div>
+            <div class="summary-card"><div class="summary-num" id="util-sum-utilidad" style="color:var(--accent)">$0</div><div class="summary-label">Utilidad total</div></div>
+          </div>
+        </div>
+        <div id="util-ops-list"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
+        <!-- TAB TABLA UTILIDADES -->
+        <div id="costos-tabla-util" class="costos-section">
+          <div class="seccion-label">Utilidad por producto (basado en recetas cargadas)</div>
+          <div id="tabla-util-content"><div class="loading"><div class="spinner"></div>Calculando...</div></div>
+        </div>
+
+      </div>
+    </div>
     <div id="tab-usuarios" class="tab-pane" style="display:none">
       <div class="card">
         <div class="card-title">Usuarios</div>
@@ -696,6 +736,7 @@ function setupNav() {
       else if(t==="ventas") cargarVentas();
       else if(t==="venta") iniciarVenta();
       else if(t==="costos") { if(!S.insumos.length) cargarCostos(); else renderCostos(); }
+      else if(t==="utilidades") cargarUtilidades();
     });
   });
 }
@@ -1008,6 +1049,7 @@ function setCostosTab(tab){
   L("costos-"+tab).classList.add("active");
   if(tab==="recetas") renderRecetaActual();
   if(tab==="calculadora") calcularCosto();
+  if(tab==="tabla-util") renderTablaUtilidades();
 }
 
 async function cargarCostos(){
@@ -1286,6 +1328,120 @@ async function cargarAuditoria(){
   const res=await api("getAuditoria");if(!res.ok)return;
   L("auditoria-list").innerHTML=res.registros.length===0?`<div class="empty-state"><div>Sin registros</div></div>`
     :res.registros.map(r=>`<div class="audit-row"><div class="audit-accion">${r.accion}</div><div class="audit-detalle">${r.detalles}</div><div class="audit-meta">${r.usuario} · ${r.fecha?r.fecha.substring(0,16).replace('T',' '):''}</div></div>`).join("");
+}
+
+// ============================================================
+// TABLA UTILIDADES EN COSTOS
+// ============================================================
+async function renderTablaUtilidades(){
+  L("tabla-util-content").innerHTML=`<div class="loading"><div class="spinner"></div>Calculando...</div>`;
+  if(!S.insumos.length||!S.recetas.length) await cargarCostos();
+  if(!S.precios) await cargarPrecios(true);
+  const sabores=(S.catalogo?.sabores||[]).filter(s=>s.activo).map(s=>s.nombre);
+  const tamanos=(S.catalogo?.tamanos||[]).filter(t=>t.activo).map(t=>t.nombre);
+  const filas=[];
+  for(const sab of sabores){
+    for(const tam of tamanos){
+      const receta=S.recetas.find(r=>r.sabor===sab&&r.tamano===tam);
+      if(!receta||!receta.ingredientes.length) continue;
+      const costoTotal=receta.ingredientes.reduce((sum,ing)=>{
+        const ins=S.insumos.find(i=>i.id===ing.insumoId);
+        return sum+(ins?ins.costoPorUnidad*ing.cantidad:0);
+      },0);
+      const precio=S.precios?.find(p=>p.tamano===tam)?.precio||0;
+      const utilidad=precio-costoTotal;
+      const margen=precio>0?(utilidad/precio*100):0;
+      filas.push({sab,tam,costoTotal,precio,utilidad,margen});
+    }
+  }
+  if(filas.length===0){L("tabla-util-content").innerHTML=`<div class="empty-state"><div class="empty-icon">📋</div><div>Sin recetas cargadas todavía</div></div>`;return;}
+  L("tabla-util-content").innerHTML=`
+    <div class="util-row header">
+      <span>Producto</span><span style="text-align:right">Costo</span><span style="text-align:right">Precio</span><span style="text-align:right">Utilidad</span><span style="text-align:right">Margen</span>
+    </div>
+    ${filas.map(f=>{
+      const mCls=f.margen>=50?'margen-alto':f.margen>=30?'margen-med':'margen-bajo';
+      const uCls=f.utilidad>=0?'util-verde':'util-rojo';
+      return `<div class="util-row">
+        <div><div class="util-nombre">${f.sab}</div><div style="font-size:11px;color:var(--muted)">${f.tam}</div></div>
+        <div class="util-val">${fmtMXN(f.costoTotal)}</div>
+        <div class="util-val">${f.precio>0?fmtMXN(f.precio):'—'}</div>
+        <div class="util-val ${uCls}">${f.precio>0?fmtMXN(f.utilidad):'—'}</div>
+        <div style="text-align:right"><span class="util-margen ${mCls}">${f.precio>0?f.margen.toFixed(1)+'%':'—'}</span></div>
+      </div>`;
+    }).join('')}`;
+}
+
+// ============================================================
+// SECCIÓN UTILIDADES POR OPERACIÓN
+// ============================================================
+async function cargarUtilidades(){
+  L("util-ops-list").innerHTML=`<div class="loading"><div class="spinner"></div>Cargando...</div>`;
+  const [resV,resR,resI,resP]=await Promise.all([
+    api("getVentas"),
+    S.recetas.length?Promise.resolve({ok:true,recetas:S.recetas}):api("getRecetas"),
+    S.insumos.length?Promise.resolve({ok:true,insumos:S.insumos}):api("getInsumos"),
+    S.precios?Promise.resolve({ok:true,precios:S.precios}):api("getPrecios")
+  ]);
+  if(!resV.ok){L("util-ops-list").innerHTML=`<div class="empty-state"><div>Error al cargar ventas</div></div>`;return;}
+  if(resR.ok) S.recetas=resR.recetas;
+  if(resI.ok) S.insumos=resI.insumos;
+  if(resP.ok&&resP.precios) S.precios=resP.precios;
+
+  if(resV.ventas.length===0){L("util-ops-list").innerHTML=`<div class="empty-state"><div class="empty-icon">📊</div><div>Sin ventas registradas</div></div>`;return;}
+
+  function getCostoReceta(sabor,tamano){
+    const receta=S.recetas.find(r=>r.sabor===sabor&&r.tamano===tamano);
+    if(!receta||!receta.ingredientes.length) return null;
+    return receta.ingredientes.reduce((sum,ing)=>{
+      const ins=S.insumos.find(i=>i.id===ing.insumoId);
+      return sum+(ins?ins.costoPorUnidad*ing.cantidad:0);
+    },0);
+  }
+
+  const grupos={};
+  resV.ventas.forEach(v=>{
+    if(!grupos[v.idVenta]) grupos[v.idVenta]={...v,items:[]};
+    grupos[v.idVenta].items.push({sabor:v.sabor,tamano:v.tamano,cantidad:v.cantidad,subtotal:v.subtotal,precio:v.precio});
+  });
+
+  let totalIngresos=0, totalUtilidad=0, sinReceta=0;
+  const ops=Object.values(grupos).map(g=>{
+    const totalVenta=g.items.reduce((s,i)=>s+i.subtotal,0);
+    let costoTotal=0; let calculable=true;
+    g.items.forEach(i=>{const c=getCostoReceta(i.sabor,i.tamano);if(c===null)calculable=false;else costoTotal+=c*i.cantidad;});
+    const utilidad=calculable?totalVenta-costoTotal:null;
+    const margen=calculable&&totalVenta>0?((utilidad/totalVenta)*100):null;
+    if(calculable){totalIngresos+=totalVenta;totalUtilidad+=utilidad;}
+    else sinReceta++;
+    return {...g,totalVenta,costoTotal:calculable?costoTotal:null,utilidad,margen,calculable};
+  });
+
+  L("util-resumen").style.display="block";
+  L("util-sum-ingresos").textContent=fmtMXN(totalIngresos);
+  L("util-sum-utilidad").textContent=fmtMXN(totalUtilidad);
+
+  const aviso=sinReceta>0?`<div style="font-size:12px;color:var(--muted);padding:10px 14px;background:rgba(134,189,173,.1);border-radius:8px;margin-bottom:12px">
+    ℹ️ ${sinReceta} operación(es) sin receta cargada — aparecen sin utilidad calculada. Carga sus recetas en Costos para verlas completas.
+  </div>`:'';
+
+  L("util-ops-list").innerHTML=aviso+ops.map(g=>{
+    const mCls=g.margen===null?'':g.margen>=50?'margen-alto':g.margen>=30?'margen-med':'margen-bajo';
+    return `<div class="op-row">
+      <div class="op-fecha">${g.fecha?g.fecha.substring(0,16).replace('T',' '):''}</div>
+      <div class="op-prods">${g.items.map(i=>`${i.cantidad}× ${i.sabor} ${i.tamano}`).join(' · ')}</div>
+      <div class="op-nums">
+        <div class="op-num-card"><div class="op-num-val">${fmtMXN(g.totalVenta)}</div><div class="op-num-label">Ingreso</div></div>
+        <div class="op-num-card"><div class="op-num-val">${g.calculable?fmtMXN(g.costoTotal):'—'}</div><div class="op-num-label">Costo</div></div>
+        <div class="op-num-card"><div class="op-num-val ${g.utilidad!==null?(g.utilidad>=0?'util-verde':'util-rojo'):''}">${g.calculable?fmtMXN(g.utilidad):'—'}</div><div class="op-num-label">Utilidad</div></div>
+      </div>
+      <div class="op-tags">
+        <span class="tag">${g.canal}</span><span class="tag">${g.sucursal}</span>
+        ${g.clienteNombre?`<span class="tag">${g.clienteNombre}</span>`:''}
+        ${g.margen!==null?`<span class="util-margen ${mCls}" style="font-size:11px">${g.margen.toFixed(1)}% margen</span>`:'<span class="tag">sin receta</span>'}
+      </div>
+    </div>`;
+  }).join('');
 }
 
 L("btn-logout").addEventListener("click",()=>{
