@@ -1348,63 +1348,94 @@ async function cargarAuditoria(){
 // ============================================================
 async function renderTablaUtilidades(){
   L("tabla-util-content").innerHTML=`<div class="loading"><div class="spinner"></div>Calculando...</div>`;
-  // Traer todo fresco
-  const [resR,resI,resP,resC]=await Promise.all([
+
+  const [resR, resI, resP] = await Promise.all([
     api("getRecetas"),
     api("getInsumos"),
-    api("getPrecios"),
-    api("getCatalogo")
+    api("getPrecios")
   ]);
-  if(resR.ok) S.recetas=resR.recetas;
-  if(resI.ok) S.insumos=resI.insumos;
-  if(resP.ok&&resP.precios) S.precios=resP.precios;
-  if(resC.ok) S.catalogo=resC;
 
-  // Construir mapa de precios por tamaño (primer precio encontrado por tamaño = precio base)
-  const preciosPorTamano={};
-  (S.precios||[]).forEach(p=>{
-    if(!preciosPorTamano[p.tamano]) preciosPorTamano[p.tamano]=p.precio;
-  });
-
-  const sabores=(S.catalogo?.sabores||[]).filter(s=>s.activo).map(s=>s.nombre);
-  const tamanos=(S.catalogo?.tamanos||[]).filter(t=>t.activo).map(t=>t.nombre);
-
-  const filas=[];
-  for(const sab of sabores){
-    for(const tam of tamanos){
-      const receta=S.recetas.find(r=>r.sabor===sab&&r.tamano===tam);
-      if(!receta||!receta.ingredientes.length) continue;
-      const costoTotal=receta.ingredientes.reduce((sum,ing)=>{
-        const ins=S.insumos.find(i=>i.id===ing.insumoId);
-        return sum+(ins?ins.costoPorUnidad*ing.cantidad:0);
-      },0);
-      // Buscar precio específico sabor+tamaño primero, si no usa precio base por tamaño
-      const precioEspecifico=(S.precios||[]).find(p=>p.sabor===sab&&p.tamano===tam)?.precio||0;
-      const precio=precioEspecifico||preciosPorTamano[tam]||0;
-      const utilidad=precio-costoTotal;
-      const margen=precio>0?(utilidad/precio*100):0;
-      filas.push({sab,tam,costoTotal,precio,utilidad,margen});
-    }
-  }
-  if(filas.length===0){
-    L("tabla-util-content").innerHTML=`<div class="empty-state"><div class="empty-icon">📋</div><div>Sin recetas cargadas — ve a Costos → Recetas para cargar ingredientes</div></div>`;
+  if(!resR.ok || !resI.ok || !resP.ok){
+    L("tabla-util-content").innerHTML=`<div class="empty-state"><div class="empty-icon">⚠️</div><div>Error al cargar datos</div></div>`;
     return;
   }
-  L("tabla-util-content").innerHTML=`
+
+  const recetas = resR.recetas || [];
+  const insumos = resI.insumos || [];
+  const precios = resP.precios || [];
+
+  // Guardar en estado global
+  S.recetas = recetas;
+  S.insumos = insumos;
+  S.precios = precios;
+
+  if(recetas.length === 0){
+    L("tabla-util-content").innerHTML=`<div class="empty-state"><div class="empty-icon">📋</div><div>Sin recetas cargadas — ve a la pestaña Recetas para agregar ingredientes</div></div>`;
+    return;
+  }
+
+  // Índice de insumos por ID para lookup rápido
+  const insumosIdx = {};
+  insumos.forEach(i => insumosIdx[i.id] = i);
+
+  // Precio por tamaño: primero buscar precio específico sabor+tamaño,
+  // si no existe usar el primer precio disponible para ese tamaño
+  function getPrecio(sabor, tamano){
+    const especifico = precios.find(p => p.sabor === sabor && p.tamano === tamano);
+    if(especifico && especifico.precio > 0) return especifico.precio;
+    const porTamano = precios.find(p => p.tamano === tamano && p.precio > 0);
+    return porTamano ? porTamano.precio : 0;
+  }
+
+  // Calcular fila por cada receta cargada
+  const filas = recetas
+    .filter(r => r.ingredientes && r.ingredientes.length > 0)
+    .map(r => {
+      const costo = r.ingredientes.reduce((sum, ing) => {
+        const ins = insumosIdx[ing.insumoId];
+        return sum + (ins ? ins.costoPorUnidad * ing.cantidad : 0);
+      }, 0);
+      const precio = getPrecio(r.sabor, r.tamano);
+      const utilidad = precio > 0 ? precio - costo : null;
+      const margen   = precio > 0 ? (utilidad / precio * 100) : null;
+      return { sabor: r.sabor, tamano: r.tamano, costo, precio, utilidad, margen };
+    });
+
+  if(filas.length === 0){
+    L("tabla-util-content").innerHTML=`<div class="empty-state"><div class="empty-icon">📋</div><div>Sin recetas con ingredientes cargados</div></div>`;
+    return;
+  }
+
+  const header = `
     <div class="util-row header">
-      <span>Producto</span><span style="text-align:right">Costo</span><span style="text-align:right">Precio</span><span style="text-align:right">Utilidad</span><span style="text-align:right">Margen</span>
-    </div>
-    ${filas.map(f=>{
-      const mCls=f.margen>=50?'margen-alto':f.margen>=30?'margen-med':'margen-bajo';
-      const uCls=f.utilidad>=0?'util-verde':'util-rojo';
-      return `<div class="util-row">
-        <div><div class="util-nombre">${f.sab}</div><div style="font-size:11px;color:var(--muted)">${f.tam}</div></div>
-        <div class="util-val">${fmtMXN(f.costoTotal)}</div>
-        <div class="util-val">${f.precio>0?fmtMXN(f.precio):'<span style="color:var(--danger);font-size:11px">Sin precio</span>'}</div>
-        <div class="util-val ${uCls}">${f.precio>0?fmtMXN(f.utilidad):'—'}</div>
-        <div style="text-align:right"><span class="util-margen ${mCls}">${f.precio>0?f.margen.toFixed(1)+'%':'—'}</span></div>
+      <span>Producto</span>
+      <span style="text-align:right">Costo</span>
+      <span style="text-align:right">Precio</span>
+      <span style="text-align:right">Utilidad</span>
+      <span style="text-align:right">Margen</span>
+    </div>`;
+
+  const rows = filas.map(f => {
+    const mCls = f.margen === null ? '' : f.margen >= 50 ? 'margen-alto' : f.margen >= 30 ? 'margen-med' : 'margen-bajo';
+    const uCls = f.utilidad === null ? '' : f.utilidad >= 0 ? 'util-verde' : 'util-rojo';
+    return `
+      <div class="util-row">
+        <div>
+          <div class="util-nombre">${f.sabor}</div>
+          <div style="font-size:11px;color:var(--muted)">${f.tamano}</div>
+        </div>
+        <div class="util-val">${fmtMXN(f.costo)}</div>
+        <div class="util-val">${f.precio > 0 ? fmtMXN(f.precio) : '<span style="color:var(--danger);font-size:11px">Sin precio</span>'}</div>
+        <div class="util-val ${uCls}">${f.utilidad !== null ? fmtMXN(f.utilidad) : '—'}</div>
+        <div style="text-align:right">
+          ${f.margen !== null
+            ? `<span class="util-margen ${mCls}">${f.margen.toFixed(1)}%</span>`
+            : '<span style="color:var(--muted);font-size:11px">—</span>'}
+        </div>
       </div>`;
-    }).join('')}`;
+  }).join('');
+
+  L("tabla-util-content").innerHTML = header + rows;
 }
 
 // ============================================================
