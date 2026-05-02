@@ -403,7 +403,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           <button class="costos-tab" onclick="setCostosTab('recetas')">📋 Recetas</button>
           <button class="costos-tab" onclick="setCostosTab('calculadora')">🧮 Calculadora</button>
           <button class="costos-tab" onclick="setCostosTab('carga')">📤 Carga masiva</button>
-          <button class="costos-tab" onclick="setCostosTab('tabla-util')">📊 Utilidades</button>
+          <button class="costos-tab" onclick="setCostosTab('tabla-util')">📊 Utilidad unitaria</button>
         </div>
 
         <!-- TAB INSUMOS -->
@@ -543,6 +543,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           <button onclick="procesarBulkReceta()" class="btn-main btn-green" id="btn-bulk-receta">Procesar y guardar receta</button>
         </div>
 
+        <!-- TAB UTILIDAD UNITARIA -->
+        <div id="costos-tabla-util" class="costos-section">
+          <div class="seccion-label">Utilidad unitaria por pastel con receta cargada</div>
+          <div id="tabla-util-content"><div class="loading"><div class="spinner"></div>Calculando...</div></div>
+        </div>
+
       </div>
     </div>
 
@@ -558,12 +564,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           </div>
         </div>
         <div id="util-ops-list"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
-        <!-- TAB TABLA UTILIDADES -->
-        <div id="costos-tabla-util" class="costos-section">
-          <div class="seccion-label">Utilidad por producto (basado en recetas cargadas)</div>
-          <div id="tabla-util-content"><div class="loading"><div class="spinner"></div>Calculando...</div></div>
-        </div>
-
       </div>
     </div>
     <div id="tab-usuarios" class="tab-pane" style="display:none">
