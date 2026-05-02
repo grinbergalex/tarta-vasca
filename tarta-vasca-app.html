@@ -849,7 +849,12 @@ L("stock-search").addEventListener("input",renderStock);
 // ============================================================
 // VENTA
 // ============================================================
-function iniciarVenta(){actualizarUICanal();actualizarDisp();}
+function iniciarVenta(){
+  // Re-poblar selects por si el catálogo llegó después de que se cargó la pantalla
+  if(S.catalogo) poblarSelectsVenta();
+  actualizarUICanal();
+  actualizarDisp();
+}
 function getSucursalVenta(){return S.rol==="Vendedor"?S.sucursal:(L("venta-sucursal")?.value||S.sucursal);}
 function calcDisp(sabor,tamano){
   if(!S.stock) return 0;
@@ -1335,8 +1340,15 @@ async function cargarAuditoria(){
 // ============================================================
 async function renderTablaUtilidades(){
   L("tabla-util-content").innerHTML=`<div class="loading"><div class="spinner"></div>Calculando...</div>`;
-  if(!S.insumos.length||!S.recetas.length) await cargarCostos();
-  if(!S.precios) await cargarPrecios(true);
+  // Siempre pedir datos frescos desde la API (recetas/insumos pueden no estar en memoria)
+  const [resR,resI,resP]=await Promise.all([
+    api("getRecetas"),
+    api("getInsumos"),
+    S.precios?Promise.resolve({ok:true,precios:S.precios}):api("getPrecios")
+  ]);
+  if(resR.ok) S.recetas=resR.recetas;
+  if(resI.ok) S.insumos=resI.insumos;
+  if(resP.ok&&resP.precios) S.precios=resP.precios;
   const sabores=(S.catalogo?.sabores||[]).filter(s=>s.activo).map(s=>s.nombre);
   const tamanos=(S.catalogo?.tamanos||[]).filter(t=>t.activo).map(t=>t.nombre);
   const filas=[];
@@ -1377,11 +1389,12 @@ async function renderTablaUtilidades(){
 // ============================================================
 async function cargarUtilidades(){
   L("util-ops-list").innerHTML=`<div class="loading"><div class="spinner"></div>Cargando...</div>`;
+  // Siempre datos frescos para garantizar que las recetas e insumos estén actualizados
   const [resV,resR,resI,resP]=await Promise.all([
     api("getVentas"),
-    S.recetas.length?Promise.resolve({ok:true,recetas:S.recetas}):api("getRecetas"),
-    S.insumos.length?Promise.resolve({ok:true,insumos:S.insumos}):api("getInsumos"),
-    S.precios?Promise.resolve({ok:true,precios:S.precios}):api("getPrecios")
+    api("getRecetas"),
+    api("getInsumos"),
+    api("getPrecios")
   ]);
   if(!resV.ok){L("util-ops-list").innerHTML=`<div class="empty-state"><div>Error al cargar ventas</div></div>`;return;}
   if(resR.ok) S.recetas=resR.recetas;
