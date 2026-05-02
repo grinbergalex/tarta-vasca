@@ -243,7 +243,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <div class="nav-tab owner-only" data-tab="catalogo">Catálogo</div>
     <div class="nav-tab owner-only" data-tab="precios">Precios</div>
     <div class="nav-tab owner-only" data-tab="costos">Costos</div>
-    <div class="nav-tab owner-only" data-tab="utilidades">Utilidades</div>
+    <div class="nav-tab owner-only" data-tab="utilidades">Utilidad por ventas</div>
     <div class="nav-tab owner-only" data-tab="usuarios">Usuarios</div>
     <div class="nav-tab owner-only" data-tab="auditoria">Auditoría</div>
   </nav>
@@ -553,16 +553,97 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     </div>
 
     <!-- UTILIDADES -->
+    <!-- UTILIDAD POR VENTAS -->
     <div id="tab-utilidades" class="tab-pane" style="display:none">
-      <div class="card">
-        <div class="card-title">Utilidades por operación</div>
-        <div class="card-sub">Cada venta cruzada con su costo de receta</div>
-        <div id="util-resumen" style="display:none;margin-bottom:14px">
-          <div class="summary-grid">
-            <div class="summary-card"><div class="summary-num" id="util-sum-ingresos" style="color:var(--green)">$0</div><div class="summary-label">Ingresos totales</div></div>
-            <div class="summary-card"><div class="summary-num" id="util-sum-utilidad" style="color:var(--accent)">$0</div><div class="summary-label">Utilidad total</div></div>
+
+      <!-- FILTROS -->
+      <div class="card" style="padding:16px 20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div class="card-title" style="margin-bottom:0">Utilidad por ventas</div>
+          <button onclick="aplicarFiltrosUtil()" style="background:var(--accent);border:none;color:white;border-radius:10px;padding:8px 16px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer">Aplicar</button>
+        </div>
+        <!-- Fechas -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div>
+            <label class="form-label">Desde</label>
+            <input type="date" class="mini-input" id="f-desde" style="width:100%">
+          </div>
+          <div>
+            <label class="form-label">Hasta</label>
+            <input type="date" class="mini-input" id="f-hasta" style="width:100%">
           </div>
         </div>
+        <!-- Filtros en grid -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <div>
+            <label class="form-label">Punto de venta</label>
+            <select class="mini-select" id="f-sucursal" style="width:100%">
+              <option value="">Todos</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Canal</label>
+            <select class="mini-select" id="f-canal" style="width:100%">
+              <option value="">Todos</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Método de pago</label>
+            <select class="mini-select" id="f-metodo" style="width:100%">
+              <option value="">Todos</option>
+              <option>Efectivo</option>
+              <option>Tarjeta</option>
+              <option>Transferencia</option>
+              <option>Rappi</option>
+              <option>Uber Eats</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Sabor</label>
+            <select class="mini-select" id="f-sabor" style="width:100%">
+              <option value="">Todos</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Tamaño</label>
+            <select class="mini-select" id="f-tamano" style="width:100%">
+              <option value="">Todos</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:flex-end">
+            <button onclick="limpiarFiltrosUtil()" style="width:100%;background:none;border:1px solid var(--border);border-radius:8px;padding:9px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--muted);cursor:pointer">Limpiar filtros</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RESUMEN DEL PERÍODO -->
+      <div id="util-resumen-periodo" style="display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+          <div class="summary-card">
+            <div class="summary-num" id="up-ingresos" style="color:var(--green);font-size:24px">$0</div>
+            <div class="summary-label">Ingresos</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-num" id="up-costos" style="color:var(--muted);font-size:24px">$0</div>
+            <div class="summary-label">Costos</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-num" id="up-utilidad" style="font-size:24px">$0</div>
+            <div class="summary-label">Utilidad</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-num" id="up-margen" style="font-size:24px">0%</div>
+            <div class="summary-label">Margen</div>
+          </div>
+        </div>
+        <div style="background:var(--warm);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--muted);margin-bottom:12px">
+          <span id="up-periodo-label"></span> · <strong id="up-ops-count" style="color:var(--ink)">0 operaciones</strong>
+          <span id="up-sin-receta-aviso" style="display:none"> · <span style="color:var(--warning)">⚠️ <span id="up-sin-receta-num"></span> sin receta (excluidas del costo)</span></span>
+        </div>
+      </div>
+
+      <!-- OPERACIONES -->
+      <div class="card">
         <div id="util-ops-list"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
       </div>
     </div>
@@ -1441,71 +1522,206 @@ async function renderTablaUtilidades(){
 // ============================================================
 // SECCIÓN UTILIDADES POR OPERACIÓN
 // ============================================================
+// ============================================================
+// UTILIDAD POR VENTAS — con filtros
+// ============================================================
+
+// Estado de filtros
+let utilState = {
+  ventas: [],       // todas las ventas cargadas
+  recetas: [],
+  insumos: [],
+  listo: false
+};
+
+// Inicializa la pantalla: carga datos, pone fechas por defecto, puebla filtros
 async function cargarUtilidades(){
   L("util-ops-list").innerHTML=`<div class="loading"><div class="spinner"></div>Cargando...</div>`;
-  // Siempre datos frescos para garantizar que las recetas e insumos estén actualizados
-  const [resV,resR,resI,resP]=await Promise.all([
+  L("util-resumen-periodo").style.display="none";
+
+  // Fechas por defecto: mes en curso
+  const hoy = new Date();
+  const primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+  L("f-desde").value = _fmtDateInput(primerDia);
+  L("f-hasta").value  = _fmtDateInput(hoy);
+
+  // Cargar todo en paralelo
+  const [resV, resR, resI] = await Promise.all([
     api("getVentas"),
     api("getRecetas"),
-    api("getInsumos"),
-    api("getPrecios")
+    api("getInsumos")
   ]);
-  if(!resV.ok){L("util-ops-list").innerHTML=`<div class="empty-state"><div>Error al cargar ventas</div></div>`;return;}
-  if(resR.ok) S.recetas=resR.recetas;
-  if(resI.ok) S.insumos=resI.insumos;
-  if(resP.ok&&resP.precios) S.precios=resP.precios;
+  if(!resV.ok){ L("util-ops-list").innerHTML=`<div class="empty-state"><div>Error al cargar ventas</div></div>`; return; }
 
-  if(resV.ventas.length===0){L("util-ops-list").innerHTML=`<div class="empty-state"><div class="empty-icon">📊</div><div>Sin ventas registradas</div></div>`;return;}
+  utilState.ventas  = resV.ventas  || [];
+  utilState.recetas = resR.ok ? resR.recetas : (S.recetas || []);
+  utilState.insumos = resI.ok ? resI.insumos : (S.insumos || []);
+  utilState.listo   = true;
 
-  function getCostoReceta(sabor,tamano){
-    const receta=S.recetas.find(r=>r.sabor===sabor&&r.tamano===tamano);
-    if(!receta||!receta.ingredientes.length) return null;
-    return receta.ingredientes.reduce((sum,ing)=>{
-      const ins=S.insumos.find(i=>i.id===ing.insumoId);
-      return sum+(ins?ins.costoPorUnidad*ing.cantidad:0);
-    },0);
+  // Guardar en global
+  if(resR.ok) S.recetas = utilState.recetas;
+  if(resI.ok) S.insumos = utilState.insumos;
+
+  // Poblar filtros dinámicos desde los datos reales
+  _poblarFiltrosUtil();
+
+  // Renderizar con filtros actuales
+  renderUtilidades();
+}
+
+function _fmtDateInput(d){
+  return d.toISOString().substring(0,10);
+}
+
+function _poblarFiltrosUtil(){
+  const ventas = utilState.ventas;
+  const sucursales = [...new Set(ventas.map(v=>v.sucursal).filter(Boolean))];
+  const canales    = [...new Set(ventas.map(v=>v.canal).filter(Boolean))];
+  const sabores    = [...new Set(ventas.map(v=>v.sabor).filter(Boolean))];
+  const tamanos    = [...new Set(ventas.map(v=>v.tamano).filter(Boolean))];
+
+  _llenarSelect("f-sucursal", sucursales);
+  _llenarSelect("f-canal",    canales);
+  _llenarSelect("f-sabor",    sabores);
+  _llenarSelect("f-tamano",   tamanos);
+}
+
+function _llenarSelect(id, opciones){
+  const sel = L(id);
+  if(!sel) return;
+  const actual = sel.value;
+  sel.innerHTML = `<option value="">Todos</option>` + opciones.map(o=>`<option value="${o}">${o}</option>`).join("");
+  if(actual) sel.value = actual;
+}
+
+function aplicarFiltrosUtil(){ renderUtilidades(); }
+
+function limpiarFiltrosUtil(){
+  const hoy = new Date();
+  const primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+  L("f-desde").value   = _fmtDateInput(primerDia);
+  L("f-hasta").value   = _fmtDateInput(hoy);
+  L("f-sucursal").value = "";
+  L("f-canal").value    = "";
+  L("f-metodo").value   = "";
+  L("f-sabor").value    = "";
+  L("f-tamano").value   = "";
+  renderUtilidades();
+}
+
+function renderUtilidades(){
+  if(!utilState.listo){ L("util-ops-list").innerHTML=`<div class="loading"><div class="spinner"></div></div>`; return; }
+
+  const desde   = L("f-desde").value;
+  const hasta   = L("f-hasta").value;
+  const fSuc    = L("f-sucursal").value;
+  const fCanal  = L("f-canal").value;
+  const fMetodo = L("f-metodo").value;
+  const fSabor  = L("f-sabor").value;
+  const fTamano = L("f-tamano").value;
+
+  const desdeD = desde ? new Date(desde+"T00:00:00") : null;
+  const hastaD = hasta ? new Date(hasta+"T23:59:59") : null;
+
+  // Construir índice de insumos
+  const insumosIdx = {};
+  utilState.insumos.forEach(i => insumosIdx[i.id] = i);
+
+  // Función costo de receta para sabor+tamaño
+  function getCostoReceta(sabor, tamano){
+    const rec = utilState.recetas.find(r => r.sabor === sabor && r.tamano === tamano);
+    if(!rec || !rec.ingredientes.length) return null;
+    return rec.ingredientes.reduce((s, ing) => {
+      const ins = insumosIdx[ing.insumoId];
+      return s + (ins ? ins.costoPorUnidad * ing.cantidad : 0);
+    }, 0);
   }
 
-  const grupos={};
-  resV.ventas.forEach(v=>{
-    if(!grupos[v.idVenta]) grupos[v.idVenta]={...v,items:[]};
-    grupos[v.idVenta].items.push({sabor:v.sabor,tamano:v.tamano,cantidad:v.cantidad,subtotal:v.subtotal,precio:v.precio});
+  // Filtrar ventas individuales
+  let ventasFiltradas = utilState.ventas.filter(v => {
+    if(desdeD && v.fecha && new Date(v.fecha) < desdeD) return false;
+    if(hastaD && v.fecha && new Date(v.fecha) > hastaD) return false;
+    if(fSuc    && v.sucursal   !== fSuc)    return false;
+    if(fCanal  && v.canal      !== fCanal)  return false;
+    if(fMetodo && v.metodoPago !== fMetodo) return false;
+    if(fSabor  && v.sabor      !== fSabor)  return false;
+    if(fTamano && v.tamano     !== fTamano) return false;
+    return true;
   });
 
-  let totalIngresos=0, totalUtilidad=0, sinReceta=0;
-  const ops=Object.values(grupos).map(g=>{
-    const totalVenta=g.items.reduce((s,i)=>s+i.subtotal,0);
-    let costoTotal=0; let calculable=true;
-    g.items.forEach(i=>{const c=getCostoReceta(i.sabor,i.tamano);if(c===null)calculable=false;else costoTotal+=c*i.cantidad;});
-    const utilidad=calculable?totalVenta-costoTotal:null;
-    const margen=calculable&&totalVenta>0?((utilidad/totalVenta)*100):null;
-    if(calculable){totalIngresos+=totalVenta;totalUtilidad+=utilidad;}
-    else sinReceta++;
-    return {...g,totalVenta,costoTotal:calculable?costoTotal:null,utilidad,margen,calculable};
+  // Agrupar por idVenta
+  const grupos = {};
+  ventasFiltradas.forEach(v => {
+    if(!grupos[v.idVenta]) grupos[v.idVenta] = { ...v, items: [] };
+    grupos[v.idVenta].items.push({ sabor: v.sabor, tamano: v.tamano, cantidad: v.cantidad, subtotal: v.subtotal, precio: v.precio });
   });
 
-  L("util-resumen").style.display="block";
-  L("util-sum-ingresos").textContent=fmtMXN(totalIngresos);
-  L("util-sum-utilidad").textContent=fmtMXN(totalUtilidad);
+  if(Object.keys(grupos).length === 0){
+    L("util-resumen-periodo").style.display = "none";
+    L("util-ops-list").innerHTML = `<div class="empty-state"><div class="empty-icon">📊</div><div>Sin ventas en el período seleccionado</div></div>`;
+    return;
+  }
 
-  const aviso=sinReceta>0?`<div style="font-size:12px;color:var(--muted);padding:10px 14px;background:rgba(134,189,173,.1);border-radius:8px;margin-bottom:12px">
-    ℹ️ ${sinReceta} operación(es) sin receta cargada — aparecen sin utilidad calculada. Carga sus recetas en Costos para verlas completas.
-  </div>`:'';
+  // Calcular métricas por grupo
+  let totalIngresos = 0, totalCostos = 0, totalUtilidad = 0, sinReceta = 0;
+  const ops = Object.values(grupos).map(g => {
+    const ingreso = g.items.reduce((s,i) => s + i.subtotal, 0);
+    let costo = 0; let calculable = true;
+    g.items.forEach(i => {
+      const c = getCostoReceta(i.sabor, i.tamano);
+      if(c === null) calculable = false;
+      else costo += c * i.cantidad;
+    });
+    const utilidad = calculable ? ingreso - costo : null;
+    const margen   = calculable && ingreso > 0 ? (utilidad / ingreso * 100) : null;
+    if(calculable){ totalIngresos += ingreso; totalCostos += costo; totalUtilidad += utilidad; }
+    else { totalIngresos += ingreso; sinReceta++; }
+    return { ...g, ingreso, costo: calculable ? costo : null, utilidad, margen, calculable };
+  });
 
-  L("util-ops-list").innerHTML=aviso+ops.map(g=>{
-    const mCls=g.margen===null?'':g.margen>=50?'margen-alto':g.margen>=30?'margen-med':'margen-bajo';
+  const totalMargen = totalIngresos > 0 ? (totalUtilidad / totalIngresos * 100) : 0;
+
+  // Resumen período
+  L("util-resumen-periodo").style.display = "block";
+  L("up-ingresos").textContent  = fmtMXN(totalIngresos);
+  L("up-costos").textContent    = fmtMXN(totalCostos);
+  L("up-utilidad").textContent  = fmtMXN(totalUtilidad);
+  L("up-utilidad").style.color  = totalUtilidad >= 0 ? "var(--success)" : "var(--danger)";
+  L("up-margen").textContent    = totalMargen.toFixed(1) + "%";
+  L("up-margen").style.color    = totalMargen >= 30 ? "var(--success)" : totalMargen >= 0 ? "var(--warning)" : "var(--danger)";
+
+  // Label período
+  const periodoTxt = desde && hasta ? `${desde} → ${hasta}` : desde ? `Desde ${desde}` : hasta ? `Hasta ${hasta}` : "Todo el historial";
+  L("up-periodo-label").textContent = periodoTxt;
+  L("up-ops-count").textContent = `${ops.length} operación${ops.length !== 1 ? "es" : ""}`;
+
+  if(sinReceta > 0){
+    L("up-sin-receta-aviso").style.display = "inline";
+    L("up-sin-receta-num").textContent = sinReceta;
+  } else {
+    L("up-sin-receta-aviso").style.display = "none";
+  }
+
+  // Listado
+  L("util-ops-list").innerHTML = ops.map(g => {
+    const mCls = g.margen === null ? '' : g.margen >= 50 ? 'margen-alto' : g.margen >= 30 ? 'margen-med' : 'margen-bajo';
+    const uCls = g.utilidad === null ? '' : g.utilidad >= 0 ? 'util-verde' : 'util-rojo';
     return `<div class="op-row">
-      <div class="op-fecha">${g.fecha?g.fecha.substring(0,16).replace('T',' '):''}</div>
+      <div class="op-fecha">${g.fecha ? g.fecha.substring(0,16).replace('T',' ') : ''}</div>
       <div class="op-prods">${g.items.map(i=>`${i.cantidad}× ${i.sabor} ${i.tamano}`).join(' · ')}</div>
       <div class="op-nums">
-        <div class="op-num-card"><div class="op-num-val">${fmtMXN(g.totalVenta)}</div><div class="op-num-label">Ingreso</div></div>
-        <div class="op-num-card"><div class="op-num-val">${g.calculable?fmtMXN(g.costoTotal):'—'}</div><div class="op-num-label">Costo</div></div>
-        <div class="op-num-card"><div class="op-num-val ${g.utilidad!==null?(g.utilidad>=0?'util-verde':'util-rojo'):''}">${g.calculable?fmtMXN(g.utilidad):'—'}</div><div class="op-num-label">Utilidad</div></div>
+        <div class="op-num-card"><div class="op-num-val">${fmtMXN(g.ingreso)}</div><div class="op-num-label">Ingreso</div></div>
+        <div class="op-num-card"><div class="op-num-val">${g.calculable ? fmtMXN(g.costo) : '—'}</div><div class="op-num-label">Costo</div></div>
+        <div class="op-num-card"><div class="op-num-val ${uCls}">${g.utilidad !== null ? fmtMXN(g.utilidad) : '—'}</div><div class="op-num-label">Utilidad</div></div>
       </div>
       <div class="op-tags">
-        <span class="tag">${g.canal}</span><span class="tag">${g.sucursal}</span>
-        ${g.clienteNombre?`<span class="tag">${g.clienteNombre}</span>`:''}
-        ${g.margen!==null?`<span class="util-margen ${mCls}" style="font-size:11px">${g.margen.toFixed(1)}% margen</span>`:'<span class="tag">sin receta</span>'}
+        <span class="tag">${g.canal||''}</span>
+        <span class="tag">${g.metodoPago||''}</span>
+        <span class="tag">${g.sucursal||''}</span>
+        ${g.clienteNombre ? `<span class="tag">${g.clienteNombre}</span>` : ''}
+        ${g.margen !== null
+          ? `<span class="util-margen ${mCls}" style="font-size:11px">${g.margen.toFixed(1)}% margen</span>`
+          : '<span class="tag" style="color:var(--warning)">sin receta</span>'}
       </div>
     </div>`;
   }).join('');
