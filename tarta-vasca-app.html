@@ -404,6 +404,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           <button class="costos-tab" onclick="setCostosTab('calculadora')">🧮 Calculadora</button>
           <button class="costos-tab" onclick="setCostosTab('carga')">📤 Carga masiva</button>
           <button class="costos-tab" onclick="setCostosTab('tabla-util')">📊 Utilidad unitaria</button>
+          <button class="costos-tab" onclick="setCostosTab('gastos')">💸 Gastos</button>
         </div>
 
         <!-- TAB INSUMOS -->
@@ -547,6 +548,59 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <div id="costos-tabla-util" class="costos-section">
           <div class="seccion-label">Utilidad unitaria por pastel con receta cargada</div>
           <div id="tabla-util-content"><div class="loading"><div class="spinner"></div>Calculando...</div></div>
+        </div>
+
+        <!-- TAB GASTOS -->
+        <div id="costos-gastos" class="costos-section">
+          <div class="seccion-label">Gastos fijos y variables de operación</div>
+          <div id="gastos-list"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
+
+          <div class="insumo-form" style="margin-top:16px">
+            <div class="form-title" id="gasto-form-title">Nuevo gasto</div>
+            <input type="hidden" id="gasto-id">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+              <div>
+                <label class="form-label">Concepto *</label>
+                <input class="mini-input" id="g-concepto" placeholder="Renta local Cuajimalpa" style="width:100%">
+              </div>
+              <div>
+                <label class="form-label">Tipo *</label>
+                <select class="mini-select" id="g-tipo" style="width:100%">
+                  <option value="Fijo">Fijo</option>
+                  <option value="Variable">Variable</option>
+                </select>
+              </div>
+              <div>
+                <label class="form-label">Frecuencia *</label>
+                <select class="mini-select" id="g-frecuencia" style="width:100%">
+                  <option value="Mensual">Mensual</option>
+                  <option value="Semanal">Semanal</option>
+                  <option value="Por unidad">Por unidad producida</option>
+                  <option value="% sobre venta">% sobre venta</option>
+                </select>
+              </div>
+              <div>
+                <label class="form-label" id="g-monto-label">Monto ($) *</label>
+                <input class="mini-input" id="g-monto" type="number" placeholder="0" style="width:100%">
+              </div>
+              <div>
+                <label class="form-label">Sucursal</label>
+                <select class="mini-select" id="g-sucursal" style="width:100%">
+                  <option value="Ambas">Ambas</option>
+                  <option value="Cuajimalpa">Cuajimalpa</option>
+                  <option value="Polanco">Polanco</option>
+                </select>
+              </div>
+              <div>
+                <label class="form-label">Descripción</label>
+                <input class="mini-input" id="g-descripcion" placeholder="Notas adicionales" style="width:100%">
+              </div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn-main btn-green" onclick="guardarGasto()" id="btn-guardar-gasto">GUARDAR GASTO</button>
+              <button class="btn-outline" onclick="cancelarEditarGasto()" id="btn-cancelar-gasto" style="display:none">Cancelar</button>
+            </div>
+          </div>
         </div>
 
       </div>
@@ -1144,6 +1198,7 @@ function setCostosTab(tab){
   if(tab==="recetas") renderRecetaActual();
   if(tab==="calculadora") calcularCosto();
   if(tab==="tabla-util") renderTablaUtilidades();
+  if(tab==="gastos") cargarGastos();
 }
 
 async function cargarCostos(){
@@ -1422,6 +1477,106 @@ async function cargarAuditoria(){
   const res=await api("getAuditoria");if(!res.ok)return;
   L("auditoria-list").innerHTML=res.registros.length===0?`<div class="empty-state"><div>Sin registros</div></div>`
     :res.registros.map(r=>`<div class="audit-row"><div class="audit-accion">${r.accion}</div><div class="audit-detalle">${r.detalles}</div><div class="audit-meta">${r.usuario} · ${r.fecha?r.fecha.substring(0,16).replace('T',' '):''}</div></div>`).join("");
+}
+
+// ============================================================
+// GASTOS
+// ============================================================
+async function cargarGastos(){
+  L("gastos-list").innerHTML=`<div class="loading"><div class="spinner"></div>Cargando...</div>`;
+  const res = await api("getGastos");
+  if(!res.ok){ L("gastos-list").innerHTML=`<div class="empty-state">Error al cargar gastos</div>`; return; }
+  S.gastos = res.gastos || [];
+  renderGastosList();
+}
+
+function renderGastosList(){
+  const gastos = (S.gastos||[]).filter(g=>g.activo);
+  if(gastos.length === 0){
+    L("gastos-list").innerHTML=`<div class="empty-state"><div class="empty-icon">💸</div><div>Sin gastos registrados — agrega renta, comisiones, merma, etc.</div></div>`;
+    return;
+  }
+
+  // Agrupar por tipo
+  const fijos    = gastos.filter(g=>g.tipo==="Fijo");
+  const variables= gastos.filter(g=>g.tipo==="Variable");
+
+  function etiquetaFrecuencia(g){
+    if(g.frecuencia==="% sobre venta") return `${g.monto}%`;
+    return fmtMXN(g.monto) + (g.frecuencia==="Mensual"?" /mes":g.frecuencia==="Semanal"?" /sem":g.frecuencia==="Por unidad"?" /pieza":"");
+  }
+
+  function renderGrupo(lista, titulo){
+    if(!lista.length) return "";
+    return `
+      <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin:12px 0 6px;text-transform:uppercase">${titulo}</div>
+      ${lista.map(g=>`
+        <div class="insumo-item">
+          <div style="flex:1">
+            <div style="font-weight:600;font-size:14px">${g.concepto}</div>
+            <div style="font-size:12px;color:var(--muted)">${g.frecuencia} · ${g.sucursal}${g.descripcion?' · '+g.descripcion:''}</div>
+          </div>
+          <div style="font-weight:700;font-size:15px;color:var(--accent);margin:0 12px">${etiquetaFrecuencia(g)}</div>
+          <div style="display:flex;gap:6px">
+            <button class="btn-icon" onclick="editarGasto('${g.id}')">✏️</button>
+            <button class="btn-icon" onclick="bajaGasto('${g.id}')">✕</button>
+          </div>
+        </div>`).join("")}`;
+  }
+
+  L("gastos-list").innerHTML = renderGrupo(fijos,"Gastos fijos") + renderGrupo(variables,"Gastos variables");
+}
+
+function editarGasto(id){
+  const g = (S.gastos||[]).find(x=>x.id===id);
+  if(!g) return;
+  L("gasto-id").value         = g.id;
+  L("g-concepto").value       = g.concepto;
+  L("g-tipo").value           = g.tipo;
+  L("g-frecuencia").value     = g.frecuencia;
+  L("g-monto").value          = g.monto;
+  L("g-sucursal").value       = g.sucursal;
+  L("g-descripcion").value    = g.descripcion||"";
+  L("gasto-form-title").textContent = "Editar gasto";
+  L("btn-cancelar-gasto").style.display = "inline-block";
+  L("g-concepto").focus();
+}
+
+function cancelarEditarGasto(){
+  ["gasto-id","g-concepto","g-descripcion","g-monto"].forEach(id=>L(id).value="");
+  L("g-tipo").value="Fijo"; L("g-frecuencia").value="Mensual"; L("g-sucursal").value="Ambas";
+  L("gasto-form-title").textContent="Nuevo gasto";
+  L("btn-cancelar-gasto").style.display="none";
+}
+
+async function guardarGasto(){
+  const concepto = L("g-concepto").value.trim();
+  if(!concepto){ toast("El concepto es obligatorio","error"); return; }
+  const monto = parseFloat(L("g-monto").value);
+  if(!monto||monto<=0){ toast("Ingresa un monto válido","error"); return; }
+  const btn = L("btn-guardar-gasto"); btn.disabled=true; btn.textContent="Guardando...";
+  const payload = {
+    id:          L("gasto-id").value||undefined,
+    concepto,
+    descripcion: L("g-descripcion").value.trim(),
+    tipo:        L("g-tipo").value,
+    frecuencia:  L("g-frecuencia").value,
+    monto,
+    sucursal:    L("g-sucursal").value,
+    activo:      true
+  };
+  const res = await api("saveGasto", payload);
+  btn.disabled=false; btn.textContent="GUARDAR GASTO";
+  if(res.ok){ toast(res.mensaje); cancelarEditarGasto(); cargarGastos(); }
+  else toast(res.error,"error");
+}
+
+async function bajaGasto(id){
+  const g = (S.gastos||[]).find(x=>x.id===id);
+  if(!g||!confirm(`¿Dar de baja "${g.concepto}"?`)) return;
+  const res = await api("deleteGasto",{id});
+  if(res.ok){ toast(res.mensaje); cargarGastos(); }
+  else toast(res.error,"error");
 }
 
 // ============================================================
