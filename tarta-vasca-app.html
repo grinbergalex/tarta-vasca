@@ -326,14 +326,24 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           <div class="venta-grid">
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">Canal</label>
-              <select class="form-select" id="venta-canal"></select>
+              <select class="form-select" id="venta-canal" onchange="onCanalChange()"></select>
             </div>
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">Método de pago</label>
               <select class="form-select" id="venta-metodo"></select>
             </div>
           </div>
+          <!-- Aviso precio especial por canal -->
+          <div id="canal-precio-aviso" style="display:none;font-size:12px;padding:8px 12px;border-radius:8px;margin-top:6px;background:rgba(134,189,173,.15);color:var(--success)"></div>
           <div class="canal-aviso" id="canal-aviso"><span>✓</span><span>Plataforma — no se piden datos del cliente</span></div>
+          <!-- Zona de envío — solo canal Domicilio -->
+          <div id="envio-section" style="display:none;margin-top:8px">
+            <label class="form-label">Zona de envío</label>
+            <select class="form-select" id="venta-zona" onchange="onZonaChange()">
+              <option value="">— Sin costo de envío —</option>
+            </select>
+            <div id="envio-costo-aviso" style="display:none;font-size:12px;padding:6px 12px;border-radius:8px;margin-top:4px;background:rgba(200,96,42,.08);color:var(--accent)"></div>
+          </div>
         </div>
 
         <div class="separador"></div>
@@ -383,6 +393,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           <div>
             <div class="total-label">Total</div>
             <div id="descuento-total-label" style="font-size:11px;color:rgba(255,255,255,.6);display:none"></div>
+            <div id="envio-total-label" style="font-size:11px;color:rgba(255,255,255,.6);display:none"></div>
           </div>
           <span class="total-num" id="total-num">$0</span>
         </div>
@@ -472,6 +483,60 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <p class="precio-nota">Los precios son por tamaño y aplican a todos los sabores. Toca un precio para editarlo.</p>
         <div id="precios-content"><div class="loading"><div class="spinner"></div></div></div>
         <button class="btn-outline" onclick="repararPrecios()" style="margin-top:8px;font-size:12px">🔧 Crear precios para sabores sin precio</button>
+      </div>
+
+      <!-- PRECIO POR CANAL -->
+      <div class="card" style="margin-top:10px">
+        <div class="card-title">Precio especial por canal</div>
+        <div class="card-sub">Define una regla opcional de ajuste de precio para cada canal. Al vender puedes aplicarla o ignorarla.</div>
+        <div id="canal-precios-lista" style="margin-bottom:14px"><div class="loading"><div class="spinner"></div></div></div>
+        <div style="background:var(--warm);border-radius:12px;padding:14px">
+          <div style="font-weight:600;font-size:13px;margin-bottom:10px">Nueva regla</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+            <div>
+              <label class="form-label">Canal</label>
+              <select class="mini-select" id="cp-canal" style="width:100%"></select>
+            </div>
+            <div>
+              <label class="form-label">Tipo de ajuste</label>
+              <select class="mini-select" id="cp-tipo" style="width:100%" onchange="actualizarLabelCP()">
+                <option value="pct">Porcentaje (%)</option>
+                <option value="fijo">Monto fijo ($)</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label" id="cp-valor-label">Valor (+ sube, - baja)</label>
+              <input class="mini-input" id="cp-valor" type="number" placeholder="ej. 15 o -10" style="width:100%">
+            </div>
+          </div>
+          <div id="cp-preview" style="font-size:12px;color:var(--muted);margin-bottom:10px"></div>
+          <button class="btn-main btn-green" onclick="guardarCanalPrecio()">GUARDAR REGLA</button>
+        </div>
+      </div>
+
+      <!-- ZONAS DE ENVÍO -->
+      <div class="card" style="margin-top:10px">
+        <div class="card-title">Zonas de envío</div>
+        <div class="card-sub">Define costos de envío por colonia o código postal. Se aplican al registrar ventas a domicilio.</div>
+        <div id="zonas-lista" style="margin-bottom:14px"><div class="loading"><div class="spinner"></div></div></div>
+        <div style="background:var(--warm);border-radius:12px;padding:14px">
+          <div style="font-weight:600;font-size:13px;margin-bottom:10px">Nueva zona</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+            <div>
+              <label class="form-label">Nombre de la zona</label>
+              <input class="mini-input" id="zona-nombre" placeholder="Ej: Centro, Zona Norte..." style="width:100%">
+            </div>
+            <div>
+              <label class="form-label">Costo de envío ($)</label>
+              <input class="mini-input" id="zona-costo" type="number" placeholder="ej. 80" style="width:100%">
+            </div>
+          </div>
+          <div style="margin-bottom:10px">
+            <label class="form-label">Colonias / Códigos postales (separados por coma)</label>
+            <textarea class="mini-input" id="zona-colonias" rows="3" placeholder="Ej: Polanco, Lomas de Chapultepec, 11560, 11550..." style="width:100%;resize:none"></textarea>
+          </div>
+          <button class="btn-main btn-green" onclick="guardarZonaEnvio()">GUARDAR ZONA</button>
+        </div>
       </div>
     </div>
 
@@ -1187,6 +1252,7 @@ function setupNav() {
       else if(t==="venta") iniciarVenta();
       else if(t==="costos") { if(!S.insumos.length) cargarCostos(); else renderCostos(); }
       else if(t==="utilidades") cargarUtilidades();
+      else if(t==="precios") { cargarPrecios(); cargarZonasEnvio(); cargarCanalPrecios(); }
       else if(t==="objetivos") cargarObjetivos();
       else if(t==="transferencias") cargarTransferencias();
       else if(t==="alertas") cargarAlertas();
@@ -1467,7 +1533,9 @@ function renderCarrito(){
   const total=S.carrito.reduce((s,i)=>s+i.subtotal,0);
   const totalOriginal=S.carrito.reduce((s,i)=>s+i.precioBase*i.cantidad,0);
   const hayDesc=totalOriginal>total&&tipoOp==="venta";
-  L("total-num").textContent=tipoOp==="venta"?"$"+total.toLocaleString():"$0";
+  const costoEnvio = S.costoEnvio || 0;
+  const totalFinal = tipoOp==="venta" ? total + costoEnvio : 0;
+  L("total-num").textContent=tipoOp==="venta"?"$"+totalFinal.toLocaleString():"$0";
   L("carrito-total-bar").style.display="flex";
   const descTotalLabel=L("descuento-total-label");
   if(hayDesc){
@@ -1475,6 +1543,13 @@ function renderCarrito(){
     descTotalLabel.textContent=`Ahorro: $${(totalOriginal-total).toLocaleString()} (original $${totalOriginal.toLocaleString()})`;
   } else {
     descTotalLabel.style.display="none";
+  }
+  const envioLabel = L("envio-total-label");
+  if(costoEnvio > 0 && tipoOp==="venta"){
+    envioLabel.style.display="block";
+    envioLabel.textContent=`Envío: $${costoEnvio.toLocaleString()} incluido`;
+  } else {
+    envioLabel.style.display="none";
   }
 }
 
@@ -1552,7 +1627,7 @@ L("btn-confirmar").addEventListener("click",async()=>{
   btn.textContent=tipoOp==="merma"?"Registrar merma 🗑":tipoOp==="regalo"?"Registrar regalo 🎁":"Confirmar venta ✓";
 });
 function limpiarVenta(){
-  S.carrito=[];S.clienteSel=null;renderCarrito();
+  S.carrito=[];S.clienteSel=null;S.costoEnvio=0;renderCarrito();
   L("cli-nombre").value="";L("cli-tel").value="";L("cli-email").value="";
   L("cli-encontrado").style.display="none";L("cli-nuevo").style.display="grid";
   L("item-cantidad").value="1";L("item-disp").innerHTML="";
@@ -2590,6 +2665,159 @@ async function bajaGasto(id){
 }
 
 // ============================================================
+// ZONAS DE ENVÍO
+// ============================================================
+async function cargarZonasEnvio(){
+  const res = await api("getZonasEnvio");
+  if(res.ok) S.zonasEnvio = res.zonas || [];
+  renderZonasList();
+  // Poblar selector en Nueva Venta
+  const sel = L("venta-zona");
+  if(sel){
+    const activas = (S.zonasEnvio||[]).filter(z=>z.activo);
+    sel.innerHTML = `<option value="">— Sin costo de envío —</option>` +
+      activas.map(z=>`<option value="${z.id}" data-costo="${z.costo}">${z.nombre} — $${z.costo.toLocaleString()}</option>`).join("");
+  }
+}
+
+function renderZonasList(){
+  const zonas = (S.zonasEnvio||[]).filter(z=>z.activo);
+  if(!zonas.length){
+    L("zonas-lista").innerHTML=`<div style="padding:16px;text-align:center;color:var(--muted);font-size:13px">Sin zonas definidas — agrega la primera abajo</div>`;
+    return;
+  }
+  L("zonas-lista").innerHTML = zonas.map(z=>`
+    <div class="insumo-item">
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:13px">${z.nombre}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${z.colonias.slice(0,5).join(", ")}${z.colonias.length>5?" ...":""}</div>
+      </div>
+      <div style="font-weight:700;color:var(--accent);margin:0 12px">$${z.costo.toLocaleString()}</div>
+      <button class="btn-icon" onclick="eliminarZona('${z.id}')">✕</button>
+    </div>`).join("");
+}
+
+async function guardarZonaEnvio(){
+  const nombre  = L("zona-nombre").value.trim();
+  const costo   = parseInt(L("zona-costo").value)||0;
+  const colonias= L("zona-colonias").value.trim();
+  if(!nombre||!costo){ toast("Completa nombre y costo","error"); return; }
+  if(!colonias){ toast("Agrega al menos una colonia o CP","error"); return; }
+  const res = await api("saveZonaEnvio",{nombre,costo,colonias});
+  if(res.ok){
+    toast(res.mensaje);
+    L("zona-nombre").value=""; L("zona-costo").value=""; L("zona-colonias").value="";
+    await cargarZonasEnvio();
+  } else toast(res.error,"error");
+}
+
+async function eliminarZona(id){
+  if(!confirm("¿Eliminar esta zona?")) return;
+  const res = await api("deleteZonaEnvio",{id});
+  if(res.ok){ toast(res.mensaje); cargarZonasEnvio(); }
+  else toast(res.error,"error");
+}
+
+function onZonaChange(){
+  const sel = L("venta-zona");
+  const opt = sel?.options[sel.selectedIndex];
+  const costo = parseInt(opt?.dataset?.costo||"0")||0;
+  S.costoEnvio = costo;
+  const aviso = L("envio-costo-aviso");
+  if(costo > 0){
+    aviso.style.display = "block";
+    aviso.textContent = `🚗 Costo de envío: $${costo.toLocaleString()} — se sumará al total`;
+  } else {
+    aviso.style.display = "none";
+  }
+  renderCarrito();
+}
+
+// ============================================================
+// PRECIO POR CANAL
+// ============================================================
+async function cargarCanalPrecios(){
+  const [resCP, resCat] = await Promise.all([api("getCanalPrecios"), S.catalogo?Promise.resolve({ok:false}):api("getCatalogo")]);
+  if(resCP.ok) S.canalPrecios = resCP.reglas || [];
+  if(resCat.ok) S.catalogo = resCat;
+  // Poblar selector de canales
+  const canales = (S.catalogo?.canales||[]).filter(c=>c.activo).map(c=>c.nombre);
+  L("cp-canal").innerHTML = canales.map(c=>`<option>${c}</option>`).join("");
+  renderCanalPreciosList();
+}
+
+function actualizarLabelCP(){
+  const tipo = L("cp-tipo").value;
+  L("cp-valor-label").textContent = tipo==="pct" ? "Valor % (+ sube, - baja)" : "Valor $ por pieza (+ sube, - baja)";
+  actualizarPreviewCP();
+}
+
+function actualizarPreviewCP(){
+  const canal = L("cp-canal").value;
+  const tipo  = L("cp-tipo").value;
+  const valor = parseFloat(L("cp-valor").value)||0;
+  if(!canal||!valor){ L("cp-preview").textContent=""; return; }
+  const ejemplo = 210; // precio Chico
+  const nuevo = tipo==="pct" ? ejemplo*(1+valor/100) : ejemplo+valor;
+  L("cp-preview").textContent = `Ejemplo: tarta Chico $${ejemplo} → $${Math.round(nuevo)} en ${canal}`;
+}
+L("cp-valor")?.addEventListener("input", actualizarPreviewCP);
+L("cp-canal")?.addEventListener("change", actualizarPreviewCP);
+
+function renderCanalPreciosList(){
+  const reglas = (S.canalPrecios||[]).filter(r=>r.activo);
+  if(!reglas.length){
+    L("canal-precios-lista").innerHTML=`<div style="padding:16px;text-align:center;color:var(--muted);font-size:13px">Sin reglas definidas</div>`;
+    return;
+  }
+  L("canal-precios-lista").innerHTML = reglas.map(r=>`
+    <div class="insumo-item">
+      <div style="flex:1;font-size:13px"><strong>${r.canal}</strong></div>
+      <div style="margin:0 12px;font-size:13px;color:${r.valor>=0?"var(--success)":"var(--danger)"}">
+        ${r.valor>=0?"+":""}${r.valor}${r.tipo==="pct"?"%":"$"} por pieza
+      </div>
+      <button class="btn-icon" onclick="eliminarCanalPrecio('${r.id}')">✕</button>
+    </div>`).join("");
+}
+
+async function guardarCanalPrecio(){
+  const canal = L("cp-canal").value;
+  const tipo  = L("cp-tipo").value;
+  const valor = parseFloat(L("cp-valor").value);
+  if(!canal||isNaN(valor)){ toast("Completa canal y valor","error"); return; }
+  const res = await api("saveCanalPrecio",{canal,tipo,valor});
+  if(res.ok){ toast(res.mensaje); L("cp-valor").value=""; cargarCanalPrecios(); }
+  else toast(res.error,"error");
+}
+
+async function eliminarCanalPrecio(id){
+  const res = await api("deleteCanalPrecio",{id});
+  if(res.ok){ toast("✅ Regla eliminada"); cargarCanalPrecios(); }
+  else toast(res.error,"error");
+}
+
+// Muestra aviso de precio especial al cambiar canal en venta
+function onCanalChange(){
+  const canal = L("venta-canal")?.value;
+  // Mostrar/ocultar zona de envío
+  const esDomicilio = canal === "Domicilio";
+  L("envio-section").style.display = esDomicilio ? "block" : "none";
+  if(!esDomicilio){ S.costoEnvio = 0; L("envio-costo-aviso").style.display="none"; }
+  // Aviso precio por canal
+  const regla = (S.canalPrecios||[]).find(r=>r.canal===canal&&r.activo);
+  const aviso = L("canal-precio-aviso");
+  if(regla){
+    aviso.style.display = "block";
+    const signo = regla.valor >= 0 ? "+" : "";
+    aviso.textContent = `💡 Regla activa para ${canal}: ${signo}${regla.valor}${regla.tipo==="pct"?"%":"$"} por pieza — puedes aplicarlo usando el campo de descuento/ajuste en cada ítem`;
+  } else {
+    aviso.style.display = "none";
+  }
+  // Lógica original de canal
+  poblarSelectsVenta();
+}
+
+// ============================================================
 // TABLA UTILIDADES EN COSTOS
 // ============================================================
 async function renderTablaUtilidades(){
@@ -2893,7 +3121,7 @@ function renderUtilidades(){
 }
 
 L("btn-logout").addEventListener("click",()=>{
-  S={token:null,usuario:null,rol:null,sucursal:null,catalogo:null,precios:null,stock:null,carrito:[],clienteSel:null,filtroSuc:null,filtroTam:null,insumos:[],recetas:[],recetaActual:[]};
+  S={token:null,usuario:null,rol:null,sucursal:null,catalogo:null,precios:null,stock:null,carrito:[],clienteSel:null,filtroSuc:null,filtroTam:null,insumos:[],recetas:[],recetaActual:[],costoEnvio:0,zonasEnvio:[],canalPrecios:[]};
   L("app").style.display="none";L("login-screen").style.display="flex";L("login-user").value="";L("login-pass").value="";
 });
 document.querySelectorAll(".modal-overlay").forEach(o=>{o.addEventListener("click",e=>{if(e.target===o)o.classList.remove("show");});});
