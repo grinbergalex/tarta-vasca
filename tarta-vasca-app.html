@@ -1796,6 +1796,7 @@ async function bajaObjetivo(id){
 // ============================================================
 // AUDITORÍA
 // ============================================================
+async function cargarAuditoria(){
   const res=await api("getAuditoria");if(!res.ok)return;
   L("auditoria-list").innerHTML=res.registros.length===0?`<div class="empty-state"><div>Sin registros</div></div>`
     :res.registros.map(r=>`<div class="audit-row"><div class="audit-accion">${r.accion}</div><div class="audit-detalle">${r.detalles}</div><div class="audit-meta">${r.usuario} · ${r.fecha?r.fecha.substring(0,16).replace('T',' '):''}</div></div>`).join("");
