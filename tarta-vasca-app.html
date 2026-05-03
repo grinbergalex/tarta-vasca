@@ -2002,9 +2002,10 @@ async function cargarMensajesHeader(){
   if(!resMsgs.ok) return;
   S.mensajes = resMsgs.mensajes || [];
   const noLeidos = resMsgs.noLeidos || 0;
-  // Suma: mensajes no leídos + alertas activas
+  // Badge = mensajes no leídos + alertas activas + sugerencias activas
   const alertasActivas = resAlertas.ok ? (resAlertas.alertas||[]).length : 0;
-  const totalBadge = noLeidos + alertasActivas;
+  const sugerenciasActivas = resAlertas.ok ? (resAlertas.sugerencias||[]).length : 0;
+  const totalBadge = noLeidos + alertasActivas + sugerenciasActivas;
   const badge = L("badge-mensajes");
   if(totalBadge > 0){
     badge.style.display = "block";
