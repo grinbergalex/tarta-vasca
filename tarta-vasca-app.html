@@ -230,10 +230,48 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
   <header class="app-header">
     <div class="header-logo">Tarta Vasca</div>
     <div style="display:flex;align-items:center;gap:10px">
+      <button id="btn-campana" onclick="toggleBandeja()" style="position:relative;background:none;border:none;cursor:pointer;font-size:20px;padding:4px 6px;color:white">
+        🔔<span id="badge-mensajes" style="display:none;position:absolute;top:0px;right:0px;background:#C0392B;color:white;font-size:9px;font-weight:700;border-radius:50%;width:15px;height:15px;line-height:15px;text-align:center"></span>
+      </button>
       <div class="user-badge">Hola, <span id="hdr-usuario"></span></div>
       <button class="btn-logout" id="btn-logout">Salir</button>
     </div>
   </header>
+
+  <!-- BANDEJA DE MENSAJES -->
+  <div id="bandeja-mensajes" style="display:none;position:fixed;top:56px;right:0;width:320px;max-height:80vh;overflow-y:auto;background:var(--card);border-left:1px solid var(--border);border-bottom:1px solid var(--border);border-radius:0 0 0 16px;box-shadow:-4px 4px 20px rgba(0,0,0,.15);z-index:200">
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--card)">
+      <div style="font-weight:700;font-size:14px">Mensajes</div>
+      <div style="display:flex;gap:6px">
+        <button onclick="abrirNuevoMensaje()" style="font-size:11px;background:var(--accent);color:white;border:none;border-radius:8px;padding:4px 10px;cursor:pointer;font-family:'DM Sans',sans-serif">+ Nuevo</button>
+        <button onclick="toggleBandeja()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;line-height:1">✕</button>
+      </div>
+    </div>
+    <div id="bandeja-lista" style="padding:8px 12px"></div>
+  </div>
+
+  <!-- MODAL NUEVO MENSAJE -->
+  <div id="modal-nuevo-msg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;display:none;align-items:center;justify-content:center">
+    <div style="background:var(--card);border-radius:16px;padding:20px;width:90%;max-width:340px">
+      <div style="font-weight:700;font-size:16px;margin-bottom:14px">Nuevo mensaje</div>
+      <div style="margin-bottom:10px">
+        <label class="form-label">Para</label>
+        <select class="form-input" id="msg-para" style="width:100%"><option value="todos">Todos</option></select>
+      </div>
+      <div style="margin-bottom:10px">
+        <label class="form-label">Asunto</label>
+        <input class="form-input" id="msg-asunto" placeholder="Asunto" style="width:100%">
+      </div>
+      <div style="margin-bottom:14px">
+        <label class="form-label">Mensaje</label>
+        <textarea class="form-input" id="msg-cuerpo" rows="4" placeholder="Escribe tu mensaje..." style="width:100%;resize:none"></textarea>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-main btn-green" onclick="enviarMensajeUI()">Enviar</button>
+        <button class="btn-outline" onclick="cerrarModalMensaje()">Cancelar</button>
+      </div>
+    </div>
+  </div>
 
   <nav class="app-nav">
     <div class="nav-tab active" data-tab="stock">Stock</div>
@@ -245,6 +283,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <div class="nav-tab owner-only" data-tab="costos">Costos</div>
     <div class="nav-tab owner-only" data-tab="utilidades">Utilidad por ventas</div>
     <div class="nav-tab owner-only" data-tab="objetivos">Objetivos</div>
+    <div class="nav-tab owner-only" data-tab="transferencias">Transferencias</div>
+    <div class="nav-tab owner-only" data-tab="alertas">Alertas</div>
     <div class="nav-tab owner-only" data-tab="usuarios">Usuarios</div>
     <div class="nav-tab owner-only" data-tab="auditoria">Auditoría</div>
   </nav>
@@ -831,7 +871,89 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
       </div>
     </div>
 
-    <div id="tab-usuarios" class="tab-pane" style="display:none">
+    <!-- TRANSFERENCIAS -->
+    <div id="tab-transferencias" class="tab-pane" style="display:none">
+      <div class="card">
+        <div class="card-title">Transferencias Cuajimalpa → Polanco</div>
+        <div class="card-sub">Solo la cocina central puede enviar stock a Polanco</div>
+
+        <!-- NUEVA TRANSFERENCIA -->
+        <div style="background:var(--warm);border-radius:12px;padding:14px;margin-bottom:16px">
+          <div style="font-weight:600;font-size:13px;margin-bottom:10px">Nueva transferencia</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 80px;gap:8px;align-items:end;margin-bottom:8px">
+            <div>
+              <label class="form-label">Sabor</label>
+              <select class="mini-select" id="trf-sabor" style="width:100%"></select>
+            </div>
+            <div>
+              <label class="form-label">Tamaño</label>
+              <select class="mini-select" id="trf-tamano" style="width:100%"></select>
+            </div>
+            <div>
+              <label class="form-label">Uds</label>
+              <input class="mini-input" id="trf-cantidad" type="number" placeholder="0" style="width:100%">
+            </div>
+          </div>
+          <div style="margin-bottom:8px">
+            <label class="form-label">Notas (opcional)</label>
+            <input class="mini-input" id="trf-notas" placeholder="Ej: Para evento del sábado" style="width:100%">
+          </div>
+          <div id="trf-stock-aviso" style="font-size:12px;color:var(--muted);margin-bottom:8px"></div>
+          <button class="btn-main btn-green" onclick="solicitarTransferencia()" id="btn-trf">REGISTRAR TRANSFERENCIA</button>
+        </div>
+
+        <!-- HISTORIAL -->
+        <div style="font-weight:600;font-size:13px;margin-bottom:8px">Historial de transferencias</div>
+        <div id="trf-lista"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
+      </div>
+    </div>
+
+    <!-- ALERTAS Y MÍNIMOS/MÁXIMOS -->
+    <div id="tab-alertas" class="tab-pane" style="display:none">
+
+      <!-- PANEL ALERTAS ACTIVAS -->
+      <div id="alertas-panel" style="margin-bottom:12px"></div>
+
+      <!-- CONFIGURAR LÍMITES -->
+      <div class="card">
+        <div class="card-title">Mínimos y máximos de stock</div>
+        <div class="card-sub">Por sucursal, sabor y tamaño</div>
+        <div id="limites-lista" style="margin-bottom:14px"><div class="loading"><div class="spinner"></div></div></div>
+
+        <!-- FORM NUEVO LÍMITE -->
+        <div style="background:var(--warm);border-radius:12px;padding:14px">
+          <div style="font-weight:600;font-size:13px;margin-bottom:10px">Definir límite</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+            <div>
+              <label class="form-label">Sucursal</label>
+              <select class="mini-select" id="lim-sucursal" style="width:100%">
+                <option value="Cuajimalpa">Cuajimalpa</option>
+                <option value="Polanco">Polanco</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Sabor</label>
+              <select class="mini-select" id="lim-sabor" style="width:100%"></select>
+            </div>
+            <div>
+              <label class="form-label">Tamaño</label>
+              <select class="mini-select" id="lim-tamano" style="width:100%"></select>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+            <div>
+              <label class="form-label">Mínimo (alerta si baja de aquí)</label>
+              <input class="mini-input" id="lim-min" type="number" placeholder="5" style="width:100%">
+            </div>
+            <div>
+              <label class="form-label">Máximo (alerta si sube de aquí)</label>
+              <input class="mini-input" id="lim-max" type="number" placeholder="50" style="width:100%">
+            </div>
+          </div>
+          <button class="btn-main btn-green" onclick="guardarLimite()">GUARDAR LÍMITE</button>
+        </div>
+      </div>
+    </div>
       <div class="card">
         <div class="card-title">Usuarios</div>
         <div id="usuarios-list"><div class="loading"><div class="spinner"></div></div></div>
@@ -984,6 +1106,9 @@ function iniciarApp() {
   setupNav();
   cargarCatalogo();
   cargarStock();
+  // Cargar mensajes y refrescar cada 2 minutos
+  setTimeout(cargarMensajesHeader, 1500);
+  setInterval(cargarMensajesHeader, 120000);
 }
 
 function setupNav() {
@@ -1004,6 +1129,8 @@ function setupNav() {
       else if(t==="costos") { if(!S.insumos.length) cargarCostos(); else renderCostos(); }
       else if(t==="utilidades") cargarUtilidades();
       else if(t==="objetivos") cargarObjetivos();
+      else if(t==="transferencias") cargarTransferencias();
+      else if(t==="alertas") cargarAlertas();
     });
   });
 }
@@ -1847,6 +1974,205 @@ async function bajaObjetivo(id){
   if(!o||!confirm(`¿Eliminar objetivo "${o.nombre}"?`)) return;
   const res=await api("deleteObjetivo",{id});
   if(res.ok){ toast(res.mensaje); cargarObjetivos(); }
+  else toast(res.error,"error");
+}
+
+// ============================================================
+// MENSAJES — BANDEJA
+// ============================================================
+let bandejaAbierta = false;
+
+async function cargarMensajesHeader(){
+  if(!S.token) return;
+  const res = await api("getMensajes");
+  if(!res.ok) return;
+  S.mensajes = res.mensajes || [];
+  const noLeidos = res.noLeidos || 0;
+  const badge = L("badge-mensajes");
+  if(noLeidos > 0){
+    badge.style.display = "block";
+    badge.textContent = noLeidos > 9 ? "9+" : noLeidos;
+  } else {
+    badge.style.display = "none";
+  }
+  renderBandeja();
+  if(S.usuarios){
+    L("msg-para").innerHTML = `<option value="todos">Todos</option>` +
+      S.usuarios.filter(u=>u.usuario!==S.usuario).map(u=>`<option value="${u.usuario}">${u.usuario} (${u.rol})</option>`).join("");
+  }
+}
+
+function renderBandeja(){
+  const msgs = S.mensajes || [];
+  if(msgs.length === 0){
+    L("bandeja-lista").innerHTML = `<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Sin mensajes</div>`;
+    return;
+  }
+  const iconos = {alerta_stock:"⚠️", sugerencia:"💡", transferencia:"🔄", manual:"✉️"};
+  L("bandeja-lista").innerHTML = msgs.map(m=>`
+    <div onclick="leerMensaje('${m.id}')" style="padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;opacity:${m.leido?.7:1}">
+      <div style="display:flex;gap:8px;align-items:flex-start">
+        <span style="font-size:16px">${iconos[m.tipo]||"✉️"}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:${m.leido?400:700};font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${m.asunto}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">${m.de} · ${m.fecha?m.fecha.substring(0,16).replace("T"," "):""}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${m.cuerpo}</div>
+        </div>
+        ${!m.leido?'<div style="width:8px;height:8px;border-radius:50%;background:var(--accent);margin-top:4px;flex-shrink:0"></div>':''}
+      </div>
+    </div>`).join("");
+}
+
+async function leerMensaje(id){
+  const m = (S.mensajes||[]).find(x=>x.id===id);
+  if(!m) return;
+  if(!m.leido){
+    await api("marcarLeidoMensaje",{id});
+    m.leido = true;
+    cargarMensajesHeader();
+  }
+  alert(`${m.asunto}\n\nDe: ${m.de}\n${m.fecha?m.fecha.substring(0,16).replace("T"," "):""}\n\n${m.cuerpo}`);
+}
+
+function toggleBandeja(){
+  bandejaAbierta = !bandejaAbierta;
+  L("bandeja-mensajes").style.display = bandejaAbierta ? "block" : "none";
+  if(bandejaAbierta) cargarMensajesHeader();
+}
+function abrirNuevoMensaje(){ L("modal-nuevo-msg").style.display="flex"; }
+function cerrarModalMensaje(){ L("modal-nuevo-msg").style.display="none"; L("msg-asunto").value=""; L("msg-cuerpo").value=""; }
+
+async function enviarMensajeUI(){
+  const asunto=L("msg-asunto").value.trim(), cuerpo=L("msg-cuerpo").value.trim();
+  if(!asunto||!cuerpo){ toast("Escribe asunto y mensaje","error"); return; }
+  const res=await api("enviarMensaje",{para:L("msg-para").value,asunto,cuerpo,tipo:"manual"});
+  if(res.ok){ toast("✅ Mensaje enviado"); cerrarModalMensaje(); cargarMensajesHeader(); }
+  else toast(res.error,"error");
+}
+
+// ============================================================
+// ALERTAS Y LÍMITES DE STOCK
+// ============================================================
+async function cargarAlertas(){
+  L("alertas-panel").innerHTML=`<div class="loading"><div class="spinner"></div>Calculando alertas...</div>`;
+  L("limites-lista").innerHTML=`<div class="loading"><div class="spinner"></div></div>`;
+  if(!S.catalogo?.sabores){
+    const resC=await api("getCatalogo"); if(resC.ok) S.catalogo=resC;
+  }
+  if(S.catalogo?.sabores){
+    L("lim-sabor").innerHTML  =S.catalogo.sabores.filter(s=>s.activo).map(s=>`<option>${s.nombre}</option>`).join("");
+    L("lim-tamano").innerHTML =S.catalogo.tamanos.filter(t=>t.activo).map(t=>`<option>${t.nombre}</option>`).join("");
+  }
+  const [resA,resL]=await Promise.all([api("getAlertas"),api("getStockMinMax")]);
+  if(resA.ok){
+    const alertas=resA.alertas||[], sug=resA.sugerencias||[];
+    if(!alertas.length&&!sug.length){
+      L("alertas-panel").innerHTML=`<div class="card" style="text-align:center;padding:20px;color:var(--success)">✅ Todo el stock está dentro de los límites definidos</div>`;
+    } else {
+      const aHtml=alertas.map(a=>`
+        <div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+          <span style="font-size:20px">${a.urgente?"⛔":"⚠️"}</span>
+          <div><div style="font-weight:600;font-size:13px">${a.sabor} ${a.tamano} — ${a.sucursal}</div>
+          <div style="font-size:12px;color:var(--muted)">Stock: ${a.stock} · Mín: ${a.minimo}${a.maximo?" · Máx: "+a.maximo:""}</div></div>
+        </div>`).join("");
+      const sHtml=sug.map(s=>`
+        <div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+          <span style="font-size:20px">${s.tipo==="transferencia"?"🔄":"📋"}</span>
+          <div style="flex:1"><div style="font-weight:600;font-size:13px">${s.tipo==="transferencia"?"Sugerencia: transferencia":"Sugerencia: producción"}</div>
+          <div style="font-size:12px;color:var(--muted)">${s.mensaje}</div>
+          ${s.tipo==="transferencia"?`<button onclick="aplicarSugerenciaTransferencia('${s.sabor}','${s.tamano}',${s.cantidad})" style="margin-top:6px;font-size:11px;background:var(--accent);color:white;border:none;border-radius:8px;padding:4px 10px;cursor:pointer;font-family:'DM Sans',sans-serif">Aplicar →</button>`:""}
+          </div>
+        </div>`).join("");
+      L("alertas-panel").innerHTML=`<div class="card">
+        ${alertas.length?`<div style="font-weight:700;font-size:13px;margin-bottom:4px;color:var(--danger)">⚠️ ${alertas.length} alerta${alertas.length>1?"s":""}</div>${aHtml}`:""}
+        ${sug.length?`<div style="font-weight:700;font-size:13px;margin:12px 0 4px;color:var(--accent)">💡 ${sug.length} sugerencia${sug.length>1?"s":""}</div>${sHtml}`:""}
+      </div>`;
+    }
+  }
+  if(resL.ok){ S.limites=resL.limites||[]; renderLimitesList(); }
+}
+
+function renderLimitesList(){
+  const limites=(S.limites||[]).filter(l=>l.activo);
+  if(!limites.length){ L("limites-lista").innerHTML=`<div style="padding:16px;text-align:center;color:var(--muted);font-size:13px">Sin límites definidos</div>`; return; }
+  const ag={};
+  limites.forEach(l=>{ if(!ag[l.sucursal]) ag[l.sucursal]=[]; ag[l.sucursal].push(l); });
+  L("limites-lista").innerHTML=Object.entries(ag).map(([suc,lista])=>`
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:6px;text-transform:uppercase">${suc}</div>
+      ${lista.map(l=>`<div class="insumo-item">
+        <div style="flex:1;font-size:13px">${l.sabor} <span style="color:var(--muted)">${l.tamano}</span></div>
+        <div style="font-size:12px;color:var(--muted);margin:0 10px">mín <strong style="color:var(--ink)">${l.minimo}</strong> · máx <strong style="color:var(--ink)">${l.maximo||"—"}</strong></div>
+      </div>`).join("")}
+    </div>`).join("");
+}
+
+async function guardarLimite(){
+  const sucursal=L("lim-sucursal").value, sabor=L("lim-sabor").value, tamano=L("lim-tamano").value;
+  const minimo=parseInt(L("lim-min").value)||0, maximo=parseInt(L("lim-max").value)||0;
+  if(!sabor||!tamano||!minimo){ toast("Completa todos los campos obligatorios","error"); return; }
+  if(maximo>0&&maximo<minimo){ toast("El máximo debe ser mayor que el mínimo","error"); return; }
+  const res=await api("saveStockMinMax",{sucursal,sabor,tamano,minimo,maximo});
+  if(res.ok){ toast(res.mensaje); L("lim-min").value=""; L("lim-max").value=""; cargarAlertas(); }
+  else toast(res.error,"error");
+}
+
+function aplicarSugerenciaTransferencia(sabor,tamano,cantidad){
+  document.querySelector('[data-tab="transferencias"]').click();
+  setTimeout(()=>{ L("trf-sabor").value=sabor; L("trf-tamano").value=tamano; L("trf-cantidad").value=cantidad; },400);
+}
+
+// ============================================================
+// TRANSFERENCIAS
+// ============================================================
+async function cargarTransferencias(){
+  if(!S.catalogo?.sabores){
+    const resC=await api("getCatalogo"); if(resC.ok) S.catalogo=resC;
+  }
+  if(S.catalogo?.sabores){
+    L("trf-sabor").innerHTML  =S.catalogo.sabores.filter(s=>s.activo).map(s=>`<option>${s.nombre}</option>`).join("");
+    L("trf-tamano").innerHTML =S.catalogo.tamanos.filter(t=>t.activo).map(t=>`<option>${t.nombre}</option>`).join("");
+  }
+  L("trf-lista").innerHTML=`<div class="loading"><div class="spinner"></div>Cargando...</div>`;
+  const res=await api("getTransferencias");
+  if(!res.ok){ L("trf-lista").innerHTML=`<div class="empty-state">Error al cargar</div>`; return; }
+  S.transferencias=res.transferencias||[];
+  renderTransferenciasList();
+}
+
+function renderTransferenciasList(){
+  const lista=S.transferencias||[];
+  if(!lista.length){ L("trf-lista").innerHTML=`<div class="empty-state"><div class="empty-icon">🔄</div><div>Sin transferencias registradas</div></div>`; return; }
+  const estadoColor={pendiente:"var(--warning)",confirmada:"var(--success)",cancelada:"var(--muted)"};
+  const estadoIcon ={pendiente:"🕐",confirmada:"✅",cancelada:"❌"};
+  L("trf-lista").innerHTML=lista.map(t=>`
+    <div style="padding:12px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <div>
+          <span style="font-weight:700">${t.cantidad}× ${t.sabor} ${t.tamano}</span>
+          <span style="margin-left:8px;font-size:11px;font-weight:600;color:${estadoColor[t.estado]}">${estadoIcon[t.estado]} ${t.estado.toUpperCase()}</span>
+        </div>
+        ${t.estado==="pendiente"?`<button onclick="confirmarTrf('${t.id}')" style="font-size:11px;background:#2E5C4A;color:white;border:none;border-radius:8px;padding:5px 12px;cursor:pointer;font-family:'DM Sans',sans-serif">Confirmar recepción ✓</button>`:""}
+      </div>
+      <div style="font-size:12px;color:var(--muted)">Cuajimalpa → Polanco · ${t.fechaSolicitud?t.fechaSolicitud.substring(0,16).replace("T"," "):""}${t.solicitadoPor?" · por "+t.solicitadoPor:""}${t.notas?" · "+t.notas:""}</div>
+    </div>`).join("");
+}
+
+async function solicitarTransferencia(){
+  const sabor=L("trf-sabor").value, tamano=L("trf-tamano").value;
+  const cantidad=parseInt(L("trf-cantidad").value)||0, notas=L("trf-notas").value.trim();
+  if(!sabor||!tamano||cantidad<=0){ toast("Completa sabor, tamaño y cantidad","error"); return; }
+  const btn=L("btn-trf"); btn.disabled=true; btn.textContent="Registrando...";
+  const res=await api("registrarTransferencia",{sabor,tamano,cantidad,notas});
+  btn.disabled=false; btn.textContent="REGISTRAR TRANSFERENCIA";
+  if(res.ok){ toast(res.mensaje); L("trf-cantidad").value=""; L("trf-notas").value=""; cargarTransferencias(); cargarMensajesHeader(); }
+  else toast(res.error,"error");
+}
+
+async function confirmarTrf(id){
+  if(!confirm("¿Confirmar recepción en Polanco? Esto moverá el stock.")) return;
+  const res=await api("confirmarTransferencia",{id});
+  if(res.ok){ toast(res.mensaje); cargarTransferencias(); cargarMensajesHeader(); }
   else toast(res.error,"error");
 }
 
