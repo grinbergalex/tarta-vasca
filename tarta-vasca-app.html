@@ -954,6 +954,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         </div>
       </div>
     </div>
+
+    <!-- USUARIOS -->
+    <div id="tab-usuarios" class="tab-pane" style="display:none">
       <div class="card">
         <div class="card-title">Usuarios</div>
         <div id="usuarios-list"><div class="loading"><div class="spinner"></div></div></div>
@@ -973,6 +976,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <div class="card-title">Auditoría</div>
         <div class="card-sub">Últimas 100 acciones</div>
         <div id="auditoria-list"><div class="loading"><div class="spinner"></div></div></div>
+      </div>
+      <div class="card" style="border:1px solid var(--danger);background:rgba(192,57,43,.04)">
+        <div class="card-title" style="color:var(--danger)">⚠️ Zona peligrosa</div>
+        <div class="card-sub">Estas acciones no se pueden deshacer</div>
+        <button onclick="ejecutarLimpiarDatos()" style="background:var(--danger);color:white;border:none;border-radius:10px;padding:10px 18px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;margin-top:8px">
+          🗑 Limpiar datos de prueba
+        </button>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">Borra ventas, stock, clientes y auditoría. Conserva catálogo, precios, insumos, recetas y usuarios.</div>
       </div>
     </div>
 
@@ -1984,17 +1995,26 @@ let bandejaAbierta = false;
 
 async function cargarMensajesHeader(){
   if(!S.token) return;
-  const res = await api("getMensajes");
-  if(!res.ok) return;
-  S.mensajes = res.mensajes || [];
-  const noLeidos = res.noLeidos || 0;
+  const [resMsgs, resAlertas] = await Promise.all([
+    api("getMensajes"),
+    api("getAlertas")
+  ]);
+  if(!resMsgs.ok) return;
+  S.mensajes = resMsgs.mensajes || [];
+  const noLeidos = resMsgs.noLeidos || 0;
+  // Suma: mensajes no leídos + alertas activas
+  const alertasActivas = resAlertas.ok ? (resAlertas.alertas||[]).length : 0;
+  const totalBadge = noLeidos + alertasActivas;
   const badge = L("badge-mensajes");
-  if(noLeidos > 0){
+  if(totalBadge > 0){
     badge.style.display = "block";
-    badge.textContent = noLeidos > 9 ? "9+" : noLeidos;
+    badge.textContent = totalBadge > 9 ? "9+" : totalBadge;
   } else {
     badge.style.display = "none";
   }
+  // Guardar alertas en estado para mostrar en bandeja
+  S.alertasActivas = resAlertas.ok ? resAlertas.alertas||[] : [];
+  S.sugerenciasActivas = resAlertas.ok ? resAlertas.sugerencias||[] : [];
   renderBandeja();
   if(S.usuarios){
     L("msg-para").innerHTML = `<option value="todos">Todos</option>` +
@@ -2004,23 +2024,59 @@ async function cargarMensajesHeader(){
 
 function renderBandeja(){
   const msgs = S.mensajes || [];
-  if(msgs.length === 0){
-    L("bandeja-lista").innerHTML = `<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Sin mensajes</div>`;
-    return;
-  }
+  const alertas = S.alertasActivas || [];
+  const sugerencias = S.sugerenciasActivas || [];
   const iconos = {alerta_stock:"⚠️", sugerencia:"💡", transferencia:"🔄", manual:"✉️"};
-  L("bandeja-lista").innerHTML = msgs.map(m=>`
-    <div onclick="leerMensaje('${m.id}')" style="padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;opacity:${m.leido?.7:1}">
-      <div style="display:flex;gap:8px;align-items:flex-start">
-        <span style="font-size:16px">${iconos[m.tipo]||"✉️"}</span>
-        <div style="flex:1;min-width:0">
-          <div style="font-weight:${m.leido?400:700};font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${m.asunto}</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:2px">${m.de} · ${m.fecha?m.fecha.substring(0,16).replace("T"," "):""}</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${m.cuerpo}</div>
+
+  let html = "";
+
+  // Alertas activas al tope (siempre no leídas)
+  if(alertas.length > 0){
+    html += `<div style="font-size:10px;font-weight:700;color:var(--danger);letter-spacing:.08em;padding:6px 0 4px;text-transform:uppercase">⚠️ Alertas activas (${alertas.length})</div>`;
+    html += alertas.map(a=>`
+      <div style="padding:8px 0;border-bottom:1px solid var(--border)">
+        <div style="display:flex;gap:8px">
+          <span>${a.urgente?"⛔":"⚠️"}</span>
+          <div>
+            <div style="font-weight:700;font-size:12px">${a.sabor} ${a.tamano} — ${a.sucursal}</div>
+            <div style="font-size:11px;color:var(--muted)">Stock: ${a.stock} · Mín: ${a.minimo}</div>
+          </div>
         </div>
-        ${!m.leido?'<div style="width:8px;height:8px;border-radius:50%;background:var(--accent);margin-top:4px;flex-shrink:0"></div>':''}
-      </div>
-    </div>`).join("");
+      </div>`).join("");
+  }
+
+  // Sugerencias
+  if(sugerencias.length > 0){
+    html += `<div style="font-size:10px;font-weight:700;color:var(--accent);letter-spacing:.08em;padding:8px 0 4px;text-transform:uppercase">💡 Sugerencias (${sugerencias.length})</div>`;
+    html += sugerencias.map(s=>`
+      <div style="padding:8px 0;border-bottom:1px solid var(--border)">
+        <div style="font-size:12px;color:var(--ink)">${s.mensaje}</div>
+      </div>`).join("");
+  }
+
+  // Mensajes manuales
+  if(msgs.length > 0){
+    if(alertas.length > 0 || sugerencias.length > 0)
+      html += `<div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.08em;padding:8px 0 4px;text-transform:uppercase">Mensajes</div>`;
+    html += msgs.map(m=>`
+      <div onclick="leerMensaje('${m.id}')" style="padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;opacity:${m.leido?.7:1}">
+        <div style="display:flex;gap:8px;align-items:flex-start">
+          <span style="font-size:15px">${iconos[m.tipo]||"✉️"}</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:${m.leido?400:700};font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${m.asunto}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">${m.de} · ${m.fecha?m.fecha.substring(0,16).replace("T"," "):""}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${m.cuerpo}</div>
+          </div>
+          ${!m.leido?'<div style="width:7px;height:7px;border-radius:50%;background:var(--accent);margin-top:5px;flex-shrink:0"></div>':''}
+        </div>
+      </div>`).join("");
+  }
+
+  if(!html){
+    html = `<div style="text-align:center;padding:24px;color:var(--muted);font-size:13px">Sin mensajes ni alertas</div>`;
+  }
+
+  L("bandeja-lista").innerHTML = html;
 }
 
 async function leerMensaje(id){
@@ -2183,6 +2239,16 @@ async function cargarAuditoria(){
   const res=await api("getAuditoria");if(!res.ok)return;
   L("auditoria-list").innerHTML=res.registros.length===0?`<div class="empty-state"><div>Sin registros</div></div>`
     :res.registros.map(r=>`<div class="audit-row"><div class="audit-accion">${r.accion}</div><div class="audit-detalle">${r.detalles}</div><div class="audit-meta">${r.usuario} · ${r.fecha?r.fecha.substring(0,16).replace('T',' '):''}</div></div>`).join("");
+}
+
+async function ejecutarLimpiarDatos(){
+  if(!confirm("⚠️ ¿Seguro que quieres borrar todos los datos de prueba?\n\nEsto eliminará:\n• Ventas\n• Stock / Inventario\n• Clientes\n• Auditoría\n• Utilidades\n• Transferencias\n\nNO se borrarán: catálogo, precios, insumos, recetas ni usuarios.")) return;
+  if(!confirm("Segunda confirmación: ¿ESTÁS SEGURO? Esta acción no se puede deshacer.")) return;
+  const btn = event.target; btn.disabled=true; btn.textContent="Limpiando...";
+  const res = await api("limpiarDatos",{});
+  btn.disabled=false; btn.textContent="🗑 Limpiar datos de prueba";
+  if(res.ok){ toast(res.mensaje); cargarAuditoria(); cargarStock(); }
+  else toast(res.error,"error");
 }
 
 // ============================================================
