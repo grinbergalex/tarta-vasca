@@ -244,6 +244,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <div class="nav-tab owner-only" data-tab="precios">Precios</div>
     <div class="nav-tab owner-only" data-tab="costos">Costos</div>
     <div class="nav-tab owner-only" data-tab="utilidades">Utilidad por ventas</div>
+    <div class="nav-tab owner-only" data-tab="objetivos">Objetivos</div>
     <div class="nav-tab owner-only" data-tab="usuarios">Usuarios</div>
     <div class="nav-tab owner-only" data-tab="auditoria">Auditoría</div>
   </nav>
@@ -598,7 +599,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
               </div>
             </div>
             <!-- Campos extra para gasto condicional -->
-            <div id="gasto-condicional-fields" style="display:none;gap:8px;margin-bottom:8px;display:none">
+            <div id="gasto-condicional-fields" style="display:none;gap:8px;margin-bottom:8px">
               <div style="margin-bottom:8px">
                 <label class="form-label">¿Cuándo aplica? (condición)</label>
                 <input class="mini-input" id="g-condicion" placeholder="Ej: Al vender más de 100 piezas en el mes" style="width:100%">
@@ -713,6 +714,97 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <div id="util-ops-list"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
       </div>
     </div>
+    </div>
+
+    <!-- OBJETIVOS -->
+    <div id="tab-objetivos" class="tab-pane" style="display:none">
+
+      <!-- RESUMEN MES ACTUAL -->
+      <div id="obj-resumen" style="display:none;margin-bottom:12px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
+          <div class="summary-card">
+            <div class="summary-num" id="obj-total-meta" style="font-size:22px">0</div>
+            <div class="summary-label">Meta total (uds)</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-num" id="obj-total-real" style="font-size:22px">0</div>
+            <div class="summary-label">Vendidas (uds)</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-num" id="obj-total-pct" style="font-size:22px">0%</div>
+            <div class="summary-label">Cumplimiento</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TARJETAS DE OBJETIVOS -->
+      <div id="obj-lista"></div>
+
+      <!-- FORM NUEVO OBJETIVO -->
+      <div class="card" style="margin-top:12px">
+        <div class="card-title" id="obj-form-title">Nuevo objetivo</div>
+        <input type="hidden" id="obj-id">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <div>
+            <label class="form-label">Nombre *</label>
+            <input class="mini-input" id="obj-nombre" placeholder="Meta mayo Cuajimalpa" style="width:100%">
+          </div>
+          <div>
+            <label class="form-label">Sucursal</label>
+            <select class="mini-select" id="obj-sucursal" style="width:100%">
+              <option value="Ambas">Ambas</option>
+              <option value="Cuajimalpa">Cuajimalpa</option>
+              <option value="Polanco">Polanco</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Mes</label>
+            <select class="mini-select" id="obj-mes" style="width:100%">
+              <option value="1">Enero</option><option value="2">Febrero</option>
+              <option value="3">Marzo</option><option value="4">Abril</option>
+              <option value="5">Mayo</option><option value="6">Junio</option>
+              <option value="7">Julio</option><option value="8">Agosto</option>
+              <option value="9">Septiembre</option><option value="10">Octubre</option>
+              <option value="11">Noviembre</option><option value="12">Diciembre</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Año</label>
+            <input class="mini-input" id="obj-anio" type="number" placeholder="2026" style="width:100%">
+          </div>
+        </div>
+
+        <!-- METAS POR SABOR+TAMAÑO -->
+        <div class="seccion-label" style="margin:12px 0 8px">Meta por producto (opcional — deja vacío para no desglosar)</div>
+        <div id="obj-lineas-list" style="margin-bottom:8px"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr auto auto;gap:8px;align-items:end;margin-bottom:12px">
+          <div>
+            <label class="form-label">Sabor</label>
+            <select class="mini-select" id="obj-lin-sabor" style="width:100%"></select>
+          </div>
+          <div>
+            <label class="form-label">Tamaño</label>
+            <select class="mini-select" id="obj-lin-tamano" style="width:100%"></select>
+          </div>
+          <div>
+            <label class="form-label">Uds</label>
+            <input class="mini-input" id="obj-lin-uds" type="number" placeholder="50" style="width:70px">
+          </div>
+          <button class="btn-outline" onclick="agregarLineaObjetivo()" style="padding:8px 12px;margin-bottom:0">+ Añadir</button>
+        </div>
+        <!-- Meta general si no hay desglose -->
+        <div style="margin-bottom:12px">
+          <label class="form-label">O bien — meta total de unidades (sin desglose por producto)</label>
+          <input class="mini-input" id="obj-meta-total" type="number" placeholder="200" style="width:120px">
+        </div>
+
+        <div style="display:flex;gap:8px">
+          <button class="btn-main btn-green" onclick="guardarObjetivo()" id="btn-guardar-obj">GUARDAR OBJETIVO</button>
+          <button class="btn-outline" onclick="cancelarObjetivo()" id="btn-cancelar-obj" style="display:none">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
     <div id="tab-usuarios" class="tab-pane" style="display:none">
       <div class="card">
         <div class="card-title">Usuarios</div>
@@ -885,6 +977,7 @@ function setupNav() {
       else if(t==="venta") iniciarVenta();
       else if(t==="costos") { if(!S.insumos.length) cargarCostos(); else renderCostos(); }
       else if(t==="utilidades") cargarUtilidades();
+      else if(t==="objetivos") cargarObjetivos();
     });
   });
 }
@@ -1485,7 +1578,224 @@ L("btn-cambiar-pw").addEventListener("click",async()=>{
 // ============================================================
 // AUDITORÍA
 // ============================================================
-async function cargarAuditoria(){
+// ============================================================
+// OBJETIVOS
+// ============================================================
+let objLineas = []; // líneas del formulario en curso
+
+async function cargarObjetivos(){
+  L("obj-lista").innerHTML=`<div class="loading"><div class="spinner"></div>Cargando...</div>`;
+
+  // Poner mes y año actuales por defecto
+  const hoy = new Date();
+  L("obj-mes").value  = hoy.getMonth()+1;
+  L("obj-anio").value = hoy.getFullYear();
+
+  // Poblar selectores de sabor/tamaño
+  if(S.catalogo?.sabores){
+    L("obj-lin-sabor").innerHTML  = S.catalogo.sabores.filter(s=>s.activo).map(s=>`<option>${s.nombre}</option>`).join("");
+    L("obj-lin-tamano").innerHTML = S.catalogo.tamanos.filter(t=>t.activo).map(t=>`<option>${t.nombre}</option>`).join("");
+  } else {
+    const resC = await api("getCatalogo");
+    if(resC.ok){ S.catalogo=resC;
+      L("obj-lin-sabor").innerHTML  = resC.sabores.filter(s=>s.activo).map(s=>`<option>${s.nombre}</option>`).join("");
+      L("obj-lin-tamano").innerHTML = resC.tamanos.filter(t=>t.activo).map(t=>`<option>${t.nombre}</option>`).join("");
+    }
+  }
+
+  // Cargar objetivos y ventas en paralelo
+  const [resO, resV] = await Promise.all([api("getObjetivos"), api("getVentas")]);
+  if(!resO.ok){ L("obj-lista").innerHTML=`<div class="empty-state">Error al cargar objetivos</div>`; return; }
+
+  S.objetivos = resO.objetivos || [];
+  const ventas = resV.ok ? resV.ventas : [];
+
+  renderObjetivos(ventas);
+}
+
+function renderObjetivos(ventas){
+  const objetivos = S.objetivos || [];
+  const hoy = new Date();
+  const mesActual = hoy.getMonth()+1;
+  const anioActual = hoy.getFullYear();
+
+  if(objetivos.length === 0){
+    L("obj-resumen").style.display="none";
+    L("obj-lista").innerHTML=`<div class="empty-state"><div class="empty-icon">🎯</div><div>Sin objetivos registrados — agrega el primero abajo</div></div>`;
+    return;
+  }
+
+  // Resumen del mes actual
+  const objMes = objetivos.filter(o=>o.activo && Number(o.mes)===mesActual && Number(o.anio)===anioActual);
+  if(objMes.length > 0){
+    const metaTotal = objMes.reduce((s,o)=>s+_metaTotalObjetivo(o),0);
+    const ventasMes = ventas.filter(v=>{
+      const d=new Date(v.fecha);
+      return d.getMonth()+1===mesActual && d.getFullYear()===anioActual;
+    });
+    const realTotal = _contarUnidades(ventasMes, null, null);
+    const pct = metaTotal>0 ? Math.round(realTotal/metaTotal*100) : 0;
+    L("obj-total-meta").textContent = metaTotal;
+    L("obj-total-real").textContent = realTotal;
+    L("obj-total-pct").textContent  = pct+"%";
+    L("obj-total-pct").style.color  = pct>=80?"var(--success)":pct>=50?"var(--warning)":"var(--danger)";
+    L("obj-resumen").style.display  = "block";
+  } else {
+    L("obj-resumen").style.display="none";
+  }
+
+  // Ordenar: mes actual primero, luego por fecha desc
+  const sorted = [...objetivos].sort((a,b)=>{
+    const aEsMes = Number(a.mes)===mesActual && Number(a.anio)===anioActual ? 0 : 1;
+    const bEsMes = Number(b.mes)===mesActual && Number(b.anio)===anioActual ? 0 : 1;
+    if(aEsMes !== bEsMes) return aEsMes - bEsMes;
+    return (Number(b.anio)*100+Number(b.mes)) - (Number(a.anio)*100+Number(a.mes));
+  });
+
+  const MESES = ["","Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+
+  L("obj-lista").innerHTML = sorted.map(obj => {
+    if(!obj.activo) return "";
+    const esMesActual = Number(obj.mes)===mesActual && Number(obj.anio)===anioActual;
+    const meta  = _metaTotalObjetivo(obj);
+    const vFiltradas = ventas.filter(v=>{
+      const d=new Date(v.fecha);
+      if(d.getMonth()+1!==Number(obj.mes)||d.getFullYear()!==Number(obj.anio)) return false;
+      if(obj.sucursal!=="Ambas" && v.sucursal!==obj.sucursal) return false;
+      return true;
+    });
+    const real = _contarUnidades(vFiltradas, null, null);
+    const pct  = meta>0 ? Math.min(Math.round(real/meta*100),100) : 0;
+    const color = pct>=80?"var(--success)":pct>=50?"var(--warning)":"var(--danger)";
+    const bgBar = pct>=80?"#2E5C4A":pct>=50?"#C8602A":"#C0392B";
+
+    // Desglose por línea si existe
+    let desglose = "";
+    if(obj.lineas && obj.lineas.length>0){
+      desglose = `<div style="margin-top:10px;display:flex;flex-direction:column;gap:6px">` +
+        obj.lineas.map(lin=>{
+          const realLin = _contarUnidades(vFiltradas, lin.sabor, lin.tamano);
+          const pctLin  = lin.meta>0?Math.min(Math.round(realLin/lin.meta*100),100):0;
+          const colLin  = pctLin>=80?"var(--success)":pctLin>=50?"var(--warning)":"var(--danger)";
+          return `<div style="font-size:12px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+              <span>${lin.sabor} ${lin.tamano}</span>
+              <span style="color:${colLin};font-weight:600">${realLin}/${lin.meta} uds (${pctLin}%)</span>
+            </div>
+            <div style="background:var(--border);border-radius:4px;height:5px">
+              <div style="background:${colLin};width:${pctLin}%;height:5px;border-radius:4px;transition:.4s"></div>
+            </div>
+          </div>`;
+        }).join("") + `</div>`;
+    }
+
+    return `<div class="card" style="margin-bottom:10px;opacity:${obj.activo?1:.5}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+        <div>
+          <div style="font-weight:700;font-size:15px">${obj.nombre}</div>
+          <div style="font-size:12px;color:var(--muted)">${MESES[Number(obj.mes)]} ${obj.anio} · ${obj.sucursal}</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          ${esMesActual?'<span style="background:var(--accent);color:white;font-size:10px;padding:2px 8px;border-radius:20px;font-weight:600">EN CURSO</span>':''}
+          <button class="btn-icon" onclick="bajaObjetivo('${obj.id}')">✕</button>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px">
+        <span><strong style="font-size:22px;color:${color}">${real}</strong> / ${meta} uds</span>
+        <span style="font-weight:700;color:${color};font-size:18px">${pct}%</span>
+      </div>
+      <div style="background:var(--border);border-radius:6px;height:10px;overflow:hidden">
+        <div style="background:${bgBar};width:${pct}%;height:10px;border-radius:6px;transition:.5s ease"></div>
+      </div>
+      ${desglose}
+    </div>`;
+  }).join("");
+}
+
+function _metaTotalObjetivo(obj){
+  if(obj.lineas && obj.lineas.length>0)
+    return obj.lineas.reduce((s,l)=>s+Number(l.meta),0);
+  return Number(obj.metaTotal)||0;
+}
+
+function _contarUnidades(ventas, sabor, tamano){
+  return ventas.reduce((s,v)=>{
+    if(sabor  && v.sabor!==sabor)   return s;
+    if(tamano && v.tamano!==tamano) return s;
+    return s + (Number(v.cantidad)||0);
+  },0);
+}
+
+// Líneas del formulario
+function agregarLineaObjetivo(){
+  const sabor  = L("obj-lin-sabor").value;
+  const tamano = L("obj-lin-tamano").value;
+  const meta   = parseInt(L("obj-lin-uds").value);
+  if(!sabor||!tamano||!meta||meta<=0){ toast("Completa sabor, tamaño y unidades","error"); return; }
+  // Evitar duplicado
+  if(objLineas.find(l=>l.sabor===sabor&&l.tamano===tamano)){
+    toast("Ya existe esa combinación — edita la cantidad","error"); return;
+  }
+  objLineas.push({sabor, tamano, meta});
+  L("obj-lin-uds").value="";
+  renderLineasForm();
+}
+
+function renderLineasForm(){
+  if(!objLineas.length){ L("obj-lineas-list").innerHTML=""; return; }
+  L("obj-lineas-list").innerHTML = objLineas.map((l,i)=>`
+    <div class="insumo-item" style="padding:8px 12px">
+      <div style="flex:1;font-size:13px">${l.sabor} ${l.tamano}</div>
+      <div style="font-weight:600;margin:0 12px">${l.meta} uds</div>
+      <button class="btn-icon" onclick="quitarLineaObj(${i})">✕</button>
+    </div>`).join("");
+}
+
+function quitarLineaObj(i){ objLineas.splice(i,1); renderLineasForm(); }
+
+async function guardarObjetivo(){
+  const nombre = L("obj-nombre").value.trim();
+  if(!nombre){ toast("El nombre es obligatorio","error"); return; }
+  const mes    = Number(L("obj-mes").value);
+  const anio   = Number(L("obj-anio").value);
+  const metaTotal = Number(L("obj-meta-total").value)||0;
+  if(!objLineas.length && !metaTotal){ toast("Agrega al menos una línea de producto o una meta total","error"); return; }
+
+  const btn=L("btn-guardar-obj"); btn.disabled=true; btn.textContent="Guardando...";
+  const payload = {
+    id:        L("obj-id").value||undefined,
+    nombre,
+    sucursal:  L("obj-sucursal").value,
+    mes, anio,
+    metaTotal,
+    lineas:    objLineas,
+    activo:    true
+  };
+  const res = await api("saveObjetivo", payload);
+  btn.disabled=false; btn.textContent="GUARDAR OBJETIVO";
+  if(res.ok){ toast(res.mensaje); cancelarObjetivo(); cargarObjetivos(); }
+  else toast(res.error,"error");
+}
+
+function cancelarObjetivo(){
+  L("obj-id").value=""; L("obj-nombre").value=""; L("obj-meta-total").value="";
+  const hoy=new Date(); L("obj-mes").value=hoy.getMonth()+1; L("obj-anio").value=hoy.getFullYear();
+  L("obj-sucursal").value="Ambas"; objLineas=[]; renderLineasForm();
+  L("obj-form-title").textContent="Nuevo objetivo";
+  L("btn-cancelar-obj").style.display="none";
+}
+
+async function bajaObjetivo(id){
+  const o=(S.objetivos||[]).find(x=>x.id===id);
+  if(!o||!confirm(`¿Eliminar objetivo "${o.nombre}"?`)) return;
+  const res=await api("deleteObjetivo",{id});
+  if(res.ok){ toast(res.mensaje); cargarObjetivos(); }
+  else toast(res.error,"error");
+}
+
+// ============================================================
+// AUDITORÍA
+// ============================================================
   const res=await api("getAuditoria");if(!res.ok)return;
   L("auditoria-list").innerHTML=res.registros.length===0?`<div class="empty-state"><div>Sin registros</div></div>`
     :res.registros.map(r=>`<div class="audit-row"><div class="audit-accion">${r.accion}</div><div class="audit-detalle">${r.detalles}</div><div class="audit-meta">${r.usuario} · ${r.fecha?r.fecha.substring(0,16).replace('T',' '):''}</div></div>`).join("");
