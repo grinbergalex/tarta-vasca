@@ -547,9 +547,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 
           <div class="add-box" style="margin-top:12px">
             <div class="add-box-title">+ Añadir ingrediente a esta receta</div>
+            <div class="form-group" style="margin-bottom:6px">
+              <label class="form-label">Insumo del catálogo</label>
+              <select class="mini-select" id="receta-new-insumo" style="width:100%" onchange="syncInsumoNombre()">
+                <option value="">— Sin catálogo / escribir abajo —</option>
+              </select>
+            </div>
             <div class="form-group" style="margin-bottom:10px">
-              <label class="form-label">Insumo</label>
-              <select class="mini-select" id="receta-new-insumo" style="width:100%"></select>
+              <label class="form-label">O escribe el nombre del ingrediente</label>
+              <input class="mini-input" id="receta-new-nombre" placeholder="Ej: Queso crema, Huevos, Azúcar..." style="width:100%">
             </div>
             <div class="campo-grid2" style="margin-bottom:8px">
               <div>
@@ -1322,13 +1328,6 @@ function actualizarDisp(){
 L("item-sabor")?.addEventListener("change",actualizarDisp);
 L("item-tamano")?.addEventListener("change",actualizarDisp);
 L("venta-sucursal")?.addEventListener("change",()=>{actualizarDisp();poblarSelectsVenta();});
-L("btn-agregar-item").addEventListener("click",()=>{
-  const sabor=L("item-sabor").value,tamano=L("item-tamano").value;
-  const cantidad=parseInt(L("item-cantidad").value)||1;
-  if(!sabor||!tamano){toast("Selecciona sabor y tamaño","error");return;}
-  const disp=calcDisp(sabor,tamano);
-  if(disp<cantidad){toast(`Solo hay ${disp} de ${sabor} ${tamano}`,"error");return;}
-  const precio=getPrecio(tamano);
 // ── TIPO DE OPERACIÓN ──────────────────────────────────────
 let tipoOp = "venta"; // "venta" | "regalo" | "merma"
 
@@ -1812,15 +1811,33 @@ function renderIngredientesReceta(){
   el.innerHTML+=`<div class="calc-total-row"><span style="color:var(--muted)">Subtotal ingredientes:&nbsp;<strong style="color:var(--accent);font-size:16px">${fmtMXN(costoTotal)}</strong></span></div>`;
 }
 
+function syncInsumoNombre(){
+  const insumoId = L("receta-new-insumo")?.value;
+  if(!insumoId) return;
+  const ins = S.insumos.find(i=>i.id===insumoId);
+  if(ins) L("receta-new-nombre").value = ins.nombre;
+}
+
 function agregarIngredienteReceta(){
-  const insumoId=L("receta-new-insumo")?.value;
-  const qty=parseFloat(L("receta-new-qty")?.value)||0;
-  const unit=L("receta-new-unit")?.value||"unidad";
-  if(!insumoId){toast("Selecciona un insumo","error");return;}
-  if(!qty){toast("Ingresa la cantidad","error");return;}
-  const ins=S.insumos.find(i=>i.id===insumoId);
-  S.recetaActual.push({insumoId,insumoNombre:ins?ins.nombre:"",cantidad:qty,unidad:unit});
-  L("receta-new-qty").value="";
+  const insumoId  = L("receta-new-insumo")?.value || "";
+  const nombre    = L("receta-new-nombre")?.value.trim() || "";
+  const qty       = parseFloat(L("receta-new-qty")?.value)||0;
+  const unit      = L("receta-new-unit")?.value||"unidad";
+
+  // Necesita al menos nombre o insumo seleccionado
+  const nombreFinal = nombre || (S.insumos.find(i=>i.id===insumoId)?.nombre) || "";
+  if(!nombreFinal){ toast("Escribe el nombre del ingrediente o selecciona uno del catálogo","error"); return; }
+  if(!qty){ toast("Ingresa la cantidad","error"); return; }
+
+  S.recetaActual.push({
+    insumoId,
+    insumoNombre: nombreFinal,
+    cantidad: qty,
+    unidad: unit
+  });
+  L("receta-new-qty").value = "";
+  L("receta-new-nombre").value = "";
+  L("receta-new-insumo").value = "";
   renderIngredientesReceta();
 }
 function quitarIngredienteReceta(idx){S.recetaActual.splice(idx,1);renderIngredientesReceta();}
