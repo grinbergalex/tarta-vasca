@@ -721,86 +721,112 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 
       <!-- RESUMEN MES ACTUAL -->
       <div id="obj-resumen" style="display:none;margin-bottom:12px">
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:4px">
           <div class="summary-card">
-            <div class="summary-num" id="obj-total-meta" style="font-size:22px">0</div>
-            <div class="summary-label">Meta total (uds)</div>
+            <div class="summary-num" id="obj-total-meta" style="font-size:26px;color:var(--ink)">—</div>
+            <div class="summary-label">Meta del mes</div>
           </div>
           <div class="summary-card">
-            <div class="summary-num" id="obj-total-real" style="font-size:22px">0</div>
-            <div class="summary-label">Vendidas (uds)</div>
+            <div class="summary-num" id="obj-total-real" style="font-size:26px">0</div>
+            <div class="summary-label">Vendidas</div>
           </div>
           <div class="summary-card">
-            <div class="summary-num" id="obj-total-pct" style="font-size:22px">0%</div>
+            <div class="summary-num" id="obj-total-pct" style="font-size:26px">0%</div>
             <div class="summary-label">Cumplimiento</div>
           </div>
         </div>
+        <div style="background:var(--border);border-radius:8px;height:12px;overflow:hidden;margin-bottom:16px">
+          <div id="obj-barra-global" style="background:var(--accent);height:12px;width:0%;border-radius:8px;transition:.6s ease"></div>
+        </div>
       </div>
 
-      <!-- TARJETAS DE OBJETIVOS -->
+      <!-- TARJETAS -->
       <div id="obj-lista"></div>
 
-      <!-- FORM NUEVO OBJETIVO -->
-      <div class="card" style="margin-top:12px">
-        <div class="card-title" id="obj-form-title">Nuevo objetivo</div>
+      <!-- BOTÓN NUEVO -->
+      <button onclick="mostrarFormObjetivo()" id="btn-nuevo-obj"
+        style="width:100%;padding:14px;border:2px dashed var(--border);border-radius:14px;background:none;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--muted);cursor:pointer;margin-bottom:4px">
+        + Nuevo objetivo
+      </button>
+
+      <!-- FORM — oculto por defecto -->
+      <div id="obj-form-card" class="card" style="display:none;margin-top:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div class="card-title" id="obj-form-title" style="margin-bottom:0">Nuevo objetivo</div>
+          <button onclick="cancelarObjetivo()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">✕</button>
+        </div>
         <input type="hidden" id="obj-id">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-          <div>
-            <label class="form-label">Nombre *</label>
-            <input class="mini-input" id="obj-nombre" placeholder="Meta mayo Cuajimalpa" style="width:100%">
+
+        <!-- ENCABEZADO: nombre, sucursal, mes, año -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+          <div style="grid-column:1/-1">
+            <label class="form-label">Nombre del objetivo *</label>
+            <input class="mini-input" id="obj-nombre" placeholder="Ej: Meta mayo red completa" style="width:100%">
           </div>
           <div>
             <label class="form-label">Sucursal</label>
             <select class="mini-select" id="obj-sucursal" style="width:100%">
-              <option value="Ambas">Ambas</option>
+              <option value="Ambas">Ambas sucursales</option>
               <option value="Cuajimalpa">Cuajimalpa</option>
               <option value="Polanco">Polanco</option>
             </select>
           </div>
-          <div>
-            <label class="form-label">Mes</label>
-            <select class="mini-select" id="obj-mes" style="width:100%">
-              <option value="1">Enero</option><option value="2">Febrero</option>
-              <option value="3">Marzo</option><option value="4">Abril</option>
-              <option value="5">Mayo</option><option value="6">Junio</option>
-              <option value="7">Julio</option><option value="8">Agosto</option>
-              <option value="9">Septiembre</option><option value="10">Octubre</option>
-              <option value="11">Noviembre</option><option value="12">Diciembre</option>
-            </select>
-          </div>
-          <div>
-            <label class="form-label">Año</label>
-            <input class="mini-input" id="obj-anio" type="number" placeholder="2026" style="width:100%">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <div>
+              <label class="form-label">Mes</label>
+              <select class="mini-select" id="obj-mes" style="width:100%">
+                <option value="1">Enero</option><option value="2">Febrero</option>
+                <option value="3">Marzo</option><option value="4">Abril</option>
+                <option value="5">Mayo</option><option value="6">Junio</option>
+                <option value="7">Julio</option><option value="8">Agosto</option>
+                <option value="9">Septiembre</option><option value="10">Octubre</option>
+                <option value="11">Noviembre</option><option value="12">Diciembre</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Año</label>
+              <input class="mini-input" id="obj-anio" type="number" style="width:100%">
+            </div>
           </div>
         </div>
 
-        <!-- METAS POR SABOR+TAMAÑO -->
-        <div class="seccion-label" style="margin:12px 0 8px">Meta por producto (opcional — deja vacío para no desglosar)</div>
-        <div id="obj-lineas-list" style="margin-bottom:8px"></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr auto auto;gap:8px;align-items:end;margin-bottom:12px">
-          <div>
-            <label class="form-label">Sabor</label>
-            <select class="mini-select" id="obj-lin-sabor" style="width:100%"></select>
+        <!-- META TOTAL -->
+        <div style="background:var(--warm);border-radius:12px;padding:14px;margin-bottom:14px">
+          <div style="font-weight:600;font-size:13px;margin-bottom:6px">🎯 Meta total de unidades</div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <input class="mini-input" id="obj-meta-total" type="number" placeholder="ej. 200"
+              style="width:100px" oninput="actualizarAvisoMeta()">
+            <span style="font-size:12px;color:var(--muted)">piezas en el mes</span>
           </div>
-          <div>
-            <label class="form-label">Tamaño</label>
-            <select class="mini-select" id="obj-lin-tamano" style="width:100%"></select>
-          </div>
-          <div>
-            <label class="form-label">Uds</label>
-            <input class="mini-input" id="obj-lin-uds" type="number" placeholder="50" style="width:70px">
-          </div>
-          <button class="btn-outline" onclick="agregarLineaObjetivo()" style="padding:8px 12px;margin-bottom:0">+ Añadir</button>
-        </div>
-        <!-- Meta general si no hay desglose -->
-        <div style="margin-bottom:12px">
-          <label class="form-label">O bien — meta total de unidades (sin desglose por producto)</label>
-          <input class="mini-input" id="obj-meta-total" type="number" placeholder="200" style="width:120px">
+          <div id="obj-aviso-meta" style="display:none;margin-top:8px;font-size:12px;padding:6px 10px;border-radius:8px"></div>
         </div>
 
-        <div style="display:flex;gap:8px">
+        <!-- DESGLOSE POR PRODUCTO -->
+        <div style="margin-bottom:10px">
+          <div style="font-weight:600;font-size:13px;margin-bottom:8px">📦 Desglose por producto <span style="font-weight:400;color:var(--muted)">(opcional)</span></div>
+          <div id="obj-lineas-list" style="margin-bottom:10px"></div>
+
+          <!-- Fila para agregar línea -->
+          <div style="display:grid;grid-template-columns:1fr 1fr 80px auto;gap:6px;align-items:end">
+            <div>
+              <label class="form-label">Sabor</label>
+              <select class="mini-select" id="obj-lin-sabor" style="width:100%"></select>
+            </div>
+            <div>
+              <label class="form-label">Tamaño</label>
+              <select class="mini-select" id="obj-lin-tamano" style="width:100%"></select>
+            </div>
+            <div>
+              <label class="form-label">Uds</label>
+              <input class="mini-input" id="obj-lin-uds" type="number" placeholder="50" style="width:100%">
+            </div>
+            <button class="btn-outline" onclick="agregarLineaObjetivo()"
+              style="padding:9px 12px;white-space:nowrap;margin-bottom:0">+ Añadir</button>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:4px">
           <button class="btn-main btn-green" onclick="guardarObjetivo()" id="btn-guardar-obj">GUARDAR OBJETIVO</button>
-          <button class="btn-outline" onclick="cancelarObjetivo()" id="btn-cancelar-obj" style="display:none">Cancelar</button>
         </div>
       </div>
     </div>
@@ -1581,197 +1607,226 @@ L("btn-cambiar-pw").addEventListener("click",async()=>{
 // ============================================================
 // OBJETIVOS
 // ============================================================
-let objLineas = []; // líneas del formulario en curso
+let objLineas = [];
+
+function mostrarFormObjetivo(){
+  L("obj-form-card").style.display="block";
+  L("btn-nuevo-obj").style.display="none";
+  const hoy=new Date();
+  L("obj-mes").value=hoy.getMonth()+1;
+  L("obj-anio").value=hoy.getFullYear();
+}
+
+function actualizarAvisoMeta(){
+  const total   = Number(L("obj-meta-total").value)||0;
+  const sumaLineas = objLineas.reduce((s,l)=>s+l.meta,0);
+  const aviso = L("obj-aviso-meta");
+  if(!total||!sumaLineas){ aviso.style.display="none"; return; }
+  if(total===sumaLineas){
+    aviso.style.display="block";
+    aviso.style.background="rgba(46,92,74,.12)";
+    aviso.style.color="var(--success)";
+    aviso.textContent=`✅ La meta total coincide con la suma del desglose (${sumaLineas} uds)`;
+  } else {
+    aviso.style.display="block";
+    aviso.style.background="rgba(200,96,42,.1)";
+    aviso.style.color="var(--accent)";
+    aviso.textContent=`⚠️ La meta total (${total}) difiere de la suma del desglose (${sumaLineas}). Puedes dejarlos diferentes — se mostrarán como dos referencias distintas.`;
+  }
+}
 
 async function cargarObjetivos(){
   L("obj-lista").innerHTML=`<div class="loading"><div class="spinner"></div>Cargando...</div>`;
 
-  // Poner mes y año actuales por defecto
-  const hoy = new Date();
-  L("obj-mes").value  = hoy.getMonth()+1;
-  L("obj-anio").value = hoy.getFullYear();
-
-  // Poblar selectores de sabor/tamaño
+  if(!S.catalogo?.sabores){
+    const resC=await api("getCatalogo");
+    if(resC.ok){ S.catalogo=resC; }
+  }
   if(S.catalogo?.sabores){
     L("obj-lin-sabor").innerHTML  = S.catalogo.sabores.filter(s=>s.activo).map(s=>`<option>${s.nombre}</option>`).join("");
     L("obj-lin-tamano").innerHTML = S.catalogo.tamanos.filter(t=>t.activo).map(t=>`<option>${t.nombre}</option>`).join("");
-  } else {
-    const resC = await api("getCatalogo");
-    if(resC.ok){ S.catalogo=resC;
-      L("obj-lin-sabor").innerHTML  = resC.sabores.filter(s=>s.activo).map(s=>`<option>${s.nombre}</option>`).join("");
-      L("obj-lin-tamano").innerHTML = resC.tamanos.filter(t=>t.activo).map(t=>`<option>${t.nombre}</option>`).join("");
-    }
   }
 
-  // Cargar objetivos y ventas en paralelo
-  const [resO, resV] = await Promise.all([api("getObjetivos"), api("getVentas")]);
+  const hoy=new Date();
+  L("obj-mes").value=hoy.getMonth()+1;
+  L("obj-anio").value=hoy.getFullYear();
+
+  const [resO,resV]=await Promise.all([api("getObjetivos"),api("getVentas")]);
   if(!resO.ok){ L("obj-lista").innerHTML=`<div class="empty-state">Error al cargar objetivos</div>`; return; }
-
-  S.objetivos = resO.objetivos || [];
-  const ventas = resV.ok ? resV.ventas : [];
-
+  S.objetivos=resO.objetivos||[];
+  const ventas=resV.ok?resV.ventas:[];
   renderObjetivos(ventas);
 }
 
 function renderObjetivos(ventas){
-  const objetivos = S.objetivos || [];
-  const hoy = new Date();
-  const mesActual = hoy.getMonth()+1;
-  const anioActual = hoy.getFullYear();
+  const hoy=new Date();
+  const mesActual=hoy.getMonth()+1, anioActual=hoy.getFullYear();
+  const MESES=["","Enero","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+  const activos=(S.objetivos||[]).filter(o=>o.activo);
 
-  if(objetivos.length === 0){
-    L("obj-resumen").style.display="none";
-    L("obj-lista").innerHTML=`<div class="empty-state"><div class="empty-icon">🎯</div><div>Sin objetivos registrados — agrega el primero abajo</div></div>`;
-    return;
-  }
-
-  // Resumen del mes actual
-  const objMes = objetivos.filter(o=>o.activo && Number(o.mes)===mesActual && Number(o.anio)===anioActual);
-  if(objMes.length > 0){
-    const metaTotal = objMes.reduce((s,o)=>s+_metaTotalObjetivo(o),0);
-    const ventasMes = ventas.filter(v=>{
-      const d=new Date(v.fecha);
-      return d.getMonth()+1===mesActual && d.getFullYear()===anioActual;
-    });
-    const realTotal = _contarUnidades(ventasMes, null, null);
-    const pct = metaTotal>0 ? Math.round(realTotal/metaTotal*100) : 0;
-    L("obj-total-meta").textContent = metaTotal;
-    L("obj-total-real").textContent = realTotal;
-    L("obj-total-pct").textContent  = pct+"%";
-    L("obj-total-pct").style.color  = pct>=80?"var(--success)":pct>=50?"var(--warning)":"var(--danger)";
-    L("obj-resumen").style.display  = "block";
+  // Resumen mes actual
+  const objMes=activos.filter(o=>Number(o.mes)===mesActual&&Number(o.anio)===anioActual);
+  if(objMes.length>0){
+    const metaGlobal=objMes.reduce((s,o)=>s+(_metaTotalObjetivo(o)||0),0);
+    const ventasMes=ventas.filter(v=>{const d=new Date(v.fecha);return d.getMonth()+1===mesActual&&d.getFullYear()===anioActual;});
+    const realGlobal=_contarUnidades(ventasMes,null,null);
+    const pct=metaGlobal>0?Math.min(Math.round(realGlobal/metaGlobal*100),100):0;
+    const color=pct>=80?"var(--success)":pct>=50?"var(--warning)":"var(--danger)";
+    L("obj-total-meta").textContent=metaGlobal||"—";
+    L("obj-total-real").textContent=realGlobal;
+    L("obj-total-pct").textContent=pct+"%";
+    L("obj-total-pct").style.color=color;
+    L("obj-total-real").style.color=color;
+    L("obj-barra-global").style.width=pct+"%";
+    L("obj-barra-global").style.background=pct>=80?"#2E5C4A":pct>=50?"#C8602A":"#C0392B";
+    L("obj-resumen").style.display="block";
   } else {
     L("obj-resumen").style.display="none";
   }
 
-  // Ordenar: mes actual primero, luego por fecha desc
-  const sorted = [...objetivos].sort((a,b)=>{
-    const aEsMes = Number(a.mes)===mesActual && Number(a.anio)===anioActual ? 0 : 1;
-    const bEsMes = Number(b.mes)===mesActual && Number(b.anio)===anioActual ? 0 : 1;
-    if(aEsMes !== bEsMes) return aEsMes - bEsMes;
-    return (Number(b.anio)*100+Number(b.mes)) - (Number(a.anio)*100+Number(a.mes));
+  if(activos.length===0){
+    L("obj-lista").innerHTML=`<div class="empty-state"><div class="empty-icon">🎯</div><div>Sin objetivos — toca "+ Nuevo objetivo" para crear el primero</div></div>`;
+    return;
+  }
+
+  const sorted=[...activos].sort((a,b)=>{
+    const aM=Number(a.mes)===mesActual&&Number(a.anio)===anioActual?0:1;
+    const bM=Number(b.mes)===mesActual&&Number(b.anio)===anioActual?0:1;
+    if(aM!==bM) return aM-bM;
+    return (Number(b.anio)*100+Number(b.mes))-(Number(a.anio)*100+Number(a.mes));
   });
 
-  const MESES = ["","Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+  L("obj-lista").innerHTML=sorted.map(obj=>{
+    const esMes=Number(obj.mes)===mesActual&&Number(obj.anio)===anioActual;
+    const metaT=Number(obj.metaTotal)||0;
+    const sumaL=obj.lineas?obj.lineas.reduce((s,l)=>s+Number(l.meta),0):0;
+    const hayDiscrepancia=metaT>0&&sumaL>0&&metaT!==sumaL;
 
-  L("obj-lista").innerHTML = sorted.map(obj => {
-    if(!obj.activo) return "";
-    const esMesActual = Number(obj.mes)===mesActual && Number(obj.anio)===anioActual;
-    const meta  = _metaTotalObjetivo(obj);
-    const vFiltradas = ventas.filter(v=>{
+    const vFilt=ventas.filter(v=>{
       const d=new Date(v.fecha);
       if(d.getMonth()+1!==Number(obj.mes)||d.getFullYear()!==Number(obj.anio)) return false;
-      if(obj.sucursal!=="Ambas" && v.sucursal!==obj.sucursal) return false;
+      if(obj.sucursal!=="Ambas"&&v.sucursal!==obj.sucursal) return false;
       return true;
     });
-    const real = _contarUnidades(vFiltradas, null, null);
-    const pct  = meta>0 ? Math.min(Math.round(real/meta*100),100) : 0;
-    const color = pct>=80?"var(--success)":pct>=50?"var(--warning)":"var(--danger)";
-    const bgBar = pct>=80?"#2E5C4A":pct>=50?"#C8602A":"#C0392B";
+    const real=_contarUnidades(vFilt,null,null);
 
-    // Desglose por línea si existe
-    let desglose = "";
-    if(obj.lineas && obj.lineas.length>0){
-      desglose = `<div style="margin-top:10px;display:flex;flex-direction:column;gap:6px">` +
+    // Barra principal contra la meta total (si existe) o suma de líneas
+    const metaRef=metaT||sumaL;
+    const pct=metaRef>0?Math.min(Math.round(real/metaRef*100),100):0;
+    const color=pct>=80?"var(--success)":pct>=50?"var(--warning)":"var(--danger)";
+    const bgBar=pct>=80?"#2E5C4A":pct>=50?"#C8602A":"#C0392B";
+
+    // Desglose por línea
+    let desglose="";
+    if(obj.lineas&&obj.lineas.length>0){
+      desglose=`<div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.06em">DESGLOSE POR PRODUCTO</div>`+
         obj.lineas.map(lin=>{
-          const realLin = _contarUnidades(vFiltradas, lin.sabor, lin.tamano);
-          const pctLin  = lin.meta>0?Math.min(Math.round(realLin/lin.meta*100),100):0;
-          const colLin  = pctLin>=80?"var(--success)":pctLin>=50?"var(--warning)":"var(--danger)";
-          return `<div style="font-size:12px">
-            <div style="display:flex;justify-content:space-between;margin-bottom:3px">
-              <span>${lin.sabor} ${lin.tamano}</span>
-              <span style="color:${colLin};font-weight:600">${realLin}/${lin.meta} uds (${pctLin}%)</span>
+          const realL=_contarUnidades(vFilt,lin.sabor,lin.tamano);
+          const pL=lin.meta>0?Math.min(Math.round(realL/lin.meta*100),100):0;
+          const cL=pL>=80?"var(--success)":pL>=50?"var(--warning)":"var(--danger)";
+          return `<div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:3px;font-size:12px">
+              <span style="color:var(--ink)">${lin.sabor} <span style="color:var(--muted)">${lin.tamano}</span></span>
+              <span style="font-weight:600;color:${cL}">${realL}<span style="color:var(--muted);font-weight:400"> / ${lin.meta} uds · ${pL}%</span></span>
             </div>
             <div style="background:var(--border);border-radius:4px;height:5px">
-              <div style="background:${colLin};width:${pctLin}%;height:5px;border-radius:4px;transition:.4s"></div>
+              <div style="background:${cL};width:${pL}%;height:5px;border-radius:4px;transition:.4s"></div>
             </div>
           </div>`;
-        }).join("") + `</div>`;
+        }).join("")+`</div>`;
     }
 
-    return `<div class="card" style="margin-bottom:10px;opacity:${obj.activo?1:.5}">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+    // Aviso discrepancia
+    const avisoDisc=hayDiscrepancia?`
+      <div style="font-size:11px;padding:6px 10px;border-radius:8px;background:rgba(200,96,42,.1);color:var(--accent);margin-top:10px">
+        ⚠️ Meta total (${metaT}) difiere de la suma del desglose (${sumaL} uds) — ambas son referencias independientes
+      </div>`:"";
+
+    return `<div class="card" style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
         <div>
           <div style="font-weight:700;font-size:15px">${obj.nombre}</div>
-          <div style="font-size:12px;color:var(--muted)">${MESES[Number(obj.mes)]} ${obj.anio} · ${obj.sucursal}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">${MESES[Number(obj.mes)]} ${obj.anio} · ${obj.sucursal}</div>
         </div>
         <div style="display:flex;gap:6px;align-items:center">
-          ${esMesActual?'<span style="background:var(--accent);color:white;font-size:10px;padding:2px 8px;border-radius:20px;font-weight:600">EN CURSO</span>':''}
+          ${esMes?'<span style="background:var(--accent);color:white;font-size:10px;padding:3px 9px;border-radius:20px;font-weight:700">EN CURSO</span>':''}
           <button class="btn-icon" onclick="bajaObjetivo('${obj.id}')">✕</button>
         </div>
       </div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px">
-        <span><strong style="font-size:22px;color:${color}">${real}</strong> / ${meta} uds</span>
-        <span style="font-weight:700;color:${color};font-size:18px">${pct}%</span>
+      ${metaRef>0?`
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+        <div style="font-size:13px;color:var(--muted)">
+          <span style="font-size:28px;font-weight:700;color:${color}">${real}</span>
+          ${metaT?` / ${metaT} uds`:''}
+        </div>
+        <div style="font-size:22px;font-weight:700;color:${color}">${pct}%</div>
       </div>
-      <div style="background:var(--border);border-radius:6px;height:10px;overflow:hidden">
-        <div style="background:${bgBar};width:${pct}%;height:10px;border-radius:6px;transition:.5s ease"></div>
-      </div>
+      <div style="background:var(--border);border-radius:8px;height:10px;overflow:hidden;margin-bottom:4px">
+        <div style="background:${bgBar};width:${pct}%;height:10px;border-radius:8px;transition:.5s ease"></div>
+      </div>`:`<div style="font-size:12px;color:var(--muted);margin-bottom:8px">Sin meta total definida — ver desglose</div>`}
+      ${avisoDisc}
       ${desglose}
     </div>`;
   }).join("");
 }
 
 function _metaTotalObjetivo(obj){
-  if(obj.lineas && obj.lineas.length>0)
-    return obj.lineas.reduce((s,l)=>s+Number(l.meta),0);
-  return Number(obj.metaTotal)||0;
+  if(obj.metaTotal&&Number(obj.metaTotal)>0) return Number(obj.metaTotal);
+  if(obj.lineas&&obj.lineas.length>0) return obj.lineas.reduce((s,l)=>s+Number(l.meta),0);
+  return 0;
 }
 
-function _contarUnidades(ventas, sabor, tamano){
+function _contarUnidades(ventas,sabor,tamano){
   return ventas.reduce((s,v)=>{
-    if(sabor  && v.sabor!==sabor)   return s;
-    if(tamano && v.tamano!==tamano) return s;
-    return s + (Number(v.cantidad)||0);
+    if(sabor&&v.sabor!==sabor) return s;
+    if(tamano&&v.tamano!==tamano) return s;
+    return s+(Number(v.cantidad)||0);
   },0);
 }
 
-// Líneas del formulario
 function agregarLineaObjetivo(){
-  const sabor  = L("obj-lin-sabor").value;
-  const tamano = L("obj-lin-tamano").value;
-  const meta   = parseInt(L("obj-lin-uds").value);
+  const sabor=L("obj-lin-sabor").value;
+  const tamano=L("obj-lin-tamano").value;
+  const meta=parseInt(L("obj-lin-uds").value);
   if(!sabor||!tamano||!meta||meta<=0){ toast("Completa sabor, tamaño y unidades","error"); return; }
-  // Evitar duplicado
   if(objLineas.find(l=>l.sabor===sabor&&l.tamano===tamano)){
-    toast("Ya existe esa combinación — edita la cantidad","error"); return;
+    toast("Ya existe esa combinación","error"); return;
   }
-  objLineas.push({sabor, tamano, meta});
+  objLineas.push({sabor,tamano,meta});
   L("obj-lin-uds").value="";
   renderLineasForm();
+  actualizarAvisoMeta();
 }
 
 function renderLineasForm(){
   if(!objLineas.length){ L("obj-lineas-list").innerHTML=""; return; }
-  L("obj-lineas-list").innerHTML = objLineas.map((l,i)=>`
-    <div class="insumo-item" style="padding:8px 12px">
-      <div style="flex:1;font-size:13px">${l.sabor} ${l.tamano}</div>
-      <div style="font-weight:600;margin:0 12px">${l.meta} uds</div>
-      <button class="btn-icon" onclick="quitarLineaObj(${i})">✕</button>
-    </div>`).join("");
+  const suma=objLineas.reduce((s,l)=>s+l.meta,0);
+  L("obj-lineas-list").innerHTML=`
+    ${objLineas.map((l,i)=>`
+      <div class="insumo-item" style="padding:8px 12px">
+        <div style="flex:1;font-size:13px">${l.sabor} <span style="color:var(--muted)">${l.tamano}</span></div>
+        <div style="font-weight:600;margin:0 12px;font-size:13px">${l.meta} uds</div>
+        <button class="btn-icon" onclick="quitarLineaObj(${i})">✕</button>
+      </div>`).join("")}
+    <div style="text-align:right;font-size:12px;color:var(--muted);padding:4px 12px">Suma: <strong style="color:var(--ink)">${suma} uds</strong></div>`;
 }
 
-function quitarLineaObj(i){ objLineas.splice(i,1); renderLineasForm(); }
+function quitarLineaObj(i){ objLineas.splice(i,1); renderLineasForm(); actualizarAvisoMeta(); }
 
 async function guardarObjetivo(){
-  const nombre = L("obj-nombre").value.trim();
+  const nombre=L("obj-nombre").value.trim();
   if(!nombre){ toast("El nombre es obligatorio","error"); return; }
-  const mes    = Number(L("obj-mes").value);
-  const anio   = Number(L("obj-anio").value);
-  const metaTotal = Number(L("obj-meta-total").value)||0;
-  if(!objLineas.length && !metaTotal){ toast("Agrega al menos una línea de producto o una meta total","error"); return; }
-
+  const mes=Number(L("obj-mes").value);
+  const anio=Number(L("obj-anio").value);
+  const metaTotal=Number(L("obj-meta-total").value)||0;
+  if(!objLineas.length&&!metaTotal){ toast("Agrega al menos una línea de producto o una meta total","error"); return; }
   const btn=L("btn-guardar-obj"); btn.disabled=true; btn.textContent="Guardando...";
-  const payload = {
-    id:        L("obj-id").value||undefined,
-    nombre,
-    sucursal:  L("obj-sucursal").value,
-    mes, anio,
-    metaTotal,
-    lineas:    objLineas,
-    activo:    true
-  };
-  const res = await api("saveObjetivo", payload);
+  const res=await api("saveObjetivo",{
+    id: L("obj-id").value||undefined,
+    nombre, sucursal:L("obj-sucursal").value,
+    mes, anio, metaTotal, lineas:objLineas, activo:true
+  });
   btn.disabled=false; btn.textContent="GUARDAR OBJETIVO";
   if(res.ok){ toast(res.mensaje); cancelarObjetivo(); cargarObjetivos(); }
   else toast(res.error,"error");
@@ -1781,8 +1836,10 @@ function cancelarObjetivo(){
   L("obj-id").value=""; L("obj-nombre").value=""; L("obj-meta-total").value="";
   const hoy=new Date(); L("obj-mes").value=hoy.getMonth()+1; L("obj-anio").value=hoy.getFullYear();
   L("obj-sucursal").value="Ambas"; objLineas=[]; renderLineasForm();
+  L("obj-aviso-meta").style.display="none";
   L("obj-form-title").textContent="Nuevo objetivo";
-  L("btn-cancelar-obj").style.display="none";
+  L("obj-form-card").style.display="none";
+  L("btn-nuevo-obj").style.display="block";
 }
 
 async function bajaObjetivo(id){
