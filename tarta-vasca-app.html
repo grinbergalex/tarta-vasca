@@ -572,11 +572,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
               </div>
               <div>
                 <label class="form-label">Frecuencia *</label>
-                <select class="mini-select" id="g-frecuencia" style="width:100%">
+                <select class="mini-select" id="g-frecuencia" style="width:100%" onchange="toggleGastoCondicional()">
                   <option value="Mensual">Mensual</option>
                   <option value="Semanal">Semanal</option>
                   <option value="Por unidad">Por unidad producida</option>
                   <option value="% sobre venta">% sobre venta</option>
+                  <option value="Condicional">Condicional (bono/comisión por meta)</option>
                 </select>
               </div>
               <div>
@@ -594,6 +595,17 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
               <div>
                 <label class="form-label">Descripción</label>
                 <input class="mini-input" id="g-descripcion" placeholder="Notas adicionales" style="width:100%">
+              </div>
+            </div>
+            <!-- Campos extra para gasto condicional -->
+            <div id="gasto-condicional-fields" style="display:none;gap:8px;margin-bottom:8px;display:none">
+              <div style="margin-bottom:8px">
+                <label class="form-label">¿Cuándo aplica? (condición)</label>
+                <input class="mini-input" id="g-condicion" placeholder="Ej: Al vender más de 100 piezas en el mes" style="width:100%">
+              </div>
+              <div>
+                <label class="form-label">¿A quién aplica?</label>
+                <input class="mini-input" id="g-aplica-a" placeholder="Ej: Vendedor Cuajimalpa, Equipo completo" style="width:100%">
               </div>
             </div>
             <div style="display:flex;gap:8px">
@@ -1503,6 +1515,7 @@ function renderGastosList(){
 
   function etiquetaFrecuencia(g){
     if(g.frecuencia==="% sobre venta") return `${g.monto}%`;
+    if(g.frecuencia==="Condicional") return `${fmtMXN(g.monto)} si se cumple`;
     return fmtMXN(g.monto) + (g.frecuencia==="Mensual"?" /mes":g.frecuencia==="Semanal"?" /sem":g.frecuencia==="Por unidad"?" /pieza":"");
   }
 
@@ -1515,6 +1528,7 @@ function renderGastosList(){
           <div style="flex:1">
             <div style="font-weight:600;font-size:14px">${g.concepto}</div>
             <div style="font-size:12px;color:var(--muted)">${g.frecuencia} · ${g.sucursal}${g.descripcion?' · '+g.descripcion:''}</div>
+            ${g.frecuencia==="Condicional"&&g.condicion?`<div style="font-size:11px;color:var(--accent);margin-top:2px">📋 ${g.condicion}${g.aplicaA?' → '+g.aplicaA:''}</div>`:''}
           </div>
           <div style="font-weight:700;font-size:15px;color:var(--accent);margin:0 12px">${etiquetaFrecuencia(g)}</div>
           <div style="display:flex;gap:6px">
@@ -1527,6 +1541,13 @@ function renderGastosList(){
   L("gastos-list").innerHTML = renderGrupo(fijos,"Gastos fijos") + renderGrupo(variables,"Gastos variables");
 }
 
+function toggleGastoCondicional(){
+  const esCondicional = L("g-frecuencia").value === "Condicional";
+  const fields = L("gasto-condicional-fields");
+  fields.style.display = esCondicional ? "block" : "none";
+  L("g-monto-label").textContent = esCondicional ? "Monto del bono/comisión ($)" : "Monto ($) *";
+}
+
 function editarGasto(id){
   const g = (S.gastos||[]).find(x=>x.id===id);
   if(!g) return;
@@ -1537,14 +1558,18 @@ function editarGasto(id){
   L("g-monto").value          = g.monto;
   L("g-sucursal").value       = g.sucursal;
   L("g-descripcion").value    = g.descripcion||"";
+  L("g-condicion").value      = g.condicion||"";
+  L("g-aplica-a").value       = g.aplicaA||"";
+  toggleGastoCondicional();
   L("gasto-form-title").textContent = "Editar gasto";
   L("btn-cancelar-gasto").style.display = "inline-block";
   L("g-concepto").focus();
 }
 
 function cancelarEditarGasto(){
-  ["gasto-id","g-concepto","g-descripcion","g-monto"].forEach(id=>L(id).value="");
+  ["gasto-id","g-concepto","g-descripcion","g-monto","g-condicion","g-aplica-a"].forEach(id=>L(id).value="");
   L("g-tipo").value="Fijo"; L("g-frecuencia").value="Mensual"; L("g-sucursal").value="Ambas";
+  L("gasto-condicional-fields").style.display="none";
   L("gasto-form-title").textContent="Nuevo gasto";
   L("btn-cancelar-gasto").style.display="none";
 }
@@ -1563,6 +1588,8 @@ async function guardarGasto(){
     frecuencia:  L("g-frecuencia").value,
     monto,
     sucursal:    L("g-sucursal").value,
+    condicion:   L("g-condicion").value.trim(),
+    aplicaA:     L("g-aplica-a").value.trim(),
     activo:      true
   };
   const res = await api("saveGasto", payload);
