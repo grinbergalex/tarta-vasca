@@ -76,6 +76,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 .canal-aviso{display:none;align-items:center;gap:8px;margin-top:8px;background:#e8f5e9;border-radius:10px;padding:10px 14px;font-size:13px;color:var(--green)}
 .separador{height:1px;background:var(--border);margin:18px 0}
 .carrito-vacio{text-align:center;padding:24px;color:var(--muted);font-size:13px;background:var(--warm);border-radius:12px;margin-bottom:12px}
+.tipo-op-btn{flex:1;padding:9px;border:2px solid var(--border);border-radius:10px;background:none;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;color:var(--muted);transition:.15s}
+.tipo-op-btn.active{border-color:var(--accent);background:var(--accent);color:white;font-weight:600}
 .carrito-item{display:flex;align-items:center;background:var(--warm);border-radius:12px;padding:12px 14px;margin-bottom:8px}
 .carrito-info{flex:1}
 .carrito-nombre{font-size:14px;font-weight:500}
@@ -311,22 +313,36 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <div id="tab-venta" class="tab-pane" style="display:none">
       <div class="card">
         <div class="card-title">Nueva venta</div>
-        <div class="venta-grid">
-          <div class="form-group" style="margin-bottom:0">
-            <label class="form-label">Canal</label>
-            <select class="form-select" id="venta-canal"></select>
-          </div>
-          <div class="form-group" style="margin-bottom:0">
-            <label class="form-label">Método de pago</label>
-            <select class="form-select" id="venta-metodo"></select>
-          </div>
+
+        <!-- TIPO DE OPERACIÓN -->
+        <div style="display:flex;gap:8px;margin-bottom:14px">
+          <button class="tipo-op-btn active" onclick="setTipoOp('venta',this)" id="op-venta">🛍 Venta</button>
+          <button class="tipo-op-btn" onclick="setTipoOp('regalo',this)" id="op-regalo">🎁 Regalo</button>
+          <button class="tipo-op-btn" onclick="setTipoOp('merma',this)" id="op-merma">🗑 Merma</button>
         </div>
-        <div class="canal-aviso" id="canal-aviso"><span>✓</span><span>Plataforma — no se piden datos del cliente</span></div>
+        <div id="aviso-tipo-op" style="display:none;font-size:12px;padding:8px 12px;border-radius:8px;margin-bottom:12px"></div>
+
+        <div id="venta-fields">
+          <div class="venta-grid">
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Canal</label>
+              <select class="form-select" id="venta-canal"></select>
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Método de pago</label>
+              <select class="form-select" id="venta-metodo"></select>
+            </div>
+          </div>
+          <div class="canal-aviso" id="canal-aviso"><span>✓</span><span>Plataforma — no se piden datos del cliente</span></div>
+        </div>
+
         <div class="separador"></div>
         <div class="form-group owner-only" id="venta-suc-group">
           <label class="form-label">Sucursal</label>
           <select class="form-select" id="venta-sucursal"></select>
         </div>
+
+        <!-- AGREGAR PRODUCTO -->
         <div class="add-item-box">
           <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:12px">Agregar producto</div>
           <div class="add-item-row">
@@ -337,14 +353,40 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
             <div class="form-group"><label class="form-label">Cantidad</label><input class="form-input" type="number" id="item-cantidad" min="1" value="1"></div>
             <div style="display:flex;align-items:flex-end;padding-bottom:14px"><div id="item-disp"></div></div>
           </div>
+          <!-- DESCUENTO — solo en modo venta -->
+          <div id="descuento-row" style="display:flex;gap:8px;align-items:flex-end;margin-bottom:10px">
+            <div class="form-group" style="margin-bottom:0;flex:1">
+              <label class="form-label">Descuento</label>
+              <input class="form-input" type="number" id="item-descuento" min="0" value="0" placeholder="0">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Tipo</label>
+              <select class="form-select" id="item-desc-tipo" style="width:90px">
+                <option value="pct">%</option>
+                <option value="monto">$</option>
+              </select>
+            </div>
+            <div style="padding-bottom:14px;font-size:13px;color:var(--muted)" id="item-precio-preview"></div>
+          </div>
           <button class="btn-outline" id="btn-agregar-item" style="margin-top:0">+ Agregar al carrito</button>
         </div>
+
+        <!-- MOTIVO — solo merma/regalo -->
+        <div id="motivo-row" style="display:none;margin-bottom:12px">
+          <label class="form-label">Motivo *</label>
+          <input class="form-input" id="op-motivo" placeholder="Ej: Producto dañado, Cortesía cliente VIP...">
+        </div>
+
         <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Carrito</div>
         <div id="carrito-items"><div class="carrito-vacio">Sin productos — agrega uno arriba</div></div>
         <div id="carrito-total-bar" class="carrito-total-bar" style="display:none">
-          <span class="total-label">Total</span>
+          <div>
+            <div class="total-label">Total</div>
+            <div id="descuento-total-label" style="font-size:11px;color:rgba(255,255,255,.6);display:none"></div>
+          </div>
           <span class="total-num" id="total-num">$0</span>
         </div>
+
         <div class="separador"></div>
         <div id="cliente-section">
           <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Cliente</div>
@@ -1287,24 +1329,156 @@ L("btn-agregar-item").addEventListener("click",()=>{
   const disp=calcDisp(sabor,tamano);
   if(disp<cantidad){toast(`Solo hay ${disp} de ${sabor} ${tamano}`,"error");return;}
   const precio=getPrecio(tamano);
-  S.carrito.push({sabor,tamano,cantidad,precio,subtotal:precio*cantidad});
+// ── TIPO DE OPERACIÓN ──────────────────────────────────────
+let tipoOp = "venta"; // "venta" | "regalo" | "merma"
+
+function setTipoOp(tipo, btn){
+  tipoOp = tipo;
+  document.querySelectorAll(".tipo-op-btn").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  const aviso = L("aviso-tipo-op");
+  const ventaFields = L("venta-fields");
+  const descRow = L("descuento-row");
+  const motivoRow = L("motivo-row");
+  const clienteSection = L("cliente-section");
+  const btnConfirmar = L("btn-confirmar");
+
+  if(tipo === "venta"){
+    aviso.style.display = "none";
+    ventaFields.style.display = "block";
+    descRow.style.display = "flex";
+    motivoRow.style.display = "none";
+    clienteSection.style.display = "block";
+    btnConfirmar.textContent = "Confirmar venta ✓";
+    btnConfirmar.style.background = "";
+  } else if(tipo === "regalo"){
+    aviso.style.display = "block";
+    aviso.style.background = "rgba(46,92,74,.1)";
+    aviso.style.color = "var(--success)";
+    aviso.textContent = "🎁 Regalo — se descuenta stock pero no se cobra. Requiere motivo.";
+    ventaFields.style.display = "none";
+    descRow.style.display = "none";
+    motivoRow.style.display = "block";
+    clienteSection.style.display = "block";
+    btnConfirmar.textContent = "Registrar regalo 🎁";
+    btnConfirmar.style.background = "#2E5C4A";
+  } else if(tipo === "merma"){
+    aviso.style.display = "block";
+    aviso.style.background = "rgba(192,57,43,.08)";
+    aviso.style.color = "var(--danger)";
+    aviso.textContent = "🗑 Merma — se descuenta stock sin registrar venta ni cliente. Requiere motivo.";
+    ventaFields.style.display = "none";
+    descRow.style.display = "none";
+    motivoRow.style.display = "block";
+    clienteSection.style.display = "none";
+    btnConfirmar.textContent = "Registrar merma 🗑";
+    btnConfirmar.style.background = "var(--danger)";
+  }
+  S.carrito = [];
+  renderCarrito();
+}
+
+// ── PRECIO PREVIEW CON DESCUENTO ───────────────────────────
+function actualizarPrecioPreview(){
+  const sabor = L("item-sabor").value;
+  const tamano = L("item-tamano").value;
+  const cantidad = parseInt(L("item-cantidad").value)||1;
+  const descVal = parseFloat(L("item-descuento").value)||0;
+  const descTipo = L("item-desc-tipo").value;
+  const precioBase = getPrecioActualLocal(sabor, tamano);
+  if(!precioBase){ L("item-precio-preview").innerHTML=""; return; }
+  let precioFinal = precioBase;
+  if(descVal > 0){
+    if(descTipo === "pct") precioFinal = precioBase * (1 - descVal/100);
+    else precioFinal = Math.max(0, precioBase - descVal);
+  }
+  const preview = descVal > 0
+    ? `<span style="text-decoration:line-through;color:var(--muted)">$${precioBase.toLocaleString()}</span> → <strong style="color:var(--accent)">$${precioFinal.toLocaleString()}</strong>`
+    : `<span style="color:var(--muted)">$${precioBase.toLocaleString()}</span>`;
+  L("item-precio-preview").innerHTML = preview + ` × ${cantidad}`;
+}
+
+function getPrecioActualLocal(sabor, tamano){
+  if(!S.precios) return 0;
+  const esp = S.precios.find(p=>p.sabor===sabor&&p.tamano===tamano);
+  if(esp&&esp.precio>0) return esp.precio;
+  const base = S.precios.find(p=>p.tamano===tamano&&p.precio>0);
+  return base ? base.precio : 0;
+}
+
+L("item-descuento")?.addEventListener("input", actualizarPrecioPreview);
+L("item-desc-tipo")?.addEventListener("change", actualizarPrecioPreview);
+L("item-sabor")?.addEventListener("change", actualizarPrecioPreview);
+L("item-tamano")?.addEventListener("change", actualizarPrecioPreview);
+L("item-cantidad")?.addEventListener("input", actualizarPrecioPreview);
+
+// ── AGREGAR AL CARRITO ─────────────────────────────────────
+L("btn-agregar-item")?.addEventListener("click",()=>{
+  const sabor=L("item-sabor").value, tamano=L("item-tamano").value;
+  const cantidad=parseInt(L("item-cantidad").value)||1;
+  const sucursal=getSucursalVenta();
+  if(!sabor||!tamano){toast("Selecciona sabor y tamaño","error");return;}
+  if(cantidad<1){toast("Cantidad inválida","error");return;}
+  const precioBase=getPrecioActualLocal(sabor,tamano);
+  let precioFinal=precioBase, descuento=0, descTipo="";
+  if(tipoOp==="venta"){
+    const descVal=parseFloat(L("item-descuento").value)||0;
+    descTipo=L("item-desc-tipo").value;
+    if(descVal>0){
+      descuento=descVal;
+      if(descTipo==="pct") precioFinal=precioBase*(1-descVal/100);
+      else precioFinal=Math.max(0,precioBase-descVal);
+    }
+  } else {
+    precioFinal=0; // regalo y merma = $0
+  }
+  precioFinal=Math.round(precioFinal*100)/100;
+  const enCarrito=S.carrito.filter(i=>i.sabor===sabor&&i.tamano===tamano).reduce((s,i)=>s+i.cantidad,0);
+  const disponible=getDisponibleLocal(sucursal,sabor,tamano);
+  if(enCarrito+cantidad>disponible){toast(`Solo hay ${disponible} disponibles (${enCarrito} ya en carrito)`,"error");return;}
+  S.carrito.push({sabor,tamano,cantidad,precioBase,precio:precioFinal,descuento,descTipo,subtotal:precioFinal*cantidad});
   L("item-cantidad").value="1";
+  L("item-descuento").value="0";
+  L("item-precio-preview").innerHTML="";
   renderCarrito();actualizarDisp();
   toast(`${sabor} ${tamano} × ${cantidad} agregado`);
 });
+
 function renderCarrito(){
   const items=L("carrito-items");
   if(S.carrito.length===0){items.innerHTML=`<div class="carrito-vacio">Sin productos — agrega uno arriba</div>`;L("carrito-total-bar").style.display="none";return;}
-  items.innerHTML=S.carrito.map((item,i)=>`
-    <div class="carrito-item">
-      <div class="carrito-info"><div class="carrito-nombre">${item.sabor} ${item.tamano}</div><div class="carrito-sub">${item.cantidad} × $${item.precio.toLocaleString()}</div></div>
-      <span class="carrito-precio">$${item.subtotal.toLocaleString()}</span>
+  items.innerHTML=S.carrito.map((item,i)=>{
+    const tieneDesc=item.descuento>0&&tipoOp==="venta";
+    const descLabel=tieneDesc?(item.descTipo==="pct"?`-${item.descuento}%`:`-$${item.descuento}`):"";
+    return `<div class="carrito-item">
+      <div class="carrito-info">
+        <div class="carrito-nombre">${item.sabor} ${item.tamano}</div>
+        <div class="carrito-sub">
+          ${item.cantidad} × 
+          ${tieneDesc?`<span style="text-decoration:line-through;color:var(--muted)">$${item.precioBase.toLocaleString()}</span> `:""}
+          $${item.precio.toLocaleString()}
+          ${tieneDesc?`<span style="color:var(--success);font-size:11px"> ${descLabel}</span>`:""}
+          ${tipoOp!=="venta"?`<span style="color:var(--muted);font-size:11px"> (${tipoOp})</span>`:""}
+        </div>
+      </div>
+      <span class="carrito-precio">${tipoOp==="venta"?"$"+item.subtotal.toLocaleString():"$0"}</span>
       <button class="btn-remove" onclick="quitarItem(${i})">×</button>
-    </div>`).join("");
+    </div>`;
+  }).join("");
   const total=S.carrito.reduce((s,i)=>s+i.subtotal,0);
-  L("total-num").textContent="$"+total.toLocaleString();
+  const totalOriginal=S.carrito.reduce((s,i)=>s+i.precioBase*i.cantidad,0);
+  const hayDesc=totalOriginal>total&&tipoOp==="venta";
+  L("total-num").textContent=tipoOp==="venta"?"$"+total.toLocaleString():"$0";
   L("carrito-total-bar").style.display="flex";
+  const descTotalLabel=L("descuento-total-label");
+  if(hayDesc){
+    descTotalLabel.style.display="block";
+    descTotalLabel.textContent=`Ahorro: $${(totalOriginal-total).toLocaleString()} (original $${totalOriginal.toLocaleString()})`;
+  } else {
+    descTotalLabel.style.display="none";
+  }
 }
+
 function quitarItem(idx){S.carrito.splice(idx,1);renderCarrito();actualizarDisp();}
 
 let searchTO;
@@ -1333,29 +1507,60 @@ function selCliente(c){
 function limpiarCliente(){S.clienteSel=null;L("cli-nombre").value="";L("cli-encontrado").style.display="none";L("cli-nuevo").style.display="grid";}
 document.addEventListener("click",e=>{if(!e.target.closest("#cli-nombre")&&!e.target.closest("#sugerencias"))L("sugerencias").style.display="none";});
 L("btn-confirmar").addEventListener("click",async()=>{
-  const canal=L("venta-canal").value,metodo=L("venta-metodo").value;
-  const sucursal=getSucursalVenta();
-  if(!canal){toast("Selecciona un canal","error");return;}
   if(S.carrito.length===0){toast("Agrega al menos un producto","error");return;}
-  const plataforma=esPlataforma(canal);
-  let cliente=null;
-  if(!plataforma){
-    const nombre=L("cli-nombre").value.trim();
-    if(!nombre){toast("El nombre del cliente es obligatorio","error");return;}
-    cliente=S.clienteSel||{nombre,telefono:L("cli-tel").value.trim(),email:L("cli-email").value.trim()};
-  }
+  const sucursal=getSucursalVenta();
   const btn=L("btn-confirmar");
-  btn.disabled=true;btn.textContent="Registrando...";
-  const res=await api("registrarVenta",{items:S.carrito.map(i=>({sabor:i.sabor,tamano:i.tamano,cantidad:i.cantidad})),canal,metodoPago:metodo,sucursal,cliente});
-  if(res.ok){
-    const total=S.carrito.reduce((s,i)=>s+i.subtotal,0);
-    toast(`✅ Venta $${total.toLocaleString()} registrada`,"success");
-    limpiarVenta();cargarStock();
-    setTimeout(()=>document.querySelector('.nav-tab[data-tab="ventas"]').click(),800);
-  } else toast(res.error,"error");
-  btn.disabled=false;btn.textContent="Confirmar venta ✓";
+  btn.disabled=true; btn.textContent="Registrando...";
+
+  if(tipoOp==="merma"){
+    // MERMA — registrar pérdida sin venta
+    const motivo=L("op-motivo").value.trim();
+    if(!motivo){toast("El motivo es obligatorio","error");btn.disabled=false;btn.textContent="Registrar merma 🗑";return;}
+    const res=await api("registrarMerma",{
+      items:S.carrito.map(i=>({sabor:i.sabor,tamano:i.tamano,cantidad:i.cantidad})),
+      sucursal, motivo
+    });
+    if(res.ok){ toast(`✅ Merma registrada`); limpiarVenta(); cargarStock(); }
+    else toast(res.error,"error");
+
+  } else {
+    // VENTA o REGALO
+    const canal = tipoOp==="regalo" ? "Cortesía" : L("venta-canal").value;
+    const metodo = tipoOp==="regalo" ? "Regalo" : L("venta-metodo").value;
+    if(tipoOp==="venta"&&!canal){toast("Selecciona un canal","error");btn.disabled=false;btn.textContent="Confirmar venta ✓";return;}
+    const motivo = tipoOp==="regalo" ? L("op-motivo").value.trim() : "";
+    if(tipoOp==="regalo"&&!motivo){toast("El motivo es obligatorio","error");btn.disabled=false;btn.textContent="Registrar regalo 🎁";return;}
+    const plataforma=esPlataforma(canal);
+    let cliente=null;
+    if(!plataforma){
+      const nombre=L("cli-nombre").value.trim();
+      if(!nombre){toast("El nombre del cliente es obligatorio","error");btn.disabled=false;btn.textContent=tipoOp==="regalo"?"Registrar regalo 🎁":"Confirmar venta ✓";return;}
+      cliente=S.clienteSel||{nombre,telefono:L("cli-tel").value.trim(),email:L("cli-email").value.trim()};
+    }
+    const items=S.carrito.map(i=>({
+      sabor:i.sabor, tamano:i.tamano, cantidad:i.cantidad,
+      precioUnitario:i.precio, descuento:i.descuento||0, descTipo:i.descTipo||""
+    }));
+    const res=await api("registrarVenta",{items,canal,metodoPago:metodo,sucursal,cliente,tipoOp,motivo});
+    if(res.ok){
+      const total=S.carrito.reduce((s,i)=>s+i.subtotal,0);
+      toast(tipoOp==="regalo"?`✅ Regalo registrado`:`✅ Venta $${total.toLocaleString()} registrada`);
+      limpiarVenta(); cargarStock();
+      if(tipoOp==="venta") setTimeout(()=>document.querySelector('.nav-tab[data-tab="ventas"]').click(),800);
+    } else toast(res.error,"error");
+  }
+  btn.disabled=false;
+  btn.textContent=tipoOp==="merma"?"Registrar merma 🗑":tipoOp==="regalo"?"Registrar regalo 🎁":"Confirmar venta ✓";
 });
-function limpiarVenta(){S.carrito=[];S.clienteSel=null;renderCarrito();L("cli-nombre").value="";L("cli-tel").value="";L("cli-email").value="";L("cli-encontrado").style.display="none";L("cli-nuevo").style.display="grid";L("item-cantidad").value="1";L("item-disp").innerHTML="";}
+function limpiarVenta(){
+  S.carrito=[];S.clienteSel=null;renderCarrito();
+  L("cli-nombre").value="";L("cli-tel").value="";L("cli-email").value="";
+  L("cli-encontrado").style.display="none";L("cli-nuevo").style.display="grid";
+  L("item-cantidad").value="1";L("item-disp").innerHTML="";
+  L("item-descuento").value="0";L("item-precio-preview").innerHTML="";
+  L("op-motivo").value="";
+  setTipoOp("venta",L("op-venta"));
+}
 L("btn-limpiar-venta").addEventListener("click",()=>{limpiarVenta();toast("Venta limpiada");});
 L("btn-cargar-prod").addEventListener("click",async()=>{
   const sabor=L("prod-sabor").value,tamano=L("prod-tamano").value,sucursal=L("prod-sucursal").value,cantidad=parseInt(L("prod-cantidad").value);
