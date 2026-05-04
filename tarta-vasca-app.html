@@ -1507,10 +1507,19 @@ function actualizarPrecioPreview(){
 
 function getPrecioActualLocal(sabor, tamano){
   if(!S.precios) return 0;
-  const esp = S.precios.find(p=>p.sabor===sabor&&p.tamano===tamano);
-  if(esp&&esp.precio>0) return esp.precio;
-  const base = S.precios.find(p=>p.tamano===tamano&&p.precio>0);
-  return base ? base.precio : 0;
+  const canal = L("venta-canal")?.value || "";
+  // 1. Precio específico canal+sabor+tamaño
+  const canalSaborTam = S.precios.find(p=>p.canal===canal&&p.sabor===sabor&&p.tamano===tamano);
+  if(canalSaborTam?.precio>0) return canalSaborTam.precio;
+  // 2. Precio canal+tamaño (sin sabor)
+  const canalTam = S.precios.find(p=>p.canal===canal&&p.tamano===tamano&&p.precio>0);
+  if(canalTam?.precio>0) return canalTam.precio;
+  // 3. Precio base sabor+tamaño
+  const baseSabor = S.precios.find(p=>(!p.canal||p.canal==="_BASE_")&&p.sabor===sabor&&p.tamano===tamano);
+  if(baseSabor?.precio>0) return baseSabor.precio;
+  // 4. Precio base por tamaño
+  const baseTam = S.precios.find(p=>(!p.canal||p.canal==="_BASE_")&&p.tamano===tamano&&p.precio>0);
+  return baseTam?.precio||0;
 }
 
 L("item-descuento")?.addEventListener("input", actualizarPrecioPreview);
@@ -2882,6 +2891,7 @@ function onCanalChange(){
   const aviso = L("canal-precio-aviso");
   if(regla){ aviso.style.display="block"; aviso.textContent=`💡 Regla para ${canal}: ${regla.valor>=0?"+":""}${regla.valor}${regla.tipo==="pct"?"%":"$"} por pieza`; }
   else aviso.style.display="none";
+  actualizarPrecioPreview();
   renderCarrito();
 }
 
