@@ -276,16 +276,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
   </div>
 
   <nav class="app-nav">
+    <div class="nav-tab owner-only" data-tab="produccion">Producción</div>
+    <div class="nav-tab owner-only" data-tab="transferencias">Transferencias</div>
     <div class="nav-tab active" data-tab="stock">Stock</div>
     <div class="nav-tab" data-tab="venta">Nueva venta</div>
-    <div class="nav-tab owner-only" data-tab="produccion">Producción</div>
     <div class="nav-tab owner-only" data-tab="ventas">Ventas</div>
     <div class="nav-tab owner-only" data-tab="catalogo">Catálogo</div>
     <div class="nav-tab owner-only" data-tab="precios">Precios</div>
     <div class="nav-tab owner-only" data-tab="costos">Costos</div>
     <div class="nav-tab owner-only" data-tab="utilidades">Utilidad por ventas</div>
     <div class="nav-tab owner-only" data-tab="objetivos">Objetivos</div>
-    <div class="nav-tab owner-only" data-tab="transferencias">Transferencias</div>
     <div class="nav-tab owner-only" data-tab="alertas">Alertas</div>
     <div class="nav-tab owner-only" data-tab="usuarios">Usuarios</div>
     <div class="nav-tab owner-only" data-tab="auditoria">Auditoría</div>
@@ -440,10 +440,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <div id="tab-produccion" class="tab-pane" style="display:none">
       <div class="card">
         <div class="card-title">Cargar producción</div>
-        <div class="card-sub">Alta de pasteles producidos hoy</div>
+        <div class="card-sub">Alta de pasteles producidos hoy en cocina (Cuajimalpa)</div>
         <div class="form-group"><label class="form-label">Sabor</label><select class="form-select" id="prod-sabor"></select></div>
         <div class="form-group"><label class="form-label">Tamaño</label><select class="form-select" id="prod-tamano"></select></div>
-        <div class="form-group"><label class="form-label">Sucursal</label><select class="form-select" id="prod-sucursal"></select></div>
         <div class="form-group"><label class="form-label">Cantidad</label><input class="form-input" type="number" id="prod-cantidad" min="1" value="1"></div>
         <button class="btn-main btn-green" id="btn-cargar-prod">Cargar producción</button>
       </div>
@@ -987,12 +986,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <!-- TRANSFERENCIAS -->
     <div id="tab-transferencias" class="tab-pane" style="display:none">
       <div class="card">
-        <div class="card-title">Transferencias Cuajimalpa → Polanco</div>
-        <div class="card-sub">Solo la cocina central puede enviar stock a Polanco</div>
+        <div class="card-title">Transferencias a Polanco</div>
+        <div class="card-sub">Lo que se produce siempre queda en Cuajimalpa. Registra aquí lo que sale hacia Polanco — el stock se mueve inmediatamente.</div>
 
         <!-- NUEVA TRANSFERENCIA -->
         <div style="background:var(--warm);border-radius:12px;padding:14px;margin-bottom:16px">
-          <div style="font-weight:600;font-size:13px;margin-bottom:10px">Nueva transferencia</div>
+          <div style="font-weight:600;font-size:13px;margin-bottom:10px">Mover a Polanco</div>
           <div style="display:grid;grid-template-columns:1fr 1fr 80px;gap:8px;align-items:end;margin-bottom:8px">
             <div>
               <label class="form-label">Sabor</label>
@@ -1012,11 +1011,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
             <input class="mini-input" id="trf-notas" placeholder="Ej: Para evento del sábado" style="width:100%">
           </div>
           <div id="trf-stock-aviso" style="font-size:12px;color:var(--muted);margin-bottom:8px"></div>
-          <button class="btn-main btn-green" onclick="solicitarTransferencia()" id="btn-trf">REGISTRAR TRANSFERENCIA</button>
+          <button class="btn-main btn-green" onclick="solicitarTransferencia()" id="btn-trf">MOVER A POLANCO →</button>
         </div>
 
         <!-- HISTORIAL -->
-        <div style="font-weight:600;font-size:13px;margin-bottom:8px">Historial de transferencias</div>
+        <div style="font-weight:600;font-size:13px;margin-bottom:8px">Historial</div>
         <div id="trf-lista"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
       </div>
     </div>
@@ -1281,7 +1280,6 @@ function poblarSelectsVenta() {
   llenar("item-tamano",tam.length>0?tam:(S.catalogo.tamanos||[]).filter(t=>t.activo).map(t=>t.nombre));
   llenar("prod-sabor",(S.catalogo.sabores||[]).filter(s=>s.activo).map(s=>s.nombre));
   llenar("prod-tamano",(S.catalogo.tamanos||[]).filter(t=>t.activo).map(t=>t.nombre));
-  llenar("prod-sucursal",suc);
   llenar("venta-sucursal",suc);
   llenar("venta-canal",canFinal);
   actualizarMetodoPago(); actualizarUICanal();
@@ -1637,10 +1635,10 @@ function limpiarVenta(){
 }
 L("btn-limpiar-venta").addEventListener("click",()=>{limpiarVenta();toast("Venta limpiada");});
 L("btn-cargar-prod").addEventListener("click",async()=>{
-  const sabor=L("prod-sabor").value,tamano=L("prod-tamano").value,sucursal=L("prod-sucursal").value,cantidad=parseInt(L("prod-cantidad").value);
-  if(!sabor||!tamano||!sucursal||cantidad<1){toast("Completa todos los campos","error");return;}
+  const sabor=L("prod-sabor").value,tamano=L("prod-tamano").value,cantidad=parseInt(L("prod-cantidad").value);
+  if(!sabor||!tamano||cantidad<1){toast("Completa todos los campos","error");return;}
   const btn=L("btn-cargar-prod");btn.disabled=true;btn.textContent="Cargando...";
-  const res=await api("altaProduccion",{sabor,tamano,sucursal,cantidad});
+  const res=await api("altaProduccion",{sabor,tamano,sucursal:"Cuajimalpa",cantidad});
   if(res.ok){toast(res.mensaje);L("prod-cantidad").value="1";cargarStock();}
   else toast(res.error,"error");
   btn.disabled=false;btn.textContent="Cargar producción";
@@ -2497,18 +2495,15 @@ async function cargarTransferencias(){
 function renderTransferenciasList(){
   const lista=S.transferencias||[];
   if(!lista.length){ L("trf-lista").innerHTML=`<div class="empty-state"><div class="empty-icon">🔄</div><div>Sin transferencias registradas</div></div>`; return; }
-  const estadoColor={pendiente:"var(--warning)",confirmada:"var(--success)",cancelada:"var(--muted)"};
-  const estadoIcon ={pendiente:"🕐",confirmada:"✅",cancelada:"❌"};
   L("trf-lista").innerHTML=lista.map(t=>`
     <div style="padding:12px 0;border-bottom:1px solid var(--border)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
         <div>
           <span style="font-weight:700">${t.cantidad}× ${t.sabor} ${t.tamano}</span>
-          <span style="margin-left:8px;font-size:11px;font-weight:600;color:${estadoColor[t.estado]}">${estadoIcon[t.estado]} ${t.estado.toUpperCase()}</span>
+          <span style="margin-left:8px;font-size:11px;font-weight:600;color:var(--success)">✅ MOVIDO A POLANCO</span>
         </div>
-        ${t.estado==="pendiente"?`<button onclick="confirmarTrf('${t.id}')" style="font-size:11px;background:#2E5C4A;color:white;border:none;border-radius:8px;padding:5px 12px;cursor:pointer;font-family:'DM Sans',sans-serif">Confirmar recepción ✓</button>`:""}
       </div>
-      <div style="font-size:12px;color:var(--muted)">Cuajimalpa → Polanco · ${t.fechaSolicitud?t.fechaSolicitud.substring(0,16).replace("T"," "):""}${t.solicitadoPor?" · por "+t.solicitadoPor:""}${t.notas?" · "+t.notas:""}</div>
+      <div style="font-size:12px;color:var(--muted)">${t.fechaSolicitud?t.fechaSolicitud.substring(0,16).replace("T"," "):""}${t.solicitadoPor?" · por "+t.solicitadoPor:""}${t.notas?" · "+t.notas:""}</div>
     </div>`).join("");
 }
 
