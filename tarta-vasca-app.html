@@ -997,35 +997,46 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <div id="tab-transferencias" class="tab-pane" style="display:none">
       <div class="card">
         <div class="card-title">Transferencias a Polanco</div>
-        <div class="card-sub">Lo que se produce siempre queda en Cuajimalpa. Registra aquí lo que sale hacia Polanco — el stock se mueve inmediatamente.</div>
+        <div class="card-sub">Lo que se produce siempre queda en Cuajimalpa. Registra aquí lo que sale hacia Polanco.</div>
 
-        <!-- NUEVA TRANSFERENCIA -->
-        <div style="background:var(--warm);border-radius:12px;padding:14px;margin-bottom:16px">
-          <div style="font-weight:600;font-size:13px;margin-bottom:10px">Mover a Polanco</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 80px;gap:8px;align-items:end;margin-bottom:8px">
-            <div>
-              <label class="form-label">Sabor</label>
-              <select class="mini-select" id="trf-sabor" style="width:100%"></select>
-            </div>
-            <div>
-              <label class="form-label">Tamaño</label>
-              <select class="mini-select" id="trf-tamano" style="width:100%"></select>
-            </div>
-            <div>
-              <label class="form-label">Uds</label>
-              <input class="mini-input" id="trf-cantidad" type="number" placeholder="0" style="width:100%">
-            </div>
+        <!-- FORM ARRIBA -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 80px;gap:8px;align-items:end;margin-bottom:8px">
+          <div>
+            <label class="form-label">Sabor</label>
+            <select class="mini-select" id="trf-sabor" style="width:100%" onchange="actualizarStockTrf()"></select>
           </div>
-          <div style="margin-bottom:8px">
-            <label class="form-label">Notas (opcional)</label>
-            <input class="mini-input" id="trf-notas" placeholder="Ej: Para evento del sábado" style="width:100%">
+          <div>
+            <label class="form-label">Tamaño</label>
+            <select class="mini-select" id="trf-tamano" style="width:100%" onchange="actualizarStockTrf()"></select>
           </div>
-          <div id="trf-stock-aviso" style="font-size:12px;color:var(--muted);margin-bottom:8px"></div>
-          <button class="btn-main btn-green" onclick="solicitarTransferencia()" id="btn-trf">MOVER A POLANCO →</button>
+          <div>
+            <label class="form-label">Uds</label>
+            <input class="mini-input" id="trf-cantidad" type="number" placeholder="0" style="width:100%">
+          </div>
         </div>
 
+        <!-- STOCK PREVIEW -->
+        <div id="trf-stock-preview" style="display:none;margin-bottom:10px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div style="background:var(--warm);border-radius:10px;padding:10px 14px;text-align:center">
+              <div style="font-size:22px;font-weight:700;color:var(--ink)" id="trf-stock-cuaji">0</div>
+              <div style="font-size:11px;color:var(--muted)">En Cuajimalpa</div>
+            </div>
+            <div style="background:var(--warm);border-radius:10px;padding:10px 14px;text-align:center">
+              <div style="font-size:22px;font-weight:700;color:var(--accent)" id="trf-stock-polanco">0</div>
+              <div style="font-size:11px;color:var(--muted)">En Polanco</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-bottom:10px">
+          <label class="form-label">Notas (opcional)</label>
+          <input class="mini-input" id="trf-notas" placeholder="Ej: Para evento del sábado" style="width:100%">
+        </div>
+        <button class="btn-main btn-green" onclick="solicitarTransferencia()" id="btn-trf" style="margin-bottom:16px">MOVER A POLANCO →</button>
+
         <!-- HISTORIAL -->
-        <div style="font-weight:600;font-size:13px;margin-bottom:8px">Historial</div>
+        <div style="font-weight:600;font-size:13px;margin-bottom:8px;color:var(--muted)">Historial</div>
         <div id="trf-lista"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
       </div>
     </div>
@@ -1314,6 +1325,10 @@ function llenar(id, opciones) {
   sel.innerHTML=opciones.map(o=>`<option value="${o}">${o}</option>`).join("");
 }
 
+// Comisiones por canal/método — se restan del ingreso (costo de ventas)
+const COMISIONES = {"Rappi":-0.23,"Uber Eats":-0.23,"Tarjeta":-0.06,"Transferencia":-0.03,"Efectivo":0};
+function getComision(canal,metodo){ return canal==="Rappi"||canal==="Uber Eats"?COMISIONES[canal]:(COMISIONES[metodo]||0); }
+
 function esPlataforma(canal){return canal==="Rappi"||canal==="Uber Eats";}
 function actualizarMetodoPago(){
   const canal=L("venta-canal")?.value;
@@ -1554,23 +1569,37 @@ function renderCarrito(){
   const totalOriginal=S.carrito.reduce((s,i)=>s+i.precioBase*i.cantidad,0);
   const hayDesc=totalOriginal>total&&tipoOp==="venta";
   const costoEnvio = S.costoEnvio || 0;
-  const totalFinal = tipoOp==="venta" ? total + costoEnvio : 0;
-  L("total-num").textContent=tipoOp==="venta"?"$"+totalFinal.toLocaleString():"$0";
+  const totalConEnvio = tipoOp==="venta" ? total + costoEnvio : 0;
+  // Comisión
+  const canal  = L("venta-canal")?.value||"";
+  const metodo = L("venta-metodo")?.value||"";
+  const comPct = tipoOp==="venta" ? getComision(canal,metodo) : 0;
+  const comMonto = Math.round(totalConEnvio * comPct);
+  const ingresoNeto = totalConEnvio + comMonto; // comPct es negativo
+  L("total-num").textContent = tipoOp==="venta" ? "$"+totalConEnvio.toLocaleString() : "$0";
   L("carrito-total-bar").style.display="flex";
   const descTotalLabel=L("descuento-total-label");
   if(hayDesc){
     descTotalLabel.style.display="block";
-    descTotalLabel.textContent=`Ahorro: $${(totalOriginal-total).toLocaleString()} (original $${totalOriginal.toLocaleString()})`;
-  } else {
-    descTotalLabel.style.display="none";
-  }
+    descTotalLabel.textContent=`Ahorro cliente: $${(totalOriginal-total).toLocaleString()}`;
+  } else { descTotalLabel.style.display="none"; }
   const envioLabel = L("envio-total-label");
-  if(costoEnvio > 0 && tipoOp==="venta"){
-    envioLabel.style.display="block";
-    envioLabel.textContent=`Envío: $${costoEnvio.toLocaleString()} incluido`;
-  } else {
-    envioLabel.style.display="none";
+  if(costoEnvio>0&&tipoOp==="venta"){ envioLabel.style.display="block"; envioLabel.textContent=`Envío: $${costoEnvio.toLocaleString()} incluido`; }
+  else { envioLabel.style.display="none"; }
+  // Comisión label
+  let comLabel = L("comision-total-label");
+  if(!comLabel){
+    comLabel = document.createElement("div");
+    comLabel.id="comision-total-label";
+    comLabel.style.cssText="font-size:11px;color:rgba(255,255,255,.6)";
+    L("carrito-total-bar").firstElementChild.appendChild(comLabel);
   }
+  if(comMonto!==0&&tipoOp==="venta"){
+    const pct=Math.abs(comPct*100).toFixed(0);
+    const nombre=canal==="Rappi"||canal==="Uber Eats"?canal:metodo;
+    comLabel.style.display="block";
+    comLabel.textContent=`${nombre} ${pct}%: -$${Math.abs(comMonto).toLocaleString()} → Neto: $${ingresoNeto.toLocaleString()}`;
+  } else { comLabel.style.display="none"; }
 }
 
 function quitarItem(idx){S.carrito.splice(idx,1);renderCarrito();actualizarDisp();}
@@ -2496,6 +2525,19 @@ function aplicarSugerenciaTransferencia(sabor,tamano,cantidad){
   setTimeout(()=>{ L("trf-sabor").value=sabor; L("trf-tamano").value=tamano; L("trf-cantidad").value=cantidad; },400);
 }
 
+function actualizarStockTrf(){
+  const sabor  = L("trf-sabor")?.value;
+  const tamano = L("trf-tamano")?.value;
+  if(!sabor||!tamano){ L("trf-stock-preview").style.display="none"; return; }
+  const stock  = S.stock||[];
+  const cuaji  = stock.filter(s=>s.sabor===sabor&&s.tamano===tamano&&s.sucursal==="Cuajimalpa"&&!s.vencido).reduce((s,i)=>s+i.cantActual,0);
+  const polanco= stock.filter(s=>s.sabor===sabor&&s.tamano===tamano&&s.sucursal==="Polanco"&&!s.vencido).reduce((s,i)=>s+i.cantActual,0);
+  L("trf-stock-cuaji").textContent   = cuaji;
+  L("trf-stock-polanco").textContent = polanco;
+  L("trf-stock-cuaji").style.color   = cuaji===0?"var(--danger)":cuaji<=3?"var(--warning)":"var(--ink)";
+  L("trf-stock-preview").style.display = "block";
+}
+
 // ============================================================
 // TRANSFERENCIAS
 // ============================================================
@@ -2506,6 +2548,7 @@ async function cargarTransferencias(){
   if(S.catalogo?.sabores){
     L("trf-sabor").innerHTML  =S.catalogo.sabores.filter(s=>s.activo).map(s=>`<option>${s.nombre}</option>`).join("");
     L("trf-tamano").innerHTML =S.catalogo.tamanos.filter(t=>t.activo).map(t=>`<option>${t.nombre}</option>`).join("");
+    actualizarStockTrf();
   }
   L("trf-lista").innerHTML=`<div class="loading"><div class="spinner"></div>Cargando...</div>`;
   const res=await api("getTransferencias");
@@ -2813,25 +2856,26 @@ async function eliminarCanalPrecio(id){
   else toast(res.error,"error");
 }
 
-// Muestra aviso de precio especial al cambiar canal en venta
 function onCanalChange(){
   const canal = L("venta-canal")?.value;
-  // Mostrar/ocultar zona de envío
+  const esRappi = esPlataforma(canal);
+  // Ocultar método de pago para plataformas (ya está fijo)
+  const metodoPagoGroup = L("venta-metodo")?.closest(".form-group");
+  if(metodoPagoGroup) metodoPagoGroup.style.display = esRappi ? "none" : "block";
+  // Zona de envío solo Domicilio
   const esDomicilio = canal === "Domicilio";
   L("envio-section").style.display = esDomicilio ? "block" : "none";
-  if(!esDomicilio){ S.costoEnvio = 0; L("envio-costo-aviso").style.display="none"; }
+  if(!esDomicilio){ S.costoEnvio=0; L("envio-costo-aviso").style.display="none"; }
   // Aviso precio por canal
   const regla = (S.canalPrecios||[]).find(r=>r.canal===canal&&r.activo);
   const aviso = L("canal-precio-aviso");
   if(regla){
-    aviso.style.display = "block";
-    const signo = regla.valor >= 0 ? "+" : "";
-    aviso.textContent = `💡 Regla activa para ${canal}: ${signo}${regla.valor}${regla.tipo==="pct"?"%":"$"} por pieza — puedes aplicarlo usando el campo de descuento/ajuste en cada ítem`;
-  } else {
-    aviso.style.display = "none";
-  }
-  // Lógica original de canal
+    aviso.style.display="block";
+    const signo=regla.valor>=0?"+":"";
+    aviso.textContent=`💡 Regla activa para ${canal}: ${signo}${regla.valor}${regla.tipo==="pct"?"%":"$"} por pieza`;
+  } else { aviso.style.display="none"; }
   poblarSelectsVenta();
+  renderCarrito();
 }
 
 // ============================================================
