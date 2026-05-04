@@ -1534,7 +1534,7 @@ L("btn-agregar-item")?.addEventListener("click",()=>{
   }
   precioFinal=Math.round(precioFinal*100)/100;
   const enCarrito=S.carrito.filter(i=>i.sabor===sabor&&i.tamano===tamano).reduce((s,i)=>s+i.cantidad,0);
-  const disponible=getDisponibleLocal(sucursal,sabor,tamano);
+  const disponible=calcDisp(sabor,tamano);
   if(enCarrito+cantidad>disponible){toast(`Solo hay ${disponible} disponibles (${enCarrito} ya en carrito)`,"error");return;}
   S.carrito.push({sabor,tamano,cantidad,precioBase,precio:precioFinal,descuento,descTipo,subtotal:precioFinal*cantidad});
   L("item-cantidad").value="1";
