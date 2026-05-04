@@ -305,6 +305,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <input class="stock-search" type="text" id="stock-search" placeholder="Buscar sabor...">
         <div class="filter-row" id="filtros-suc"></div>
         <div class="filter-row" id="filtros-tam"></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:6px;margin-bottom:2px">
+          <span style="font-size:11px;color:var(--muted)">Ordenar por:</span>
+          <select id="stock-orden" onchange="renderStock()" style="font-size:12px;border:1px solid var(--border);border-radius:8px;padding:4px 8px;background:white;font-family:'DM Sans',sans-serif;color:var(--ink)">
+            <option value="sabor">Sabor</option>
+            <option value="sucursal">Sucursal</option>
+            <option value="tamano">Tamaño</option>
+            <option value="cantidad">Cantidad</option>
+            <option value="vence">Caducidad</option>
+          </select>
+        </div>
         <div id="stock-content"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
       </div>
     </div>
@@ -1333,10 +1343,22 @@ async function cargarStock() {
 function renderStock(){
   const stock=S.stock||[];
   const busqueda=L("stock-search").value.toLowerCase();
+  const orden=L("stock-orden")?.value||"sabor";
   let f=stock.filter(s=>!s.vencido&&s.cantActual>0);
   if(S.filtroSuc) f=f.filter(s=>s.sucursal===S.filtroSuc);
   if(S.filtroTam) f=f.filter(s=>s.tamano===S.filtroTam);
   if(busqueda) f=f.filter(s=>s.sabor.toLowerCase().includes(busqueda));
+
+  // Ordenar
+  f.sort((a,b)=>{
+    if(orden==="sabor")     return a.sabor.localeCompare(b.sabor)||a.sucursal.localeCompare(b.sucursal);
+    if(orden==="sucursal")  return a.sucursal.localeCompare(b.sucursal)||a.sabor.localeCompare(b.sabor);
+    if(orden==="tamano")    return a.tamano.localeCompare(b.tamano)||a.sabor.localeCompare(b.sabor);
+    if(orden==="cantidad")  return b.cantActual-a.cantActual;
+    if(orden==="vence")     return a.diasRestantes-b.diasRestantes;
+    return 0;
+  });
+
   L("sum-total").textContent=f.reduce((s,i)=>s+i.cantActual,0);
   L("sum-vencer").textContent=f.filter(s=>s.porVencer).length;
   L("stock-summary").style.display="grid";
