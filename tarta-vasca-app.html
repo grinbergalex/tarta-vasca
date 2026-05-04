@@ -1347,7 +1347,7 @@ function actualizarUICanal(){
   else{aviso.style.display="none";if(cli)cli.style.display="block";}
 }
 L("venta-canal")?.addEventListener("change",()=>{
-  actualizarMetodoPago();actualizarUICanal();renderCarrito();
+  onCanalChange();
 });
 
 // ============================================================
@@ -2864,23 +2864,24 @@ async function eliminarCanalPrecio(id){
 
 function onCanalChange(){
   const canal = L("venta-canal")?.value;
-  const esRappi = esPlataforma(canal);
-  // Ocultar método de pago para plataformas (ya está fijo)
-  const metodoPagoGroup = L("venta-metodo")?.closest(".form-group");
-  if(metodoPagoGroup) metodoPagoGroup.style.display = esRappi ? "none" : "block";
+  const esPlat = esPlataforma(canal);
+  // Método de pago
+  const metodoGroup = L("venta-metodo")?.parentElement;
+  if(metodoGroup) metodoGroup.style.display = esPlat ? "none" : "block";
+  llenar("venta-metodo", esPlat ? [canal] : ["Efectivo","Tarjeta","Transferencia"]);
+  // Cliente
+  const cli = L("cliente-section");
+  if(cli) cli.style.display = esPlat ? "none" : "block";
+  L("canal-aviso").style.display = esPlat ? "flex" : "none";
   // Zona de envío solo Domicilio
   const esDomicilio = canal === "Domicilio";
   L("envio-section").style.display = esDomicilio ? "block" : "none";
-  if(!esDomicilio){ S.costoEnvio=0; L("envio-costo-aviso").style.display="none"; }
+  if(!esDomicilio){ S.costoEnvio = 0; if(L("envio-costo-aviso")) L("envio-costo-aviso").style.display="none"; }
   // Aviso precio por canal
   const regla = (S.canalPrecios||[]).find(r=>r.canal===canal&&r.activo);
   const aviso = L("canal-precio-aviso");
-  if(regla){
-    aviso.style.display="block";
-    const signo=regla.valor>=0?"+":"";
-    aviso.textContent=`💡 Regla activa para ${canal}: ${signo}${regla.valor}${regla.tipo==="pct"?"%":"$"} por pieza`;
-  } else { aviso.style.display="none"; }
-  poblarSelectsVenta();
+  if(regla){ aviso.style.display="block"; aviso.textContent=`💡 Regla para ${canal}: ${regla.valor>=0?"+":""}${regla.valor}${regla.tipo==="pct"?"%":"$"} por pieza`; }
+  else aviso.style.display="none";
   renderCarrito();
 }
 
