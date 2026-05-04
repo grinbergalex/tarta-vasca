@@ -1333,7 +1333,11 @@ function esPlataforma(canal){return canal==="Rappi"||canal==="Uber Eats";}
 function actualizarMetodoPago(){
   const canal=L("venta-canal")?.value;
   if(!canal) return;
-  llenar("venta-metodo",esPlataforma(canal)?[canal]:["Efectivo","Tarjeta","Transferencia"]);
+  const esPlat=esPlataforma(canal);
+  llenar("venta-metodo",esPlat?[canal]:["Efectivo","Tarjeta","Transferencia"]);
+  // Mostrar/ocultar selector de método
+  const metodoGroup=L("venta-metodo")?.parentElement;
+  if(metodoGroup) metodoGroup.style.display=esPlat?"none":"block";
 }
 function actualizarUICanal(){
   const canal=L("venta-canal")?.value;
@@ -1342,7 +1346,9 @@ function actualizarUICanal(){
   if(esPlataforma(canal)){aviso.style.display="flex";if(cli)cli.style.display="none";}
   else{aviso.style.display="none";if(cli)cli.style.display="block";}
 }
-L("venta-canal")?.addEventListener("change",()=>{actualizarMetodoPago();actualizarUICanal();});
+L("venta-canal")?.addEventListener("change",()=>{
+  actualizarMetodoPago();actualizarUICanal();renderCarrito();
+});
 
 // ============================================================
 // STOCK
@@ -1475,6 +1481,7 @@ function setTipoOp(tipo, btn){
     btnConfirmar.style.background = "var(--danger)";
   }
   S.carrito = [];
+  L("op-motivo").value = ""; // limpiar motivo al cambiar tipo
   renderCarrito();
 }
 
@@ -1669,7 +1676,6 @@ L("btn-confirmar").addEventListener("click",async()=>{
       const total=S.carrito.reduce((s,i)=>s+i.subtotal,0);
       toast(tipoOp==="regalo"?`✅ Regalo registrado`:`✅ Venta $${total.toLocaleString()} registrada`);
       limpiarVenta(); cargarStock();
-      if(tipoOp==="venta") setTimeout(()=>document.querySelector('.nav-tab[data-tab="ventas"]').click(),800);
     } else toast(res.error,"error");
   }
   btn.disabled=false;
