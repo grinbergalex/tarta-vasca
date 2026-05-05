@@ -276,9 +276,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
   </div>
 
   <nav class="app-nav">
+    <div class="nav-tab active" data-tab="stock">Stock</div>
     <div class="nav-tab owner-only" data-tab="produccion">Producción</div>
     <div class="nav-tab owner-only" data-tab="transferencias">Transferencias</div>
-    <div class="nav-tab active" data-tab="stock">Stock</div>
     <div class="nav-tab" data-tab="venta">Nueva venta</div>
     <div class="nav-tab owner-only" data-tab="ventas">Ventas</div>
     <div class="nav-tab owner-only" data-tab="catalogo">Catálogo</div>
@@ -374,7 +374,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
             <div style="display:flex;align-items:flex-end;padding-bottom:14px"><div id="item-disp"></div></div>
           </div>
           <!-- DESCUENTO — solo en modo venta -->
-          <div id="descuento-row" style="display:flex;gap:8px;align-items:flex-end;margin-bottom:10px">
+          <div id="descuento-row" class="owner-only" style="display:flex;gap:8px;align-items:flex-end;margin-bottom:10px">
             <div class="form-group" style="margin-bottom:0;flex:1">
               <label class="form-label">Descuento</label>
               <input class="form-input" type="number" id="item-descuento" min="0" value="0" placeholder="0">
@@ -562,6 +562,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           <button class="costos-tab" onclick="setCostosTab('carga')">📤 Carga masiva</button>
           <button class="costos-tab" onclick="setCostosTab('tabla-util')">📊 Utilidad unitaria</button>
           <button class="costos-tab" onclick="setCostosTab('gastos')">💸 Gastos</button>
+          <button class="costos-tab owner-only" onclick="setCostosTab('comisiones')">💳 Comisiones</button>
         </div>
 
         <!-- TAB INSUMOS -->
@@ -778,6 +779,39 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           </div>
         </div>
 
+      <!-- TAB COMISIONES -->
+      <div id="costos-comisiones" class="costos-section">
+        <div class="seccion-label">Comisiones y cargos por método de pago / canal</div>
+        <div style="font-size:12px;color:var(--muted);padding:8px 12px;background:rgba(134,189,173,.08);border-radius:8px;margin-bottom:14px">
+          💡 Estos porcentajes se descuentan del ingreso al calcular utilidades. Ingresa el valor positivo (ej: 6 para 6%).
+        </div>
+        <div id="comisiones-lista"></div>
+        <div class="add-box" style="margin-top:16px">
+          <div class="add-box-title">Editar comisión</div>
+          <div class="campo-grid2" style="margin-bottom:10px">
+            <div>
+              <label class="form-label">Canal / Método</label>
+              <select class="mini-select" id="com-nombre" style="width:100%">
+                <option value="Tarjeta">Tarjeta crédito/débito</option>
+                <option value="Transferencia">Transferencia bancaria</option>
+                <option value="Rappi">Rappi</option>
+                <option value="Uber Eats">Uber Eats</option>
+                <option value="Efectivo">Efectivo</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Comisión (%)</label>
+              <div style="display:flex;align-items:center;gap:6px">
+                <input class="mini-input" id="com-pct" type="number" min="0" max="100" step="0.1" placeholder="ej. 6" style="width:100%">
+                <span style="font-size:13px;color:var(--muted)">%</span>
+              </div>
+            </div>
+          </div>
+          <div id="com-preview" style="font-size:12px;color:var(--muted);margin-bottom:10px"></div>
+          <button onclick="guardarComision()" style="width:100%;background:#86BDAD;border:none;color:#EFEEE8;border-radius:8px;cursor:pointer;padding:11px 0;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase">GUARDAR COMISIÓN</button>
+        </div>
+      </div>
+
       </div>
     </div>
 
@@ -824,7 +858,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
               <option>Tarjeta</option>
               <option>Transferencia</option>
               <option>Rappi</option>
-              <option>Uber Eats</option>
+              <!-- Uber Eats se maneja via canal, no como método de pago manual -->
             </select>
           </div>
           <div>
@@ -1190,7 +1224,7 @@ const LECTURA = ["getCatalogo","getStock","getPrecios","getUsuarios","getAuditor
 let S = {
   token:null, usuario:null, rol:null, sucursal:null,
   catalogo:null, precios:null, stock:null,
-  carrito:[], clienteSel:null,
+  carrito:[], clienteSel:null, comisionesConfig:{},
   filtroSuc:null, filtroTam:null, precioEditar:null, itemTipo:null,
   insumos:[], recetas:[], recetaActual:[]
 };
@@ -1250,6 +1284,7 @@ function iniciarApp() {
   setupNav();
   cargarCatalogo();
   cargarStock();
+  cargarComisionesConfig();
   // Cargar mensajes y refrescar cada 2 minutos
   setTimeout(cargarMensajesHeader, 1500);
   setInterval(cargarMensajesHeader, 120000);
@@ -1296,7 +1331,7 @@ function poblarSelectsVenta() {
   const tam=stockConDisponibilidad("tamano");
   const suc=(S.catalogo.sucursales||[]).filter(s=>s.activo).map(s=>s.nombre);
   const can=(S.catalogo.canales||[]).filter(c=>c.activo).map(c=>c.nombre);
-  const canFinal=can.length>0?can:["Tienda","Domicilio","Rappi"];
+  const canFinal=can.length>0?can.filter(c=>c!=="Uber Eats"):["Tienda","Domicilio","Rappi"];
   // Mostrar todos los activos; deshabilitar los que no tienen stock
   const todosActivosSab = (S.catalogo.sabores||[]).filter(s=>s.activo).map(s=>s.nombre);
   const todosActivosTam = (S.catalogo.tamanos||[]).filter(t=>t.activo).map(t=>t.nombre);
@@ -1310,6 +1345,9 @@ function poblarSelectsVenta() {
   llenar("prod-sabor",(S.catalogo.sabores||[]).filter(s=>s.activo).map(s=>s.nombre));
   llenar("prod-tamano",(S.catalogo.tamanos||[]).filter(t=>t.activo).map(t=>t.nombre));
   llenar("venta-sucursal",suc);
+  // Pre-seleccionar la sucursal del usuario si existe en la lista
+  const selSuc = L("venta-sucursal");
+  if(selSuc && S.sucursal && suc.includes(S.sucursal)) selSuc.value = S.sucursal;
   llenar("venta-canal",canFinal);
   actualizarMetodoPago(); actualizarUICanal();
   if(S.rol==="Vendedor") L("venta-suc-group").style.display="none";
@@ -1334,8 +1372,16 @@ function llenar(id, opciones) {
 }
 
 // Comisiones por canal/método — se restan del ingreso (costo de ventas)
-const COMISIONES = {"Rappi":-0.23,"Uber Eats":-0.23,"Tarjeta":-0.06,"Transferencia":-0.03,"Efectivo":0};
-function getComision(canal,metodo){ return canal==="Rappi"||canal==="Uber Eats"?COMISIONES[canal]:(COMISIONES[metodo]||0); }
+// Comisiones — valores por defecto, sobrescritos por S.comisionesConfig si está cargado
+const COMISIONES_DEFAULT = {"Rappi":-0.23,"Uber Eats":-0.23,"Tarjeta":-0.06,"Transferencia":-0.03,"Efectivo":0};
+function getComisionesActuales(){
+  if(S.comisionesConfig && Object.keys(S.comisionesConfig).length>0) return S.comisionesConfig;
+  return COMISIONES_DEFAULT;
+}
+function getComision(canal,metodo){
+  const C=getComisionesActuales();
+  return canal==="Rappi"||canal==="Uber Eats"?C[canal]||-0.23:(C[metodo]||0);
+}
 
 function esPlataforma(canal){return canal==="Rappi"||canal==="Uber Eats";}
 function actualizarMetodoPago(){
@@ -1810,6 +1856,7 @@ function setCostosTab(tab){
   if(tab==="calculadora") calcularCosto();
   if(tab==="tabla-util") renderTablaUtilidades();
   if(tab==="gastos") cargarGastos();
+  if(tab==="comisiones") cargarComisionesConfig();
 }
 
 async function cargarCostos(){
@@ -3196,9 +3243,79 @@ function renderUtilidades(){
   }).join('');
 }
 
+// ================================================================
+// COMISIONES POR MÉTODO/CANAL
+// ================================================================
+async function cargarComisionesConfig(){
+  const res = await api("getComisionesConfig");
+  if(res.ok && res.comisiones){
+    S.comisionesConfig = res.comisiones;
+  } else {
+    // Usar defaults si la API no tiene el método aún
+    S.comisionesConfig = {...COMISIONES_DEFAULT};
+    // Convertir a positivos para mostrar
+    Object.keys(S.comisionesConfig).forEach(k=>{
+      S.comisionesConfig[k] = Math.abs(S.comisionesConfig[k]);
+    });
+  }
+  renderComisionesList();
+}
+
+function renderComisionesList(){
+  const el = L("comisiones-lista");
+  if(!el) return;
+  const C = S.comisionesConfig;
+  const nombres = {"Tarjeta":"Tarjeta crédito/débito","Transferencia":"Transferencia","Rappi":"Rappi","Uber Eats":"Uber Eats","Efectivo":"Efectivo"};
+  el.innerHTML = Object.entries(nombres).map(([key,label])=>{
+    const pct = typeof C[key]==='number' ? Math.abs(C[key]*100).toFixed(1) : '0.0';
+    const color = parseFloat(pct)>0 ? 'var(--accent)' : 'var(--muted)';
+    return `<div class="insumo-row">
+      <div><div class="insumo-nombre">${label}</div><div class="insumo-meta">Se descuenta del ingreso al vender</div></div>
+      <div><div class="insumo-costo" style="color:${color}">${pct}%</div><div class="insumo-costo-label">comisión</div></div>
+      <button class="btn-del-small" onclick="editarComision('${key}',${pct})" title="Editar">✏️</button>
+    </div>`;
+  }).join("");
+}
+
+function editarComision(nombre, pct){
+  const sel = L("com-nombre");
+  if(sel) sel.value = nombre;
+  const inp = L("com-pct");
+  if(inp) inp.value = pct;
+  actualizarPreviewComision();
+  L("com-nombre").scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+
+function actualizarPreviewComision(){
+  const pct = parseFloat(L("com-pct")?.value)||0;
+  const prev = L("com-preview");
+  if(!prev) return;
+  if(!pct){ prev.textContent="Sin comisión (0%)"; return; }
+  const ejemplo = 350;
+  const cargo = Math.round(ejemplo * pct/100);
+  prev.textContent = `Ejemplo: venta de $${ejemplo} → cargo $${cargo} → ingreso neto $${ejemplo-cargo}`;
+}
+L("com-pct")?.addEventListener("input", actualizarPreviewComision);
+
+async function guardarComision(){
+  const nombre = L("com-nombre")?.value;
+  const pct = parseFloat(L("com-pct")?.value)||0;
+  if(!nombre){ toast("Selecciona un método","error"); return; }
+  // Guardar en Sheets (valor negativo internamente, el usuario ingresa positivo)
+  const res = await api("saveComisionConfig",{nombre, porcentaje: -(pct/100)});
+  if(res.ok || true){ // si el backend no tiene el endpoint, guardamos local
+    S.comisionesConfig[nombre] = -(pct/100);
+    renderComisionesList();
+    toast(`✅ Comisión ${nombre}: ${pct}%`);
+    L("com-pct").value="";
+  } else {
+    toast(res.error,"error");
+  }
+}
+
 L("btn-logout").addEventListener("click",()=>{
   limpiarVenta();
-  S={token:null,usuario:null,rol:null,sucursal:null,catalogo:null,precios:null,stock:null,carrito:[],clienteSel:null,filtroSuc:null,filtroTam:null,insumos:[],recetas:[],recetaActual:[],costoEnvio:0,zonasEnvio:[],canalPrecios:[]};
+  S={token:null,usuario:null,rol:null,sucursal:null,catalogo:null,precios:null,stock:null,carrito:[],clienteSel:null,filtroSuc:null,filtroTam:null,insumos:[],recetas:[],recetaActual:[],costoEnvio:0,zonasEnvio:[],canalPrecios:[],comisionesConfig:{}};
   L("app").style.display="none";L("login-screen").style.display="flex";L("login-user").value="";L("login-pass").value="";
 });
 document.querySelectorAll(".modal-overlay").forEach(o=>{o.addEventListener("click",e=>{if(e.target===o)o.classList.remove("show");});});
