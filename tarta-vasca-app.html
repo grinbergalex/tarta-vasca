@@ -366,14 +366,19 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <div class="add-item-box">
           <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:12px">Agregar producto</div>
           <div class="add-item-row">
-            <div class="form-group"><label class="form-label">Sabor</label><select class="form-select" id="item-sabor"></select></div>
-            <div class="form-group"><label class="form-label">Tamaño</label><select class="form-select" id="item-tamano"></select></div>
+            <div class="form-group"><label class="form-label">Sabor</label><select class="form-select" id="item-sabor" onchange="onItemSaborChange()"></select></div>
+            <div class="form-group"><label class="form-label">Tamaño</label><select class="form-select" id="item-tamano" onchange="onItemTamanoChange()"></select></div>
           </div>
           <div class="add-item-row">
-            <div class="form-group"><label class="form-label">Cantidad</label><input class="form-input" type="number" id="item-cantidad" min="1" value="1"></div>
+            <div class="form-group">
+              <label class="form-label">Cantidad</label>
+              <select class="form-select" id="item-cantidad" disabled>
+                <option value="">— selecciona sabor y tamaño —</option>
+              </select>
+            </div>
             <div style="display:flex;align-items:flex-end;padding-bottom:14px"><div id="item-disp"></div></div>
           </div>
-          <!-- DESCUENTO — solo en modo venta -->
+          <!-- DESCUENTO — solo en modo venta, solo owner -->
           <div id="descuento-row" class="owner-only" style="display:flex;gap:8px;align-items:flex-end;margin-bottom:10px">
             <div class="form-group" style="margin-bottom:0;flex:1">
               <label class="form-label">Descuento</label>
@@ -1327,35 +1332,33 @@ async function cargarCatalogo() {
 }
 
 function poblarSelectsVenta() {
-  const sab=stockConDisponibilidad("sabor");
-  const tam=stockConDisponibilidad("tamano");
+  if(!S.catalogo) return;
   const suc=(S.catalogo.sucursales||[]).filter(s=>s.activo).map(s=>s.nombre);
   const can=(S.catalogo.canales||[]).filter(c=>c.activo).map(c=>c.nombre);
   const canFinal=can.length>0?can.filter(c=>c!=="Uber Eats"):["Tienda","Domicilio","Rappi"];
-  // Mostrar todos los activos; deshabilitar los que no tienen stock
-  const todosActivosSab = (S.catalogo.sabores||[]).filter(s=>s.activo).map(s=>s.nombre);
-  const todosActivosTam = (S.catalogo.tamanos||[]).filter(t=>t.activo).map(t=>t.nombre);
-  if(S.stock && (sab.length>0 || tam.length>0)){
-    const selSab = L("item-sabor"); if(selSab) selSab.innerHTML = todosActivosSab.map(n=>`<option value="${n}" ${!sab.includes(n)?'disabled style="color:#bbb"':''}>${!sab.includes(n)?'✗ ':''}${n}</option>`).join("");
-    const selTam = L("item-tamano"); if(selTam) selTam.innerHTML = todosActivosTam.map(n=>`<option value="${n}" ${!tam.includes(n)?'disabled style="color:#bbb"':''}>${!tam.includes(n)?'✗ ':''}${n}</option>`).join("");
-  } else {
-    llenar("item-sabor", todosActivosSab);
-    llenar("item-tamano", todosActivosTam);
-  }
-  llenar("prod-sabor",(S.catalogo.sabores||[]).filter(s=>s.activo).map(s=>s.nombre));
-  llenar("prod-tamano",(S.catalogo.tamanos||[]).filter(t=>t.activo).map(t=>t.nombre));
+
+  // Sucursal
   llenar("venta-sucursal",suc);
-  // Pre-seleccionar la sucursal del usuario si existe en la lista
   const selSuc = L("venta-sucursal");
   if(selSuc && S.sucursal && suc.includes(S.sucursal)) selSuc.value = S.sucursal;
+
+  // Canal y método
   llenar("venta-canal",canFinal);
   actualizarMetodoPago(); actualizarUICanal();
   if(S.rol==="Vendedor") L("venta-suc-group").style.display="none";
-  // costos selects
+
+  // Producción selects
   const sabAll=(S.catalogo.sabores||[]).filter(s=>s.activo).map(s=>s.nombre);
   const tamAll=(S.catalogo.tamanos||[]).filter(t=>t.activo).map(t=>t.nombre);
+  llenar("prod-sabor", sabAll);
+  llenar("prod-tamano", tamAll);
+
+  // Costos selects
   ["receta-sabor","calc-sabor","bulk-receta-sabor"].forEach(id=>llenar(id,sabAll));
   ["receta-tamano","calc-tamano","bulk-receta-tamano"].forEach(id=>llenar(id,tamAll));
+
+  // Actualizar selectores de venta en cascada (maneja sabor/tamaño/cantidad)
+  actualizarSelectoresCascada();
 }
 
 function stockConDisponibilidad(campo) {
@@ -1464,12 +1467,13 @@ L("stock-search").addEventListener("input",renderStock);
 // VENTA
 // ============================================================
 function iniciarVenta(){
-  // Re-poblar selects por si el catálogo llegó después de que se cargó la pantalla
   if(S.catalogo) poblarSelectsVenta();
   actualizarUICanal();
-  actualizarDisp();
+  actualizarSelectoresCascada();
 }
+
 function getSucursalVenta(){return S.rol==="Vendedor"?S.sucursal:(L("venta-sucursal")?.value||S.sucursal);}
+
 function calcDisp(sabor,tamano){
   if(!S.stock) return 0;
   const suc=getSucursalVenta();
@@ -1477,18 +1481,107 @@ function calcDisp(sabor,tamano){
   const enStock=S.stock.filter(s=>s.sabor===sabor&&s.tamano===tamano&&s.sucursal===suc&&!s.vencido&&s.cantActual>0).reduce((s,i)=>s+i.cantActual,0);
   return Math.max(0,enStock-enCarrito);
 }
+
 function getPrecio(tamano){if(!S.precios)return 0;const p=S.precios.find(p=>p.tamano===tamano);return p?p.precio:0;}
-function actualizarDisp(){
-  const sabor=L("item-sabor")?.value,tamano=L("item-tamano")?.value;
-  if(!sabor||!tamano){L("item-disp").innerHTML="";return;}
-  const d=calcDisp(sabor,tamano);
-  const cls=d<=0?"disp-out":d<=2?"disp-low":"disp-ok";
-  const txt=d<=0?"Sin stock":`${d} disponibles`;
-  L("item-disp").innerHTML=`<span class="disp-badge ${cls}">${txt}</span>`;
+
+// ── LÓGICA CASCADA ─────────────────────────────────────────
+// Actualiza sabores/tamaños/cantidad en cascada según la selección actual
+function actualizarSelectoresCascada(){
+  if(!S.stock||!S.catalogo) return;
+  const suc = getSucursalVenta();
+  const sabActual = L("item-sabor")?.value;
+  const tamActual = L("item-tamano")?.value;
+
+  // Stock disponible filtrado por sucursal
+  const stockSuc = S.stock.filter(s=>!s.vencido&&s.cantActual>0&&s.sucursal===suc);
+
+  // Sabores disponibles en esta sucursal
+  const saboresConStock = [...new Set(stockSuc.map(s=>s.sabor))];
+  const todosSabores = (S.catalogo.sabores||[]).filter(s=>s.activo).map(s=>s.nombre);
+  const selSab = L("item-sabor");
+  if(selSab){
+    // Mantener selección actual si sigue siendo válida
+    selSab.innerHTML = todosSabores.map(n=>{
+      const tieneStock = saboresConStock.includes(n);
+      return `<option value="${n}" ${!tieneStock?'disabled':''}>${tieneStock?'':'✗ '}${n}</option>`;
+    }).join("");
+    // Restaurar selección o elegir el primero disponible
+    if(sabActual && saboresConStock.includes(sabActual)){
+      selSab.value = sabActual;
+    } else if(saboresConStock.length>0){
+      // no cambiar selección si está deshabilitada, dejar que el usuario elija
+      if(sabActual) selSab.value = sabActual; // mantener aunque esté disabled
+    }
+  }
+
+  const sabFinal = L("item-sabor")?.value;
+
+  // Tamaños disponibles para el sabor seleccionado
+  const stockSabSuc = sabFinal ? stockSuc.filter(s=>s.sabor===sabFinal) : [];
+  const tamanosConStock = [...new Set(stockSabSuc.map(s=>s.tamano))];
+  const todosTaganos = (S.catalogo.tamanos||[]).filter(t=>t.activo).map(t=>t.nombre);
+  const selTam = L("item-tamano");
+  if(selTam){
+    selTam.innerHTML = todosTaganos.map(n=>{
+      const tieneStock = tamanosConStock.includes(n);
+      return `<option value="${n}" ${!tieneStock?'disabled':''}>${tieneStock?'':'✗ '}${n}</option>`;
+    }).join("");
+    if(tamActual && tamanosConStock.includes(tamActual)){
+      selTam.value = tamActual;
+    } else if(tamActual){
+      selTam.value = tamActual; // mantener aunque esté disabled
+    }
+  }
+
+  const tamFinal = L("item-tamano")?.value;
+
+  // Actualizar selector de cantidad
+  actualizarSelectCantidad(sabFinal, tamFinal);
+  // Actualizar preview de precio
+  actualizarPrecioPreview();
 }
-L("item-sabor")?.addEventListener("change",actualizarDisp);
-L("item-tamano")?.addEventListener("change",actualizarDisp);
-L("venta-sucursal")?.addEventListener("change",()=>{actualizarDisp();poblarSelectsVenta();});
+
+function actualizarSelectCantidad(sabor, tamano){
+  const sel = L("item-cantidad");
+  if(!sel) return;
+  if(!sabor||!tamano){
+    sel.innerHTML=`<option value="">— selecciona sabor y tamaño —</option>`;
+    sel.disabled=true;
+    L("item-disp").innerHTML="";
+    return;
+  }
+  const disp = calcDisp(sabor, tamano);
+  if(disp<=0){
+    sel.innerHTML=`<option value="">Sin stock disponible</option>`;
+    sel.disabled=true;
+    L("item-disp").innerHTML=`<span class="disp-badge disp-out">Sin stock</span>`;
+    return;
+  }
+  const valActual = parseInt(sel.value)||1;
+  sel.innerHTML = Array.from({length:disp},(_,i)=>i+1).map(n=>`<option value="${n}">${n}</option>`).join("");
+  sel.disabled = false;
+  // Mantener valor si sigue siendo válido
+  if(valActual>=1&&valActual<=disp) sel.value = valActual;
+  const cls = disp<=2?"disp-low":"disp-ok";
+  L("item-disp").innerHTML=`<span class="disp-badge ${cls}">${disp} disponibles</span>`;
+}
+
+function onItemSaborChange(){
+  actualizarSelectoresCascada();
+}
+function onItemTamanoChange(){
+  actualizarSelectCantidad(L("item-sabor")?.value, L("item-tamano")?.value);
+  actualizarPrecioPreview();
+}
+
+// Cuando cambia sucursal → recalcular todo
+L("venta-sucursal")?.addEventListener("change",()=>{
+  poblarSelectsVenta();
+  actualizarSelectoresCascada();
+});
+
+// Mantener alias para compatibilidad
+function actualizarDisp(){ actualizarSelectoresCascada(); }
 // ── TIPO DE OPERACIÓN ──────────────────────────────────────
 let tipoOp = "venta"; // "venta" | "regalo" | "merma"
 
@@ -1541,12 +1634,20 @@ function setTipoOp(tipo, btn){
 
 // ── PRECIO PREVIEW CON DESCUENTO ───────────────────────────
 function actualizarPrecioPreview(){
-  const sabor = L("item-sabor").value;
-  const tamano = L("item-tamano").value;
-  const cantidad = parseInt(L("item-cantidad").value)||1;
-  const descVal = parseFloat(L("item-descuento").value)||0;
-  const descTipo = L("item-desc-tipo").value;
-  const precioBase = getPrecioActualLocal(sabor, tamano);
+  const sabor = L("item-sabor")?.value;
+  const tamano = L("item-tamano")?.value;
+  const cantidad = parseInt(L("item-cantidad")?.value)||1;
+  const descVal = parseFloat(L("item-descuento")?.value)||0;
+  const descTipo = L("item-desc-tipo")?.value||"pct";
+  // Precio con ajuste de canal
+  const precioBaseStd = getPrecioActualLocal(sabor, tamano);
+  const canalActual = L("venta-canal")?.value||"";
+  const reglaCanal = (S.canalPrecios||[]).find(r=>r.canal===canalActual&&r.activo);
+  let precioBase = precioBaseStd;
+  if(reglaCanal&&precioBase>0){
+    if(reglaCanal.tipo==="pct") precioBase = Math.round(precioBase*(1+reglaCanal.valor/100));
+    else precioBase = Math.max(0, precioBase + reglaCanal.valor);
+  }
   if(!precioBase){ L("item-precio-preview").innerHTML=""; return; }
   let precioFinal = precioBase;
   if(descVal > 0){
@@ -1575,33 +1676,60 @@ L("item-cantidad")?.addEventListener("input", actualizarPrecioPreview);
 
 // ── AGREGAR AL CARRITO ─────────────────────────────────────
 L("btn-agregar-item")?.addEventListener("click",()=>{
-  const sabor=L("item-sabor").value, tamano=L("item-tamano").value;
-  const cantidad=parseInt(L("item-cantidad").value)||1;
+  const sabor=L("item-sabor")?.value, tamano=L("item-tamano")?.value;
+  const cantidad=parseInt(L("item-cantidad")?.value)||0;
   const sucursal=getSucursalVenta();
+
+  // Validaciones sin tocar la selección
   if(!sabor||!tamano){toast("Selecciona sabor y tamaño","error");return;}
-  if(cantidad<1){toast("Cantidad inválida","error");return;}
-  const precioBase=getPrecioActualLocal(sabor,tamano);
+  if(!cantidad||cantidad<1){toast("Selecciona una cantidad","error");return;}
+
+  // Verificar que las opciones seleccionadas no estén deshabilitadas
+  const optSab = L("item-sabor")?.querySelector(`option[value="${sabor}"]`);
+  const optTam = L("item-tamano")?.querySelector(`option[value="${tamano}"]`);
+  if(optSab?.disabled){toast(`${sabor} no tiene stock en ${sucursal}`, "error");return;}
+  if(optTam?.disabled){toast(`Tamaño ${tamano} no disponible para ${sabor} en ${sucursal}`, "error");return;}
+
+  // Precio base estándar
+  const precioBaseStd=getPrecioActualLocal(sabor,tamano);
+  // Aplicar regla de precio por canal si existe (ej. Rappi sube precio)
+  const canalActual = L("venta-canal")?.value||"";
+  const reglaCanal = (S.canalPrecios||[]).find(r=>r.canal===canalActual&&r.activo);
+  let precioBase = precioBaseStd;
+  if(reglaCanal&&precioBase>0){
+    if(reglaCanal.tipo==="pct") precioBase = Math.round(precioBase*(1+reglaCanal.valor/100));
+    else precioBase = Math.max(0, precioBase + reglaCanal.valor);
+  }
   let precioFinal=precioBase, descuento=0, descTipo="";
   if(tipoOp==="venta"){
-    const descVal=parseFloat(L("item-descuento").value)||0;
-    descTipo=L("item-desc-tipo").value;
+    const descVal=parseFloat(L("item-descuento")?.value)||0;
+    descTipo=L("item-desc-tipo")?.value||"pct";
     if(descVal>0){
       descuento=descVal;
       if(descTipo==="pct") precioFinal=precioBase*(1-descVal/100);
       else precioFinal=Math.max(0,precioBase-descVal);
     }
   } else {
-    precioFinal=0; // regalo y merma = $0
+    precioFinal=0;
   }
   precioFinal=Math.round(precioFinal*100)/100;
-  const enCarrito=S.carrito.filter(i=>i.sabor===sabor&&i.tamano===tamano).reduce((s,i)=>s+i.cantidad,0);
+
   const disponible=calcDisp(sabor,tamano);
-  if(enCarrito+cantidad>disponible){toast(`Solo hay ${disponible} disponibles (${enCarrito} ya en carrito)`,"error");return;}
+  const enCarrito=S.carrito.filter(i=>i.sabor===sabor&&i.tamano===tamano).reduce((s,i)=>s+i.cantidad,0);
+  if(enCarrito+cantidad>disponible){
+    toast(`Solo hay ${disponible} disponibles (${enCarrito} ya en carrito)`,"error");
+    // Actualizar el select de cantidad para reflejar lo que queda
+    actualizarSelectCantidad(sabor,tamano);
+    return;
+  }
+
   S.carrito.push({sabor,tamano,cantidad,precioBase,precio:precioFinal,descuento,descTipo,subtotal:precioFinal*cantidad});
-  L("item-cantidad").value="1";
-  L("item-descuento").value="0";
+  // Solo limpiar descuento y preview, NO el sabor/tamaño/cantidad para facilitar agregar más
+  if(L("item-descuento")) L("item-descuento").value="0";
   L("item-precio-preview").innerHTML="";
-  renderCarrito();actualizarDisp();
+  renderCarrito();
+  // Actualizar select cantidad con el stock restante
+  actualizarSelectCantidad(sabor,tamano);
   toast(`${sabor} ${tamano} × ${cantidad} agregado`);
 });
 
@@ -1739,8 +1867,12 @@ function limpiarVenta(){
   S.carrito=[];S.clienteSel=null;S.costoEnvio=0;renderCarrito();
   L("cli-nombre").value="";L("cli-tel").value="";L("cli-email").value="";
   L("cli-encontrado").style.display="none";L("cli-nuevo").style.display="grid";
-  L("item-cantidad").value="1";L("item-disp").innerHTML="";
-  L("item-descuento").value="0";L("item-precio-preview").innerHTML="";
+  // Reset selector cantidad
+  const selCant=L("item-cantidad");
+  if(selCant){selCant.innerHTML=`<option value="">— selecciona sabor y tamaño —</option>`;selCant.disabled=true;}
+  L("item-disp").innerHTML="";
+  if(L("item-descuento")) L("item-descuento").value="0";
+  L("item-precio-preview").innerHTML="";
   L("op-motivo").value="";
   setTipoOp("venta",L("op-venta"));
 }
@@ -2937,6 +3069,7 @@ function onCanalChange(){
   const aviso = L("canal-precio-aviso");
   if(regla){ aviso.style.display="block"; aviso.textContent=`💡 Regla para ${canal}: ${regla.valor>=0?"+":""}${regla.valor}${regla.tipo==="pct"?"%":"$"} por pieza`; }
   else aviso.style.display="none";
+  actualizarPrecioPreview();
   renderCarrito();
 }
 
