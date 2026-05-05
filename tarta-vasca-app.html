@@ -1224,7 +1224,7 @@ function toast(msg, tipo="success") {
 }
 
 function fmtMXN(n) {
-  return new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',minimumFractionDigits:2}).format(n||0);
+  return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
 }
 
 // LOGIN
@@ -1297,8 +1297,16 @@ function poblarSelectsVenta() {
   const suc=(S.catalogo.sucursales||[]).filter(s=>s.activo).map(s=>s.nombre);
   const can=(S.catalogo.canales||[]).filter(c=>c.activo).map(c=>c.nombre);
   const canFinal=can.length>0?can:["Tienda","Domicilio","Rappi"];
-  llenar("item-sabor",sab.length>0?sab:(S.catalogo.sabores||[]).filter(s=>s.activo).map(s=>s.nombre));
-  llenar("item-tamano",tam.length>0?tam:(S.catalogo.tamanos||[]).filter(t=>t.activo).map(t=>t.nombre));
+  // Mostrar todos los activos; deshabilitar los que no tienen stock
+  const todosActivosSab = (S.catalogo.sabores||[]).filter(s=>s.activo).map(s=>s.nombre);
+  const todosActivosTam = (S.catalogo.tamanos||[]).filter(t=>t.activo).map(t=>t.nombre);
+  if(S.stock && (sab.length>0 || tam.length>0)){
+    const selSab = L("item-sabor"); if(selSab) selSab.innerHTML = todosActivosSab.map(n=>`<option value="${n}" ${!sab.includes(n)?'disabled style="color:#bbb"':''}>${!sab.includes(n)?'✗ ':''}${n}</option>`).join("");
+    const selTam = L("item-tamano"); if(selTam) selTam.innerHTML = todosActivosTam.map(n=>`<option value="${n}" ${!tam.includes(n)?'disabled style="color:#bbb"':''}>${!tam.includes(n)?'✗ ':''}${n}</option>`).join("");
+  } else {
+    llenar("item-sabor", todosActivosSab);
+    llenar("item-tamano", todosActivosTam);
+  }
   llenar("prod-sabor",(S.catalogo.sabores||[]).filter(s=>s.activo).map(s=>s.nombre));
   llenar("prod-tamano",(S.catalogo.tamanos||[]).filter(t=>t.activo).map(t=>t.nombre));
   llenar("venta-sucursal",suc);
@@ -1500,26 +1508,17 @@ function actualizarPrecioPreview(){
     else precioFinal = Math.max(0, precioBase - descVal);
   }
   const preview = descVal > 0
-    ? `<span style="text-decoration:line-through;color:var(--muted)">$${precioBase.toLocaleString()}</span> → <strong style="color:var(--accent)">$${precioFinal.toLocaleString()}</strong>`
-    : `<span style="color:var(--muted)">$${precioBase.toLocaleString()}</span>`;
+    ? `<span style="text-decoration:line-through;color:var(--muted)">$${precioBase.toLocaleString('en-US')}</span> → <strong style="color:var(--accent)">$${precioFinal.toLocaleString('en-US')}</strong>`
+    : `<span style="color:var(--muted)">$${precioBase.toLocaleString('en-US')}</span>`;
   L("item-precio-preview").innerHTML = preview + ` × ${cantidad}`;
 }
 
 function getPrecioActualLocal(sabor, tamano){
   if(!S.precios) return 0;
-  const canal = L("venta-canal")?.value || "";
-  // 1. Precio específico canal+sabor+tamaño
-  const canalSaborTam = S.precios.find(p=>p.canal===canal&&p.sabor===sabor&&p.tamano===tamano);
-  if(canalSaborTam?.precio>0) return canalSaborTam.precio;
-  // 2. Precio canal+tamaño (sin sabor)
-  const canalTam = S.precios.find(p=>p.canal===canal&&p.tamano===tamano&&p.precio>0);
-  if(canalTam?.precio>0) return canalTam.precio;
-  // 3. Precio base sabor+tamaño
-  const baseSabor = S.precios.find(p=>(!p.canal||p.canal==="_BASE_")&&p.sabor===sabor&&p.tamano===tamano);
-  if(baseSabor?.precio>0) return baseSabor.precio;
-  // 4. Precio base por tamaño
-  const baseTam = S.precios.find(p=>(!p.canal||p.canal==="_BASE_")&&p.tamano===tamano&&p.precio>0);
-  return baseTam?.precio||0;
+  const esp = S.precios.find(p=>p.sabor===sabor&&p.tamano===tamano);
+  if(esp&&esp.precio>0) return esp.precio;
+  const base = S.precios.find(p=>p.tamano===tamano&&p.precio>0);
+  return base ? base.precio : 0;
 }
 
 L("item-descuento")?.addEventListener("input", actualizarPrecioPreview);
@@ -1571,13 +1570,13 @@ function renderCarrito(){
         <div class="carrito-nombre">${item.sabor} ${item.tamano}</div>
         <div class="carrito-sub">
           ${item.cantidad} × 
-          ${tieneDesc?`<span style="text-decoration:line-through;color:var(--muted)">$${item.precioBase.toLocaleString()}</span> `:""}
-          $${item.precio.toLocaleString()}
+          ${tieneDesc?`<span style="text-decoration:line-through;color:var(--muted)">$${item.precioBase.toLocaleString('en-US')}</span> `:""}
+          $${item.precio.toLocaleString('en-US')}
           ${tieneDesc?`<span style="color:var(--success);font-size:11px"> ${descLabel}</span>`:""}
           ${tipoOp!=="venta"?`<span style="color:var(--muted);font-size:11px"> (${tipoOp})</span>`:""}
         </div>
       </div>
-      <span class="carrito-precio">${tipoOp==="venta"?"$"+item.subtotal.toLocaleString():"$0"}</span>
+      <span class="carrito-precio">${tipoOp==="venta"?"$"+item.subtotal.toLocaleString('en-US'):"$0"}</span>
       <button class="btn-remove" onclick="quitarItem(${i})">×</button>
     </div>`;
   }).join("");
@@ -1592,15 +1591,15 @@ function renderCarrito(){
   const comPct = tipoOp==="venta" ? getComision(canal,metodo) : 0;
   const comMonto = Math.round(totalConEnvio * comPct);
   const ingresoNeto = totalConEnvio + comMonto; // comPct es negativo
-  L("total-num").textContent = tipoOp==="venta" ? "$"+totalConEnvio.toLocaleString() : "$0";
+  L("total-num").textContent = tipoOp==="venta" ? "$"+totalConEnvio.toLocaleString('en-US') : "$0";
   L("carrito-total-bar").style.display="flex";
   const descTotalLabel=L("descuento-total-label");
   if(hayDesc){
     descTotalLabel.style.display="block";
-    descTotalLabel.textContent=`Ahorro cliente: $${(totalOriginal-total).toLocaleString()}`;
+    descTotalLabel.textContent=`Ahorro cliente: $${(totalOriginal-total).toLocaleString('en-US')}`;
   } else { descTotalLabel.style.display="none"; }
   const envioLabel = L("envio-total-label");
-  if(costoEnvio>0&&tipoOp==="venta"){ envioLabel.style.display="block"; envioLabel.textContent=`Envío: $${costoEnvio.toLocaleString()} incluido`; }
+  if(costoEnvio>0&&tipoOp==="venta"){ envioLabel.style.display="block"; envioLabel.textContent=`Envío: $${costoEnvio.toLocaleString('en-US')} incluido`; }
   else { envioLabel.style.display="none"; }
   // Comisión label
   let comLabel = L("comision-total-label");
@@ -1614,7 +1613,7 @@ function renderCarrito(){
     const pct=Math.abs(comPct*100).toFixed(0);
     const nombre=canal==="Rappi"||canal==="Uber Eats"?canal:metodo;
     comLabel.style.display="block";
-    comLabel.textContent=`${nombre} ${pct}%: -$${Math.abs(comMonto).toLocaleString()} → Neto: $${ingresoNeto.toLocaleString()}`;
+    comLabel.textContent=`${nombre} ${pct}%: -$${Math.abs(comMonto).toLocaleString('en-US')} → Neto: $${ingresoNeto.toLocaleString('en-US')}`;
   } else { comLabel.style.display="none"; }
 }
 
@@ -1683,7 +1682,7 @@ L("btn-confirmar").addEventListener("click",async()=>{
     const res=await api("registrarVenta",{items,canal,metodoPago:metodo,sucursal,cliente,tipoOp,motivo});
     if(res.ok){
       const total=S.carrito.reduce((s,i)=>s+i.subtotal,0);
-      toast(tipoOp==="regalo"?`✅ Regalo registrado`:`✅ Venta $${total.toLocaleString()} registrada`);
+      toast(tipoOp==="regalo"?`✅ Regalo registrado`:`✅ Venta $${total.toLocaleString('en-US')} registrada`);
       limpiarVenta(); cargarStock();
     } else toast(res.error,"error");
   }
@@ -1730,7 +1729,7 @@ async function cargarVentas(){
       <div class="hist-meta">
         <span class="tag">${g.canal}</span><span class="tag">${g.metodoPago}</span><span class="tag">${g.sucursal}</span>
         ${g.clienteNombre?`<span class="tag">${g.clienteNombre}</span>`:""}
-        <span class="tag tag-total">$${g.items.reduce((s,i)=>s+i.subtotal,0).toLocaleString()}</span>
+        <span class="tag tag-total">$${g.items.reduce((s,i)=>s+i.subtotal,0).toLocaleString('en-US')}</span>
       </div>
     </div>`).join("");
 }
@@ -1778,7 +1777,7 @@ async function cargarPrecios(silencioso=false){
   L("precios-content").innerHTML=tamanos.map(tamano=>`
     <div class="precio-row">
       <span class="precio-label">${tamano}</span>
-      <span class="precio-val" onclick="abrirModalPrecio('${tamano}',${getP(tamano)})">$${getP(tamano).toLocaleString()}</span>
+      <span class="precio-val" onclick="abrirModalPrecio('${tamano}',${getP(tamano)})">$${getP(tamano).toLocaleString('en-US')}</span>
     </div>`).join("");
 }
 async function repararPrecios(){
@@ -1796,7 +1795,7 @@ L("btn-guardar-precio").addEventListener("click",async()=>{
   const sabores=(S.catalogo?.sabores||[]).filter(s=>s.activo).map(s=>s.nombre);
   const promesas=sabores.map(sabor=>api("updatePrecio",{sabor,tamano,precio}));
   const resultados=await Promise.all(promesas);
-  if(resultados.every(r=>r.ok)){toast(`✅ Precio ${tamano} = $${precio.toLocaleString()}`);L("modal-precio").classList.remove("show");cargarPrecios();}
+  if(resultados.every(r=>r.ok)){toast(`✅ Precio ${tamano} = $${precio.toLocaleString('en-US')}`);L("modal-precio").classList.remove("show");cargarPrecios();}
   else toast("Error al guardar precio","error");
 });
 
@@ -2751,7 +2750,7 @@ async function cargarZonasEnvio(){
   if(sel){
     const activas = (S.zonasEnvio||[]).filter(z=>z.activo);
     sel.innerHTML = `<option value="">— Sin costo de envío —</option>` +
-      activas.map(z=>`<option value="${z.id}" data-costo="${z.costo}">${z.nombre} — $${z.costo.toLocaleString()}</option>`).join("");
+      activas.map(z=>`<option value="${z.id}" data-costo="${z.costo}">${z.nombre} — $${z.costo.toLocaleString('en-US')}</option>`).join("");
   }
 }
 
@@ -2767,7 +2766,7 @@ function renderZonasList(){
         <div style="font-weight:600;font-size:13px">${z.nombre}</div>
         <div style="font-size:11px;color:var(--muted);margin-top:2px">${z.colonias.slice(0,5).join(", ")}${z.colonias.length>5?" ...":""}</div>
       </div>
-      <div style="font-weight:700;color:var(--accent);margin:0 12px">$${z.costo.toLocaleString()}</div>
+      <div style="font-weight:700;color:var(--accent);margin:0 12px">$${z.costo.toLocaleString('en-US')}</div>
       <button class="btn-icon" onclick="eliminarZona('${z.id}')">✕</button>
     </div>`).join("");
 }
@@ -2801,7 +2800,7 @@ function onZonaChange(){
   const aviso = L("envio-costo-aviso");
   if(costo > 0){
     aviso.style.display = "block";
-    aviso.textContent = `🚗 Costo de envío: $${costo.toLocaleString()} — se sumará al total`;
+    aviso.textContent = `🚗 Costo de envío: $${costo.toLocaleString('en-US')} — se sumará al total`;
   } else {
     aviso.style.display = "none";
   }
@@ -2891,7 +2890,6 @@ function onCanalChange(){
   const aviso = L("canal-precio-aviso");
   if(regla){ aviso.style.display="block"; aviso.textContent=`💡 Regla para ${canal}: ${regla.valor>=0?"+":""}${regla.valor}${regla.tipo==="pct"?"%":"$"} por pieza`; }
   else aviso.style.display="none";
-  actualizarPrecioPreview();
   renderCarrito();
 }
 
@@ -3199,6 +3197,7 @@ function renderUtilidades(){
 }
 
 L("btn-logout").addEventListener("click",()=>{
+  limpiarVenta();
   S={token:null,usuario:null,rol:null,sucursal:null,catalogo:null,precios:null,stock:null,carrito:[],clienteSel:null,filtroSuc:null,filtroTam:null,insumos:[],recetas:[],recetaActual:[],costoEnvio:0,zonasEnvio:[],canalPrecios:[]};
   L("app").style.display="none";L("login-screen").style.display="flex";L("login-user").value="";L("login-pass").value="";
 });
