@@ -1264,6 +1264,27 @@ function toast(msg, tipo="success") {
   setTimeout(()=>el.classList.remove("show"), 3200);
 }
 
+// Convierte cantidad de receta a la misma unidad de compra del insumo
+// Ej: receta usa 250 g, insumo comprado en kg → convierte 250 g a 0.25 kg
+function convertirUnidad(cantidad, unidadReceta, unidadInsumo) {
+  const ur = (unidadReceta || "").toLowerCase().trim();
+  const ui = (unidadInsumo  || "").toLowerCase().trim();
+  if (ur === ui) return cantidad; // misma unidad, sin conversión
+  // Peso
+  if (ur === "g"   && ui === "kg")  return cantidad / 1000;
+  if (ur === "kg"  && ui === "g")   return cantidad * 1000;
+  if (ur === "g"   && ui === "mg")  return cantidad * 1000;
+  if (ur === "mg"  && ui === "g")   return cantidad / 1000;
+  // Volumen
+  if (ur === "ml"  && ui === "l")   return cantidad / 1000;
+  if (ur === "l"   && ui === "ml")  return cantidad * 1000;
+  if (ur === "ml"  && ui === "lt")  return cantidad / 1000;
+  if (ur === "lt"  && ui === "ml")  return cantidad * 1000;
+  // Si no hay conversión conocida, devolver tal cual (mejor que dar 0)
+  return cantidad;
+}
+
+
 function fmtMXN(n) {
   return '$'+Number(n||0).toLocaleString('es-MX',{minimumFractionDigits:0,maximumFractionDigits:0});
 }
@@ -2129,7 +2150,8 @@ function renderIngredientesReceta(){
   el.innerHTML=S.recetaActual.map((ing,idx)=>{
     const ins=S.insumos.find(i=>i.id===ing.insumoId);
     const costoPorUni=ins?ins.costoPorUnidad:0;
-    const costoLinea=costoPorUni*ing.cantidad;
+    const cantConvertida=ins?convertirUnidad(ing.cantidad,ing.unidad,ins.buyUnit):ing.cantidad;
+    const costoLinea=costoPorUni*cantConvertida;
     return `<div class="receta-row">
       <div><div class="receta-row-nombre">${ing.insumoNombre||"Insumo"}</div></div>
       <div class="receta-row-cant">${ing.cantidad} ${ing.unidad}</div>
@@ -2137,7 +2159,7 @@ function renderIngredientesReceta(){
       <button class="btn-del-small" onclick="quitarIngredienteReceta(${idx})">✕</button>
     </div>`;
   }).join("");
-  const costoTotal=S.recetaActual.reduce((s,ing)=>{const ins=S.insumos.find(i=>i.id===ing.insumoId);return s+(ins?ins.costoPorUnidad*ing.cantidad:0);},0);
+  const costoTotal=S.recetaActual.reduce((s,ing)=>{const ins=S.insumos.find(i=>i.id===ing.insumoId);const cant=ins?convertirUnidad(ing.cantidad,ing.unidad,ins.buyUnit):ing.cantidad;return s+(ins?ins.costoPorUnidad*cant:0);},0);
   el.innerHTML+=`<div class="calc-total-row"><span style="color:var(--muted)">Subtotal ingredientes:&nbsp;<strong style="color:var(--accent);font-size:16px">${fmtMXN(costoTotal)}</strong></span></div>`;
 }
 
@@ -3151,7 +3173,8 @@ async function renderTablaUtilidades(){
     .map(r => {
       const costo = r.ingredientes.reduce((sum, ing) => {
         const ins = insumosIdx[ing.insumoId];
-        return sum + (ins ? ins.costoPorUnidad * ing.cantidad : 0);
+        const cantConvU = ins ? convertirUnidad(ing.cantidad, ing.unidad||ins.buyUnit, ins.buyUnit) : ing.cantidad;
+        return sum + (ins ? ins.costoPorUnidad * cantConvU : 0);
       }, 0);
       const precio = getPrecio(r.sabor, r.tamano);
       const utilidad = precio > 0 ? precio - costo : null;
@@ -3310,7 +3333,8 @@ function renderUtilidades(){
     if(!rec || !rec.ingredientes.length) return null;
     return rec.ingredientes.reduce((s, ing) => {
       const ins = insumosIdx[ing.insumoId];
-      return s + (ins ? ins.costoPorUnidad * ing.cantidad : 0);
+      const cantConv = ins ? convertirUnidad(ing.cantidad, ing.unidad||ins.buyUnit, ins.buyUnit) : ing.cantidad;
+      return s + (ins ? ins.costoPorUnidad * cantConv : 0);
     }, 0);
   }
 
