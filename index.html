@@ -107,6 +107,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 .hist-productos{font-size:13px;margin:3px 0}
 .hist-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
 .tag{font-size:10px;padding:2px 8px;border-radius:8px;background:var(--warm);color:var(--muted)}
+.tag-merma{background:rgba(192,57,43,.1);color:#c0392b;font-weight:600}
 .tag-total{background:#e8f5e9;color:var(--success)}
 .cat-item{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--warm)}
 .cat-item:last-child{border-bottom:none}
@@ -3428,8 +3429,8 @@ function renderUtilidades(){
         <div class="op-num-card"><div class="op-num-val ${uCls}">${g.utilidad !== null ? fmtMXN(g.utilidad) : '—'}</div><div class="op-num-label">Utilidad</div></div>
       </div>
       <div class="op-tags">
-        <span class="tag">${g.canal||''}</span>
-        <span class="tag">${g.metodoPago||''}</span>
+        <span class="tag${g.canal==='Merma'?' tag-merma':g.canal==='Cortesía'?' tag-regalo':''}">${g.canal||''}</span>
+        ${g.canal!=='Merma'?`<span class="tag">${g.metodoPago||''}</span>`:''}
         <span class="tag">${g.sucursal||''}</span>
         ${g.clienteNombre ? `<span class="tag">${g.clienteNombre}</span>` : ''}
         ${g.margen !== null
