@@ -1265,7 +1265,7 @@ function toast(msg, tipo="success") {
 }
 
 function fmtMXN(n) {
-  return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+  return '$'+Number(n||0).toLocaleString('es-MX',{minimumFractionDigits:0,maximumFractionDigits:0});
 }
 
 // LOGIN
@@ -1668,8 +1668,8 @@ function actualizarPrecioPreview(){
     else precioFinal = Math.max(0, precioBase - descVal);
   }
   const preview = descVal > 0
-    ? `<span style="text-decoration:line-through;color:var(--muted)">$${precioBase.toLocaleString('en-US')}</span> → <strong style="color:var(--accent)">$${precioFinal.toLocaleString('en-US')}</strong>`
-    : `<span style="color:var(--muted)">$${precioBase.toLocaleString('en-US')}</span>`;
+    ? `<span style="text-decoration:line-through;color:var(--muted)">$${precioBase.toLocaleString('es-MX')}</span> → <strong style="color:var(--accent)">$${precioFinal.toLocaleString('es-MX')}</strong>`
+    : `<span style="color:var(--muted)">$${precioBase.toLocaleString('es-MX')}</span>`;
   L("item-precio-preview").innerHTML = preview + ` × ${cantidad}`;
 }
 
@@ -1757,13 +1757,13 @@ function renderCarrito(){
         <div class="carrito-nombre">${item.sabor} ${item.tamano}</div>
         <div class="carrito-sub">
           ${item.cantidad} × 
-          ${tieneDesc?`<span style="text-decoration:line-through;color:var(--muted)">$${item.precioBase.toLocaleString('en-US')}</span> `:""}
-          $${item.precio.toLocaleString('en-US')}
+          ${tieneDesc?`<span style="text-decoration:line-through;color:var(--muted)">$${item.precioBase.toLocaleString('es-MX')}</span> `:""}
+          $${item.precio.toLocaleString('es-MX')}
           ${tieneDesc?`<span style="color:var(--success);font-size:11px"> ${descLabel}</span>`:""}
           ${tipoOp!=="venta"?`<span style="color:var(--muted);font-size:11px"> (${tipoOp})</span>`:""}
         </div>
       </div>
-      <span class="carrito-precio">${tipoOp==="venta"?"$"+item.subtotal.toLocaleString('en-US'):"$0"}</span>
+      <span class="carrito-precio">${tipoOp==="venta"?"$"+item.subtotal.toLocaleString('es-MX'):"$0"}</span>
       <button class="btn-remove" onclick="quitarItem(${i})">×</button>
     </div>`;
   }).join("");
@@ -1778,15 +1778,15 @@ function renderCarrito(){
   const comPct = tipoOp==="venta" ? getComision(canal,metodo) : 0;
   const comMonto = Math.round(totalConEnvio * comPct);
   const ingresoNeto = totalConEnvio + comMonto; // comPct es negativo
-  L("total-num").textContent = tipoOp==="venta" ? "$"+totalConEnvio.toLocaleString('en-US') : "$0";
+  L("total-num").textContent = tipoOp==="venta" ? "$"+totalConEnvio.toLocaleString('es-MX') : "$0";
   L("carrito-total-bar").style.display="flex";
   const descTotalLabel=L("descuento-total-label");
   if(hayDesc){
     descTotalLabel.style.display="block";
-    descTotalLabel.textContent=`Ahorro cliente: $${(totalOriginal-total).toLocaleString('en-US')}`;
+    descTotalLabel.textContent=`Ahorro cliente: $${(totalOriginal-total).toLocaleString('es-MX')}`;
   } else { descTotalLabel.style.display="none"; }
   const envioLabel = L("envio-total-label");
-  if(costoEnvio>0&&tipoOp==="venta"){ envioLabel.style.display="block"; envioLabel.textContent=`Envío: $${costoEnvio.toLocaleString('en-US')} incluido`; }
+  if(costoEnvio>0&&tipoOp==="venta"){ envioLabel.style.display="block"; envioLabel.textContent=`Envío: $${costoEnvio.toLocaleString('es-MX')} incluido`; }
   else { envioLabel.style.display="none"; }
   // Comisión label
   let comLabel = L("comision-total-label");
@@ -1800,7 +1800,7 @@ function renderCarrito(){
     const pct=Math.abs(comPct*100).toFixed(0);
     const nombre=canal==="Rappi"||canal==="Uber Eats"?canal:metodo;
     comLabel.style.display="block";
-    comLabel.textContent=`${nombre} ${pct}%: -$${Math.abs(comMonto).toLocaleString('en-US')} → Neto: $${ingresoNeto.toLocaleString('en-US')}`;
+    comLabel.textContent=`${nombre} ${pct}%: -$${Math.abs(comMonto).toLocaleString('es-MX')} → Neto: $${ingresoNeto.toLocaleString('es-MX')}`;
   } else { comLabel.style.display="none"; }
 }
 
@@ -1869,7 +1869,7 @@ L("btn-confirmar").addEventListener("click",async()=>{
     const res=await api("registrarVenta",{items,canal,metodoPago:metodo,sucursal,cliente,tipoOp,motivo});
     if(res.ok){
       const total=S.carrito.reduce((s,i)=>s+i.subtotal,0);
-      toast(tipoOp==="regalo"?`✅ Regalo registrado`:`✅ Venta $${total.toLocaleString('en-US')} registrada`);
+      toast(tipoOp==="regalo"?`✅ Regalo registrado`:`✅ Venta $${total.toLocaleString('es-MX')} registrada`);
       limpiarVenta(); cargarStock();
     } else toast(res.error,"error");
   }
@@ -1920,7 +1920,7 @@ async function cargarVentas(){
       <div class="hist-meta">
         <span class="tag">${g.canal}</span><span class="tag">${g.metodoPago}</span><span class="tag">${g.sucursal}</span>
         ${g.clienteNombre?`<span class="tag">${g.clienteNombre}</span>`:""}
-        <span class="tag tag-total">$${g.items.reduce((s,i)=>s+i.subtotal,0).toLocaleString('en-US')}</span>
+        <span class="tag tag-total">$${g.items.reduce((s,i)=>s+i.subtotal,0).toLocaleString('es-MX')}</span>
       </div>
     </div>`).join("");
 }
@@ -1968,7 +1968,7 @@ async function cargarPrecios(silencioso=false){
   L("precios-content").innerHTML=tamanos.map(tamano=>`
     <div class="precio-row">
       <span class="precio-label">${tamano}</span>
-      <span class="precio-val" onclick="abrirModalPrecio('${tamano}',${getP(tamano)})">$${getP(tamano).toLocaleString('en-US')}</span>
+      <span class="precio-val" onclick="abrirModalPrecio('${tamano}',${getP(tamano)})">$${getP(tamano).toLocaleString('es-MX')}</span>
     </div>`).join("");
 }
 async function repararPrecios(){
@@ -1986,7 +1986,7 @@ L("btn-guardar-precio").addEventListener("click",async()=>{
   const sabores=(S.catalogo?.sabores||[]).filter(s=>s.activo).map(s=>s.nombre);
   const promesas=sabores.map(sabor=>api("updatePrecio",{sabor,tamano,precio}));
   const resultados=await Promise.all(promesas);
-  if(resultados.every(r=>r.ok)){toast(`✅ Precio ${tamano} = $${precio.toLocaleString('en-US')}`);L("modal-precio").classList.remove("show");cargarPrecios();}
+  if(resultados.every(r=>r.ok)){toast(`✅ Precio ${tamano} = $${precio.toLocaleString('es-MX')}`);L("modal-precio").classList.remove("show");cargarPrecios();}
   else toast("Error al guardar precio","error");
 });
 
@@ -2957,7 +2957,7 @@ async function cargarZonasEnvio(){
   if(sel){
     const activas = (S.zonasEnvio||[]).filter(z=>z.activo);
     sel.innerHTML = `<option value="">— Sin costo de envío —</option>` +
-      activas.map(z=>`<option value="${z.id}" data-costo="${z.costo}">${z.nombre} — $${z.costo.toLocaleString('en-US')}</option>`).join("");
+      activas.map(z=>`<option value="${z.id}" data-costo="${z.costo}">${z.nombre} — $${z.costo.toLocaleString('es-MX')}</option>`).join("");
   }
 }
 
@@ -2973,7 +2973,7 @@ function renderZonasList(){
         <div style="font-weight:600;font-size:13px">${z.nombre}</div>
         <div style="font-size:11px;color:var(--muted);margin-top:2px">${z.colonias.slice(0,5).join(", ")}${z.colonias.length>5?" ...":""}</div>
       </div>
-      <div style="font-weight:700;color:var(--accent);margin:0 12px">$${z.costo.toLocaleString('en-US')}</div>
+      <div style="font-weight:700;color:var(--accent);margin:0 12px">$${z.costo.toLocaleString('es-MX')}</div>
       <button class="btn-icon" onclick="eliminarZona('${z.id}')">✕</button>
     </div>`).join("");
 }
@@ -3007,7 +3007,7 @@ function onZonaChange(){
   const aviso = L("envio-costo-aviso");
   if(costo > 0){
     aviso.style.display = "block";
-    aviso.textContent = `🚗 Costo de envío: $${costo.toLocaleString('en-US')} — se sumará al total`;
+    aviso.textContent = `🚗 Costo de envío: $${costo.toLocaleString('es-MX')} — se sumará al total`;
   } else {
     aviso.style.display = "none";
   }
@@ -3391,7 +3391,7 @@ function renderUtilidades(){
       <div class="op-fecha">${g.fecha ? g.fecha.substring(0,16).replace('T',' ') : ''}</div>
       <div class="op-prods">${g.items.map(i=>`${i.cantidad}× ${i.sabor} ${i.tamano}`).join(' · ')}</div>
       <div class="op-nums">
-        <div class="op-num-card"><div class="op-num-val">${fmtMXN(g.ingreso)}</div><div class="op-num-label">Ingreso neto${g.comMonto<0?` <span style="font-size:10px;color:var(--danger)">-$${Math.abs(g.comMonto).toLocaleString('en-US')}</span>`:''}</div></div>
+        <div class="op-num-card"><div class="op-num-val">${fmtMXN(g.ingreso)}</div><div class="op-num-label">Ingreso neto${g.comMonto<0?` <span style="font-size:10px;color:var(--danger)">-$${Math.abs(g.comMonto).toLocaleString('es-MX')}</span>`:''}</div></div>
         <div class="op-num-card"><div class="op-num-val">${g.calculable ? fmtMXN(g.costo) : '—'}</div><div class="op-num-label">Costo</div></div>
         <div class="op-num-card"><div class="op-num-val ${uCls}">${g.utilidad !== null ? fmtMXN(g.utilidad) : '—'}</div><div class="op-num-label">Utilidad</div></div>
       </div>
