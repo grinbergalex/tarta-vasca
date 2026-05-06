@@ -1050,7 +1050,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           </div>
           <div>
             <label class="form-label">Uds</label>
-            <input class="mini-input" id="trf-cantidad" type="number" placeholder="0" style="width:100%">
+            <select class="mini-select" id="trf-cantidad" style="width:100%" disabled>
+              <option value="">— elige sabor y tamaño —</option>
+            </select>
           </div>
         </div>
 
@@ -1290,6 +1292,8 @@ function iniciarApp() {
   cargarCatalogo();
   cargarStock();
   cargarComisionesConfig();
+  cargarCanalPreciosAlInicio();
+  cargarRecetasAlInicio();
   // Cargar mensajes y refrescar cada 2 minutos
   setTimeout(cargarMensajesHeader, 1500);
   setInterval(cargarMensajesHeader, 120000);
@@ -1363,7 +1367,8 @@ function poblarSelectsVenta() {
 
 function stockConDisponibilidad(campo) {
   if(!S.stock) return [];
-  const sucursal=S.rol==="Vendedor"?S.sucursal:null;
+  // Para Owner: usar el selector de sucursal; para Vendedor: su sucursal asignada
+  const sucursal = S.rol==="Vendedor" ? S.sucursal : (L("venta-sucursal")?.value || null);
   const disponibles=S.stock.filter(s=>!s.vencido&&s.cantActual>0&&(!sucursal||s.sucursal===sucursal));
   return [...new Set(disponibles.map(s=>s[campo]))];
 }
@@ -2721,7 +2726,12 @@ function aplicarSugerenciaTransferencia(sabor,tamano,cantidad){
 function actualizarStockTrf(){
   const sabor  = L("trf-sabor")?.value;
   const tamano = L("trf-tamano")?.value;
-  if(!sabor||!tamano){ L("trf-stock-preview").style.display="none"; return; }
+  // Actualizar select de cantidad con el stock disponible en Cuajimalpa
+  const selCant = L("trf-cantidad");
+  if(!sabor||!tamano){
+    if(selCant){selCant.innerHTML='<option value="">— elige sabor y tamaño —</option>';selCant.disabled=true;}
+    L("trf-stock-preview").style.display="none"; return;
+  }
   const stock  = S.stock||[];
   const cuaji  = stock.filter(s=>s.sabor===sabor&&s.tamano===tamano&&s.sucursal==="Cuajimalpa"&&!s.vencido).reduce((s,i)=>s+i.cantActual,0);
   const polanco= stock.filter(s=>s.sabor===sabor&&s.tamano===tamano&&s.sucursal==="Polanco"&&!s.vencido).reduce((s,i)=>s+i.cantActual,0);
@@ -2729,6 +2739,16 @@ function actualizarStockTrf(){
   L("trf-stock-polanco").textContent = polanco;
   L("trf-stock-cuaji").style.color   = cuaji===0?"var(--danger)":cuaji<=3?"var(--warning)":"var(--ink)";
   L("trf-stock-preview").style.display = "block";
+  // Poblar select de cantidad con 1..cuaji
+  if(selCant){
+    if(cuaji > 0){
+      selCant.innerHTML = Array.from({length:cuaji},(_,i)=>i+1).map(n=>`<option value="${n}">${n}</option>`).join("");
+      selCant.disabled = false;
+    } else {
+      selCant.innerHTML = '<option value="">Sin stock en Cuajimalpa</option>';
+      selCant.disabled = true;
+    }
+  }
 }
 
 // ============================================================
@@ -2767,7 +2787,7 @@ function renderTransferenciasList(){
 
 async function solicitarTransferencia(){
   const sabor=L("trf-sabor").value, tamano=L("trf-tamano").value;
-  const cantidad=parseInt(L("trf-cantidad").value)||0, notas=L("trf-notas").value.trim();
+  const cantidad=parseInt(L("trf-cantidad")?.value)||0, notas=L("trf-notas")?.value.trim()||"";
   if(!sabor||!tamano||cantidad<=0){ toast("Completa sabor, tamaño y cantidad","error"); return; }
   const btn=L("btn-trf"); btn.disabled=true; btn.textContent="Registrando...";
   const res=await api("registrarTransferencia",{sabor,tamano,cantidad,notas});
@@ -3314,7 +3334,11 @@ function renderUtilidades(){
   // Calcular métricas por grupo
   let totalIngresos = 0, totalCostos = 0, totalUtilidad = 0, sinReceta = 0;
   const ops = Object.values(grupos).map(g => {
-    const ingreso = g.items.reduce((s,i) => s + i.subtotal, 0);
+    const ingresoBase = g.items.reduce((s,i) => s + i.subtotal, 0);
+    // Descontar comisión del canal/método para obtener ingreso neto real
+    const comPct = getComision(g.canal||"", g.metodoPago||"");
+    const comMonto = Math.round(ingresoBase * comPct); // comPct es negativo
+    const ingreso = ingresoBase + comMonto; // ingreso neto después de comisión
     let costo = 0; let calculable = true;
     g.items.forEach(i => {
       const c = getCostoReceta(i.sabor, i.tamano);
@@ -3325,7 +3349,7 @@ function renderUtilidades(){
     const margen   = calculable && ingreso > 0 ? (utilidad / ingreso * 100) : null;
     if(calculable){ totalIngresos += ingreso; totalCostos += costo; totalUtilidad += utilidad; }
     else { totalIngresos += ingreso; sinReceta++; }
-    return { ...g, ingreso, costo: calculable ? costo : null, utilidad, margen, calculable };
+    return { ...g, ingresoBase, ingreso, comMonto, costo: calculable ? costo : null, utilidad, margen, calculable };
   });
 
   const totalMargen = totalIngresos > 0 ? (totalUtilidad / totalIngresos * 100) : 0;
@@ -3359,7 +3383,7 @@ function renderUtilidades(){
       <div class="op-fecha">${g.fecha ? g.fecha.substring(0,16).replace('T',' ') : ''}</div>
       <div class="op-prods">${g.items.map(i=>`${i.cantidad}× ${i.sabor} ${i.tamano}`).join(' · ')}</div>
       <div class="op-nums">
-        <div class="op-num-card"><div class="op-num-val">${fmtMXN(g.ingreso)}</div><div class="op-num-label">Ingreso</div></div>
+        <div class="op-num-card"><div class="op-num-val">${fmtMXN(g.ingreso)}</div><div class="op-num-label">Ingreso neto${g.comMonto<0?` <span style="font-size:10px;color:var(--danger)">-$${Math.abs(g.comMonto).toLocaleString('en-US')}</span>`:''}</div></div>
         <div class="op-num-card"><div class="op-num-val">${g.calculable ? fmtMXN(g.costo) : '—'}</div><div class="op-num-label">Costo</div></div>
         <div class="op-num-card"><div class="op-num-val ${uCls}">${g.utilidad !== null ? fmtMXN(g.utilidad) : '—'}</div><div class="op-num-label">Utilidad</div></div>
       </div>
@@ -3441,6 +3465,17 @@ async function guardarComision(){
   } else {
     toast(res.error||"Error al guardar comisión","error");
   }
+}
+
+// Carga silenciosa de canalPrecios al arrancar (necesario para precio Rappi en venta)
+async function cargarCanalPreciosAlInicio(){
+  const res = await api("getCanalPrecios");
+  if(res.ok) S.canalPrecios = res.reglas || [];
+}
+// Carga silenciosa de recetas al arrancar (necesario para preview de costos)
+async function cargarRecetasAlInicio(){
+  const res = await api("getRecetas");
+  if(res.ok) S.recetas = res.recetas || [];
 }
 
 L("btn-logout").addEventListener("click",()=>{
