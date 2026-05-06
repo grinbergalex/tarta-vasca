@@ -1269,7 +1269,7 @@ function toast(msg, tipo="success") {
 function convertirUnidad(cantidad, unidadReceta, unidadInsumo) {
   const ur = (unidadReceta || "").toLowerCase().trim();
   const ui = (unidadInsumo  || "").toLowerCase().trim();
-  if (ur === ui) return cantidad; // misma unidad, sin conversión
+  if (ur === ui) return cantidad;
   // Peso
   if (ur === "g"   && ui === "kg")  return cantidad / 1000;
   if (ur === "kg"  && ui === "g")   return cantidad * 1000;
@@ -1280,7 +1280,15 @@ function convertirUnidad(cantidad, unidadReceta, unidadInsumo) {
   if (ur === "l"   && ui === "ml")  return cantidad * 1000;
   if (ur === "ml"  && ui === "lt")  return cantidad / 1000;
   if (ur === "lt"  && ui === "ml")  return cantidad * 1000;
-  // Si no hay conversión conocida, devolver tal cual (mejor que dar 0)
+  // Densidad 1: g ≈ ml (yogurt, crema, etc.)
+  if (ur === "g"   && (ui === "l" || ui === "lt"))  return cantidad / 1000;
+  if ((ur === "l" || ur === "lt") && ui === "g")    return cantidad * 1000;
+  if (ur === "ml"  && ui === "g")   return cantidad;
+  if (ur === "g"   && ui === "ml")  return cantidad;
+  // kg ↔ L (densidad 1)
+  if (ur === "kg"  && (ui === "l" || ui === "lt"))  return cantidad;
+  if ((ur === "l" || ur === "lt") && ui === "kg")   return cantidad;
+  // Sin conversión conocida: devolver tal cual
   return cantidad;
 }
 
