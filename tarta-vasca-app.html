@@ -3384,12 +3384,8 @@ async function cargarComisionesConfig(){
   if(res.ok && res.comisiones){
     S.comisionesConfig = res.comisiones;
   } else {
-    // Usar defaults si la API no tiene el método aún
+    // Usar defaults si la API aún no tiene la acción
     S.comisionesConfig = {...COMISIONES_DEFAULT};
-    // Convertir a positivos para mostrar
-    Object.keys(S.comisionesConfig).forEach(k=>{
-      S.comisionesConfig[k] = Math.abs(S.comisionesConfig[k]);
-    });
   }
   renderComisionesList();
 }
@@ -3400,7 +3396,8 @@ function renderComisionesList(){
   const C = S.comisionesConfig;
   const nombres = {"Tarjeta":"Tarjeta crédito/débito","Transferencia":"Transferencia","Rappi":"Rappi","Uber Eats":"Uber Eats","Efectivo":"Efectivo"};
   el.innerHTML = Object.entries(nombres).map(([key,label])=>{
-    const pct = typeof C[key]==='number' ? Math.abs(C[key]*100).toFixed(1) : '0.0';
+    const raw = C[key];
+    const pct = typeof raw==='number' ? Math.abs(raw*100).toFixed(1) : '0.0';
     const color = parseFloat(pct)>0 ? 'var(--accent)' : 'var(--muted)';
     return `<div class="insumo-row">
       <div><div class="insumo-nombre">${label}</div><div class="insumo-meta">Se descuenta del ingreso al vender</div></div>
@@ -3436,13 +3433,13 @@ async function guardarComision(){
   if(!nombre){ toast("Selecciona un método","error"); return; }
   // Guardar en Sheets (valor negativo internamente, el usuario ingresa positivo)
   const res = await api("saveComisionConfig",{nombre, porcentaje: -(pct/100)});
-  if(res.ok || true){ // si el backend no tiene el endpoint, guardamos local
+  if(res.ok){
     S.comisionesConfig[nombre] = -(pct/100);
     renderComisionesList();
     toast(`✅ Comisión ${nombre}: ${pct}%`);
-    L("com-pct").value="";
+    if(L("com-pct")) L("com-pct").value="";
   } else {
-    toast(res.error,"error");
+    toast(res.error||"Error al guardar comisión","error");
   }
 }
 
