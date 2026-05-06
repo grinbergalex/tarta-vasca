@@ -1,0 +1,3489 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1a1a1a">
+<title>Tarta Vasca</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,500;0,700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink:#1a1a1a; --cream:#faf7f2; --warm:#f0ebe0;
+  --accent:#c8602a; --green:#2e5c4a;
+  --muted:#8a8070; --border:#e0d8cc;
+  --danger:#c0392b; --success:#27ae60; --warning:#e67e22;
+  --card:#fff; --shadow:0 2px 16px rgba(0,0,0,0.08);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);min-height:100dvh}
+#login-screen{min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;background:var(--ink);position:relative;overflow:hidden}
+#login-screen::before{content:'';position:absolute;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(200,96,42,.15) 0%,transparent 70%);top:-100px;right:-100px}
+.login-logo{font-family:'Fraunces',serif;font-size:42px;font-weight:300;color:var(--cream);letter-spacing:-1px;margin-bottom:4px;position:relative;z-index:1}
+.login-tagline{font-size:13px;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-bottom:48px;position:relative;z-index:1}
+.login-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:32px 28px;width:100%;max-width:360px;position:relative;z-index:1}
+.field-label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;display:block}
+.field-input{width:100%;padding:14px 16px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:12px;color:white;font-family:'DM Sans',sans-serif;font-size:16px;margin-bottom:20px;outline:none;transition:border-color .2s}
+.field-input:focus{border-color:var(--accent)}
+.field-input::placeholder{color:rgba(255,255,255,.3)}
+.btn-login{width:100%;padding:16px;background:var(--accent);border:none;border-radius:12px;color:white;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer}
+.btn-login:disabled{opacity:.5}
+.login-error{background:rgba(192,57,43,.15);border:1px solid rgba(192,57,43,.3);color:#ff7675;padding:12px 16px;border-radius:10px;font-size:13px;margin-top:16px;display:none}
+#app{display:none;min-height:100dvh;flex-direction:column}
+.app-header{background:var(--ink);color:white;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.header-logo{font-family:'Fraunces',serif;font-size:22px;font-weight:300}
+.user-badge{background:rgba(255,255,255,.1);border-radius:20px;padding:5px 12px;font-size:12px;color:rgba(255,255,255,.7)}
+.user-badge span{color:white;font-weight:500}
+.btn-logout{background:none;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.5);padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif}
+.app-nav{background:var(--card);border-bottom:1px solid var(--border);display:flex;overflow-x:auto;scrollbar-width:none;padding:0 4px;position:sticky;top:52px;z-index:99}
+.app-nav::-webkit-scrollbar{display:none}
+.nav-tab{flex-shrink:0;padding:14px 18px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap}
+.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.app-content{flex:1;padding:20px 16px 100px}
+.card{background:var(--card);border-radius:16px;padding:20px;margin-bottom:12px;box-shadow:var(--shadow);border:1px solid var(--border)}
+.card-title{font-family:'Fraunces',serif;font-size:18px;font-weight:500;margin-bottom:4px}
+.card-sub{font-size:12px;color:var(--muted);margin-bottom:16px}
+.form-group{margin-bottom:14px}
+.form-label{display:block;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+.form-select,.form-input{width:100%;padding:12px 16px;border:1px solid var(--border);border-radius:12px;font-family:'DM Sans',sans-serif;font-size:15px;background:white;color:var(--ink);outline:none;appearance:none;transition:border-color .2s}
+.form-select:focus,.form-input:focus{border-color:var(--accent)}
+.btn-main{width:100%;padding:15px;background:var(--accent);border:none;border-radius:12px;color:white;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;transition:all .2s;margin-top:4px}
+.btn-main:active{transform:scale(.98)}
+.btn-main:disabled{opacity:.5}
+.btn-green{background:var(--green)}
+.btn-outline{width:100%;padding:12px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--ink);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;margin-top:8px}
+.summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.summary-card{background:var(--warm);border-radius:14px;padding:16px;text-align:center}
+.summary-num{font-family:'Fraunces',serif;font-size:32px;font-weight:500;line-height:1}
+.summary-label{font-size:11px;color:var(--muted);margin-top:4px}
+.stock-search{width:100%;padding:11px 16px;border:1px solid var(--border);border-radius:12px;font-family:'DM Sans',sans-serif;font-size:14px;background:white;outline:none;margin-bottom:10px;color:var(--ink)}
+.filter-row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.chip{padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:white;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;color:var(--muted);transition:all .15s}
+.chip.active{background:var(--ink);color:white;border-color:var(--ink)}
+.stock-table{width:100%;border-collapse:collapse}
+.stock-table th{text-align:left;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);padding:8px 0;border-bottom:1px solid var(--border)}
+.stock-table td{padding:10px 0;font-size:13px;border-bottom:1px solid var(--warm);vertical-align:middle}
+.stock-table tr:last-child td{border-bottom:none}
+.qty-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:500}
+.qty-ok{background:#e8f5e9;color:#27ae60}
+.qty-low{background:#fff3e0;color:#e67e22}
+.cad-badge{font-size:11px;padding:2px 7px;border-radius:10px}
+.cad-ok{background:#e8f5e9;color:#27ae60}
+.cad-warn{background:#fff3e0;color:#e67e22}
+.cad-bad{background:#ffebee;color:#c0392b}
+.suc-tag{font-size:10px;padding:2px 7px;border-radius:8px;background:var(--warm);color:var(--muted)}
+.venta-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.canal-aviso{display:none;align-items:center;gap:8px;margin-top:8px;background:#e8f5e9;border-radius:10px;padding:10px 14px;font-size:13px;color:var(--green)}
+.separador{height:1px;background:var(--border);margin:18px 0}
+.carrito-vacio{text-align:center;padding:24px;color:var(--muted);font-size:13px;background:var(--warm);border-radius:12px;margin-bottom:12px}
+.tipo-op-btn{flex:1;padding:9px;border:2px solid var(--border);border-radius:10px;background:none;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;color:var(--muted);transition:.15s}
+.tipo-op-btn.active{border-color:var(--accent);background:var(--accent);color:white;font-weight:600}
+.carrito-item{display:flex;align-items:center;background:var(--warm);border-radius:12px;padding:12px 14px;margin-bottom:8px}
+.carrito-info{flex:1}
+.carrito-nombre{font-size:14px;font-weight:500}
+.carrito-sub{font-size:12px;color:var(--muted);margin-top:2px}
+.carrito-precio{font-family:'Fraunces',serif;font-size:16px;color:var(--accent);margin-right:12px}
+.btn-remove{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:2px 6px;line-height:1}
+.carrito-total-bar{background:var(--ink);color:white;border-radius:12px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.total-label{font-size:13px;opacity:.7}
+.total-num{font-family:'Fraunces',serif;font-size:22px}
+.disp-badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:8px;margin-top:4px}
+.disp-ok{background:#e8f5e9;color:var(--success)}
+.disp-low{background:#fff3e0;color:var(--warning)}
+.disp-out{background:#ffebee;color:var(--danger)}
+.add-item-box{background:var(--warm);border-radius:14px;padding:16px;margin-bottom:14px}
+.add-item-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cliente-box{background:var(--warm);border-radius:14px;padding:16px;margin-bottom:14px}
+.cliente-encontrado-row{display:flex;align-items:center;gap:10px}
+.cli-avatar{width:34px;height:34px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:500;font-size:14px;flex-shrink:0}
+.cli-nombre{font-size:14px;font-weight:500}
+.cli-meta{font-size:11px;color:var(--muted)}
+.sugerencias{position:absolute;background:white;border:1px solid var(--border);border-radius:12px;width:100%;z-index:50;box-shadow:var(--shadow);max-height:180px;overflow-y:auto;top:100%;left:0}
+.sug-item{padding:12px 16px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--warm)}
+.sug-item:last-child{border-bottom:none}
+.historial-item{padding:13px 0;border-bottom:1px solid var(--warm)}
+.historial-item:last-child{border-bottom:none}
+.hist-fecha{font-size:11px;color:var(--muted)}
+.hist-productos{font-size:13px;margin:3px 0}
+.hist-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.tag{font-size:10px;padding:2px 8px;border-radius:8px;background:var(--warm);color:var(--muted)}
+.tag-total{background:#e8f5e9;color:var(--success)}
+.cat-item{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--warm)}
+.cat-item:last-child{border-bottom:none}
+.btn-sm{padding:6px 12px;border-radius:8px;font-size:12px;border:1px solid var(--border);background:white;cursor:pointer;font-family:'DM Sans',sans-serif}
+.btn-sm-danger{border-color:#ffcdd2;color:var(--danger);background:#fff5f5}
+.btn-sm-success{border-color:#c8e6c9;color:var(--success);background:#f1f8e9}
+.precio-row{background:var(--warm);border-radius:12px;padding:13px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.precio-label{font-size:14px;font-weight:500}
+.precio-val{font-family:'Fraunces',serif;font-size:18px;color:var(--accent);cursor:pointer;padding:4px 8px;border-radius:6px;border:1px solid transparent;transition:border-color .15s}
+.precio-val:active{border-color:var(--accent)}
+.precio-nota{font-size:11px;color:var(--muted);margin-top:4px;margin-bottom:12px}
+.usuario-row{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--warm)}
+.usuario-row:last-child{border-bottom:none}
+.rol-chip{padding:3px 10px;border-radius:10px;font-size:11px;font-weight:500;margin-right:8px}
+.rol-owner{background:#fff3cd;color:#856404}
+.rol-vendedor{background:#d1ecf1;color:#0c5460}
+.toggle-btn{padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:white;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif}
+.toggle-btn.activo{background:var(--success);color:white;border-color:var(--success)}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:flex-end;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:var(--card);border-radius:24px 24px 0 0;padding:28px 24px 40px;width:100%;max-width:480px;animation:slideUp .3s ease;max-height:90dvh;overflow-y:auto}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 20px}
+.modal-title{font-family:'Fraunces',serif;font-size:20px;font-weight:500;margin-bottom:20px}
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:white;padding:13px 22px;border-radius:24px;font-size:13px;font-weight:500;opacity:0;transition:all .3s;z-index:1000;max-width:320px;text-align:center;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.error{background:var(--danger)}
+.toast.success{background:var(--success)}
+.loading{display:flex;align-items:center;justify-content:center;padding:40px;color:var(--muted);gap:10px;font-size:13px}
+.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted)}
+.empty-icon{font-size:40px;margin-bottom:12px}
+.audit-row{padding:11px 0;border-bottom:1px solid var(--warm)}
+.audit-row:last-child{border-bottom:none}
+.audit-accion{font-size:11px;font-weight:500;color:var(--accent);text-transform:uppercase;letter-spacing:.5px}
+.audit-detalle{font-size:13px;margin:3px 0}
+.audit-meta{font-size:11px;color:var(--muted)}
+
+/* ── COSTOS v4 ── */
+.costos-tabs{display:flex;gap:2px;margin-bottom:20px;border-bottom:2px solid var(--border)}
+.costos-tab{padding:10px 16px;border:none;background:transparent;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:400;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s}
+.costos-tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:700}
+.costos-section{display:none}
+.costos-section.active{display:block}
+.insumo-row{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:10px 12px;border-radius:10px;margin-bottom:6px;background:var(--warm);border:1px solid transparent;transition:border .15s}
+.insumo-row:hover{border-color:var(--border)}
+.insumo-row.expanded{background:rgba(134,189,173,.1);border-color:#86BDAD}
+.insumo-nombre{font-size:14px;font-weight:500}
+.insumo-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.insumo-costo{font-family:'Fraunces',serif;font-size:16px;color:var(--accent);text-align:right}
+.insumo-costo-label{font-size:10px;color:var(--muted);text-align:right}
+.insumo-expand{background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;padding:4px 6px}
+.insumo-form{background:rgba(134,189,173,.07);border:1px solid #86BDAD;border-radius:10px;padding:16px;margin-bottom:10px}
+.campo-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.campo-grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.mini-input{background:white;border:1.5px solid var(--border);border-radius:8px;color:var(--ink);padding:9px 10px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;width:100%;box-sizing:border-box}
+.mini-input:focus{border-color:#86BDAD}
+.mini-select{background:white;border:1.5px solid var(--border);border-radius:8px;color:var(--ink);padding:9px 10px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;width:100%;box-sizing:border-box;cursor:pointer;appearance:none}
+.mini-select:focus{border-color:#86BDAD}
+.costo-unitario-badge{background:#86BDAD;color:#EFEEE8;border-radius:8px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+.btn-add-small{background:#86BDAD;border:none;color:#EFEEE8;border-radius:8px;cursor:pointer;padding:0 14px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:700;height:40px;letter-spacing:1px;text-transform:uppercase;white-space:nowrap}
+.btn-del-small{background:none;border:none;color:#B2AA92;cursor:pointer;font-size:15px;padding:0;height:40px;display:flex;align-items:center;justify-content:center;width:32px}
+.add-box{margin-top:14px;padding:14px;background:rgba(134,189,173,.07);border:1px dashed #86BDAD;border-radius:8px}
+.add-box-title{font-size:10px;color:#86BDAD;text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;font-weight:700}
+.receta-sabor-select{width:100%;margin-bottom:14px}
+.receta-tam-select{margin-bottom:14px}
+.receta-row{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:center;margin-bottom:6px;padding:8px 10px;background:var(--warm);border-radius:8px}
+.receta-row-nombre{font-size:13px;font-weight:500}
+.receta-row-cant{font-size:13px;color:var(--muted)}
+.receta-row-costo{font-size:13px;font-weight:700;color:var(--accent);text-align:right}
+.calc-hero{background:#86BDAD;border-radius:14px;padding:28px 24px;text-align:center;border:2px solid #C9A84C;margin-bottom:16px}
+.calc-hero-label{font-size:11px;color:#D5D0C0;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px}
+.calc-hero-price{font-size:48px;font-weight:400;color:#EFEEE8;line-height:1}
+.calc-hero-sub{font-size:13px;color:#D5D0C0;margin-top:6px}
+.calc-lineas-table{width:100%;border-collapse:collapse;margin-top:8px}
+.calc-lineas-table th{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);padding:6px 0;border-bottom:1px solid var(--border);text-align:left}
+.calc-lineas-table td{padding:9px 0;font-size:13px;border-bottom:1px solid var(--warm)}
+.calc-lineas-table tr:last-child td{border-bottom:none}
+.calc-total-row{display:flex;justify-content:flex-end;padding-top:10px;margin-top:4px;border-top:1px dashed var(--border);font-size:13px}
+.seccion-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;font-weight:700}
+.bulk-area{width:100%;min-height:80px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;resize:vertical;background:white;color:var(--ink)}
+.util-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:8px;align-items:center;padding:10px 12px;border-radius:10px;margin-bottom:6px;background:var(--warm)}
+.util-row.header{background:transparent;padding-bottom:4px;border-bottom:1px solid var(--border);margin-bottom:8px;border-radius:0}
+.util-row.header span{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:500}
+.util-nombre{font-size:14px;font-weight:500}
+.util-val{font-size:13px;text-align:right}
+.util-verde{color:var(--success);font-weight:700}
+.util-rojo{color:var(--danger);font-weight:700}
+.util-margen{font-size:11px;padding:2px 8px;border-radius:10px;text-align:right;font-weight:700}
+.margen-alto{background:#e8f5e9;color:var(--success)}
+.margen-med{background:#fff3e0;color:var(--warning)}
+.margen-bajo{background:#ffebee;color:var(--danger)}
+.op-row{padding:12px 0;border-bottom:1px solid var(--warm)}
+.op-row:last-child{border-bottom:none}
+.op-fecha{font-size:11px;color:var(--muted)}
+.op-prods{font-size:13px;margin:3px 0;font-weight:500}
+.op-nums{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:6px}
+.op-num-card{background:var(--warm);border-radius:8px;padding:8px 10px;text-align:center}
+.op-num-val{font-family:'Fraunces',serif;font-size:16px;font-weight:500}
+.op-num-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+.op-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-logo">Tarta Vasca</div>
+  <div class="login-tagline">Sistema de gestión</div>
+  <div class="login-card">
+    <label class="field-label">Usuario</label>
+    <input class="field-input" type="text" id="login-user" placeholder="tu usuario" autocapitalize="none">
+    <label class="field-label">Contraseña</label>
+    <input class="field-input" type="password" id="login-pass" placeholder="••••••••••">
+    <button class="btn-login" id="btn-login">Entrar</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header class="app-header">
+    <div class="header-logo">Tarta Vasca</div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <button id="btn-campana" onclick="toggleBandeja()" style="position:relative;background:none;border:none;cursor:pointer;font-size:20px;padding:4px 6px;color:white">
+        🔔<span id="badge-mensajes" style="display:none;position:absolute;top:0px;right:0px;background:#C0392B;color:white;font-size:9px;font-weight:700;border-radius:50%;width:15px;height:15px;line-height:15px;text-align:center"></span>
+      </button>
+      <div class="user-badge">Hola, <span id="hdr-usuario"></span></div>
+      <button class="btn-logout" id="btn-logout">Salir</button>
+    </div>
+  </header>
+
+  <!-- BANDEJA DE MENSAJES -->
+  <div id="bandeja-mensajes" style="display:none;position:fixed;top:56px;right:0;width:320px;max-height:80vh;overflow-y:auto;background:var(--card);border-left:1px solid var(--border);border-bottom:1px solid var(--border);border-radius:0 0 0 16px;box-shadow:-4px 4px 20px rgba(0,0,0,.15);z-index:200">
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--card)">
+      <div style="font-weight:700;font-size:14px">Mensajes</div>
+      <div style="display:flex;gap:6px">
+        <button onclick="abrirNuevoMensaje()" style="font-size:11px;background:var(--accent);color:white;border:none;border-radius:8px;padding:4px 10px;cursor:pointer;font-family:'DM Sans',sans-serif">+ Nuevo</button>
+        <button onclick="toggleBandeja()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;line-height:1">✕</button>
+      </div>
+    </div>
+    <div id="bandeja-lista" style="padding:8px 12px"></div>
+  </div>
+
+  <!-- MODAL NUEVO MENSAJE -->
+  <div id="modal-nuevo-msg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;display:none;align-items:center;justify-content:center">
+    <div style="background:var(--card);border-radius:16px;padding:20px;width:90%;max-width:340px">
+      <div style="font-weight:700;font-size:16px;margin-bottom:14px">Nuevo mensaje</div>
+      <div style="margin-bottom:10px">
+        <label class="form-label">Para</label>
+        <select class="form-input" id="msg-para" style="width:100%"><option value="todos">Todos</option></select>
+      </div>
+      <div style="margin-bottom:10px">
+        <label class="form-label">Asunto</label>
+        <input class="form-input" id="msg-asunto" placeholder="Asunto" style="width:100%">
+      </div>
+      <div style="margin-bottom:14px">
+        <label class="form-label">Mensaje</label>
+        <textarea class="form-input" id="msg-cuerpo" rows="4" placeholder="Escribe tu mensaje..." style="width:100%;resize:none"></textarea>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-main btn-green" onclick="enviarMensajeUI()">Enviar</button>
+        <button class="btn-outline" onclick="cerrarModalMensaje()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <nav class="app-nav">
+    <div class="nav-tab active" data-tab="stock">Stock</div>
+    <div class="nav-tab owner-only" data-tab="produccion">Producción</div>
+    <div class="nav-tab owner-only" data-tab="transferencias">Transferencias</div>
+    <div class="nav-tab" data-tab="venta">Nueva venta</div>
+    <div class="nav-tab owner-only" data-tab="ventas">Ventas</div>
+    <div class="nav-tab owner-only" data-tab="catalogo">Catálogo</div>
+    <div class="nav-tab owner-only" data-tab="precios">Precios</div>
+    <div class="nav-tab owner-only" data-tab="costos">Costos</div>
+    <div class="nav-tab owner-only" data-tab="utilidades">Utilidad por ventas</div>
+    <div class="nav-tab owner-only" data-tab="objetivos">Objetivos</div>
+    <div class="nav-tab owner-only" data-tab="alertas">Alertas</div>
+    <div class="nav-tab owner-only" data-tab="usuarios">Usuarios</div>
+    <div class="nav-tab owner-only" data-tab="auditoria">Auditoría</div>
+  </nav>
+
+  <main class="app-content">
+
+    <!-- STOCK -->
+    <div id="tab-stock" class="tab-pane">
+      <div class="card">
+        <div class="card-title">Inventario actual</div>
+        <div class="card-sub" id="stock-sub">Cargando...</div>
+        <div class="summary-grid" id="stock-summary" style="display:none">
+          <div class="summary-card"><div class="summary-num" id="sum-total">0</div><div class="summary-label">Piezas disponibles</div></div>
+          <div class="summary-card"><div class="summary-num" id="sum-vencer" style="color:var(--warning)">0</div><div class="summary-label">Por vencer hoy</div></div>
+        </div>
+        <input class="stock-search" type="text" id="stock-search" placeholder="Buscar sabor...">
+        <div class="filter-row" id="filtros-suc"></div>
+        <div class="filter-row" id="filtros-tam"></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:6px;margin-bottom:2px">
+          <span style="font-size:11px;color:var(--muted)">Ordenar por:</span>
+          <select id="stock-orden" onchange="renderStock()" style="font-size:12px;border:1px solid var(--border);border-radius:8px;padding:4px 8px;background:white;font-family:'DM Sans',sans-serif;color:var(--ink)">
+            <option value="sabor">Sabor</option>
+            <option value="sucursal">Sucursal</option>
+            <option value="tamano">Tamaño</option>
+            <option value="cantidad">Cantidad</option>
+            <option value="vence">Caducidad</option>
+          </select>
+        </div>
+        <div id="stock-content"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
+      </div>
+    </div>
+
+    <!-- VENTA -->
+    <div id="tab-venta" class="tab-pane" style="display:none">
+      <div class="card">
+        <div class="card-title">Nueva venta</div>
+
+        <!-- TIPO DE OPERACIÓN -->
+        <div style="display:flex;gap:8px;margin-bottom:14px">
+          <button class="tipo-op-btn active" onclick="setTipoOp('venta',this)" id="op-venta">🛍 Venta</button>
+          <button class="tipo-op-btn" onclick="setTipoOp('regalo',this)" id="op-regalo">🎁 Regalo</button>
+          <button class="tipo-op-btn" onclick="setTipoOp('merma',this)" id="op-merma">🗑 Merma</button>
+        </div>
+        <div id="aviso-tipo-op" style="display:none;font-size:12px;padding:8px 12px;border-radius:8px;margin-bottom:12px"></div>
+
+        <div id="venta-fields">
+          <div class="venta-grid">
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Canal</label>
+              <select class="form-select" id="venta-canal" onchange="onCanalChange()"></select>
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Método de pago</label>
+              <select class="form-select" id="venta-metodo"></select>
+            </div>
+          </div>
+          <!-- Aviso precio especial por canal -->
+          <div id="canal-precio-aviso" style="display:none;font-size:12px;padding:8px 12px;border-radius:8px;margin-top:6px;background:rgba(134,189,173,.15);color:var(--success)"></div>
+          <div class="canal-aviso" id="canal-aviso"><span>✓</span><span>Plataforma — no se piden datos del cliente</span></div>
+          <!-- Zona de envío — solo canal Domicilio -->
+          <div id="envio-section" style="display:none;margin-top:8px">
+            <label class="form-label">Zona de envío</label>
+            <select class="form-select" id="venta-zona" onchange="onZonaChange()">
+              <option value="">— Sin costo de envío —</option>
+            </select>
+            <div id="envio-costo-aviso" style="display:none;font-size:12px;padding:6px 12px;border-radius:8px;margin-top:4px;background:rgba(200,96,42,.08);color:var(--accent)"></div>
+          </div>
+        </div>
+
+        <div class="separador"></div>
+        <div class="form-group owner-only" id="venta-suc-group">
+          <label class="form-label">Sucursal</label>
+          <select class="form-select" id="venta-sucursal"></select>
+        </div>
+
+        <!-- AGREGAR PRODUCTO -->
+        <div class="add-item-box">
+          <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:12px">Agregar producto</div>
+          <div class="add-item-row">
+            <div class="form-group"><label class="form-label">Sabor</label><select class="form-select" id="item-sabor" onchange="onItemSaborChange()"></select></div>
+            <div class="form-group"><label class="form-label">Tamaño</label><select class="form-select" id="item-tamano" onchange="onItemTamanoChange()"></select></div>
+          </div>
+          <div class="add-item-row">
+            <div class="form-group">
+              <label class="form-label">Cantidad</label>
+              <select class="form-select" id="item-cantidad" disabled>
+                <option value="">— selecciona sabor y tamaño —</option>
+              </select>
+            </div>
+            <div style="display:flex;align-items:flex-end;padding-bottom:14px"><div id="item-disp"></div></div>
+          </div>
+          <!-- DESCUENTO — solo en modo venta, solo owner -->
+          <div id="descuento-row" class="owner-only" style="display:flex;gap:8px;align-items:flex-end;margin-bottom:10px">
+            <div class="form-group" style="margin-bottom:0;flex:1">
+              <label class="form-label">Descuento</label>
+              <input class="form-input" type="number" id="item-descuento" min="0" value="0" placeholder="0">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Tipo</label>
+              <select class="form-select" id="item-desc-tipo" style="width:90px">
+                <option value="pct">%</option>
+                <option value="monto">$</option>
+              </select>
+            </div>
+            <div style="padding-bottom:14px;font-size:13px;color:var(--muted)" id="item-precio-preview"></div>
+          </div>
+          <button class="btn-outline" id="btn-agregar-item" style="margin-top:0">+ Agregar al carrito</button>
+        </div>
+
+        <!-- MOTIVO — solo merma/regalo -->
+        <div id="motivo-row" style="display:none;margin-bottom:12px">
+          <label class="form-label">Motivo *</label>
+          <input class="form-input" id="op-motivo" placeholder="Ej: Producto dañado, Cortesía cliente VIP...">
+        </div>
+
+        <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Carrito</div>
+        <div id="carrito-items"><div class="carrito-vacio">Sin productos — agrega uno arriba</div></div>
+        <div id="carrito-total-bar" class="carrito-total-bar" style="display:none">
+          <div>
+            <div class="total-label">Total</div>
+            <div id="descuento-total-label" style="font-size:11px;color:rgba(255,255,255,.6);display:none"></div>
+            <div id="envio-total-label" style="font-size:11px;color:rgba(255,255,255,.6);display:none"></div>
+          </div>
+          <span class="total-num" id="total-num">$0</span>
+        </div>
+
+        <div class="separador"></div>
+        <div id="cliente-section">
+          <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Cliente</div>
+          <div style="position:relative">
+            <div class="form-group" style="margin-bottom:8px">
+              <input class="form-input" type="text" id="cli-nombre" placeholder="Buscar o escribir nombre...">
+              <div class="sugerencias" id="sugerencias" style="display:none"></div>
+            </div>
+          </div>
+          <div id="cli-encontrado" style="display:none">
+            <div class="cliente-box">
+              <div class="cliente-encontrado-row">
+                <div class="cli-avatar" id="cli-avatar">?</div>
+                <div style="flex:1">
+                  <div class="cli-nombre" id="cli-nombre-disp"></div>
+                  <div class="cli-meta" id="cli-meta-disp"></div>
+                </div>
+                <button onclick="limpiarCliente()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:20px">×</button>
+              </div>
+            </div>
+          </div>
+          <div id="cli-nuevo" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Tel <span style="font-weight:300;text-transform:none;letter-spacing:0">(opcional)</span></label>
+              <input class="form-input" type="tel" id="cli-tel" placeholder="55 0000 0000">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Email <span style="font-weight:300;text-transform:none;letter-spacing:0">(opcional)</span></label>
+              <input class="form-input" type="email" id="cli-email" placeholder="correo@...">
+            </div>
+          </div>
+        </div>
+        <div class="separador"></div>
+        <button class="btn-main btn-green" id="btn-confirmar" style="margin-top:0">Confirmar venta ✓</button>
+        <button class="btn-outline" id="btn-limpiar-venta">Limpiar todo</button>
+      </div>
+    </div>
+
+    <!-- PRODUCCIÓN -->
+    <div id="tab-produccion" class="tab-pane" style="display:none">
+      <div class="card">
+        <div class="card-title">Cargar producción</div>
+        <div class="card-sub">Alta de pasteles producidos hoy en cocina (Cuajimalpa)</div>
+        <div class="form-group"><label class="form-label">Sabor</label><select class="form-select" id="prod-sabor"></select></div>
+        <div class="form-group"><label class="form-label">Tamaño</label><select class="form-select" id="prod-tamano"></select></div>
+        <div class="form-group"><label class="form-label">Cantidad</label><input class="form-input" type="number" id="prod-cantidad" min="1" value="1"></div>
+        <button class="btn-main btn-green" id="btn-cargar-prod">Cargar producción</button>
+      </div>
+    </div>
+
+    <!-- VENTAS -->
+    <div id="tab-ventas" class="tab-pane" style="display:none">
+      <div class="card">
+        <div class="card-title">Historial de ventas</div>
+        <div class="card-sub">Últimas operaciones</div>
+        <div id="ventas-list"><div class="loading"><div class="spinner"></div></div></div>
+      </div>
+    </div>
+
+    <!-- CATÁLOGO -->
+    <div id="tab-catalogo" class="tab-pane" style="display:none">
+      <div class="card">
+        <div class="card-title">Sabores</div>
+        <div id="cat-sabores"><div class="loading"><div class="spinner"></div></div></div>
+        <button class="btn-outline" onclick="abrirModalItem('Sabor')" style="margin-top:12px">+ Agregar sabor</button>
+      </div>
+      <div class="card">
+        <div class="card-title">Tamaños</div>
+        <div id="cat-tamanos"><div class="loading"><div class="spinner"></div></div></div>
+        <button class="btn-outline" onclick="abrirModalItem('Tamaño')" style="margin-top:12px">+ Agregar tamaño</button>
+      </div>
+      <div class="card">
+        <div class="card-title">Canales de venta</div>
+        <div id="cat-canales"><div class="loading"><div class="spinner"></div></div></div>
+      </div>
+    </div>
+
+    <!-- PRECIOS -->
+    <div id="tab-precios" class="tab-pane" style="display:none">
+      <div class="card">
+        <div class="card-title">Precios</div>
+        <p class="precio-nota">Los precios son por tamaño y aplican a todos los sabores. Toca un precio para editarlo.</p>
+        <div id="precios-content"><div class="loading"><div class="spinner"></div></div></div>
+        <button class="btn-outline" onclick="repararPrecios()" style="margin-top:8px;font-size:12px">🔧 Crear precios para sabores sin precio</button>
+      </div>
+
+      <!-- PRECIO POR CANAL -->
+      <div class="card" style="margin-top:10px">
+        <div class="card-title">Precio especial por canal</div>
+        <div class="card-sub">Define una regla opcional de ajuste de precio para cada canal. Al vender puedes aplicarla o ignorarla.</div>
+        <div id="canal-precios-lista" style="margin-bottom:14px"><div class="loading"><div class="spinner"></div></div></div>
+        <div style="background:var(--warm);border-radius:12px;padding:14px">
+          <div style="font-weight:600;font-size:13px;margin-bottom:10px">Nueva regla</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+            <div>
+              <label class="form-label">Canal</label>
+              <select class="mini-select" id="cp-canal" style="width:100%"></select>
+            </div>
+            <div>
+              <label class="form-label">Tipo de ajuste</label>
+              <select class="mini-select" id="cp-tipo" style="width:100%" onchange="actualizarLabelCP()">
+                <option value="pct">Porcentaje (%)</option>
+                <option value="fijo">Monto fijo ($)</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label" id="cp-valor-label">Valor (+ sube, - baja)</label>
+              <input class="mini-input" id="cp-valor" type="number" placeholder="ej. 15 o -10" style="width:100%">
+            </div>
+          </div>
+          <div id="cp-preview" style="font-size:12px;color:var(--muted);margin-bottom:10px"></div>
+          <button class="btn-main btn-green" onclick="guardarCanalPrecio()">GUARDAR REGLA</button>
+        </div>
+      </div>
+
+      <!-- ZONAS DE ENVÍO -->
+      <div class="card" style="margin-top:10px">
+        <div class="card-title">Zonas de envío</div>
+        <div class="card-sub">Define costos de envío por colonia o código postal. Se aplican al registrar ventas a domicilio.</div>
+        <div id="zonas-lista" style="margin-bottom:14px"><div class="loading"><div class="spinner"></div></div></div>
+        <div style="background:var(--warm);border-radius:12px;padding:14px">
+          <div style="font-weight:600;font-size:13px;margin-bottom:10px">Nueva zona</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+            <div>
+              <label class="form-label">Nombre de la zona</label>
+              <input class="mini-input" id="zona-nombre" placeholder="Ej: Centro, Zona Norte..." style="width:100%">
+            </div>
+            <div>
+              <label class="form-label">Costo de envío ($)</label>
+              <input class="mini-input" id="zona-costo" type="number" placeholder="ej. 80" style="width:100%">
+            </div>
+          </div>
+          <div style="margin-bottom:10px">
+            <label class="form-label">Colonias / Códigos postales (separados por coma)</label>
+            <textarea class="mini-input" id="zona-colonias" rows="3" placeholder="Ej: Polanco, Lomas de Chapultepec, 11560, 11550..." style="width:100%;resize:none"></textarea>
+          </div>
+          <button class="btn-main btn-green" onclick="guardarZonaEnvio()">GUARDAR ZONA</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- COSTOS v4 -->
+    <div id="tab-costos" class="tab-pane" style="display:none">
+      <div class="card">
+        <div class="card-title">Costos</div>
+        <div class="card-sub">Insumos, recetas por sabor y calculadora de costo por pastel &nbsp;<span id="costos-save-status" style="font-size:11px;font-weight:500"></span></div>
+
+        <div class="costos-tabs">
+          <button class="costos-tab active" onclick="setCostosTab('insumos')">📦 Insumos</button>
+          <button class="costos-tab" onclick="setCostosTab('recetas')">📋 Recetas</button>
+          <button class="costos-tab" onclick="setCostosTab('calculadora')">🧮 Calculadora</button>
+          <button class="costos-tab" onclick="setCostosTab('carga')">📤 Carga masiva</button>
+          <button class="costos-tab" onclick="setCostosTab('tabla-util')">📊 Utilidad unitaria</button>
+          <button class="costos-tab" onclick="setCostosTab('gastos')">💸 Gastos</button>
+          <button class="costos-tab owner-only" onclick="setCostosTab('comisiones')">💳 Comisiones</button>
+        </div>
+
+        <!-- TAB INSUMOS -->
+        <div id="costos-insumos" class="costos-section active">
+          <div class="seccion-label">Catálogo de insumos</div>
+          <div id="insumos-list"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
+
+          <div class="add-box" style="margin-top:16px">
+            <div class="add-box-title">+ Nuevo insumo</div>
+            <div class="form-group" style="margin-bottom:10px">
+              <label class="form-label">Nombre del insumo</label>
+              <input class="mini-input" id="new-ins-nombre" placeholder="ej. Queso crema, Huevos, Cajas...">
+            </div>
+            <div class="form-group" style="margin-bottom:10px">
+              <label class="form-label">Descripción (opcional)</label>
+              <input class="mini-input" id="new-ins-desc" placeholder="ej. Philadelphia 190g, marca X...">
+            </div>
+            <div style="font-size:10px;color:#86BDAD;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;font-weight:700">📦 ¿Cómo lo compras?</div>
+            <div class="campo-grid3" style="margin-bottom:8px">
+              <div>
+                <label class="form-label">Cantidad</label>
+                <input type="number" class="mini-input" id="new-ins-buyqty" placeholder="ej. 30" min="0" step="1">
+              </div>
+              <div>
+                <label class="form-label">Unidad</label>
+                <select class="mini-select" id="new-ins-buyunit">
+                  <option>unidad</option><option>g</option><option>kg</option><option>ml</option><option>L</option><option>docena</option>
+                </select>
+              </div>
+              <div>
+                <label class="form-label">Precio ($)</label>
+                <input type="number" class="mini-input" id="new-ins-price" placeholder="ej. 54" min="0" step="1" style="text-align:right">
+              </div>
+            </div>
+            <div id="new-ins-costo-preview" style="display:none" class="costo-unitario-badge">
+              <span style="font-size:12px;color:#EFEEE8">Costo por unidad:</span>
+              <span id="new-ins-costo-val" style="font-size:18px;font-weight:700;color:#e8c97a">$0.00</span>
+            </div>
+            <button onclick="guardarNuevoInsumo()" style="margin-top:10px;width:100%;background:#86BDAD;border:none;color:#EFEEE8;border-radius:8px;cursor:pointer;padding:11px 0;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase">AGREGAR INSUMO</button>
+          </div>
+        </div>
+
+        <!-- TAB RECETAS -->
+        <div id="costos-recetas" class="costos-section">
+          <div class="seccion-label">Receta por sabor y tamaño</div>
+          <div class="campo-grid2" style="margin-bottom:14px">
+            <div>
+              <label class="form-label">Sabor</label>
+              <select class="mini-select receta-sabor-select" id="receta-sabor" onchange="cargarRecetaActual()"></select>
+            </div>
+            <div>
+              <label class="form-label">Tamaño</label>
+              <select class="mini-select" id="receta-tamano" onchange="cargarRecetaActual()"></select>
+            </div>
+          </div>
+          <div id="receta-ingredientes-list"></div>
+
+          <div class="add-box" style="margin-top:12px">
+            <div class="add-box-title">+ Añadir ingrediente a esta receta</div>
+            <div class="form-group" style="margin-bottom:6px">
+              <label class="form-label">Insumo del catálogo</label>
+              <select class="mini-select" id="receta-new-insumo" style="width:100%" onchange="syncInsumoNombre()">
+                <option value="">— Sin catálogo / escribir abajo —</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom:10px">
+              <label class="form-label">O escribe el nombre del ingrediente</label>
+              <input class="mini-input" id="receta-new-nombre" placeholder="Ej: Queso crema, Huevos, Azúcar..." style="width:100%">
+            </div>
+            <div class="campo-grid2" style="margin-bottom:8px">
+              <div>
+                <label class="form-label">Cantidad</label>
+                <input type="number" class="mini-input" id="receta-new-qty" placeholder="ej. 5" min="0" step="0.1">
+              </div>
+              <div>
+                <label class="form-label">Unidad</label>
+                <select class="mini-select" id="receta-new-unit">
+                  <option>unidad</option><option>g</option><option>kg</option><option>ml</option><option>L</option>
+                </select>
+              </div>
+            </div>
+            <button onclick="agregarIngredienteReceta()" style="width:100%;background:#86BDAD;border:none;color:#EFEEE8;border-radius:8px;cursor:pointer;padding:11px 0;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase">AÑADIR A RECETA</button>
+          </div>
+          <button onclick="guardarRecetaCompleta()" class="btn-main btn-green" style="margin-top:12px" id="btn-guardar-receta">Guardar receta</button>
+        </div>
+
+        <!-- TAB CALCULADORA -->
+        <div id="costos-calculadora" class="costos-section">
+          <div class="campo-grid2" style="margin-bottom:16px">
+            <div>
+              <label class="form-label">Sabor</label>
+              <select class="mini-select" id="calc-sabor" onchange="calcularCosto()" style="width:100%"></select>
+            </div>
+            <div>
+              <label class="form-label">Tamaño</label>
+              <select class="mini-select" id="calc-tamano" onchange="calcularCosto()" style="width:100%"></select>
+            </div>
+          </div>
+          <div id="calc-resultado">
+            <div class="empty-state"><div class="empty-icon">🧮</div><div>Selecciona sabor y tamaño para calcular</div></div>
+          </div>
+        </div>
+
+        <!-- TAB CARGA MASIVA -->
+        <div id="costos-carga" class="costos-section">
+          <div style="font-size:12px;color:var(--muted);padding:10px 14px;background:rgba(134,189,173,.1);border-radius:8px;margin-bottom:16px">
+            💡 Puedes cargarme los datos de tus insumos o recetas en cualquier formato: texto, lista, imagen de un documento, audio — y yo los conviero al formato correcto para guardarlos.
+          </div>
+
+          <div class="seccion-label">Carga masiva de insumos</div>
+          <div class="form-group" style="margin-bottom:8px">
+            <label class="form-label">Pega tu lista de insumos</label>
+            <textarea class="bulk-area" id="bulk-insumos-text" placeholder="ej:
+- Queso crema: 1 kg a $130
+- Huevos: cartón de 30 a $75
+- Cajas medianas: paquete de 100 a $350
+- Nata líquida: 1 litro a $52"></textarea>
+          </div>
+          <button onclick="procesarBulkInsumos()" class="btn-main" id="btn-bulk-insumos">Procesar y cargar insumos</button>
+
+          <div class="separador"></div>
+
+          <div class="seccion-label">Carga masiva de receta</div>
+          <div class="campo-grid2" style="margin-bottom:10px">
+            <div>
+              <label class="form-label">Sabor</label>
+              <select class="mini-select" id="bulk-receta-sabor" style="width:100%"></select>
+            </div>
+            <div>
+              <label class="form-label">Tamaño</label>
+              <select class="mini-select" id="bulk-receta-tamano" style="width:100%"></select>
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:8px">
+            <label class="form-label">Lista de ingredientes de esta receta</label>
+            <textarea class="bulk-area" id="bulk-receta-text" placeholder="ej:
+- 250g queso crema
+- 5 huevos
+- 200g azúcar
+- 250ml nata líquida
+- 1 caja"></textarea>
+          </div>
+          <button onclick="procesarBulkReceta()" class="btn-main btn-green" id="btn-bulk-receta">Procesar y guardar receta</button>
+        </div>
+
+        <!-- TAB UTILIDAD UNITARIA -->
+        <div id="costos-tabla-util" class="costos-section">
+          <div class="seccion-label">Utilidad unitaria por pastel con receta cargada</div>
+          <div id="tabla-util-content"><div class="loading"><div class="spinner"></div>Calculando...</div></div>
+        </div>
+
+        <!-- TAB GASTOS -->
+        <div id="costos-gastos" class="costos-section">
+          <div class="seccion-label">Gastos fijos y variables de operación</div>
+          <div id="gastos-list"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
+
+          <div class="insumo-form" style="margin-top:16px">
+            <div class="form-title" id="gasto-form-title">Nuevo gasto</div>
+            <input type="hidden" id="gasto-id">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+              <div>
+                <label class="form-label">Concepto *</label>
+                <input class="mini-input" id="g-concepto" placeholder="Renta local Cuajimalpa" style="width:100%">
+              </div>
+              <div>
+                <label class="form-label">Tipo *</label>
+                <select class="mini-select" id="g-tipo" style="width:100%">
+                  <option value="Fijo">Fijo</option>
+                  <option value="Variable">Variable</option>
+                </select>
+              </div>
+              <div>
+                <label class="form-label">Frecuencia *</label>
+                <select class="mini-select" id="g-frecuencia" style="width:100%" onchange="toggleGastoCondicional()">
+                  <option value="Mensual">Mensual</option>
+                  <option value="Semanal">Semanal</option>
+                  <option value="Por unidad">Por unidad producida</option>
+                  <option value="% sobre venta">% sobre venta</option>
+                  <option value="Condicional">Condicional (bono/comisión por meta)</option>
+                </select>
+              </div>
+              <div>
+                <label class="form-label" id="g-monto-label">Monto ($) *</label>
+                <input class="mini-input" id="g-monto" type="number" placeholder="0" style="width:100%">
+              </div>
+              <div>
+                <label class="form-label">Sucursal</label>
+                <select class="mini-select" id="g-sucursal" style="width:100%">
+                  <option value="Ambas">Ambas</option>
+                  <option value="Cuajimalpa">Cuajimalpa</option>
+                  <option value="Polanco">Polanco</option>
+                </select>
+              </div>
+              <div>
+                <label class="form-label">Descripción</label>
+                <input class="mini-input" id="g-descripcion" placeholder="Notas adicionales" style="width:100%">
+              </div>
+            </div>
+            <!-- Campos extra para gasto condicional -->
+            <div id="gasto-condicional-fields" style="display:none;gap:8px;margin-bottom:8px">
+              <div style="margin-bottom:8px">
+                <label class="form-label">¿Cuándo aplica? (condición)</label>
+                <input class="mini-input" id="g-condicion" placeholder="Ej: Al vender más de 100 piezas en el mes" style="width:100%">
+              </div>
+              <div>
+                <label class="form-label">¿A quién aplica?</label>
+                <input class="mini-input" id="g-aplica-a" placeholder="Ej: Vendedor Cuajimalpa, Equipo completo" style="width:100%">
+              </div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn-main btn-green" onclick="guardarGasto()" id="btn-guardar-gasto">GUARDAR GASTO</button>
+              <button class="btn-outline" onclick="cancelarEditarGasto()" id="btn-cancelar-gasto" style="display:none">Cancelar</button>
+            </div>
+          </div>
+        </div>
+
+      <!-- TAB COMISIONES -->
+      <div id="costos-comisiones" class="costos-section">
+        <div class="seccion-label">Comisiones y cargos por método de pago / canal</div>
+        <div style="font-size:12px;color:var(--muted);padding:8px 12px;background:rgba(134,189,173,.08);border-radius:8px;margin-bottom:14px">
+          💡 Estos porcentajes se descuentan del ingreso al calcular utilidades. Ingresa el valor positivo (ej: 6 para 6%).
+        </div>
+        <div id="comisiones-lista"></div>
+        <div class="add-box" style="margin-top:16px">
+          <div class="add-box-title">Editar comisión</div>
+          <div class="campo-grid2" style="margin-bottom:10px">
+            <div>
+              <label class="form-label">Canal / Método</label>
+              <select class="mini-select" id="com-nombre" style="width:100%">
+                <option value="Tarjeta">Tarjeta crédito/débito</option>
+                <option value="Transferencia">Transferencia bancaria</option>
+                <option value="Rappi">Rappi</option>
+                <option value="Uber Eats">Uber Eats</option>
+                <option value="Efectivo">Efectivo</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Comisión (%)</label>
+              <div style="display:flex;align-items:center;gap:6px">
+                <input class="mini-input" id="com-pct" type="number" min="0" max="100" step="0.1" placeholder="ej. 6" style="width:100%">
+                <span style="font-size:13px;color:var(--muted)">%</span>
+              </div>
+            </div>
+          </div>
+          <div id="com-preview" style="font-size:12px;color:var(--muted);margin-bottom:10px"></div>
+          <button onclick="guardarComision()" style="width:100%;background:#86BDAD;border:none;color:#EFEEE8;border-radius:8px;cursor:pointer;padding:11px 0;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase">GUARDAR COMISIÓN</button>
+        </div>
+      </div>
+
+      </div>
+    </div>
+
+    <!-- UTILIDADES -->
+    <!-- UTILIDAD POR VENTAS -->
+    <div id="tab-utilidades" class="tab-pane" style="display:none">
+
+      <!-- FILTROS -->
+      <div class="card" style="padding:16px 20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div class="card-title" style="margin-bottom:0">Utilidad por ventas</div>
+          <button onclick="aplicarFiltrosUtil()" style="background:var(--accent);border:none;color:white;border-radius:10px;padding:8px 16px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer">Aplicar</button>
+        </div>
+        <!-- Fechas -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div>
+            <label class="form-label">Desde</label>
+            <input type="date" class="mini-input" id="f-desde" style="width:100%">
+          </div>
+          <div>
+            <label class="form-label">Hasta</label>
+            <input type="date" class="mini-input" id="f-hasta" style="width:100%">
+          </div>
+        </div>
+        <!-- Filtros en grid -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <div>
+            <label class="form-label">Punto de venta</label>
+            <select class="mini-select" id="f-sucursal" style="width:100%">
+              <option value="">Todos</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Canal</label>
+            <select class="mini-select" id="f-canal" style="width:100%">
+              <option value="">Todos</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Método de pago</label>
+            <select class="mini-select" id="f-metodo" style="width:100%">
+              <option value="">Todos</option>
+              <option>Efectivo</option>
+              <option>Tarjeta</option>
+              <option>Transferencia</option>
+              <option>Rappi</option>
+              <!-- Uber Eats se maneja via canal, no como método de pago manual -->
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Sabor</label>
+            <select class="mini-select" id="f-sabor" style="width:100%">
+              <option value="">Todos</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Tamaño</label>
+            <select class="mini-select" id="f-tamano" style="width:100%">
+              <option value="">Todos</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:flex-end">
+            <button onclick="limpiarFiltrosUtil()" style="width:100%;background:none;border:1px solid var(--border);border-radius:8px;padding:9px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--muted);cursor:pointer">Limpiar filtros</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RESUMEN DEL PERÍODO -->
+      <div id="util-resumen-periodo" style="display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+          <div class="summary-card">
+            <div class="summary-num" id="up-ingresos" style="color:var(--green);font-size:24px">$0</div>
+            <div class="summary-label">Ingresos</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-num" id="up-costos" style="color:var(--muted);font-size:24px">$0</div>
+            <div class="summary-label">Costos</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-num" id="up-utilidad" style="font-size:24px">$0</div>
+            <div class="summary-label">Utilidad</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-num" id="up-margen" style="font-size:24px">0%</div>
+            <div class="summary-label">Margen</div>
+          </div>
+        </div>
+        <div style="background:var(--warm);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--muted);margin-bottom:12px">
+          <span id="up-periodo-label"></span> · <strong id="up-ops-count" style="color:var(--ink)">0 operaciones</strong>
+          <span id="up-sin-receta-aviso" style="display:none"> · <span style="color:var(--warning)">⚠️ <span id="up-sin-receta-num"></span> sin receta (excluidas del costo)</span></span>
+        </div>
+      </div>
+
+      <!-- OPERACIONES -->
+      <div class="card">
+        <div id="util-ops-list"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
+      </div>
+    </div>
+    </div>
+
+    <!-- OBJETIVOS -->
+    <div id="tab-objetivos" class="tab-pane" style="display:none">
+
+      <!-- RESUMEN MES ACTUAL -->
+      <div id="obj-resumen" style="display:none;margin-bottom:12px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:4px">
+          <div class="summary-card">
+            <div class="summary-num" id="obj-total-meta" style="font-size:26px;color:var(--ink)">—</div>
+            <div class="summary-label">Meta del mes</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-num" id="obj-total-real" style="font-size:26px">0</div>
+            <div class="summary-label">Vendidas</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-num" id="obj-total-pct" style="font-size:26px">0%</div>
+            <div class="summary-label">Cumplimiento</div>
+          </div>
+        </div>
+        <div style="background:var(--border);border-radius:8px;height:12px;overflow:hidden;margin-bottom:16px">
+          <div id="obj-barra-global" style="background:var(--accent);height:12px;width:0%;border-radius:8px;transition:.6s ease"></div>
+        </div>
+      </div>
+
+      <!-- TARJETAS -->
+      <div id="obj-lista"></div>
+
+      <!-- BOTÓN NUEVO -->
+      <button onclick="mostrarFormObjetivo()" id="btn-nuevo-obj"
+        style="width:100%;padding:14px;border:2px dashed var(--border);border-radius:14px;background:none;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--muted);cursor:pointer;margin-bottom:4px">
+        + Nuevo objetivo
+      </button>
+
+      <!-- FORM — oculto por defecto -->
+      <div id="obj-form-card" class="card" style="display:none;margin-top:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div class="card-title" id="obj-form-title" style="margin-bottom:0">Nuevo objetivo</div>
+          <button onclick="cancelarObjetivo()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">✕</button>
+        </div>
+        <input type="hidden" id="obj-id">
+
+        <!-- ENCABEZADO: nombre, sucursal, mes, año -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+          <div style="grid-column:1/-1">
+            <label class="form-label">Nombre del objetivo *</label>
+            <input class="mini-input" id="obj-nombre" placeholder="Ej: Meta mayo red completa" style="width:100%">
+          </div>
+          <div>
+            <label class="form-label">Sucursal</label>
+            <select class="mini-select" id="obj-sucursal" style="width:100%">
+              <option value="Ambas">Ambas sucursales</option>
+              <option value="Cuajimalpa">Cuajimalpa</option>
+              <option value="Polanco">Polanco</option>
+            </select>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <div>
+              <label class="form-label">Mes</label>
+              <select class="mini-select" id="obj-mes" style="width:100%">
+                <option value="1">Enero</option><option value="2">Febrero</option>
+                <option value="3">Marzo</option><option value="4">Abril</option>
+                <option value="5">Mayo</option><option value="6">Junio</option>
+                <option value="7">Julio</option><option value="8">Agosto</option>
+                <option value="9">Septiembre</option><option value="10">Octubre</option>
+                <option value="11">Noviembre</option><option value="12">Diciembre</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Año</label>
+              <input class="mini-input" id="obj-anio" type="number" style="width:100%">
+            </div>
+          </div>
+        </div>
+
+        <!-- META TOTAL -->
+        <div style="background:var(--warm);border-radius:12px;padding:14px;margin-bottom:14px">
+          <div style="font-weight:600;font-size:13px;margin-bottom:6px">🎯 Meta total de unidades</div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <input class="mini-input" id="obj-meta-total" type="number" placeholder="ej. 200"
+              style="width:100px" oninput="actualizarAvisoMeta()">
+            <span style="font-size:12px;color:var(--muted)">piezas en el mes</span>
+          </div>
+          <div id="obj-aviso-meta" style="display:none;margin-top:8px;font-size:12px;padding:6px 10px;border-radius:8px"></div>
+        </div>
+
+        <!-- DESGLOSE POR PRODUCTO -->
+        <div style="margin-bottom:10px">
+          <div style="font-weight:600;font-size:13px;margin-bottom:8px">📦 Desglose por producto <span style="font-weight:400;color:var(--muted)">(opcional)</span></div>
+          <div id="obj-lineas-list" style="margin-bottom:10px"></div>
+
+          <!-- Fila para agregar línea -->
+          <div style="display:grid;grid-template-columns:1fr 1fr 80px auto;gap:6px;align-items:end">
+            <div>
+              <label class="form-label">Sabor</label>
+              <select class="mini-select" id="obj-lin-sabor" style="width:100%"></select>
+            </div>
+            <div>
+              <label class="form-label">Tamaño</label>
+              <select class="mini-select" id="obj-lin-tamano" style="width:100%"></select>
+            </div>
+            <div>
+              <label class="form-label">Uds</label>
+              <input class="mini-input" id="obj-lin-uds" type="number" placeholder="50" style="width:100%">
+            </div>
+            <button class="btn-outline" onclick="agregarLineaObjetivo()"
+              style="padding:9px 12px;white-space:nowrap;margin-bottom:0">+ Añadir</button>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:4px">
+          <button class="btn-main btn-green" onclick="guardarObjetivo()" id="btn-guardar-obj">GUARDAR OBJETIVO</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRANSFERENCIAS -->
+    <div id="tab-transferencias" class="tab-pane" style="display:none">
+      <div class="card">
+        <div class="card-title">Transferencias a Polanco</div>
+        <div class="card-sub">Lo que se produce siempre queda en Cuajimalpa. Registra aquí lo que sale hacia Polanco.</div>
+
+        <!-- FORM ARRIBA -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 80px;gap:8px;align-items:end;margin-bottom:8px">
+          <div>
+            <label class="form-label">Sabor</label>
+            <select class="mini-select" id="trf-sabor" style="width:100%" onchange="actualizarStockTrf()"></select>
+          </div>
+          <div>
+            <label class="form-label">Tamaño</label>
+            <select class="mini-select" id="trf-tamano" style="width:100%" onchange="actualizarStockTrf()"></select>
+          </div>
+          <div>
+            <label class="form-label">Uds</label>
+            <select class="mini-select" id="trf-cantidad" style="width:100%" disabled>
+              <option value="">— elige sabor y tamaño —</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- STOCK PREVIEW -->
+        <div id="trf-stock-preview" style="display:none;margin-bottom:10px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div style="background:var(--warm);border-radius:10px;padding:10px 14px;text-align:center">
+              <div style="font-size:22px;font-weight:700;color:var(--ink)" id="trf-stock-cuaji">0</div>
+              <div style="font-size:11px;color:var(--muted)">En Cuajimalpa</div>
+            </div>
+            <div style="background:var(--warm);border-radius:10px;padding:10px 14px;text-align:center">
+              <div style="font-size:22px;font-weight:700;color:var(--accent)" id="trf-stock-polanco">0</div>
+              <div style="font-size:11px;color:var(--muted)">En Polanco</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-bottom:10px">
+          <label class="form-label">Notas (opcional)</label>
+          <input class="mini-input" id="trf-notas" placeholder="Ej: Para evento del sábado" style="width:100%">
+        </div>
+        <button class="btn-main btn-green" onclick="solicitarTransferencia()" id="btn-trf" style="margin-bottom:16px">MOVER A POLANCO →</button>
+
+        <!-- HISTORIAL -->
+        <div style="font-weight:600;font-size:13px;margin-bottom:8px;color:var(--muted)">Historial</div>
+        <div id="trf-lista"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
+      </div>
+    </div>
+
+    <!-- ALERTAS Y MÍNIMOS/MÁXIMOS -->
+    <div id="tab-alertas" class="tab-pane" style="display:none">
+
+      <!-- PANEL ALERTAS ACTIVAS -->
+      <div id="alertas-panel" style="margin-bottom:12px"></div>
+
+      <!-- CONFIGURAR LÍMITES -->
+      <div class="card">
+        <div class="card-title">Mínimos y máximos de stock</div>
+        <div class="card-sub">Por sucursal, sabor y tamaño</div>
+        <div id="limites-lista" style="margin-bottom:14px"><div class="loading"><div class="spinner"></div></div></div>
+
+        <!-- FORM NUEVO LÍMITE -->
+        <div style="background:var(--warm);border-radius:12px;padding:14px">
+          <div style="font-weight:600;font-size:13px;margin-bottom:10px">Definir límite</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+            <div>
+              <label class="form-label">Sucursal</label>
+              <select class="mini-select" id="lim-sucursal" style="width:100%">
+                <option value="Cuajimalpa">Cuajimalpa</option>
+                <option value="Polanco">Polanco</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Sabor</label>
+              <select class="mini-select" id="lim-sabor" style="width:100%"></select>
+            </div>
+            <div>
+              <label class="form-label">Tamaño</label>
+              <select class="mini-select" id="lim-tamano" style="width:100%"></select>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+            <div>
+              <label class="form-label">Mínimo (alerta si baja de aquí)</label>
+              <input class="mini-input" id="lim-min" type="number" placeholder="5" style="width:100%">
+            </div>
+            <div>
+              <label class="form-label">Máximo (alerta si sube de aquí)</label>
+              <input class="mini-input" id="lim-max" type="number" placeholder="50" style="width:100%">
+            </div>
+          </div>
+          <button class="btn-main btn-green" onclick="guardarLimite()">GUARDAR LÍMITE</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- USUARIOS -->
+    <div id="tab-usuarios" class="tab-pane" style="display:none">
+      <div class="card">
+        <div class="card-title">Usuarios</div>
+        <div id="usuarios-list"><div class="loading"><div class="spinner"></div></div></div>
+        <button class="btn-outline" onclick="document.getElementById('modal-nuevo-usuario').classList.add('show')" style="margin-top:12px">+ Nuevo usuario</button>
+      </div>
+      <div class="card">
+        <div class="card-title">Cambiar mi contraseña</div>
+        <div class="form-group"><label class="form-label">Contraseña actual</label><input class="form-input" type="password" id="pw-actual" placeholder="••••••••••"></div>
+        <div class="form-group"><label class="form-label">Nueva contraseña</label><input class="form-input" type="password" id="pw-nueva" placeholder="••••••••••"></div>
+        <button class="btn-main" id="btn-cambiar-pw">Cambiar contraseña</button>
+      </div>
+    </div>
+
+    <!-- AUDITORÍA -->
+    <div id="tab-auditoria" class="tab-pane" style="display:none">
+      <div class="card">
+        <div class="card-title">Auditoría</div>
+        <div class="card-sub">Últimas 100 acciones</div>
+        <div id="auditoria-list"><div class="loading"><div class="spinner"></div></div></div>
+      </div>
+      <div class="card" style="border:1px solid var(--danger);background:rgba(192,57,43,.04)">
+        <div class="card-title" style="color:var(--danger)">⚠️ Zona peligrosa</div>
+        <div class="card-sub">Estas acciones no se pueden deshacer</div>
+        <button onclick="ejecutarLimpiarDatos()" style="background:var(--danger);color:white;border:none;border-radius:10px;padding:10px 18px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;margin-top:8px">
+          🗑 Limpiar datos de prueba
+        </button>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">Borra ventas, stock, clientes y auditoría. Conserva catálogo, precios, insumos, recetas y usuarios.</div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- MODALES -->
+<div class="modal-overlay" id="modal-precio">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modal-precio-title">Editar precio</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Este precio aplica a todos los sabores de este tamaño.</p>
+    <div class="form-group"><label class="form-label">Nuevo precio ($)</label><input class="form-input" type="number" id="modal-precio-input" min="0"></div>
+    <button class="btn-main" id="btn-guardar-precio">Guardar</button>
+    <button class="btn-outline" onclick="document.getElementById('modal-precio').classList.remove('show')">Cancelar</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-nuevo-item">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modal-item-title">Nuevo sabor</div>
+    <div class="form-group"><label class="form-label" id="modal-item-label">Nombre</label><input class="form-input" type="text" id="modal-item-input" placeholder="Ej: Frutos rojos"></div>
+    <button class="btn-main" id="btn-guardar-item">Agregar</button>
+    <button class="btn-outline" onclick="document.getElementById('modal-nuevo-item').classList.remove('show')">Cancelar</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-nuevo-usuario">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Nuevo usuario</div>
+    <div class="form-group"><label class="form-label">Usuario</label><input class="form-input" type="text" id="nu-usuario" autocapitalize="none"></div>
+    <div class="form-group"><label class="form-label">Contraseña temporal</label><input class="form-input" type="text" id="nu-password"></div>
+    <div class="form-group"><label class="form-label">Rol</label><select class="form-select" id="nu-rol"><option value="Vendedor">Vendedor</option><option value="Owner">Owner</option></select></div>
+    <div class="form-group"><label class="form-label">Sucursal</label><select class="form-select" id="nu-sucursal"><option value="Cuajimalpa">Cuajimalpa</option><option value="Polanco">Polanco</option><option value="Ambas">Ambas</option></select></div>
+    <button class="btn-main" id="btn-guardar-usuario">Crear usuario</button>
+    <button class="btn-outline" onclick="document.getElementById('modal-nuevo-usuario').classList.remove('show')">Cancelar</button>
+  </div>
+</div>
+
+<!-- Editar insumo -->
+<div class="modal-overlay" id="modal-editar-insumo">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Editar insumo</div>
+    <input type="hidden" id="edit-ins-id">
+    <div class="form-group"><label class="form-label">Nombre</label><input class="mini-input" id="edit-ins-nombre" style="width:100%"></div>
+    <div class="form-group"><label class="form-label">Descripción</label><input class="mini-input" id="edit-ins-desc" style="width:100%"></div>
+    <div style="font-size:10px;color:#86BDAD;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;font-weight:700">📦 Dimensión de compra</div>
+    <div class="campo-grid3" style="margin-bottom:10px">
+      <div><label class="form-label">Cantidad</label><input type="number" class="mini-input" id="edit-ins-buyqty" min="0" step="1"></div>
+      <div><label class="form-label">Unidad</label><select class="mini-select" id="edit-ins-buyunit"><option>unidad</option><option>g</option><option>kg</option><option>ml</option><option>L</option><option>docena</option></select></div>
+      <div><label class="form-label">Precio ($)</label><input type="number" class="mini-input" id="edit-ins-price" min="0" step="1" style="text-align:right"></div>
+    </div>
+    <div id="edit-ins-costo-preview" class="costo-unitario-badge" style="margin-bottom:12px">
+      <span style="font-size:12px;color:#EFEEE8">Costo por unidad:</span>
+      <span id="edit-ins-costo-val" style="font-size:18px;font-weight:700;color:#e8c97a">$0.00</span>
+    </div>
+    <button class="btn-main btn-green" id="btn-guardar-editar-insumo">Guardar cambios</button>
+    <button class="btn-outline" onclick="document.getElementById('modal-editar-insumo').classList.remove('show')">Cancelar</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbxJfDX3lwu5AE9GDA1WGZ3_MP3AAGPsCz54CdzS_cnE9zxQArN1zLmjnZixwc2A13eF/exec";
+const LECTURA = ["getCatalogo","getStock","getPrecios","getUsuarios","getAuditoria","buscarCliente","getHistorialCliente","getVentas","getInsumos","getRecetas","getCalculoCosto"];
+
+let S = {
+  token:null, usuario:null, rol:null, sucursal:null,
+  catalogo:null, precios:null, stock:null,
+  carrito:[], clienteSel:null, comisionesConfig:{},
+  filtroSuc:null, filtroTam:null, precioEditar:null, itemTipo:null,
+  insumos:[], recetas:[], recetaActual:[]
+};
+
+async function api(accion, body={}) {
+  const payload = {accion, token:S.token, ...body};
+  try {
+    if (LECTURA.includes(accion)) {
+      const r = await fetch(API_URL+"?data="+encodeURIComponent(JSON.stringify(payload)),{redirect:"follow"});
+      return JSON.parse(await r.text());
+    } else {
+      const r = await fetch(API_URL,{method:"POST",body:JSON.stringify(payload),redirect:"follow"});
+      const txt = await r.text();
+      try { return JSON.parse(txt); }
+      catch(e) {
+        const r2 = await fetch(API_URL+"?data="+encodeURIComponent(JSON.stringify(payload)),{redirect:"follow"});
+        return JSON.parse(await r2.text());
+      }
+    }
+  } catch(e) { return {ok:false,error:"Error de conexión."}; }
+}
+
+function L(id) { return document.getElementById(id); }
+
+function toast(msg, tipo="success") {
+  const el = L("toast");
+  el.textContent = msg;
+  el.className = "toast "+tipo;
+  el.classList.add("show");
+  setTimeout(()=>el.classList.remove("show"), 3200);
+}
+
+function fmtMXN(n) {
+  return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+}
+
+// LOGIN
+L("btn-login").addEventListener("click", doLogin);
+L("login-pass").addEventListener("keydown", e=>{ if(e.key==="Enter") doLogin(); });
+
+async function doLogin() {
+  const usuario=L("login-user").value.trim(), password=L("login-pass").value;
+  const err=L("login-error"), btn=L("btn-login");
+  if(!usuario||!password){err.textContent="Ingresa usuario y contraseña.";err.style.display="block";return;}
+  btn.disabled=true;btn.textContent="Entrando...";err.style.display="none";
+  const res=await api("login",{usuario,password});
+  if(res.ok){S.token=res.token;S.usuario=res.usuario;S.rol=res.rol;S.sucursal=res.sucursal;iniciarApp();}
+  else{err.textContent=res.error||"Error al iniciar sesión.";err.style.display="block";}
+  btn.disabled=false;btn.textContent="Entrar";
+}
+
+function iniciarApp() {
+  L("login-screen").style.display="none";
+  L("app").style.display="flex";
+  L("hdr-usuario").textContent=S.usuario;
+  if(S.rol!=="Owner") document.querySelectorAll(".owner-only").forEach(el=>el.style.display="none");
+  setupNav();
+  cargarCatalogo();
+  cargarStock();
+  cargarComisionesConfig();
+  cargarCanalPreciosAlInicio();
+  cargarRecetasAlInicio();
+  // Cargar mensajes y refrescar cada 2 minutos
+  setTimeout(cargarMensajesHeader, 1500);
+  setInterval(cargarMensajesHeader, 120000);
+}
+
+function setupNav() {
+  document.querySelectorAll(".nav-tab").forEach(tab=>{
+    tab.addEventListener("click",()=>{
+      document.querySelectorAll(".nav-tab").forEach(t=>t.classList.remove("active"));
+      tab.classList.add("active");
+      document.querySelectorAll(".tab-pane").forEach(p=>p.style.display="none");
+      L("tab-"+tab.dataset.tab).style.display="block";
+      const t=tab.dataset.tab;
+      if(t==="stock") cargarStock();
+      else if(t==="precios") cargarPrecios();
+      else if(t==="usuarios") cargarUsuarios();
+      else if(t==="auditoria") cargarAuditoria();
+      else if(t==="catalogo") cargarCatalogoPantalla();
+      else if(t==="ventas") cargarVentas();
+      else if(t==="venta") iniciarVenta();
+      else if(t==="costos") { if(!S.insumos.length) cargarCostos(); else renderCostos(); }
+      else if(t==="utilidades") cargarUtilidades();
+      else if(t==="precios") { cargarPrecios(); cargarZonasEnvio(); cargarCanalPrecios(); }
+      else if(t==="objetivos") cargarObjetivos();
+      else if(t==="transferencias") cargarTransferencias();
+      else if(t==="alertas") cargarAlertas();
+    });
+  });
+}
+
+// ============================================================
+// CATÁLOGO
+// ============================================================
+async function cargarCatalogo() {
+  const res=await api("getCatalogo");
+  if(!res.ok) return;
+  S.catalogo=res;
+  await cargarPrecios(true);
+  poblarSelectsVenta();
+}
+
+function poblarSelectsVenta() {
+  if(!S.catalogo) return;
+  const suc=(S.catalogo.sucursales||[]).filter(s=>s.activo).map(s=>s.nombre);
+  const can=(S.catalogo.canales||[]).filter(c=>c.activo).map(c=>c.nombre);
+  const canFinal=can.length>0?can.filter(c=>c!=="Uber Eats"):["Tienda","Domicilio","Rappi"];
+
+  // Sucursal
+  llenar("venta-sucursal",suc);
+  const selSuc = L("venta-sucursal");
+  if(selSuc && S.sucursal && suc.includes(S.sucursal)) selSuc.value = S.sucursal;
+
+  // Canal y método
+  llenar("venta-canal",canFinal);
+  actualizarMetodoPago(); actualizarUICanal();
+  if(S.rol==="Vendedor") L("venta-suc-group").style.display="none";
+
+  // Producción selects
+  const sabAll=(S.catalogo.sabores||[]).filter(s=>s.activo).map(s=>s.nombre);
+  const tamAll=(S.catalogo.tamanos||[]).filter(t=>t.activo).map(t=>t.nombre);
+  llenar("prod-sabor", sabAll);
+  llenar("prod-tamano", tamAll);
+
+  // Costos selects
+  ["receta-sabor","calc-sabor","bulk-receta-sabor"].forEach(id=>llenar(id,sabAll));
+  ["receta-tamano","calc-tamano","bulk-receta-tamano"].forEach(id=>llenar(id,tamAll));
+
+  // Actualizar selectores de venta en cascada (maneja sabor/tamaño/cantidad)
+  actualizarSelectoresCascada();
+}
+
+function stockConDisponibilidad(campo) {
+  if(!S.stock) return [];
+  // Para Owner: usar el selector de sucursal; para Vendedor: su sucursal asignada
+  const sucursal = S.rol==="Vendedor" ? S.sucursal : (L("venta-sucursal")?.value || null);
+  const disponibles=S.stock.filter(s=>!s.vencido&&s.cantActual>0&&(!sucursal||s.sucursal===sucursal));
+  return [...new Set(disponibles.map(s=>s[campo]))];
+}
+
+function llenar(id, opciones) {
+  const sel=L(id);
+  if(!sel) return;
+  sel.innerHTML=opciones.map(o=>`<option value="${o}">${o}</option>`).join("");
+}
+
+// Comisiones por canal/método — se restan del ingreso (costo de ventas)
+// Comisiones — valores por defecto, sobrescritos por S.comisionesConfig si está cargado
+const COMISIONES_DEFAULT = {"Rappi":-0.23,"Uber Eats":-0.23,"Tarjeta":-0.06,"Transferencia":-0.03,"Efectivo":0};
+function getComisionesActuales(){
+  if(S.comisionesConfig && Object.keys(S.comisionesConfig).length>0) return S.comisionesConfig;
+  return COMISIONES_DEFAULT;
+}
+function getComision(canal,metodo){
+  const C=getComisionesActuales();
+  return canal==="Rappi"||canal==="Uber Eats"?C[canal]||-0.23:(C[metodo]||0);
+}
+
+function esPlataforma(canal){return canal==="Rappi"||canal==="Uber Eats";}
+function actualizarMetodoPago(){
+  const canal=L("venta-canal")?.value;
+  if(!canal) return;
+  const esPlat=esPlataforma(canal);
+  llenar("venta-metodo",esPlat?[canal]:["Efectivo","Tarjeta","Transferencia"]);
+  // Mostrar/ocultar selector de método
+  const metodoGroup=L("venta-metodo")?.parentElement;
+  if(metodoGroup) metodoGroup.style.display=esPlat?"none":"block";
+}
+function actualizarUICanal(){
+  const canal=L("venta-canal")?.value;
+  if(!canal) return;
+  const aviso=L("canal-aviso"), cli=L("cliente-section");
+  if(esPlataforma(canal)){aviso.style.display="flex";if(cli)cli.style.display="none";}
+  else{aviso.style.display="none";if(cli)cli.style.display="block";}
+}
+L("venta-canal")?.addEventListener("change",()=>{
+  onCanalChange();
+});
+
+// ============================================================
+// STOCK
+// ============================================================
+async function cargarStock() {
+  L("stock-content").innerHTML=`<div class="loading"><div class="spinner"></div>Cargando...</div>`;
+  const res=await api("getStock");
+  if(!res.ok){L("stock-content").innerHTML=`<div class="empty-state"><div>Error al cargar</div></div>`;return;}
+  S.stock=res.stock;
+  renderStock(); poblarSelectsVenta();
+}
+
+function renderStock(){
+  const stock=S.stock||[];
+  const busqueda=L("stock-search").value.toLowerCase();
+  const orden=L("stock-orden")?.value||"sabor";
+  let f=stock.filter(s=>!s.vencido&&s.cantActual>0);
+  if(S.filtroSuc) f=f.filter(s=>s.sucursal===S.filtroSuc);
+  if(S.filtroTam) f=f.filter(s=>s.tamano===S.filtroTam);
+  if(busqueda) f=f.filter(s=>s.sabor.toLowerCase().includes(busqueda));
+
+  // Ordenar
+  f.sort((a,b)=>{
+    if(orden==="sabor")     return a.sabor.localeCompare(b.sabor)||a.sucursal.localeCompare(b.sucursal);
+    if(orden==="sucursal")  return a.sucursal.localeCompare(b.sucursal)||a.sabor.localeCompare(b.sabor);
+    if(orden==="tamano")    return a.tamano.localeCompare(b.tamano)||a.sabor.localeCompare(b.sabor);
+    if(orden==="cantidad")  return b.cantActual-a.cantActual;
+    if(orden==="vence")     return a.diasRestantes-b.diasRestantes;
+    return 0;
+  });
+
+  L("sum-total").textContent=f.reduce((s,i)=>s+i.cantActual,0);
+  L("sum-vencer").textContent=f.filter(s=>s.porVencer).length;
+  L("stock-summary").style.display="grid";
+  L("stock-sub").textContent=S.filtroSuc||(S.rol==="Vendedor"?S.sucursal:"todas las sucursales");
+  if(S.catalogo&&S.rol==="Owner"){
+    const sucs=(S.catalogo.sucursales||[]).filter(s=>s.activo).map(s=>s.nombre);
+    L("filtros-suc").innerHTML=`<div class="chip ${!S.filtroSuc?'active':''}" data-suc="">Todas</div>`+sucs.map(s=>`<div class="chip ${S.filtroSuc===s?'active':''}" data-suc="${s}">${s}</div>`).join("");
+    L("filtros-suc").querySelectorAll(".chip").forEach(c=>c.addEventListener("click",()=>{S.filtroSuc=c.dataset.suc||null;renderStock();}));
+  }
+  if(S.catalogo){
+    const tams=(S.catalogo.tamanos||[]).filter(t=>t.activo).map(t=>t.nombre);
+    L("filtros-tam").innerHTML=`<div class="chip ${!S.filtroTam?'active':''}" data-tam="">Todos</div>`+tams.map(t=>`<div class="chip ${S.filtroTam===t?'active':''}" data-tam="${t}">${t}</div>`).join("");
+    L("filtros-tam").querySelectorAll(".chip").forEach(c=>c.addEventListener("click",()=>{S.filtroTam=c.dataset.tam||null;renderStock();}));
+  }
+  if(f.length===0){L("stock-content").innerHTML=`<div class="empty-state"><div class="empty-icon">📦</div><div>Sin stock disponible</div></div>`;return;}
+  L("stock-content").innerHTML=`<table class="stock-table">
+    <thead><tr><th>Sabor</th><th>Tam.</th>${S.rol==="Owner"?"<th>Suc.</th>":""}<th>Cant.</th><th>Vence</th></tr></thead>
+    <tbody>${f.map(s=>{
+      const qCls=s.cantActual<=2?"qty-low":"qty-ok";
+      const cCls=s.vencido?"cad-bad":s.porVencer?"cad-warn":"cad-ok";
+      const cTxt=s.vencido?"Vencido":s.diasRestantes===1?"Hoy":s.diasRestantes+"d";
+      return `<tr><td><strong>${s.sabor}</strong></td><td style="color:var(--muted);font-size:12px">${s.tamano}</td>${S.rol==="Owner"?`<td><span class="suc-tag">${s.sucursal.substring(0,4)}</span></td>`:""}<td><span class="qty-badge ${qCls}">${s.cantActual}</span></td><td><span class="cad-badge ${cCls}">${cTxt}</span></td></tr>`;
+    }).join("")}</tbody></table>`;
+}
+L("stock-search").addEventListener("input",renderStock);
+
+// ============================================================
+// VENTA
+// ============================================================
+function iniciarVenta(){
+  if(S.catalogo) poblarSelectsVenta();
+  actualizarUICanal();
+  actualizarSelectoresCascada();
+}
+
+function getSucursalVenta(){return S.rol==="Vendedor"?S.sucursal:(L("venta-sucursal")?.value||S.sucursal);}
+
+function calcDisp(sabor,tamano){
+  if(!S.stock) return 0;
+  const suc=getSucursalVenta();
+  const enCarrito=S.carrito.filter(i=>i.sabor===sabor&&i.tamano===tamano).reduce((s,i)=>s+i.cantidad,0);
+  const enStock=S.stock.filter(s=>s.sabor===sabor&&s.tamano===tamano&&s.sucursal===suc&&!s.vencido&&s.cantActual>0).reduce((s,i)=>s+i.cantActual,0);
+  return Math.max(0,enStock-enCarrito);
+}
+
+function getPrecio(tamano){if(!S.precios)return 0;const p=S.precios.find(p=>p.tamano===tamano);return p?p.precio:0;}
+
+// ── LÓGICA CASCADA ─────────────────────────────────────────
+// Actualiza sabores/tamaños/cantidad en cascada según la selección actual
+function actualizarSelectoresCascada(){
+  if(!S.stock||!S.catalogo) return;
+  const suc = getSucursalVenta();
+  const sabActual = L("item-sabor")?.value;
+  const tamActual = L("item-tamano")?.value;
+
+  // Stock disponible filtrado por sucursal
+  const stockSuc = S.stock.filter(s=>!s.vencido&&s.cantActual>0&&s.sucursal===suc);
+
+  // Sabores disponibles en esta sucursal
+  const saboresConStock = [...new Set(stockSuc.map(s=>s.sabor))];
+  const todosSabores = (S.catalogo.sabores||[]).filter(s=>s.activo).map(s=>s.nombre);
+  const selSab = L("item-sabor");
+  if(selSab){
+    // Mantener selección actual si sigue siendo válida
+    selSab.innerHTML = todosSabores.map(n=>{
+      const tieneStock = saboresConStock.includes(n);
+      return `<option value="${n}" ${!tieneStock?'disabled':''}>${tieneStock?'':'✗ '}${n}</option>`;
+    }).join("");
+    // Restaurar selección o elegir el primero disponible
+    if(sabActual && saboresConStock.includes(sabActual)){
+      selSab.value = sabActual;
+    } else if(saboresConStock.length>0){
+      // no cambiar selección si está deshabilitada, dejar que el usuario elija
+      if(sabActual) selSab.value = sabActual; // mantener aunque esté disabled
+    }
+  }
+
+  const sabFinal = L("item-sabor")?.value;
+
+  // Tamaños disponibles para el sabor seleccionado
+  const stockSabSuc = sabFinal ? stockSuc.filter(s=>s.sabor===sabFinal) : [];
+  const tamanosConStock = [...new Set(stockSabSuc.map(s=>s.tamano))];
+  const todosTaganos = (S.catalogo.tamanos||[]).filter(t=>t.activo).map(t=>t.nombre);
+  const selTam = L("item-tamano");
+  if(selTam){
+    selTam.innerHTML = todosTaganos.map(n=>{
+      const tieneStock = tamanosConStock.includes(n);
+      return `<option value="${n}" ${!tieneStock?'disabled':''}>${tieneStock?'':'✗ '}${n}</option>`;
+    }).join("");
+    if(tamActual && tamanosConStock.includes(tamActual)){
+      selTam.value = tamActual;
+    } else if(tamActual){
+      selTam.value = tamActual; // mantener aunque esté disabled
+    }
+  }
+
+  const tamFinal = L("item-tamano")?.value;
+
+  // Actualizar selector de cantidad
+  actualizarSelectCantidad(sabFinal, tamFinal);
+  // Actualizar preview de precio
+  actualizarPrecioPreview();
+}
+
+function actualizarSelectCantidad(sabor, tamano){
+  const sel = L("item-cantidad");
+  if(!sel) return;
+  if(!sabor||!tamano){
+    sel.innerHTML=`<option value="">— selecciona sabor y tamaño —</option>`;
+    sel.disabled=true;
+    L("item-disp").innerHTML="";
+    return;
+  }
+  const disp = calcDisp(sabor, tamano);
+  if(disp<=0){
+    sel.innerHTML=`<option value="">Sin stock disponible</option>`;
+    sel.disabled=true;
+    L("item-disp").innerHTML=`<span class="disp-badge disp-out">Sin stock</span>`;
+    return;
+  }
+  const valActual = parseInt(sel.value)||1;
+  sel.innerHTML = Array.from({length:disp},(_,i)=>i+1).map(n=>`<option value="${n}">${n}</option>`).join("");
+  sel.disabled = false;
+  // Mantener valor si sigue siendo válido
+  if(valActual>=1&&valActual<=disp) sel.value = valActual;
+  const cls = disp<=2?"disp-low":"disp-ok";
+  L("item-disp").innerHTML=`<span class="disp-badge ${cls}">${disp} disponibles</span>`;
+}
+
+function onItemSaborChange(){
+  actualizarSelectoresCascada();
+}
+function onItemTamanoChange(){
+  actualizarSelectCantidad(L("item-sabor")?.value, L("item-tamano")?.value);
+  actualizarPrecioPreview();
+}
+
+// Cuando cambia sucursal → recalcular todo
+L("venta-sucursal")?.addEventListener("change",()=>{
+  poblarSelectsVenta();
+  actualizarSelectoresCascada();
+});
+
+// Mantener alias para compatibilidad
+function actualizarDisp(){ actualizarSelectoresCascada(); }
+// ── TIPO DE OPERACIÓN ──────────────────────────────────────
+let tipoOp = "venta"; // "venta" | "regalo" | "merma"
+
+function setTipoOp(tipo, btn){
+  tipoOp = tipo;
+  document.querySelectorAll(".tipo-op-btn").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  const aviso = L("aviso-tipo-op");
+  const ventaFields = L("venta-fields");
+  const descRow = L("descuento-row");
+  const motivoRow = L("motivo-row");
+  const clienteSection = L("cliente-section");
+  const btnConfirmar = L("btn-confirmar");
+
+  if(tipo === "venta"){
+    aviso.style.display = "none";
+    ventaFields.style.display = "block";
+    descRow.style.display = "flex";
+    motivoRow.style.display = "none";
+    clienteSection.style.display = "block";
+    btnConfirmar.textContent = "Confirmar venta ✓";
+    btnConfirmar.style.background = "";
+  } else if(tipo === "regalo"){
+    aviso.style.display = "block";
+    aviso.style.background = "rgba(46,92,74,.1)";
+    aviso.style.color = "var(--success)";
+    aviso.textContent = "🎁 Regalo — se descuenta stock pero no se cobra. Requiere motivo.";
+    ventaFields.style.display = "none";
+    descRow.style.display = "none";
+    motivoRow.style.display = "block";
+    clienteSection.style.display = "block";
+    btnConfirmar.textContent = "Registrar regalo 🎁";
+    btnConfirmar.style.background = "#2E5C4A";
+  } else if(tipo === "merma"){
+    aviso.style.display = "block";
+    aviso.style.background = "rgba(192,57,43,.08)";
+    aviso.style.color = "var(--danger)";
+    aviso.textContent = "🗑 Merma — se descuenta stock sin registrar venta ni cliente. Requiere motivo.";
+    ventaFields.style.display = "none";
+    descRow.style.display = "none";
+    motivoRow.style.display = "block";
+    clienteSection.style.display = "none";
+    btnConfirmar.textContent = "Registrar merma 🗑";
+    btnConfirmar.style.background = "var(--danger)";
+  }
+  S.carrito = [];
+  L("op-motivo").value = ""; // limpiar motivo al cambiar tipo
+  renderCarrito();
+}
+
+// ── PRECIO PREVIEW CON DESCUENTO ───────────────────────────
+function actualizarPrecioPreview(){
+  const sabor = L("item-sabor")?.value;
+  const tamano = L("item-tamano")?.value;
+  const cantidad = parseInt(L("item-cantidad")?.value)||1;
+  const descVal = parseFloat(L("item-descuento")?.value)||0;
+  const descTipo = L("item-desc-tipo")?.value||"pct";
+  // Precio con ajuste de canal
+  const precioBaseStd = getPrecioActualLocal(sabor, tamano);
+  const canalActual = L("venta-canal")?.value||"";
+  const reglaCanal = (S.canalPrecios||[]).find(r=>r.canal===canalActual&&r.activo);
+  let precioBase = precioBaseStd;
+  if(reglaCanal&&precioBase>0){
+    if(reglaCanal.tipo==="pct") precioBase = Math.round(precioBase*(1+reglaCanal.valor/100));
+    else precioBase = Math.max(0, precioBase + reglaCanal.valor);
+  }
+  if(!precioBase){ L("item-precio-preview").innerHTML=""; return; }
+  let precioFinal = precioBase;
+  if(descVal > 0){
+    if(descTipo === "pct") precioFinal = precioBase * (1 - descVal/100);
+    else precioFinal = Math.max(0, precioBase - descVal);
+  }
+  const preview = descVal > 0
+    ? `<span style="text-decoration:line-through;color:var(--muted)">$${precioBase.toLocaleString('en-US')}</span> → <strong style="color:var(--accent)">$${precioFinal.toLocaleString('en-US')}</strong>`
+    : `<span style="color:var(--muted)">$${precioBase.toLocaleString('en-US')}</span>`;
+  L("item-precio-preview").innerHTML = preview + ` × ${cantidad}`;
+}
+
+function getPrecioActualLocal(sabor, tamano){
+  if(!S.precios) return 0;
+  const esp = S.precios.find(p=>p.sabor===sabor&&p.tamano===tamano);
+  if(esp&&esp.precio>0) return esp.precio;
+  const base = S.precios.find(p=>p.tamano===tamano&&p.precio>0);
+  return base ? base.precio : 0;
+}
+
+L("item-descuento")?.addEventListener("input", actualizarPrecioPreview);
+L("item-desc-tipo")?.addEventListener("change", actualizarPrecioPreview);
+L("item-sabor")?.addEventListener("change", actualizarPrecioPreview);
+L("item-tamano")?.addEventListener("change", actualizarPrecioPreview);
+L("item-cantidad")?.addEventListener("input", actualizarPrecioPreview);
+
+// ── AGREGAR AL CARRITO ─────────────────────────────────────
+L("btn-agregar-item")?.addEventListener("click",()=>{
+  const sabor=L("item-sabor")?.value, tamano=L("item-tamano")?.value;
+  const cantidad=parseInt(L("item-cantidad")?.value)||0;
+  const sucursal=getSucursalVenta();
+
+  // Validaciones sin tocar la selección
+  if(!sabor||!tamano){toast("Selecciona sabor y tamaño","error");return;}
+  if(!cantidad||cantidad<1){toast("Selecciona una cantidad","error");return;}
+
+  // Verificar que las opciones seleccionadas no estén deshabilitadas
+  const optSab = L("item-sabor")?.querySelector(`option[value="${sabor}"]`);
+  const optTam = L("item-tamano")?.querySelector(`option[value="${tamano}"]`);
+  if(optSab?.disabled){toast(`${sabor} no tiene stock en ${sucursal}`, "error");return;}
+  if(optTam?.disabled){toast(`Tamaño ${tamano} no disponible para ${sabor} en ${sucursal}`, "error");return;}
+
+  // Precio base estándar
+  const precioBaseStd=getPrecioActualLocal(sabor,tamano);
+  // Aplicar regla de precio por canal si existe (ej. Rappi sube precio)
+  const canalActual = L("venta-canal")?.value||"";
+  const reglaCanal = (S.canalPrecios||[]).find(r=>r.canal===canalActual&&r.activo);
+  let precioBase = precioBaseStd;
+  if(reglaCanal&&precioBase>0){
+    if(reglaCanal.tipo==="pct") precioBase = Math.round(precioBase*(1+reglaCanal.valor/100));
+    else precioBase = Math.max(0, precioBase + reglaCanal.valor);
+  }
+  let precioFinal=precioBase, descuento=0, descTipo="";
+  if(tipoOp==="venta"){
+    const descVal=parseFloat(L("item-descuento")?.value)||0;
+    descTipo=L("item-desc-tipo")?.value||"pct";
+    if(descVal>0){
+      descuento=descVal;
+      if(descTipo==="pct") precioFinal=precioBase*(1-descVal/100);
+      else precioFinal=Math.max(0,precioBase-descVal);
+    }
+  } else {
+    precioFinal=0;
+  }
+  precioFinal=Math.round(precioFinal*100)/100;
+
+  const disponible=calcDisp(sabor,tamano);
+  const enCarrito=S.carrito.filter(i=>i.sabor===sabor&&i.tamano===tamano).reduce((s,i)=>s+i.cantidad,0);
+  if(enCarrito+cantidad>disponible){
+    toast(`Solo hay ${disponible} disponibles (${enCarrito} ya en carrito)`,"error");
+    // Actualizar el select de cantidad para reflejar lo que queda
+    actualizarSelectCantidad(sabor,tamano);
+    return;
+  }
+
+  S.carrito.push({sabor,tamano,cantidad,precioBase,precio:precioFinal,descuento,descTipo,subtotal:precioFinal*cantidad});
+  // Solo limpiar descuento y preview, NO el sabor/tamaño/cantidad para facilitar agregar más
+  if(L("item-descuento")) L("item-descuento").value="0";
+  L("item-precio-preview").innerHTML="";
+  renderCarrito();
+  // Actualizar select cantidad con el stock restante
+  actualizarSelectCantidad(sabor,tamano);
+  toast(`${sabor} ${tamano} × ${cantidad} agregado`);
+});
+
+function renderCarrito(){
+  const items=L("carrito-items");
+  if(S.carrito.length===0){items.innerHTML=`<div class="carrito-vacio">Sin productos — agrega uno arriba</div>`;L("carrito-total-bar").style.display="none";return;}
+  items.innerHTML=S.carrito.map((item,i)=>{
+    const tieneDesc=item.descuento>0&&tipoOp==="venta";
+    const descLabel=tieneDesc?(item.descTipo==="pct"?`-${item.descuento}%`:`-$${item.descuento}`):"";
+    return `<div class="carrito-item">
+      <div class="carrito-info">
+        <div class="carrito-nombre">${item.sabor} ${item.tamano}</div>
+        <div class="carrito-sub">
+          ${item.cantidad} × 
+          ${tieneDesc?`<span style="text-decoration:line-through;color:var(--muted)">$${item.precioBase.toLocaleString('en-US')}</span> `:""}
+          $${item.precio.toLocaleString('en-US')}
+          ${tieneDesc?`<span style="color:var(--success);font-size:11px"> ${descLabel}</span>`:""}
+          ${tipoOp!=="venta"?`<span style="color:var(--muted);font-size:11px"> (${tipoOp})</span>`:""}
+        </div>
+      </div>
+      <span class="carrito-precio">${tipoOp==="venta"?"$"+item.subtotal.toLocaleString('en-US'):"$0"}</span>
+      <button class="btn-remove" onclick="quitarItem(${i})">×</button>
+    </div>`;
+  }).join("");
+  const total=S.carrito.reduce((s,i)=>s+i.subtotal,0);
+  const totalOriginal=S.carrito.reduce((s,i)=>s+i.precioBase*i.cantidad,0);
+  const hayDesc=totalOriginal>total&&tipoOp==="venta";
+  const costoEnvio = S.costoEnvio || 0;
+  const totalConEnvio = tipoOp==="venta" ? total + costoEnvio : 0;
+  // Comisión
+  const canal  = L("venta-canal")?.value||"";
+  const metodo = L("venta-metodo")?.value||"";
+  const comPct = tipoOp==="venta" ? getComision(canal,metodo) : 0;
+  const comMonto = Math.round(totalConEnvio * comPct);
+  const ingresoNeto = totalConEnvio + comMonto; // comPct es negativo
+  L("total-num").textContent = tipoOp==="venta" ? "$"+totalConEnvio.toLocaleString('en-US') : "$0";
+  L("carrito-total-bar").style.display="flex";
+  const descTotalLabel=L("descuento-total-label");
+  if(hayDesc){
+    descTotalLabel.style.display="block";
+    descTotalLabel.textContent=`Ahorro cliente: $${(totalOriginal-total).toLocaleString('en-US')}`;
+  } else { descTotalLabel.style.display="none"; }
+  const envioLabel = L("envio-total-label");
+  if(costoEnvio>0&&tipoOp==="venta"){ envioLabel.style.display="block"; envioLabel.textContent=`Envío: $${costoEnvio.toLocaleString('en-US')} incluido`; }
+  else { envioLabel.style.display="none"; }
+  // Comisión label
+  let comLabel = L("comision-total-label");
+  if(!comLabel){
+    comLabel = document.createElement("div");
+    comLabel.id="comision-total-label";
+    comLabel.style.cssText="font-size:11px;color:rgba(255,255,255,.6)";
+    L("carrito-total-bar").firstElementChild.appendChild(comLabel);
+  }
+  if(comMonto!==0&&tipoOp==="venta"){
+    const pct=Math.abs(comPct*100).toFixed(0);
+    const nombre=canal==="Rappi"||canal==="Uber Eats"?canal:metodo;
+    comLabel.style.display="block";
+    comLabel.textContent=`${nombre} ${pct}%: -$${Math.abs(comMonto).toLocaleString('en-US')} → Neto: $${ingresoNeto.toLocaleString('en-US')}`;
+  } else { comLabel.style.display="none"; }
+}
+
+function quitarItem(idx){S.carrito.splice(idx,1);renderCarrito();actualizarDisp();}
+
+let searchTO;
+L("cli-nombre")?.addEventListener("input",()=>{
+  clearTimeout(searchTO);
+  const v=L("cli-nombre").value.trim();
+  if(v.length<2){L("sugerencias").style.display="none";return;}
+  searchTO=setTimeout(()=>buscarCliente(v),350);
+});
+async function buscarCliente(term){
+  const res=await api("buscarCliente",{busqueda:term});
+  if(!res.ok||res.clientes.length===0){L("sugerencias").style.display="none";return;}
+  L("sugerencias").innerHTML=res.clientes.map(c=>`<div class="sug-item" onclick='selCliente(${JSON.stringify(c).replace(/'/g,"\\'")})'><strong>${c.nombre}</strong>${c.telefono?` · ${c.telefono}`:""}</div>`).join("");
+  L("sugerencias").style.display="block";
+}
+function selCliente(c){
+  S.clienteSel=c;
+  L("cli-nombre").value=c.nombre;
+  L("sugerencias").style.display="none";
+  L("cli-encontrado").style.display="block";
+  L("cli-nuevo").style.display="none";
+  L("cli-avatar").textContent=c.nombre[0].toUpperCase();
+  L("cli-nombre-disp").textContent=c.nombre;
+  L("cli-meta-disp").textContent=[c.telefono,c.email].filter(Boolean).join(" · ")||"Sin datos adicionales";
+}
+function limpiarCliente(){S.clienteSel=null;L("cli-nombre").value="";L("cli-encontrado").style.display="none";L("cli-nuevo").style.display="grid";}
+document.addEventListener("click",e=>{if(!e.target.closest("#cli-nombre")&&!e.target.closest("#sugerencias"))L("sugerencias").style.display="none";});
+L("btn-confirmar").addEventListener("click",async()=>{
+  if(S.carrito.length===0){toast("Agrega al menos un producto","error");return;}
+  const sucursal=getSucursalVenta();
+  const btn=L("btn-confirmar");
+  btn.disabled=true; btn.textContent="Registrando...";
+
+  if(tipoOp==="merma"){
+    // MERMA — registrar pérdida sin venta
+    const motivo=L("op-motivo").value.trim();
+    if(!motivo){toast("El motivo es obligatorio","error");btn.disabled=false;btn.textContent="Registrar merma 🗑";return;}
+    const res=await api("registrarMerma",{
+      items:S.carrito.map(i=>({sabor:i.sabor,tamano:i.tamano,cantidad:i.cantidad})),
+      sucursal, motivo
+    });
+    if(res.ok){ toast(`✅ Merma registrada`); limpiarVenta(); cargarStock(); }
+    else toast(res.error,"error");
+
+  } else {
+    // VENTA o REGALO
+    const canal = tipoOp==="regalo" ? "Cortesía" : L("venta-canal").value;
+    const metodo = tipoOp==="regalo" ? "Regalo" : L("venta-metodo").value;
+    if(tipoOp==="venta"&&!canal){toast("Selecciona un canal","error");btn.disabled=false;btn.textContent="Confirmar venta ✓";return;}
+    const motivo = tipoOp==="regalo" ? L("op-motivo").value.trim() : "";
+    if(tipoOp==="regalo"&&!motivo){toast("El motivo es obligatorio","error");btn.disabled=false;btn.textContent="Registrar regalo 🎁";return;}
+    const plataforma=esPlataforma(canal);
+    let cliente=null;
+    if(!plataforma){
+      const nombre=L("cli-nombre").value.trim();
+      if(!nombre){toast("El nombre del cliente es obligatorio","error");btn.disabled=false;btn.textContent=tipoOp==="regalo"?"Registrar regalo 🎁":"Confirmar venta ✓";return;}
+      cliente=S.clienteSel||{nombre,telefono:L("cli-tel").value.trim(),email:L("cli-email").value.trim()};
+    }
+    const items=S.carrito.map(i=>({
+      sabor:i.sabor, tamano:i.tamano, cantidad:i.cantidad,
+      precioUnitario:i.precio, descuento:i.descuento||0, descTipo:i.descTipo||""
+    }));
+    const res=await api("registrarVenta",{items,canal,metodoPago:metodo,sucursal,cliente,tipoOp,motivo});
+    if(res.ok){
+      const total=S.carrito.reduce((s,i)=>s+i.subtotal,0);
+      toast(tipoOp==="regalo"?`✅ Regalo registrado`:`✅ Venta $${total.toLocaleString('en-US')} registrada`);
+      limpiarVenta(); cargarStock();
+    } else toast(res.error,"error");
+  }
+  btn.disabled=false;
+  btn.textContent=tipoOp==="merma"?"Registrar merma 🗑":tipoOp==="regalo"?"Registrar regalo 🎁":"Confirmar venta ✓";
+});
+function limpiarVenta(){
+  S.carrito=[];S.clienteSel=null;S.costoEnvio=0;renderCarrito();
+  L("cli-nombre").value="";L("cli-tel").value="";L("cli-email").value="";
+  L("cli-encontrado").style.display="none";L("cli-nuevo").style.display="grid";
+  // Reset selector cantidad
+  const selCant=L("item-cantidad");
+  if(selCant){selCant.innerHTML=`<option value="">— selecciona sabor y tamaño —</option>`;selCant.disabled=true;}
+  L("item-disp").innerHTML="";
+  if(L("item-descuento")) L("item-descuento").value="0";
+  L("item-precio-preview").innerHTML="";
+  L("op-motivo").value="";
+  setTipoOp("venta",L("op-venta"));
+}
+L("btn-limpiar-venta").addEventListener("click",()=>{limpiarVenta();toast("Venta limpiada");});
+L("btn-cargar-prod").addEventListener("click",async()=>{
+  const sabor=L("prod-sabor").value,tamano=L("prod-tamano").value,cantidad=parseInt(L("prod-cantidad").value);
+  if(!sabor||!tamano||cantidad<1){toast("Completa todos los campos","error");return;}
+  const btn=L("btn-cargar-prod");btn.disabled=true;btn.textContent="Cargando...";
+  const res=await api("altaProduccion",{sabor,tamano,sucursal:"Cuajimalpa",cantidad});
+  if(res.ok){toast(res.mensaje);L("prod-cantidad").value="1";cargarStock();}
+  else toast(res.error,"error");
+  btn.disabled=false;btn.textContent="Cargar producción";
+});
+
+// ============================================================
+// VENTAS
+// ============================================================
+async function cargarVentas(){
+  L("ventas-list").innerHTML=`<div class="loading"><div class="spinner"></div></div>`;
+  const res=await api("getVentas");
+  if(!res.ok) return;
+  if(res.ventas.length===0){L("ventas-list").innerHTML=`<div class="empty-state"><div>Sin ventas registradas</div></div>`;return;}
+  const grupos={};
+  res.ventas.forEach(v=>{
+    if(!grupos[v.idVenta]) grupos[v.idVenta]={...v,items:[]};
+    grupos[v.idVenta].items.push({sabor:v.sabor,tamano:v.tamano,cantidad:v.cantidad,subtotal:v.subtotal});
+  });
+  L("ventas-list").innerHTML=Object.values(grupos).map(g=>`
+    <div class="historial-item">
+      <div class="hist-fecha">${g.fecha?g.fecha.substring(0,16).replace('T',' '):''}</div>
+      <div class="hist-productos">${g.items.map(i=>`${i.cantidad}× ${i.sabor} ${i.tamano}`).join(" · ")}</div>
+      <div class="hist-meta">
+        <span class="tag">${g.canal}</span><span class="tag">${g.metodoPago}</span><span class="tag">${g.sucursal}</span>
+        ${g.clienteNombre?`<span class="tag">${g.clienteNombre}</span>`:""}
+        <span class="tag tag-total">$${g.items.reduce((s,i)=>s+i.subtotal,0).toLocaleString('en-US')}</span>
+      </div>
+    </div>`).join("");
+}
+
+// ============================================================
+// CATÁLOGO PANTALLA
+// ============================================================
+async function cargarCatalogoPantalla(){
+  const res=await api("getCatalogo");if(!res.ok)return;S.catalogo=res;
+  const renderList=(items,tipo,id)=>{
+    L(id).innerHTML=items.map(item=>`
+      <div class="cat-item">
+        <span style="font-size:14px;font-weight:500">${item.nombre}${!item.activo?'<span style="color:var(--muted);font-size:11px"> (inactivo)</span>':''}</span>
+        ${item.activo?`<button class="btn-sm btn-sm-danger" onclick="togCat('${tipo}','${item.nombre}',false)">Dar de baja</button>`:`<button class="btn-sm btn-sm-success" onclick="togCat('${tipo}','${item.nombre}',true)">Reactivar</button>`}
+      </div>`).join("");
+  };
+  renderList(res.sabores,"Sabor","cat-sabores");renderList(res.tamanos,"Tamaño","cat-tamanos");renderList(res.canales||[],"Canal","cat-canales");
+}
+async function togCat(tipo,nombre,activar){
+  if(!activar&&!confirm(`¿Dar de baja "${nombre}"?`)) return;
+  const mapa={Sabor:activar?"altaSabor":"bajaSabor","Tamaño":activar?"altaTamano":"bajaTamano",Canal:activar?"altaCanal":"bajaCanal"};
+  const res=await api(mapa[tipo],{nombre});
+  if(res.ok){toast(res.mensaje);cargarCatalogoPantalla();cargarCatalogo();}else toast(res.error,"error");
+}
+function abrirModalItem(tipo){S.itemTipo=tipo;L("modal-item-title").textContent=`Nuevo ${tipo.toLowerCase()}`;L("modal-item-label").textContent=`Nombre del ${tipo.toLowerCase()}`;L("modal-item-input").value="";L("modal-nuevo-item").classList.add("show");}
+L("btn-guardar-item").addEventListener("click",async()=>{
+  const nombre=L("modal-item-input").value.trim();
+  if(!nombre){toast("Ingresa un nombre","error");return;}
+  const mapa={Sabor:"altaSabor","Tamaño":"altaTamano"};
+  const res=await api(mapa[S.itemTipo],{nombre});
+  if(res.ok){toast(res.mensaje);L("modal-nuevo-item").classList.remove("show");cargarCatalogoPantalla();cargarCatalogo();}else toast(res.error,"error");
+});
+
+// ============================================================
+// PRECIOS
+// ============================================================
+async function cargarPrecios(silencioso=false){
+  if(!silencioso) L("precios-content").innerHTML=`<div class="loading"><div class="spinner"></div></div>`;
+  const [resP,resC]=await Promise.all([api("getPrecios"),api("getCatalogo")]);
+  if(!resP.ok||!resC.ok) return;
+  S.precios=resP.precios;
+  if(silencioso) return;
+  const tamanos=(resC.tamanos||[]).filter(t=>t.activo).map(t=>t.nombre);
+  const getP=t=>{const p=resP.precios.find(p=>p.tamano===t);return p?p.precio:0;};
+  L("precios-content").innerHTML=tamanos.map(tamano=>`
+    <div class="precio-row">
+      <span class="precio-label">${tamano}</span>
+      <span class="precio-val" onclick="abrirModalPrecio('${tamano}',${getP(tamano)})">$${getP(tamano).toLocaleString('en-US')}</span>
+    </div>`).join("");
+}
+async function repararPrecios(){
+  const btn=event.target;btn.disabled=true;btn.textContent="Reparando...";
+  const res=await api("repararPreciosSabores",{});
+  if(res.ok){toast(res.mensaje);cargarPrecios();}else toast(res.error,"error");
+  btn.disabled=false;btn.textContent="🔧 Crear precios para sabores sin precio";
+}
+
+function abrirModalPrecio(tamano,precioActual){S.precioEditar=tamano;L("modal-precio-title").textContent=`Precio — ${tamano}`;L("modal-precio-input").value=precioActual;L("modal-precio").classList.add("show");setTimeout(()=>L("modal-precio-input").focus(),100);}
+L("btn-guardar-precio").addEventListener("click",async()=>{
+  const precio=parseFloat(L("modal-precio-input").value);
+  if(isNaN(precio)||precio<0){toast("Precio inválido","error");return;}
+  const tamano=S.precioEditar;
+  const sabores=(S.catalogo?.sabores||[]).filter(s=>s.activo).map(s=>s.nombre);
+  const promesas=sabores.map(sabor=>api("updatePrecio",{sabor,tamano,precio}));
+  const resultados=await Promise.all(promesas);
+  if(resultados.every(r=>r.ok)){toast(`✅ Precio ${tamano} = $${precio.toLocaleString('en-US')}`);L("modal-precio").classList.remove("show");cargarPrecios();}
+  else toast("Error al guardar precio","error");
+});
+
+// ============================================================
+// COSTOS v4
+// ============================================================
+function setCostosTab(tab){
+  document.querySelectorAll(".costos-tab").forEach(t=>{t.classList.toggle("active",t.getAttribute("onclick")===`setCostosTab('${tab}')`)});
+  document.querySelectorAll(".costos-section").forEach(s=>s.classList.remove("active"));
+  L("costos-"+tab).classList.add("active");
+  if(tab==="recetas") renderRecetaActual();
+  if(tab==="calculadora") calcularCosto();
+  if(tab==="tabla-util") renderTablaUtilidades();
+  if(tab==="gastos") cargarGastos();
+  if(tab==="comisiones") cargarComisionesConfig();
+}
+
+async function cargarCostos(){
+  L("insumos-list").innerHTML=`<div class="loading"><div class="spinner"></div>Cargando...</div>`;
+  const [resI,resR]=await Promise.all([api("getInsumos"),api("getRecetas")]);
+  if(resI.ok) S.insumos=resI.insumos;
+  if(resR.ok) S.recetas=resR.recetas;
+  renderCostos();
+}
+
+function renderCostos(){
+  renderInsumos();
+  renderRecetaActual();
+  poblarRecetaInsumoSelect();
+}
+
+function renderInsumos(){
+  const activos=S.insumos.filter(i=>i.activo);
+  if(activos.length===0){
+    L("insumos-list").innerHTML=`<div class="empty-state"><div class="empty-icon">📦</div><div>Sin insumos cargados</div></div>`;
+    return;
+  }
+  L("insumos-list").innerHTML=activos.map(ins=>`
+    <div class="insumo-row">
+      <div>
+        <div class="insumo-nombre">${ins.nombre}</div>
+        <div class="insumo-meta">${ins.buyQty} ${ins.buyUnit} = ${fmtMXN(ins.buyPrice)}</div>
+      </div>
+      <div>
+        <div class="insumo-costo">${fmtMXN(ins.costoPorUnidad)}</div>
+        <div class="insumo-costo-label">por ${ins.buyUnit==="unidad"?"unidad":ins.buyUnit}</div>
+      </div>
+      <div style="display:flex;gap:4px">
+        <button class="btn-del-small" onclick="abrirEditarInsumo('${ins.id}')" title="Editar">✏️</button>
+        <button class="btn-del-small" onclick="bajaInsumo('${ins.id}')" title="Dar de baja">✕</button>
+      </div>
+    </div>`).join("");
+}
+
+function poblarRecetaInsumoSelect(){
+  const activos=S.insumos.filter(i=>i.activo);
+  const sel=L("receta-new-insumo");
+  if(!sel) return;
+  sel.innerHTML=activos.map(i=>`<option value="${i.id}">${i.nombre} (${fmtMXN(i.costoPorUnidad)}/${i.buyUnit})</option>`).join("");
+}
+
+// Cálculo automático del costo unitario al tipear
+["new-ins-buyqty","new-ins-price"].forEach(id=>{
+  L(id)?.addEventListener("input",()=>{
+    const qty=parseFloat(L("new-ins-buyqty")?.value)||0;
+    const price=parseFloat(L("new-ins-price")?.value)||0;
+    if(qty>0&&price>0){
+      const cu=price/qty;
+      L("new-ins-costo-preview").style.display="flex";
+      L("new-ins-costo-val").textContent=fmtMXN(cu)+` / ${L("new-ins-buyunit")?.value||"unidad"}`;
+    } else L("new-ins-costo-preview").style.display="none";
+  });
+});
+["edit-ins-buyqty","edit-ins-price"].forEach(id=>{
+  L(id)?.addEventListener("input",()=>{
+    const qty=parseFloat(L("edit-ins-buyqty")?.value)||0;
+    const price=parseFloat(L("edit-ins-price")?.value)||0;
+    if(qty>0&&price>0){L("edit-ins-costo-val").textContent=fmtMXN(price/qty)+` / ${L("edit-ins-buyunit")?.value||"unidad"}`;}
+  });
+});
+
+async function guardarNuevoInsumo(){
+  const nombre=L("new-ins-nombre").value.trim();
+  const buyQty=parseFloat(L("new-ins-buyqty").value)||0;
+  const buyUnit=L("new-ins-buyunit").value;
+  const buyPrice=parseFloat(L("new-ins-price").value)||0;
+  if(!nombre){toast("Ingresa el nombre del insumo","error");return;}
+  if(!buyQty||!buyPrice){toast("Ingresa la dimensión de compra y el precio","error");return;}
+  const res=await api("saveInsumo",{insumo:{nombre,descripcion:L("new-ins-desc").value.trim(),buyQty,buyUnit,buyPrice,activo:true}});
+  if(res.ok){
+    toast(`✅ ${nombre} agregado`);
+    L("new-ins-nombre").value="";L("new-ins-desc").value="";L("new-ins-buyqty").value="";L("new-ins-price").value="";
+    L("new-ins-costo-preview").style.display="none";
+    const resI=await api("getInsumos");if(resI.ok)S.insumos=resI.insumos;
+    renderInsumos();poblarRecetaInsumoSelect();
+  } else toast(res.error,"error");
+}
+
+function abrirEditarInsumo(id){
+  const ins=S.insumos.find(i=>i.id===id);
+  if(!ins) return;
+  L("edit-ins-id").value=id;
+  L("edit-ins-nombre").value=ins.nombre;
+  L("edit-ins-desc").value=ins.descripcion||"";
+  L("edit-ins-buyqty").value=ins.buyQty;
+  L("edit-ins-buyunit").value=ins.buyUnit;
+  L("edit-ins-price").value=ins.buyPrice;
+  L("edit-ins-costo-val").textContent=fmtMXN(ins.costoPorUnidad)+` / ${ins.buyUnit}`;
+  L("modal-editar-insumo").classList.add("show");
+}
+L("btn-guardar-editar-insumo").addEventListener("click",async()=>{
+  const id=L("edit-ins-id").value;
+  const buyQty=parseFloat(L("edit-ins-buyqty").value)||0;
+  const buyPrice=parseFloat(L("edit-ins-price").value)||0;
+  const res=await api("saveInsumo",{insumo:{id,nombre:L("edit-ins-nombre").value.trim(),descripcion:L("edit-ins-desc").value.trim(),buyQty,buyUnit:L("edit-ins-buyunit").value,buyPrice,activo:true}});
+  if(res.ok){toast("✅ Insumo actualizado");L("modal-editar-insumo").classList.remove("show");const resI=await api("getInsumos");if(resI.ok)S.insumos=resI.insumos;renderInsumos();poblarRecetaInsumoSelect();}
+  else toast(res.error,"error");
+});
+async function bajaInsumo(id){
+  if(!confirm("¿Dar de baja este insumo?")) return;
+  const res=await api("deleteInsumo",{id});
+  if(res.ok){toast("Insumo dado de baja");const resI=await api("getInsumos");if(resI.ok)S.insumos=resI.insumos;renderInsumos();poblarRecetaInsumoSelect();}
+  else toast(res.error,"error");
+}
+
+// RECETAS
+function cargarRecetaActual(){renderRecetaActual();}
+function renderRecetaActual(){
+  const sabor=L("receta-sabor")?.value;
+  const tamano=L("receta-tamano")?.value;
+  if(!sabor||!tamano){L("receta-ingredientes-list").innerHTML="";return;}
+  const receta=S.recetas.find(r=>r.sabor===sabor&&r.tamano===tamano);
+  S.recetaActual=receta?JSON.parse(JSON.stringify(receta.ingredientes)):[];
+  renderIngredientesReceta();
+}
+
+function renderIngredientesReceta(){
+  const el=L("receta-ingredientes-list");
+  if(!S.recetaActual||S.recetaActual.length===0){el.innerHTML=`<div style="color:var(--muted);font-size:13px;text-align:center;padding:16px">Sin ingredientes — agrega abajo</div>`;return;}
+  el.innerHTML=S.recetaActual.map((ing,idx)=>{
+    const ins=S.insumos.find(i=>i.id===ing.insumoId);
+    const costoPorUni=ins?ins.costoPorUnidad:0;
+    const costoLinea=costoPorUni*ing.cantidad;
+    return `<div class="receta-row">
+      <div><div class="receta-row-nombre">${ing.insumoNombre||"Insumo"}</div></div>
+      <div class="receta-row-cant">${ing.cantidad} ${ing.unidad}</div>
+      <div class="receta-row-costo">${costoLinea>0?fmtMXN(costoLinea):"—"}</div>
+      <button class="btn-del-small" onclick="quitarIngredienteReceta(${idx})">✕</button>
+    </div>`;
+  }).join("");
+  const costoTotal=S.recetaActual.reduce((s,ing)=>{const ins=S.insumos.find(i=>i.id===ing.insumoId);return s+(ins?ins.costoPorUnidad*ing.cantidad:0);},0);
+  el.innerHTML+=`<div class="calc-total-row"><span style="color:var(--muted)">Subtotal ingredientes:&nbsp;<strong style="color:var(--accent);font-size:16px">${fmtMXN(costoTotal)}</strong></span></div>`;
+}
+
+function syncInsumoNombre(){
+  const insumoId = L("receta-new-insumo")?.value;
+  if(!insumoId) return;
+  const ins = S.insumos.find(i=>i.id===insumoId);
+  if(ins) L("receta-new-nombre").value = ins.nombre;
+}
+
+function agregarIngredienteReceta(){
+  const insumoId  = L("receta-new-insumo")?.value || "";
+  const nombre    = L("receta-new-nombre")?.value.trim() || "";
+  const qty       = parseFloat(L("receta-new-qty")?.value)||0;
+  const unit      = L("receta-new-unit")?.value||"unidad";
+
+  // Necesita al menos nombre o insumo seleccionado
+  const nombreFinal = nombre || (S.insumos.find(i=>i.id===insumoId)?.nombre) || "";
+  if(!nombreFinal){ toast("Escribe el nombre del ingrediente o selecciona uno del catálogo","error"); return; }
+  if(!qty){ toast("Ingresa la cantidad","error"); return; }
+
+  S.recetaActual.push({
+    insumoId,
+    insumoNombre: nombreFinal,
+    cantidad: qty,
+    unidad: unit
+  });
+  L("receta-new-qty").value = "";
+  L("receta-new-nombre").value = "";
+  L("receta-new-insumo").value = "";
+  renderIngredientesReceta();
+}
+function quitarIngredienteReceta(idx){S.recetaActual.splice(idx,1);renderIngredientesReceta();}
+async function guardarRecetaCompleta(){
+  const sabor=L("receta-sabor")?.value;
+  const tamano=L("receta-tamano")?.value;
+  if(!sabor||!tamano){toast("Selecciona sabor y tamaño","error");return;}
+  const btn=L("btn-guardar-receta");btn.disabled=true;btn.textContent="Guardando...";
+  const res=await api("saveReceta",{sabor,tamano,ingredientes:S.recetaActual});
+  if(res.ok){
+    toast(`✅ Receta ${sabor} ${tamano} guardada`);
+    const resR=await api("getRecetas");if(resR.ok)S.recetas=resR.recetas;
+  } else toast(res.error,"error");
+  btn.disabled=false;btn.textContent="Guardar receta";
+}
+
+// CALCULADORA
+async function calcularCosto(){
+  const sabor=L("calc-sabor")?.value;
+  const tamano=L("calc-tamano")?.value;
+  if(!sabor||!tamano) return;
+  L("calc-resultado").innerHTML=`<div class="loading"><div class="spinner"></div>Calculando...</div>`;
+  const res=await api("getCalculoCosto",{sabor,tamano});
+  if(!res.ok){L("calc-resultado").innerHTML=`<div class="empty-state"><div>${res.error}</div></div>`;return;}
+  if(res.lineas.length===0){L("calc-resultado").innerHTML=`<div class="empty-state"><div class="empty-icon">📋</div><div>Sin receta para ${sabor} ${tamano}</div></div>`;return;}
+  const precio=S.precios?.find(p=>p.tamano===tamano)?.precio||0;
+  const margen=precio>0?((precio-res.costoTotal)/precio*100):0;
+  L("calc-resultado").innerHTML=`
+    <div class="calc-hero">
+      <div class="calc-hero-label">${sabor} · ${tamano}</div>
+      <div class="calc-hero-price">${fmtMXN(res.costoTotal)}</div>
+      <div class="calc-hero-sub">Costo de producción${precio>0?` · PVP: ${fmtMXN(precio)} · Margen: ${margen.toFixed(1)}%`:""}</div>
+    </div>
+    <table class="calc-lineas-table">
+      <thead><tr><th>Ingrediente</th><th>Cant.</th><th style="text-align:right">Costo</th></tr></thead>
+      <tbody>${res.lineas.map(l=>`<tr><td>${l.insumoNombre}</td><td style="color:var(--muted)">${l.cantidad} ${l.unidad}</td><td style="text-align:right;font-weight:700;color:var(--accent)">${l.costoLinea>0?fmtMXN(l.costoLinea):"—"}</td></tr>`).join("")}</tbody>
+    </table>
+    <div class="calc-total-row"><span style="color:var(--muted)">Total costo:&nbsp;<strong style="color:var(--accent);font-size:16px">${fmtMXN(res.costoTotal)}</strong></span></div>`;
+}
+
+// CARGA MASIVA — Claude procesa el texto y genera el JSON para subir
+async function procesarBulkInsumos(){
+  const texto=L("bulk-insumos-text").value.trim();
+  if(!texto){toast("Ingresa la lista de insumos","error");return;}
+  const btn=L("btn-bulk-insumos");btn.disabled=true;btn.textContent="Procesando con IA...";
+  try {
+    const response=await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        model:"claude-sonnet-4-20250514",
+        max_tokens:1000,
+        messages:[{role:"user",content:`Convierte esta lista de insumos de pastelería a JSON. Extrae: nombre, descripcion (opcional), buyQty (número), buyUnit (unidad: unidad/g/kg/ml/L/docena), buyPrice (número, precio en MXN). Responde SOLO con un array JSON sin markdown ni texto extra. Lista:\n${texto}`}]
+      })
+    });
+    const data=await response.json();
+    const txt=data.content?.[0]?.text||"";
+    const clean=txt.replace(/```json|```/g,"").trim();
+    const insumos=JSON.parse(clean);
+    const res=await api("bulkLoadInsumos",{insumos});
+    if(res.ok){toast(`✅ ${res.creados.length} insumos cargados`);L("bulk-insumos-text").value="";const resI=await api("getInsumos");if(resI.ok)S.insumos=resI.insumos;renderInsumos();poblarRecetaInsumoSelect();}
+    else toast(res.error,"error");
+  } catch(e){toast("Error al procesar: "+e.message,"error");}
+  btn.disabled=false;btn.textContent="Procesar y cargar insumos";
+}
+
+async function procesarBulkReceta(){
+  const texto=L("bulk-receta-text").value.trim();
+  const sabor=L("bulk-receta-sabor")?.value;
+  const tamano=L("bulk-receta-tamano")?.value;
+  if(!texto||!sabor||!tamano){toast("Completa todos los campos","error");return;}
+  const btn=L("btn-bulk-receta");btn.disabled=true;btn.textContent="Procesando con IA...";
+  const insumosDisponibles=S.insumos.filter(i=>i.activo).map(i=>`${i.id}: ${i.nombre}`).join("\n");
+  try {
+    const response=await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        model:"claude-sonnet-4-20250514",
+        max_tokens:1000,
+        messages:[{role:"user",content:`Tengo esta lista de insumos disponibles con sus IDs:\n${insumosDisponibles}\n\nConvierte esta receta a JSON, mapeando cada ingrediente al insumoId más cercano de los disponibles. Campos: insumoId, insumoNombre, cantidad (número), unidad (unidad/g/kg/ml/L). Responde SOLO con array JSON sin markdown. Receta:\n${texto}`}]
+      })
+    });
+    const data=await response.json();
+    const txt=data.content?.[0]?.text||"";
+    const clean=txt.replace(/```json|```/g,"").trim();
+    const ingredientes=JSON.parse(clean);
+    const res=await api("saveReceta",{sabor,tamano,ingredientes});
+    if(res.ok){toast(`✅ Receta ${sabor} ${tamano} guardada`);L("bulk-receta-text").value="";const resR=await api("getRecetas");if(resR.ok)S.recetas=resR.recetas;}
+    else toast(res.error,"error");
+  } catch(e){toast("Error al procesar: "+e.message,"error");}
+  btn.disabled=false;btn.textContent="Procesar y guardar receta";
+}
+
+// ============================================================
+// USUARIOS
+// ============================================================
+async function cargarUsuarios(){
+  const res=await api("getUsuarios");if(!res.ok)return;
+  L("usuarios-list").innerHTML=res.usuarios.map(u=>`
+    <div class="usuario-row">
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:500"><span class="rol-chip ${u.rol==='Owner'?'rol-owner':'rol-vendedor'}">${u.rol}</span>${u.usuario}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${u.sucursal} · ${u.ultimoAcceso?u.ultimoAcceso.substring(0,10):'Sin acceso aún'}</div>
+      </div>
+      ${u.usuario!==S.usuario?`<button class="toggle-btn ${u.activo?'activo':''}" onclick="togUsuario('${u.usuario}')">${u.activo?'Activo':'Inactivo'}</button>`:`<span style="font-size:11px;color:var(--muted)">Tú</span>`}
+    </div>`).join("");
+}
+async function togUsuario(usuario){const res=await api("toggleUsuario",{usuario});if(res.ok){toast(res.mensaje);cargarUsuarios();}else toast(res.error,"error");}
+L("btn-guardar-usuario").addEventListener("click",async()=>{
+  const usuario=L("nu-usuario").value.trim(),password=L("nu-password").value;
+  const rol=L("nu-rol").value,sucursal=L("nu-sucursal").value;
+  if(!usuario||!password){toast("Completa todos los campos","error");return;}
+  const res=await api("crearUsuario",{usuario,password,rol,sucursal});
+  if(res.ok){toast(res.mensaje);L("modal-nuevo-usuario").classList.remove("show");cargarUsuarios();}else toast(res.error,"error");
+});
+L("btn-cambiar-pw").addEventListener("click",async()=>{
+  const actual=L("pw-actual").value,nueva=L("pw-nueva").value;
+  if(!actual||!nueva){toast("Completa ambos campos","error");return;}
+  const res=await api("cambiarPassword",{usuario:S.usuario,passwordActual:actual,passwordNuevo:nueva});
+  if(res.ok){toast(res.mensaje);L("pw-actual").value="";L("pw-nueva").value="";}else toast(res.error,"error");
+});
+
+// ============================================================
+// AUDITORÍA
+// ============================================================
+// ============================================================
+// OBJETIVOS
+// ============================================================
+let objLineas = [];
+
+function mostrarFormObjetivo(){
+  L("obj-form-card").style.display="block";
+  L("btn-nuevo-obj").style.display="none";
+  const hoy=new Date();
+  L("obj-mes").value=hoy.getMonth()+1;
+  L("obj-anio").value=hoy.getFullYear();
+}
+
+function actualizarAvisoMeta(){
+  const total   = Number(L("obj-meta-total").value)||0;
+  const sumaLineas = objLineas.reduce((s,l)=>s+l.meta,0);
+  const aviso = L("obj-aviso-meta");
+  if(!total||!sumaLineas){ aviso.style.display="none"; return; }
+  if(total===sumaLineas){
+    aviso.style.display="block";
+    aviso.style.background="rgba(46,92,74,.12)";
+    aviso.style.color="var(--success)";
+    aviso.textContent=`✅ La meta total coincide con la suma del desglose (${sumaLineas} uds)`;
+  } else {
+    aviso.style.display="block";
+    aviso.style.background="rgba(200,96,42,.1)";
+    aviso.style.color="var(--accent)";
+    aviso.textContent=`⚠️ La meta total (${total}) difiere de la suma del desglose (${sumaLineas}). Puedes dejarlos diferentes — se mostrarán como dos referencias distintas.`;
+  }
+}
+
+async function cargarObjetivos(){
+  L("obj-lista").innerHTML=`<div class="loading"><div class="spinner"></div>Cargando...</div>`;
+
+  if(!S.catalogo?.sabores){
+    const resC=await api("getCatalogo");
+    if(resC.ok){ S.catalogo=resC; }
+  }
+  if(S.catalogo?.sabores){
+    L("obj-lin-sabor").innerHTML  = S.catalogo.sabores.filter(s=>s.activo).map(s=>`<option>${s.nombre}</option>`).join("");
+    L("obj-lin-tamano").innerHTML = S.catalogo.tamanos.filter(t=>t.activo).map(t=>`<option>${t.nombre}</option>`).join("");
+  }
+
+  const hoy=new Date();
+  L("obj-mes").value=hoy.getMonth()+1;
+  L("obj-anio").value=hoy.getFullYear();
+
+  const [resO,resV]=await Promise.all([api("getObjetivos"),api("getVentas")]);
+  if(!resO.ok){ L("obj-lista").innerHTML=`<div class="empty-state">Error al cargar objetivos</div>`; return; }
+  S.objetivos=resO.objetivos||[];
+  const ventas=resV.ok?resV.ventas:[];
+  renderObjetivos(ventas);
+}
+
+function renderObjetivos(ventas){
+  const hoy=new Date();
+  const mesActual=hoy.getMonth()+1, anioActual=hoy.getFullYear();
+  const MESES=["","Enero","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+  const activos=(S.objetivos||[]).filter(o=>o.activo);
+
+  // Resumen mes actual
+  const objMes=activos.filter(o=>Number(o.mes)===mesActual&&Number(o.anio)===anioActual);
+  if(objMes.length>0){
+    const metaGlobal=objMes.reduce((s,o)=>s+(_metaTotalObjetivo(o)||0),0);
+    const ventasMes=ventas.filter(v=>{const d=new Date(v.fecha);return d.getMonth()+1===mesActual&&d.getFullYear()===anioActual;});
+    const realGlobal=_contarUnidades(ventasMes,null,null);
+    const pct=metaGlobal>0?Math.min(Math.round(realGlobal/metaGlobal*100),100):0;
+    const color=pct>=80?"var(--success)":pct>=50?"var(--warning)":"var(--danger)";
+    L("obj-total-meta").textContent=metaGlobal||"—";
+    L("obj-total-real").textContent=realGlobal;
+    L("obj-total-pct").textContent=pct+"%";
+    L("obj-total-pct").style.color=color;
+    L("obj-total-real").style.color=color;
+    L("obj-barra-global").style.width=pct+"%";
+    L("obj-barra-global").style.background=pct>=80?"#2E5C4A":pct>=50?"#C8602A":"#C0392B";
+    L("obj-resumen").style.display="block";
+  } else {
+    L("obj-resumen").style.display="none";
+  }
+
+  if(activos.length===0){
+    L("obj-lista").innerHTML=`<div class="empty-state"><div class="empty-icon">🎯</div><div>Sin objetivos — toca "+ Nuevo objetivo" para crear el primero</div></div>`;
+    return;
+  }
+
+  const sorted=[...activos].sort((a,b)=>{
+    const aM=Number(a.mes)===mesActual&&Number(a.anio)===anioActual?0:1;
+    const bM=Number(b.mes)===mesActual&&Number(b.anio)===anioActual?0:1;
+    if(aM!==bM) return aM-bM;
+    return (Number(b.anio)*100+Number(b.mes))-(Number(a.anio)*100+Number(a.mes));
+  });
+
+  L("obj-lista").innerHTML=sorted.map(obj=>{
+    const esMes=Number(obj.mes)===mesActual&&Number(obj.anio)===anioActual;
+    const metaT=Number(obj.metaTotal)||0;
+    const sumaL=obj.lineas?obj.lineas.reduce((s,l)=>s+Number(l.meta),0):0;
+    const hayDiscrepancia=metaT>0&&sumaL>0&&metaT!==sumaL;
+
+    const vFilt=ventas.filter(v=>{
+      const d=new Date(v.fecha);
+      if(d.getMonth()+1!==Number(obj.mes)||d.getFullYear()!==Number(obj.anio)) return false;
+      if(obj.sucursal!=="Ambas"&&v.sucursal!==obj.sucursal) return false;
+      return true;
+    });
+    const real=_contarUnidades(vFilt,null,null);
+
+    // Barra principal contra la meta total (si existe) o suma de líneas
+    const metaRef=metaT||sumaL;
+    const pct=metaRef>0?Math.min(Math.round(real/metaRef*100),100):0;
+    const color=pct>=80?"var(--success)":pct>=50?"var(--warning)":"var(--danger)";
+    const bgBar=pct>=80?"#2E5C4A":pct>=50?"#C8602A":"#C0392B";
+
+    // Desglose por línea
+    let desglose="";
+    if(obj.lineas&&obj.lineas.length>0){
+      desglose=`<div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.06em">DESGLOSE POR PRODUCTO</div>`+
+        obj.lineas.map(lin=>{
+          const realL=_contarUnidades(vFilt,lin.sabor,lin.tamano);
+          const pL=lin.meta>0?Math.min(Math.round(realL/lin.meta*100),100):0;
+          const cL=pL>=80?"var(--success)":pL>=50?"var(--warning)":"var(--danger)";
+          return `<div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:3px;font-size:12px">
+              <span style="color:var(--ink)">${lin.sabor} <span style="color:var(--muted)">${lin.tamano}</span></span>
+              <span style="font-weight:600;color:${cL}">${realL}<span style="color:var(--muted);font-weight:400"> / ${lin.meta} uds · ${pL}%</span></span>
+            </div>
+            <div style="background:var(--border);border-radius:4px;height:5px">
+              <div style="background:${cL};width:${pL}%;height:5px;border-radius:4px;transition:.4s"></div>
+            </div>
+          </div>`;
+        }).join("")+`</div>`;
+    }
+
+    // Aviso discrepancia
+    const avisoDisc=hayDiscrepancia?`
+      <div style="font-size:11px;padding:6px 10px;border-radius:8px;background:rgba(200,96,42,.1);color:var(--accent);margin-top:10px">
+        ⚠️ Meta total (${metaT}) difiere de la suma del desglose (${sumaL} uds) — ambas son referencias independientes
+      </div>`:"";
+
+    return `<div class="card" style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+        <div>
+          <div style="font-weight:700;font-size:15px">${obj.nombre}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">${MESES[Number(obj.mes)]} ${obj.anio} · ${obj.sucursal}</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          ${esMes?'<span style="background:var(--accent);color:white;font-size:10px;padding:3px 9px;border-radius:20px;font-weight:700">EN CURSO</span>':''}
+          <button class="btn-icon" onclick="bajaObjetivo('${obj.id}')">✕</button>
+        </div>
+      </div>
+      ${metaRef>0?`
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+        <div style="font-size:13px;color:var(--muted)">
+          <span style="font-size:28px;font-weight:700;color:${color}">${real}</span>
+          ${metaT?` / ${metaT} uds`:''}
+        </div>
+        <div style="font-size:22px;font-weight:700;color:${color}">${pct}%</div>
+      </div>
+      <div style="background:var(--border);border-radius:8px;height:10px;overflow:hidden;margin-bottom:4px">
+        <div style="background:${bgBar};width:${pct}%;height:10px;border-radius:8px;transition:.5s ease"></div>
+      </div>`:`<div style="font-size:12px;color:var(--muted);margin-bottom:8px">Sin meta total definida — ver desglose</div>`}
+      ${avisoDisc}
+      ${desglose}
+    </div>`;
+  }).join("");
+}
+
+function _metaTotalObjetivo(obj){
+  if(obj.metaTotal&&Number(obj.metaTotal)>0) return Number(obj.metaTotal);
+  if(obj.lineas&&obj.lineas.length>0) return obj.lineas.reduce((s,l)=>s+Number(l.meta),0);
+  return 0;
+}
+
+function _contarUnidades(ventas,sabor,tamano){
+  return ventas.reduce((s,v)=>{
+    if(sabor&&v.sabor!==sabor) return s;
+    if(tamano&&v.tamano!==tamano) return s;
+    return s+(Number(v.cantidad)||0);
+  },0);
+}
+
+function agregarLineaObjetivo(){
+  const sabor=L("obj-lin-sabor").value;
+  const tamano=L("obj-lin-tamano").value;
+  const meta=parseInt(L("obj-lin-uds").value);
+  if(!sabor||!tamano||!meta||meta<=0){ toast("Completa sabor, tamaño y unidades","error"); return; }
+  if(objLineas.find(l=>l.sabor===sabor&&l.tamano===tamano)){
+    toast("Ya existe esa combinación","error"); return;
+  }
+  objLineas.push({sabor,tamano,meta});
+  L("obj-lin-uds").value="";
+  renderLineasForm();
+  actualizarAvisoMeta();
+}
+
+function renderLineasForm(){
+  if(!objLineas.length){ L("obj-lineas-list").innerHTML=""; return; }
+  const suma=objLineas.reduce((s,l)=>s+l.meta,0);
+  L("obj-lineas-list").innerHTML=`
+    ${objLineas.map((l,i)=>`
+      <div class="insumo-item" style="padding:8px 12px">
+        <div style="flex:1;font-size:13px">${l.sabor} <span style="color:var(--muted)">${l.tamano}</span></div>
+        <div style="font-weight:600;margin:0 12px;font-size:13px">${l.meta} uds</div>
+        <button class="btn-icon" onclick="quitarLineaObj(${i})">✕</button>
+      </div>`).join("")}
+    <div style="text-align:right;font-size:12px;color:var(--muted);padding:4px 12px">Suma: <strong style="color:var(--ink)">${suma} uds</strong></div>`;
+}
+
+function quitarLineaObj(i){ objLineas.splice(i,1); renderLineasForm(); actualizarAvisoMeta(); }
+
+async function guardarObjetivo(){
+  const nombre=L("obj-nombre").value.trim();
+  if(!nombre){ toast("El nombre es obligatorio","error"); return; }
+  const mes=Number(L("obj-mes").value);
+  const anio=Number(L("obj-anio").value);
+  const metaTotal=Number(L("obj-meta-total").value)||0;
+  if(!objLineas.length&&!metaTotal){ toast("Agrega al menos una línea de producto o una meta total","error"); return; }
+  const btn=L("btn-guardar-obj"); btn.disabled=true; btn.textContent="Guardando...";
+  const res=await api("saveObjetivo",{
+    id: L("obj-id").value||undefined,
+    nombre, sucursal:L("obj-sucursal").value,
+    mes, anio, metaTotal, lineas:objLineas, activo:true
+  });
+  btn.disabled=false; btn.textContent="GUARDAR OBJETIVO";
+  if(res.ok){ toast(res.mensaje); cancelarObjetivo(); cargarObjetivos(); }
+  else toast(res.error,"error");
+}
+
+function cancelarObjetivo(){
+  L("obj-id").value=""; L("obj-nombre").value=""; L("obj-meta-total").value="";
+  const hoy=new Date(); L("obj-mes").value=hoy.getMonth()+1; L("obj-anio").value=hoy.getFullYear();
+  L("obj-sucursal").value="Ambas"; objLineas=[]; renderLineasForm();
+  L("obj-aviso-meta").style.display="none";
+  L("obj-form-title").textContent="Nuevo objetivo";
+  L("obj-form-card").style.display="none";
+  L("btn-nuevo-obj").style.display="block";
+}
+
+async function bajaObjetivo(id){
+  const o=(S.objetivos||[]).find(x=>x.id===id);
+  if(!o||!confirm(`¿Eliminar objetivo "${o.nombre}"?`)) return;
+  const res=await api("deleteObjetivo",{id});
+  if(res.ok){ toast(res.mensaje); cargarObjetivos(); }
+  else toast(res.error,"error");
+}
+
+// ============================================================
+// MENSAJES — BANDEJA
+// ============================================================
+let bandejaAbierta = false;
+
+async function cargarMensajesHeader(){
+  if(!S.token) return;
+  const [resMsgs, resAlertas] = await Promise.all([
+    api("getMensajes"),
+    api("getAlertas")
+  ]);
+  if(!resMsgs.ok) return;
+  S.mensajes = resMsgs.mensajes || [];
+  const noLeidos = resMsgs.noLeidos || 0;
+  // Badge = mensajes no leídos + alertas activas + sugerencias activas
+  const alertasActivas = resAlertas.ok ? (resAlertas.alertas||[]).length : 0;
+  const sugerenciasActivas = resAlertas.ok ? (resAlertas.sugerencias||[]).length : 0;
+  const totalBadge = noLeidos + alertasActivas + sugerenciasActivas;
+  const badge = L("badge-mensajes");
+  if(totalBadge > 0){
+    badge.style.display = "block";
+    badge.textContent = totalBadge > 9 ? "9+" : totalBadge;
+  } else {
+    badge.style.display = "none";
+  }
+  // Guardar alertas en estado para mostrar en bandeja
+  S.alertasActivas = resAlertas.ok ? resAlertas.alertas||[] : [];
+  S.sugerenciasActivas = resAlertas.ok ? resAlertas.sugerencias||[] : [];
+  renderBandeja();
+  if(S.usuarios){
+    L("msg-para").innerHTML = `<option value="todos">Todos</option>` +
+      S.usuarios.filter(u=>u.usuario!==S.usuario).map(u=>`<option value="${u.usuario}">${u.usuario} (${u.rol})</option>`).join("");
+  }
+}
+
+function renderBandeja(){
+  const msgs = S.mensajes || [];
+  const alertas = S.alertasActivas || [];
+  const sugerencias = S.sugerenciasActivas || [];
+  const iconos = {alerta_stock:"⚠️", sugerencia:"💡", transferencia:"🔄", manual:"✉️"};
+
+  let html = "";
+
+  // Alertas activas al tope (siempre no leídas)
+  if(alertas.length > 0){
+    html += `<div style="font-size:10px;font-weight:700;color:var(--danger);letter-spacing:.08em;padding:6px 0 4px;text-transform:uppercase">⚠️ Alertas activas (${alertas.length})</div>`;
+    html += alertas.map(a=>`
+      <div style="padding:8px 0;border-bottom:1px solid var(--border)">
+        <div style="display:flex;gap:8px">
+          <span>${a.urgente?"⛔":"⚠️"}</span>
+          <div>
+            <div style="font-weight:700;font-size:12px">${a.sabor} ${a.tamano} — ${a.sucursal}</div>
+            <div style="font-size:11px;color:var(--muted)">Stock: ${a.stock} · Mín: ${a.minimo}</div>
+          </div>
+        </div>
+      </div>`).join("");
+  }
+
+  // Sugerencias
+  if(sugerencias.length > 0){
+    html += `<div style="font-size:10px;font-weight:700;color:var(--accent);letter-spacing:.08em;padding:8px 0 4px;text-transform:uppercase">💡 Sugerencias (${sugerencias.length})</div>`;
+    html += sugerencias.map(s=>`
+      <div style="padding:8px 0;border-bottom:1px solid var(--border)">
+        <div style="font-size:12px;color:var(--ink)">${s.mensaje}</div>
+      </div>`).join("");
+  }
+
+  // Mensajes manuales
+  if(msgs.length > 0){
+    if(alertas.length > 0 || sugerencias.length > 0)
+      html += `<div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.08em;padding:8px 0 4px;text-transform:uppercase">Mensajes</div>`;
+    html += msgs.map(m=>`
+      <div onclick="leerMensaje('${m.id}')" style="padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;opacity:${m.leido?.7:1}">
+        <div style="display:flex;gap:8px;align-items:flex-start">
+          <span style="font-size:15px">${iconos[m.tipo]||"✉️"}</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:${m.leido?400:700};font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${m.asunto}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">${m.de} · ${m.fecha?m.fecha.substring(0,16).replace("T"," "):""}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${m.cuerpo}</div>
+          </div>
+          ${!m.leido?'<div style="width:7px;height:7px;border-radius:50%;background:var(--accent);margin-top:5px;flex-shrink:0"></div>':''}
+        </div>
+      </div>`).join("");
+  }
+
+  if(!html){
+    html = `<div style="text-align:center;padding:24px;color:var(--muted);font-size:13px">Sin mensajes ni alertas</div>`;
+  }
+
+  L("bandeja-lista").innerHTML = html;
+}
+
+async function leerMensaje(id){
+  const m = (S.mensajes||[]).find(x=>x.id===id);
+  if(!m) return;
+  if(!m.leido){
+    await api("marcarLeidoMensaje",{id});
+    m.leido = true;
+    cargarMensajesHeader();
+  }
+  alert(`${m.asunto}\n\nDe: ${m.de}\n${m.fecha?m.fecha.substring(0,16).replace("T"," "):""}\n\n${m.cuerpo}`);
+}
+
+function toggleBandeja(){
+  bandejaAbierta = !bandejaAbierta;
+  L("bandeja-mensajes").style.display = bandejaAbierta ? "block" : "none";
+  if(bandejaAbierta) cargarMensajesHeader();
+}
+function abrirNuevoMensaje(){ L("modal-nuevo-msg").style.display="flex"; }
+function cerrarModalMensaje(){ L("modal-nuevo-msg").style.display="none"; L("msg-asunto").value=""; L("msg-cuerpo").value=""; }
+
+async function enviarMensajeUI(){
+  const asunto=L("msg-asunto").value.trim(), cuerpo=L("msg-cuerpo").value.trim();
+  if(!asunto||!cuerpo){ toast("Escribe asunto y mensaje","error"); return; }
+  const res=await api("enviarMensaje",{para:L("msg-para").value,asunto,cuerpo,tipo:"manual"});
+  if(res.ok){ toast("✅ Mensaje enviado"); cerrarModalMensaje(); cargarMensajesHeader(); }
+  else toast(res.error,"error");
+}
+
+// ============================================================
+// ALERTAS Y LÍMITES DE STOCK
+// ============================================================
+async function cargarAlertas(){
+  L("alertas-panel").innerHTML=`<div class="loading"><div class="spinner"></div>Calculando alertas...</div>`;
+  L("limites-lista").innerHTML=`<div class="loading"><div class="spinner"></div></div>`;
+  if(!S.catalogo?.sabores){
+    const resC=await api("getCatalogo"); if(resC.ok) S.catalogo=resC;
+  }
+  if(S.catalogo?.sabores){
+    L("lim-sabor").innerHTML  =S.catalogo.sabores.filter(s=>s.activo).map(s=>`<option>${s.nombre}</option>`).join("");
+    L("lim-tamano").innerHTML =S.catalogo.tamanos.filter(t=>t.activo).map(t=>`<option>${t.nombre}</option>`).join("");
+  }
+  const [resA,resL]=await Promise.all([api("getAlertas"),api("getStockMinMax")]);
+  if(resA.ok){
+    const alertas=resA.alertas||[], sug=resA.sugerencias||[];
+    if(!alertas.length&&!sug.length){
+      L("alertas-panel").innerHTML=`<div class="card" style="text-align:center;padding:20px;color:var(--success)">✅ Todo el stock está dentro de los límites definidos</div>`;
+    } else {
+      const aHtml=alertas.map(a=>`
+        <div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+          <span style="font-size:20px">${a.urgente?"⛔":"⚠️"}</span>
+          <div><div style="font-weight:600;font-size:13px">${a.sabor} ${a.tamano} — ${a.sucursal}</div>
+          <div style="font-size:12px;color:var(--muted)">Stock: ${a.stock} · Mín: ${a.minimo}${a.maximo?" · Máx: "+a.maximo:""}</div></div>
+        </div>`).join("");
+      const sHtml=sug.map(s=>`
+        <div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+          <span style="font-size:20px">${s.tipo==="transferencia"?"🔄":"📋"}</span>
+          <div style="flex:1"><div style="font-weight:600;font-size:13px">${s.tipo==="transferencia"?"Sugerencia: transferencia":"Sugerencia: producción"}</div>
+          <div style="font-size:12px;color:var(--muted)">${s.mensaje}</div>
+          ${s.tipo==="transferencia"?`<button onclick="aplicarSugerenciaTransferencia('${s.sabor}','${s.tamano}',${s.cantidad})" style="margin-top:6px;font-size:11px;background:var(--accent);color:white;border:none;border-radius:8px;padding:4px 10px;cursor:pointer;font-family:'DM Sans',sans-serif">Aplicar →</button>`:""}
+          </div>
+        </div>`).join("");
+      L("alertas-panel").innerHTML=`<div class="card">
+        ${alertas.length?`<div style="font-weight:700;font-size:13px;margin-bottom:4px;color:var(--danger)">⚠️ ${alertas.length} alerta${alertas.length>1?"s":""}</div>${aHtml}`:""}
+        ${sug.length?`<div style="font-weight:700;font-size:13px;margin:12px 0 4px;color:var(--accent)">💡 ${sug.length} sugerencia${sug.length>1?"s":""}</div>${sHtml}`:""}
+      </div>`;
+    }
+  }
+  if(resL.ok){ S.limites=resL.limites||[]; renderLimitesList(); }
+}
+
+function renderLimitesList(){
+  const limites=(S.limites||[]).filter(l=>l.activo);
+  if(!limites.length){ L("limites-lista").innerHTML=`<div style="padding:16px;text-align:center;color:var(--muted);font-size:13px">Sin límites definidos</div>`; return; }
+  const ag={};
+  limites.forEach(l=>{ if(!ag[l.sucursal]) ag[l.sucursal]=[]; ag[l.sucursal].push(l); });
+  L("limites-lista").innerHTML=Object.entries(ag).map(([suc,lista])=>`
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:6px;text-transform:uppercase">${suc}</div>
+      ${lista.map(l=>`<div class="insumo-item">
+        <div style="flex:1;font-size:13px">${l.sabor} <span style="color:var(--muted)">${l.tamano}</span></div>
+        <div style="font-size:12px;color:var(--muted);margin:0 10px">mín <strong style="color:var(--ink)">${l.minimo}</strong> · máx <strong style="color:var(--ink)">${l.maximo||"—"}</strong></div>
+      </div>`).join("")}
+    </div>`).join("");
+}
+
+async function guardarLimite(){
+  const sucursal=L("lim-sucursal").value, sabor=L("lim-sabor").value, tamano=L("lim-tamano").value;
+  const minimo=parseInt(L("lim-min").value)||0, maximo=parseInt(L("lim-max").value)||0;
+  if(!sabor||!tamano||!minimo){ toast("Completa todos los campos obligatorios","error"); return; }
+  if(maximo>0&&maximo<minimo){ toast("El máximo debe ser mayor que el mínimo","error"); return; }
+  const res=await api("saveStockMinMax",{sucursal,sabor,tamano,minimo,maximo});
+  if(res.ok){ toast(res.mensaje); L("lim-min").value=""; L("lim-max").value=""; cargarAlertas(); }
+  else toast(res.error,"error");
+}
+
+function aplicarSugerenciaTransferencia(sabor,tamano,cantidad){
+  document.querySelector('[data-tab="transferencias"]').click();
+  setTimeout(()=>{ L("trf-sabor").value=sabor; L("trf-tamano").value=tamano; L("trf-cantidad").value=cantidad; },400);
+}
+
+function actualizarStockTrf(){
+  const sabor  = L("trf-sabor")?.value;
+  const tamano = L("trf-tamano")?.value;
+  // Actualizar select de cantidad con el stock disponible en Cuajimalpa
+  const selCant = L("trf-cantidad");
+  if(!sabor||!tamano){
+    if(selCant){selCant.innerHTML='<option value="">— elige sabor y tamaño —</option>';selCant.disabled=true;}
+    L("trf-stock-preview").style.display="none"; return;
+  }
+  const stock  = S.stock||[];
+  const cuaji  = stock.filter(s=>s.sabor===sabor&&s.tamano===tamano&&s.sucursal==="Cuajimalpa"&&!s.vencido).reduce((s,i)=>s+i.cantActual,0);
+  const polanco= stock.filter(s=>s.sabor===sabor&&s.tamano===tamano&&s.sucursal==="Polanco"&&!s.vencido).reduce((s,i)=>s+i.cantActual,0);
+  L("trf-stock-cuaji").textContent   = cuaji;
+  L("trf-stock-polanco").textContent = polanco;
+  L("trf-stock-cuaji").style.color   = cuaji===0?"var(--danger)":cuaji<=3?"var(--warning)":"var(--ink)";
+  L("trf-stock-preview").style.display = "block";
+  // Poblar select de cantidad con 1..cuaji
+  if(selCant){
+    if(cuaji > 0){
+      selCant.innerHTML = Array.from({length:cuaji},(_,i)=>i+1).map(n=>`<option value="${n}">${n}</option>`).join("");
+      selCant.disabled = false;
+    } else {
+      selCant.innerHTML = '<option value="">Sin stock en Cuajimalpa</option>';
+      selCant.disabled = true;
+    }
+  }
+}
+
+// ============================================================
+// TRANSFERENCIAS
+// ============================================================
+async function cargarTransferencias(){
+  if(!S.catalogo?.sabores){
+    const resC=await api("getCatalogo"); if(resC.ok) S.catalogo=resC;
+  }
+  if(S.catalogo?.sabores){
+    L("trf-sabor").innerHTML  =S.catalogo.sabores.filter(s=>s.activo).map(s=>`<option>${s.nombre}</option>`).join("");
+    L("trf-tamano").innerHTML =S.catalogo.tamanos.filter(t=>t.activo).map(t=>`<option>${t.nombre}</option>`).join("");
+    actualizarStockTrf();
+  }
+  L("trf-lista").innerHTML=`<div class="loading"><div class="spinner"></div>Cargando...</div>`;
+  const res=await api("getTransferencias");
+  if(!res.ok){ L("trf-lista").innerHTML=`<div class="empty-state">Error al cargar</div>`; return; }
+  S.transferencias=res.transferencias||[];
+  renderTransferenciasList();
+}
+
+function renderTransferenciasList(){
+  const lista=S.transferencias||[];
+  if(!lista.length){ L("trf-lista").innerHTML=`<div class="empty-state"><div class="empty-icon">🔄</div><div>Sin transferencias registradas</div></div>`; return; }
+  L("trf-lista").innerHTML=lista.map(t=>`
+    <div style="padding:12px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <div>
+          <span style="font-weight:700">${t.cantidad}× ${t.sabor} ${t.tamano}</span>
+          <span style="margin-left:8px;font-size:11px;font-weight:600;color:var(--success)">✅ MOVIDO A POLANCO</span>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--muted)">${t.fechaSolicitud?t.fechaSolicitud.substring(0,16).replace("T"," "):""}${t.solicitadoPor?" · por "+t.solicitadoPor:""}${t.notas?" · "+t.notas:""}</div>
+    </div>`).join("");
+}
+
+async function solicitarTransferencia(){
+  const sabor=L("trf-sabor").value, tamano=L("trf-tamano").value;
+  const cantidad=parseInt(L("trf-cantidad")?.value)||0, notas=L("trf-notas")?.value.trim()||"";
+  if(!sabor||!tamano||cantidad<=0){ toast("Completa sabor, tamaño y cantidad","error"); return; }
+  const btn=L("btn-trf"); btn.disabled=true; btn.textContent="Registrando...";
+  const res=await api("registrarTransferencia",{sabor,tamano,cantidad,notas});
+  btn.disabled=false; btn.textContent="REGISTRAR TRANSFERENCIA";
+  if(res.ok){ toast(res.mensaje); L("trf-cantidad").value=""; L("trf-notas").value=""; cargarTransferencias(); cargarMensajesHeader(); }
+  else toast(res.error,"error");
+}
+
+async function confirmarTrf(id){
+  if(!confirm("¿Confirmar recepción en Polanco? Esto moverá el stock.")) return;
+  const res=await api("confirmarTransferencia",{id});
+  if(res.ok){ toast(res.mensaje); cargarTransferencias(); cargarMensajesHeader(); }
+  else toast(res.error,"error");
+}
+
+// ============================================================
+// AUDITORÍA
+// ============================================================
+async function cargarAuditoria(){
+  const res=await api("getAuditoria");if(!res.ok)return;
+  L("auditoria-list").innerHTML=res.registros.length===0?`<div class="empty-state"><div>Sin registros</div></div>`
+    :res.registros.map(r=>`<div class="audit-row"><div class="audit-accion">${r.accion}</div><div class="audit-detalle">${r.detalles}</div><div class="audit-meta">${r.usuario} · ${r.fecha?r.fecha.substring(0,16).replace('T',' '):''}</div></div>`).join("");
+}
+
+async function ejecutarLimpiarDatos(){
+  if(!confirm("⚠️ ¿Seguro que quieres borrar todos los datos de prueba?\n\nEsto eliminará:\n• Ventas\n• Stock / Inventario\n• Clientes\n• Auditoría\n• Utilidades\n• Transferencias\n\nNO se borrarán: catálogo, precios, insumos, recetas ni usuarios.")) return;
+  if(!confirm("Segunda confirmación: ¿ESTÁS SEGURO? Esta acción no se puede deshacer.")) return;
+  const btn = event.target; btn.disabled=true; btn.textContent="Limpiando...";
+  const res = await api("limpiarDatos",{});
+  btn.disabled=false; btn.textContent="🗑 Limpiar datos de prueba";
+  if(res.ok){ toast(res.mensaje); cargarAuditoria(); cargarStock(); }
+  else toast(res.error,"error");
+}
+
+// ============================================================
+// GASTOS
+// ============================================================
+async function cargarGastos(){
+  L("gastos-list").innerHTML=`<div class="loading"><div class="spinner"></div>Cargando...</div>`;
+  const res = await api("getGastos");
+  if(!res.ok){ L("gastos-list").innerHTML=`<div class="empty-state">Error al cargar gastos</div>`; return; }
+  S.gastos = res.gastos || [];
+  renderGastosList();
+}
+
+function renderGastosList(){
+  const gastos = (S.gastos||[]).filter(g=>g.activo);
+  if(gastos.length === 0){
+    L("gastos-list").innerHTML=`<div class="empty-state"><div class="empty-icon">💸</div><div>Sin gastos registrados — agrega renta, comisiones, merma, etc.</div></div>`;
+    return;
+  }
+
+  // Agrupar por tipo
+  const fijos    = gastos.filter(g=>g.tipo==="Fijo");
+  const variables= gastos.filter(g=>g.tipo==="Variable");
+
+  function etiquetaFrecuencia(g){
+    if(g.frecuencia==="% sobre venta") return `${g.monto}%`;
+    if(g.frecuencia==="Condicional") return `${fmtMXN(g.monto)} si se cumple`;
+    return fmtMXN(g.monto) + (g.frecuencia==="Mensual"?" /mes":g.frecuencia==="Semanal"?" /sem":g.frecuencia==="Por unidad"?" /pieza":"");
+  }
+
+  function renderGrupo(lista, titulo){
+    if(!lista.length) return "";
+    return `
+      <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin:12px 0 6px;text-transform:uppercase">${titulo}</div>
+      ${lista.map(g=>`
+        <div class="insumo-item">
+          <div style="flex:1">
+            <div style="font-weight:600;font-size:14px">${g.concepto}</div>
+            <div style="font-size:12px;color:var(--muted)">${g.frecuencia} · ${g.sucursal}${g.descripcion?' · '+g.descripcion:''}</div>
+            ${g.frecuencia==="Condicional"&&g.condicion?`<div style="font-size:11px;color:var(--accent);margin-top:2px">📋 ${g.condicion}${g.aplicaA?' → '+g.aplicaA:''}</div>`:''}
+          </div>
+          <div style="font-weight:700;font-size:15px;color:var(--accent);margin:0 12px">${etiquetaFrecuencia(g)}</div>
+          <div style="display:flex;gap:6px">
+            <button class="btn-icon" onclick="editarGasto('${g.id}')">✏️</button>
+            <button class="btn-icon" onclick="bajaGasto('${g.id}')">✕</button>
+          </div>
+        </div>`).join("")}`;
+  }
+
+  L("gastos-list").innerHTML = renderGrupo(fijos,"Gastos fijos") + renderGrupo(variables,"Gastos variables");
+}
+
+function toggleGastoCondicional(){
+  const esCondicional = L("g-frecuencia").value === "Condicional";
+  const fields = L("gasto-condicional-fields");
+  fields.style.display = esCondicional ? "block" : "none";
+  L("g-monto-label").textContent = esCondicional ? "Monto del bono/comisión ($)" : "Monto ($) *";
+}
+
+function editarGasto(id){
+  const g = (S.gastos||[]).find(x=>x.id===id);
+  if(!g) return;
+  L("gasto-id").value         = g.id;
+  L("g-concepto").value       = g.concepto;
+  L("g-tipo").value           = g.tipo;
+  L("g-frecuencia").value     = g.frecuencia;
+  L("g-monto").value          = g.monto;
+  L("g-sucursal").value       = g.sucursal;
+  L("g-descripcion").value    = g.descripcion||"";
+  L("g-condicion").value      = g.condicion||"";
+  L("g-aplica-a").value       = g.aplicaA||"";
+  toggleGastoCondicional();
+  L("gasto-form-title").textContent = "Editar gasto";
+  L("btn-cancelar-gasto").style.display = "inline-block";
+  L("g-concepto").focus();
+}
+
+function cancelarEditarGasto(){
+  ["gasto-id","g-concepto","g-descripcion","g-monto","g-condicion","g-aplica-a"].forEach(id=>L(id).value="");
+  L("g-tipo").value="Fijo"; L("g-frecuencia").value="Mensual"; L("g-sucursal").value="Ambas";
+  L("gasto-condicional-fields").style.display="none";
+  L("gasto-form-title").textContent="Nuevo gasto";
+  L("btn-cancelar-gasto").style.display="none";
+}
+
+async function guardarGasto(){
+  const concepto = L("g-concepto").value.trim();
+  if(!concepto){ toast("El concepto es obligatorio","error"); return; }
+  const monto = parseFloat(L("g-monto").value);
+  if(!monto||monto<=0){ toast("Ingresa un monto válido","error"); return; }
+  const btn = L("btn-guardar-gasto"); btn.disabled=true; btn.textContent="Guardando...";
+  const payload = {
+    id:          L("gasto-id").value||undefined,
+    concepto,
+    descripcion: L("g-descripcion").value.trim(),
+    tipo:        L("g-tipo").value,
+    frecuencia:  L("g-frecuencia").value,
+    monto,
+    sucursal:    L("g-sucursal").value,
+    condicion:   L("g-condicion").value.trim(),
+    aplicaA:     L("g-aplica-a").value.trim(),
+    activo:      true
+  };
+  const res = await api("saveGasto", payload);
+  btn.disabled=false; btn.textContent="GUARDAR GASTO";
+  if(res.ok){ toast(res.mensaje); cancelarEditarGasto(); cargarGastos(); }
+  else toast(res.error,"error");
+}
+
+async function bajaGasto(id){
+  const g = (S.gastos||[]).find(x=>x.id===id);
+  if(!g||!confirm(`¿Dar de baja "${g.concepto}"?`)) return;
+  const res = await api("deleteGasto",{id});
+  if(res.ok){ toast(res.mensaje); cargarGastos(); }
+  else toast(res.error,"error");
+}
+
+// ============================================================
+// ZONAS DE ENVÍO
+// ============================================================
+async function cargarZonasEnvio(){
+  const res = await api("getZonasEnvio");
+  if(res.ok) S.zonasEnvio = res.zonas || [];
+  renderZonasList();
+  // Poblar selector en Nueva Venta
+  const sel = L("venta-zona");
+  if(sel){
+    const activas = (S.zonasEnvio||[]).filter(z=>z.activo);
+    sel.innerHTML = `<option value="">— Sin costo de envío —</option>` +
+      activas.map(z=>`<option value="${z.id}" data-costo="${z.costo}">${z.nombre} — $${z.costo.toLocaleString('en-US')}</option>`).join("");
+  }
+}
+
+function renderZonasList(){
+  const zonas = (S.zonasEnvio||[]).filter(z=>z.activo);
+  if(!zonas.length){
+    L("zonas-lista").innerHTML=`<div style="padding:16px;text-align:center;color:var(--muted);font-size:13px">Sin zonas definidas — agrega la primera abajo</div>`;
+    return;
+  }
+  L("zonas-lista").innerHTML = zonas.map(z=>`
+    <div class="insumo-item">
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:13px">${z.nombre}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${z.colonias.slice(0,5).join(", ")}${z.colonias.length>5?" ...":""}</div>
+      </div>
+      <div style="font-weight:700;color:var(--accent);margin:0 12px">$${z.costo.toLocaleString('en-US')}</div>
+      <button class="btn-icon" onclick="eliminarZona('${z.id}')">✕</button>
+    </div>`).join("");
+}
+
+async function guardarZonaEnvio(){
+  const nombre  = L("zona-nombre").value.trim();
+  const costo   = parseInt(L("zona-costo").value)||0;
+  const colonias= L("zona-colonias").value.trim();
+  if(!nombre||!costo){ toast("Completa nombre y costo","error"); return; }
+  if(!colonias){ toast("Agrega al menos una colonia o CP","error"); return; }
+  const res = await api("saveZonaEnvio",{nombre,costo,colonias});
+  if(res.ok){
+    toast(res.mensaje);
+    L("zona-nombre").value=""; L("zona-costo").value=""; L("zona-colonias").value="";
+    await cargarZonasEnvio();
+  } else toast(res.error,"error");
+}
+
+async function eliminarZona(id){
+  if(!confirm("¿Eliminar esta zona?")) return;
+  const res = await api("deleteZonaEnvio",{id});
+  if(res.ok){ toast(res.mensaje); cargarZonasEnvio(); }
+  else toast(res.error,"error");
+}
+
+function onZonaChange(){
+  const sel = L("venta-zona");
+  const opt = sel?.options[sel.selectedIndex];
+  const costo = parseInt(opt?.dataset?.costo||"0")||0;
+  S.costoEnvio = costo;
+  const aviso = L("envio-costo-aviso");
+  if(costo > 0){
+    aviso.style.display = "block";
+    aviso.textContent = `🚗 Costo de envío: $${costo.toLocaleString('en-US')} — se sumará al total`;
+  } else {
+    aviso.style.display = "none";
+  }
+  renderCarrito();
+}
+
+// ============================================================
+// PRECIO POR CANAL
+// ============================================================
+async function cargarCanalPrecios(){
+  const [resCP, resCat] = await Promise.all([api("getCanalPrecios"), S.catalogo?Promise.resolve({ok:false}):api("getCatalogo")]);
+  if(resCP.ok) S.canalPrecios = resCP.reglas || [];
+  if(resCat.ok) S.catalogo = resCat;
+  // Poblar selector de canales
+  const canales = (S.catalogo?.canales||[]).filter(c=>c.activo).map(c=>c.nombre);
+  L("cp-canal").innerHTML = canales.map(c=>`<option>${c}</option>`).join("");
+  renderCanalPreciosList();
+}
+
+function actualizarLabelCP(){
+  const tipo = L("cp-tipo").value;
+  L("cp-valor-label").textContent = tipo==="pct" ? "Valor % (+ sube, - baja)" : "Valor $ por pieza (+ sube, - baja)";
+  actualizarPreviewCP();
+}
+
+function actualizarPreviewCP(){
+  const canal = L("cp-canal").value;
+  const tipo  = L("cp-tipo").value;
+  const valor = parseFloat(L("cp-valor").value)||0;
+  if(!canal||!valor){ L("cp-preview").textContent=""; return; }
+  const ejemplo = 210; // precio Chico
+  const nuevo = tipo==="pct" ? ejemplo*(1+valor/100) : ejemplo+valor;
+  L("cp-preview").textContent = `Ejemplo: tarta Chico $${ejemplo} → $${Math.round(nuevo)} en ${canal}`;
+}
+L("cp-valor")?.addEventListener("input", actualizarPreviewCP);
+L("cp-canal")?.addEventListener("change", actualizarPreviewCP);
+
+function renderCanalPreciosList(){
+  const reglas = (S.canalPrecios||[]).filter(r=>r.activo);
+  if(!reglas.length){
+    L("canal-precios-lista").innerHTML=`<div style="padding:16px;text-align:center;color:var(--muted);font-size:13px">Sin reglas definidas</div>`;
+    return;
+  }
+  L("canal-precios-lista").innerHTML = reglas.map(r=>`
+    <div class="insumo-item">
+      <div style="flex:1;font-size:13px"><strong>${r.canal}</strong></div>
+      <div style="margin:0 12px;font-size:13px;color:${r.valor>=0?"var(--success)":"var(--danger)"}">
+        ${r.valor>=0?"+":""}${r.valor}${r.tipo==="pct"?"%":"$"} por pieza
+      </div>
+      <button class="btn-icon" onclick="eliminarCanalPrecio('${r.id}')">✕</button>
+    </div>`).join("");
+}
+
+async function guardarCanalPrecio(){
+  const canal = L("cp-canal").value;
+  const tipo  = L("cp-tipo").value;
+  const valor = parseFloat(L("cp-valor").value);
+  if(!canal||isNaN(valor)){ toast("Completa canal y valor","error"); return; }
+  const res = await api("saveCanalPrecio",{canal,tipo,valor});
+  if(res.ok){ toast(res.mensaje); L("cp-valor").value=""; cargarCanalPrecios(); }
+  else toast(res.error,"error");
+}
+
+async function eliminarCanalPrecio(id){
+  const res = await api("deleteCanalPrecio",{id});
+  if(res.ok){ toast("✅ Regla eliminada"); cargarCanalPrecios(); }
+  else toast(res.error,"error");
+}
+
+function onCanalChange(){
+  const canal = L("venta-canal")?.value;
+  const esPlat = esPlataforma(canal);
+  // Método de pago
+  const metodoGroup = L("venta-metodo")?.parentElement;
+  if(metodoGroup) metodoGroup.style.display = esPlat ? "none" : "block";
+  llenar("venta-metodo", esPlat ? [canal] : ["Efectivo","Tarjeta","Transferencia"]);
+  // Cliente
+  const cli = L("cliente-section");
+  if(cli) cli.style.display = esPlat ? "none" : "block";
+  L("canal-aviso").style.display = esPlat ? "flex" : "none";
+  // Zona de envío solo Domicilio
+  const esDomicilio = canal === "Domicilio";
+  L("envio-section").style.display = esDomicilio ? "block" : "none";
+  if(!esDomicilio){ S.costoEnvio = 0; if(L("envio-costo-aviso")) L("envio-costo-aviso").style.display="none"; }
+  // Aviso precio por canal
+  const regla = (S.canalPrecios||[]).find(r=>r.canal===canal&&r.activo);
+  const aviso = L("canal-precio-aviso");
+  if(regla){ aviso.style.display="block"; aviso.textContent=`💡 Regla para ${canal}: ${regla.valor>=0?"+":""}${regla.valor}${regla.tipo==="pct"?"%":"$"} por pieza`; }
+  else aviso.style.display="none";
+  actualizarPrecioPreview();
+  renderCarrito();
+}
+
+// ============================================================
+// TABLA UTILIDADES EN COSTOS
+// ============================================================
+async function renderTablaUtilidades(){
+  L("tabla-util-content").innerHTML=`<div class="loading"><div class="spinner"></div>Calculando...</div>`;
+
+  const [resR, resI, resP] = await Promise.all([
+    api("getRecetas"),
+    api("getInsumos"),
+    api("getPrecios")
+  ]);
+
+  if(!resR.ok || !resI.ok || !resP.ok){
+    L("tabla-util-content").innerHTML=`<div class="empty-state"><div class="empty-icon">⚠️</div><div>Error al cargar datos</div></div>`;
+    return;
+  }
+
+  const recetas = resR.recetas || [];
+  const insumos = resI.insumos || [];
+  const precios = resP.precios || [];
+
+  // Guardar en estado global
+  S.recetas = recetas;
+  S.insumos = insumos;
+  S.precios = precios;
+
+  if(recetas.length === 0){
+    L("tabla-util-content").innerHTML=`<div class="empty-state"><div class="empty-icon">📋</div><div>Sin recetas cargadas — ve a la pestaña Recetas para agregar ingredientes</div></div>`;
+    return;
+  }
+
+  // Índice de insumos por ID para lookup rápido
+  const insumosIdx = {};
+  insumos.forEach(i => insumosIdx[i.id] = i);
+
+  // Precio por tamaño: primero buscar precio específico sabor+tamaño,
+  // si no existe usar el primer precio disponible para ese tamaño
+  function getPrecio(sabor, tamano){
+    const especifico = precios.find(p => p.sabor === sabor && p.tamano === tamano);
+    if(especifico && especifico.precio > 0) return especifico.precio;
+    const porTamano = precios.find(p => p.tamano === tamano && p.precio > 0);
+    return porTamano ? porTamano.precio : 0;
+  }
+
+  // Calcular fila por cada receta cargada
+  const filas = recetas
+    .filter(r => r.ingredientes && r.ingredientes.length > 0)
+    .map(r => {
+      const costo = r.ingredientes.reduce((sum, ing) => {
+        const ins = insumosIdx[ing.insumoId];
+        return sum + (ins ? ins.costoPorUnidad * ing.cantidad : 0);
+      }, 0);
+      const precio = getPrecio(r.sabor, r.tamano);
+      const utilidad = precio > 0 ? precio - costo : null;
+      const margen   = precio > 0 ? (utilidad / precio * 100) : null;
+      return { sabor: r.sabor, tamano: r.tamano, costo, precio, utilidad, margen };
+    });
+
+  if(filas.length === 0){
+    L("tabla-util-content").innerHTML=`<div class="empty-state"><div class="empty-icon">📋</div><div>Sin recetas con ingredientes cargados</div></div>`;
+    return;
+  }
+
+  const header = `
+    <div class="util-row header">
+      <span>Producto</span>
+      <span style="text-align:right">Costo</span>
+      <span style="text-align:right">Precio</span>
+      <span style="text-align:right">Utilidad</span>
+      <span style="text-align:right">Margen</span>
+    </div>`;
+
+  const rows = filas.map(f => {
+    const mCls = f.margen === null ? '' : f.margen >= 50 ? 'margen-alto' : f.margen >= 30 ? 'margen-med' : 'margen-bajo';
+    const uCls = f.utilidad === null ? '' : f.utilidad >= 0 ? 'util-verde' : 'util-rojo';
+    return `
+      <div class="util-row">
+        <div>
+          <div class="util-nombre">${f.sabor}</div>
+          <div style="font-size:11px;color:var(--muted)">${f.tamano}</div>
+        </div>
+        <div class="util-val">${fmtMXN(f.costo)}</div>
+        <div class="util-val">${f.precio > 0 ? fmtMXN(f.precio) : '<span style="color:var(--danger);font-size:11px">Sin precio</span>'}</div>
+        <div class="util-val ${uCls}">${f.utilidad !== null ? fmtMXN(f.utilidad) : '—'}</div>
+        <div style="text-align:right">
+          ${f.margen !== null
+            ? `<span class="util-margen ${mCls}">${f.margen.toFixed(1)}%</span>`
+            : '<span style="color:var(--muted);font-size:11px">—</span>'}
+        </div>
+      </div>`;
+  }).join('');
+
+  L("tabla-util-content").innerHTML = header + rows;
+}
+
+// ============================================================
+// SECCIÓN UTILIDADES POR OPERACIÓN
+// ============================================================
+// ============================================================
+// UTILIDAD POR VENTAS — con filtros
+// ============================================================
+
+// Estado de filtros
+let utilState = {
+  ventas: [],       // todas las ventas cargadas
+  recetas: [],
+  insumos: [],
+  listo: false
+};
+
+// Inicializa la pantalla: carga datos, pone fechas por defecto, puebla filtros
+async function cargarUtilidades(){
+  L("util-ops-list").innerHTML=`<div class="loading"><div class="spinner"></div>Cargando...</div>`;
+  L("util-resumen-periodo").style.display="none";
+
+  // Fechas por defecto: mes en curso
+  const hoy = new Date();
+  const primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+  L("f-desde").value = _fmtDateInput(primerDia);
+  L("f-hasta").value  = _fmtDateInput(hoy);
+
+  // Cargar todo en paralelo
+  const [resV, resR, resI] = await Promise.all([
+    api("getVentas"),
+    api("getRecetas"),
+    api("getInsumos")
+  ]);
+  if(!resV.ok){ L("util-ops-list").innerHTML=`<div class="empty-state"><div>Error al cargar ventas</div></div>`; return; }
+
+  utilState.ventas  = resV.ventas  || [];
+  utilState.recetas = resR.ok ? resR.recetas : (S.recetas || []);
+  utilState.insumos = resI.ok ? resI.insumos : (S.insumos || []);
+  utilState.listo   = true;
+
+  // Guardar en global
+  if(resR.ok) S.recetas = utilState.recetas;
+  if(resI.ok) S.insumos = utilState.insumos;
+
+  // Poblar filtros dinámicos desde los datos reales
+  _poblarFiltrosUtil();
+
+  // Renderizar con filtros actuales
+  renderUtilidades();
+}
+
+function _fmtDateInput(d){
+  return d.toISOString().substring(0,10);
+}
+
+function _poblarFiltrosUtil(){
+  const ventas = utilState.ventas;
+  const sucursales = [...new Set(ventas.map(v=>v.sucursal).filter(Boolean))];
+  const canales    = [...new Set(ventas.map(v=>v.canal).filter(Boolean))];
+  const sabores    = [...new Set(ventas.map(v=>v.sabor).filter(Boolean))];
+  const tamanos    = [...new Set(ventas.map(v=>v.tamano).filter(Boolean))];
+
+  _llenarSelect("f-sucursal", sucursales);
+  _llenarSelect("f-canal",    canales);
+  _llenarSelect("f-sabor",    sabores);
+  _llenarSelect("f-tamano",   tamanos);
+}
+
+function _llenarSelect(id, opciones){
+  const sel = L(id);
+  if(!sel) return;
+  const actual = sel.value;
+  sel.innerHTML = `<option value="">Todos</option>` + opciones.map(o=>`<option value="${o}">${o}</option>`).join("");
+  if(actual) sel.value = actual;
+}
+
+function aplicarFiltrosUtil(){ renderUtilidades(); }
+
+function limpiarFiltrosUtil(){
+  const hoy = new Date();
+  const primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+  L("f-desde").value   = _fmtDateInput(primerDia);
+  L("f-hasta").value   = _fmtDateInput(hoy);
+  L("f-sucursal").value = "";
+  L("f-canal").value    = "";
+  L("f-metodo").value   = "";
+  L("f-sabor").value    = "";
+  L("f-tamano").value   = "";
+  renderUtilidades();
+}
+
+function renderUtilidades(){
+  if(!utilState.listo){ L("util-ops-list").innerHTML=`<div class="loading"><div class="spinner"></div></div>`; return; }
+
+  const desde   = L("f-desde").value;
+  const hasta   = L("f-hasta").value;
+  const fSuc    = L("f-sucursal").value;
+  const fCanal  = L("f-canal").value;
+  const fMetodo = L("f-metodo").value;
+  const fSabor  = L("f-sabor").value;
+  const fTamano = L("f-tamano").value;
+
+  const desdeD = desde ? new Date(desde+"T00:00:00") : null;
+  const hastaD = hasta ? new Date(hasta+"T23:59:59") : null;
+
+  // Construir índice de insumos
+  const insumosIdx = {};
+  utilState.insumos.forEach(i => insumosIdx[i.id] = i);
+
+  // Función costo de receta para sabor+tamaño
+  function getCostoReceta(sabor, tamano){
+    const rec = utilState.recetas.find(r => r.sabor === sabor && r.tamano === tamano);
+    if(!rec || !rec.ingredientes.length) return null;
+    return rec.ingredientes.reduce((s, ing) => {
+      const ins = insumosIdx[ing.insumoId];
+      return s + (ins ? ins.costoPorUnidad * ing.cantidad : 0);
+    }, 0);
+  }
+
+  // Filtrar ventas individuales
+  let ventasFiltradas = utilState.ventas.filter(v => {
+    if(desdeD && v.fecha && new Date(v.fecha) < desdeD) return false;
+    if(hastaD && v.fecha && new Date(v.fecha) > hastaD) return false;
+    if(fSuc    && v.sucursal   !== fSuc)    return false;
+    if(fCanal  && v.canal      !== fCanal)  return false;
+    if(fMetodo && v.metodoPago !== fMetodo) return false;
+    if(fSabor  && v.sabor      !== fSabor)  return false;
+    if(fTamano && v.tamano     !== fTamano) return false;
+    return true;
+  });
+
+  // Agrupar por idVenta
+  const grupos = {};
+  ventasFiltradas.forEach(v => {
+    if(!grupos[v.idVenta]) grupos[v.idVenta] = { ...v, items: [] };
+    grupos[v.idVenta].items.push({ sabor: v.sabor, tamano: v.tamano, cantidad: v.cantidad, subtotal: v.subtotal, precio: v.precio });
+  });
+
+  if(Object.keys(grupos).length === 0){
+    L("util-resumen-periodo").style.display = "none";
+    L("util-ops-list").innerHTML = `<div class="empty-state"><div class="empty-icon">📊</div><div>Sin ventas en el período seleccionado</div></div>`;
+    return;
+  }
+
+  // Calcular métricas por grupo
+  let totalIngresos = 0, totalCostos = 0, totalUtilidad = 0, sinReceta = 0;
+  const ops = Object.values(grupos).map(g => {
+    const ingresoBase = g.items.reduce((s,i) => s + i.subtotal, 0);
+    // Descontar comisión del canal/método para obtener ingreso neto real
+    const comPct = getComision(g.canal||"", g.metodoPago||"");
+    const comMonto = Math.round(ingresoBase * comPct); // comPct es negativo
+    const ingreso = ingresoBase + comMonto; // ingreso neto después de comisión
+    let costo = 0; let calculable = true;
+    g.items.forEach(i => {
+      const c = getCostoReceta(i.sabor, i.tamano);
+      if(c === null) calculable = false;
+      else costo += c * i.cantidad;
+    });
+    const utilidad = calculable ? ingreso - costo : null;
+    const margen   = calculable && ingreso > 0 ? (utilidad / ingreso * 100) : null;
+    if(calculable){ totalIngresos += ingreso; totalCostos += costo; totalUtilidad += utilidad; }
+    else { totalIngresos += ingreso; sinReceta++; }
+    return { ...g, ingresoBase, ingreso, comMonto, costo: calculable ? costo : null, utilidad, margen, calculable };
+  });
+
+  const totalMargen = totalIngresos > 0 ? (totalUtilidad / totalIngresos * 100) : 0;
+
+  // Resumen período
+  L("util-resumen-periodo").style.display = "block";
+  L("up-ingresos").textContent  = fmtMXN(totalIngresos);
+  L("up-costos").textContent    = fmtMXN(totalCostos);
+  L("up-utilidad").textContent  = fmtMXN(totalUtilidad);
+  L("up-utilidad").style.color  = totalUtilidad >= 0 ? "var(--success)" : "var(--danger)";
+  L("up-margen").textContent    = totalMargen.toFixed(1) + "%";
+  L("up-margen").style.color    = totalMargen >= 30 ? "var(--success)" : totalMargen >= 0 ? "var(--warning)" : "var(--danger)";
+
+  // Label período
+  const periodoTxt = desde && hasta ? `${desde} → ${hasta}` : desde ? `Desde ${desde}` : hasta ? `Hasta ${hasta}` : "Todo el historial";
+  L("up-periodo-label").textContent = periodoTxt;
+  L("up-ops-count").textContent = `${ops.length} operación${ops.length !== 1 ? "es" : ""}`;
+
+  if(sinReceta > 0){
+    L("up-sin-receta-aviso").style.display = "inline";
+    L("up-sin-receta-num").textContent = sinReceta;
+  } else {
+    L("up-sin-receta-aviso").style.display = "none";
+  }
+
+  // Listado
+  L("util-ops-list").innerHTML = ops.map(g => {
+    const mCls = g.margen === null ? '' : g.margen >= 50 ? 'margen-alto' : g.margen >= 30 ? 'margen-med' : 'margen-bajo';
+    const uCls = g.utilidad === null ? '' : g.utilidad >= 0 ? 'util-verde' : 'util-rojo';
+    return `<div class="op-row">
+      <div class="op-fecha">${g.fecha ? g.fecha.substring(0,16).replace('T',' ') : ''}</div>
+      <div class="op-prods">${g.items.map(i=>`${i.cantidad}× ${i.sabor} ${i.tamano}`).join(' · ')}</div>
+      <div class="op-nums">
+        <div class="op-num-card"><div class="op-num-val">${fmtMXN(g.ingreso)}</div><div class="op-num-label">Ingreso neto${g.comMonto<0?` <span style="font-size:10px;color:var(--danger)">-$${Math.abs(g.comMonto).toLocaleString('en-US')}</span>`:''}</div></div>
+        <div class="op-num-card"><div class="op-num-val">${g.calculable ? fmtMXN(g.costo) : '—'}</div><div class="op-num-label">Costo</div></div>
+        <div class="op-num-card"><div class="op-num-val ${uCls}">${g.utilidad !== null ? fmtMXN(g.utilidad) : '—'}</div><div class="op-num-label">Utilidad</div></div>
+      </div>
+      <div class="op-tags">
+        <span class="tag">${g.canal||''}</span>
+        <span class="tag">${g.metodoPago||''}</span>
+        <span class="tag">${g.sucursal||''}</span>
+        ${g.clienteNombre ? `<span class="tag">${g.clienteNombre}</span>` : ''}
+        ${g.margen !== null
+          ? `<span class="util-margen ${mCls}" style="font-size:11px">${g.margen.toFixed(1)}% margen</span>`
+          : '<span class="tag" style="color:var(--warning)">sin receta</span>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ================================================================
+// COMISIONES POR MÉTODO/CANAL
+// ================================================================
+async function cargarComisionesConfig(){
+  const res = await api("getComisionesConfig");
+  if(res.ok && res.comisiones){
+    S.comisionesConfig = res.comisiones;
+  } else {
+    // Usar defaults si la API aún no tiene la acción
+    S.comisionesConfig = {...COMISIONES_DEFAULT};
+  }
+  renderComisionesList();
+}
+
+function renderComisionesList(){
+  const el = L("comisiones-lista");
+  if(!el) return;
+  const C = S.comisionesConfig;
+  const nombres = {"Tarjeta":"Tarjeta crédito/débito","Transferencia":"Transferencia","Rappi":"Rappi","Uber Eats":"Uber Eats","Efectivo":"Efectivo"};
+  el.innerHTML = Object.entries(nombres).map(([key,label])=>{
+    const raw = C[key];
+    const pct = typeof raw==='number' ? Math.abs(raw*100).toFixed(1) : '0.0';
+    const color = parseFloat(pct)>0 ? 'var(--accent)' : 'var(--muted)';
+    return `<div class="insumo-row">
+      <div><div class="insumo-nombre">${label}</div><div class="insumo-meta">Se descuenta del ingreso al vender</div></div>
+      <div><div class="insumo-costo" style="color:${color}">${pct}%</div><div class="insumo-costo-label">comisión</div></div>
+      <button class="btn-del-small" onclick="editarComision('${key}',${pct})" title="Editar">✏️</button>
+    </div>`;
+  }).join("");
+}
+
+function editarComision(nombre, pct){
+  const sel = L("com-nombre");
+  if(sel) sel.value = nombre;
+  const inp = L("com-pct");
+  if(inp) inp.value = pct;
+  actualizarPreviewComision();
+  L("com-nombre").scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+
+function actualizarPreviewComision(){
+  const pct = parseFloat(L("com-pct")?.value)||0;
+  const prev = L("com-preview");
+  if(!prev) return;
+  if(!pct){ prev.textContent="Sin comisión (0%)"; return; }
+  const ejemplo = 350;
+  const cargo = Math.round(ejemplo * pct/100);
+  prev.textContent = `Ejemplo: venta de $${ejemplo} → cargo $${cargo} → ingreso neto $${ejemplo-cargo}`;
+}
+L("com-pct")?.addEventListener("input", actualizarPreviewComision);
+
+async function guardarComision(){
+  const nombre = L("com-nombre")?.value;
+  const pct = parseFloat(L("com-pct")?.value)||0;
+  if(!nombre){ toast("Selecciona un método","error"); return; }
+  // Guardar en Sheets (valor negativo internamente, el usuario ingresa positivo)
+  const res = await api("saveComisionConfig",{nombre, porcentaje: -(pct/100)});
+  if(res.ok){
+    S.comisionesConfig[nombre] = -(pct/100);
+    renderComisionesList();
+    toast(`✅ Comisión ${nombre}: ${pct}%`);
+    if(L("com-pct")) L("com-pct").value="";
+  } else {
+    toast(res.error||"Error al guardar comisión","error");
+  }
+}
+
+// Carga silenciosa de canalPrecios al arrancar (necesario para precio Rappi en venta)
+async function cargarCanalPreciosAlInicio(){
+  const res = await api("getCanalPrecios");
+  if(res.ok) S.canalPrecios = res.reglas || [];
+}
+// Carga silenciosa de recetas al arrancar (necesario para preview de costos)
+async function cargarRecetasAlInicio(){
+  const res = await api("getRecetas");
+  if(res.ok) S.recetas = res.recetas || [];
+}
+
+L("btn-logout").addEventListener("click",()=>{
+  limpiarVenta();
+  S={token:null,usuario:null,rol:null,sucursal:null,catalogo:null,precios:null,stock:null,carrito:[],clienteSel:null,filtroSuc:null,filtroTam:null,insumos:[],recetas:[],recetaActual:[],costoEnvio:0,zonasEnvio:[],canalPrecios:[],comisionesConfig:{}};
+  L("app").style.display="none";L("login-screen").style.display="flex";L("login-user").value="";L("login-pass").value="";
+});
+document.querySelectorAll(".modal-overlay").forEach(o=>{o.addEventListener("click",e=>{if(e.target===o)o.classList.remove("show");});});
+</script>
+</body>
+</html>
