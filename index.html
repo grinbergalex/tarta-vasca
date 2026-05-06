@@ -1341,10 +1341,19 @@ function poblarSelectsVenta() {
   const can=(S.catalogo.canales||[]).filter(c=>c.activo).map(c=>c.nombre);
   const canFinal=can.length>0?can.filter(c=>c!=="Uber Eats"):["Tienda","Domicilio","Rappi"];
 
-  // Sucursal
-  llenar("venta-sucursal",suc);
+  // Sucursal — solo pre-seleccionar en la primera carga, no sobreescribir si ya eligió
   const selSuc = L("venta-sucursal");
-  if(selSuc && S.sucursal && suc.includes(S.sucursal)) selSuc.value = S.sucursal;
+  const sucActual = selSuc?.value;
+  llenar("venta-sucursal", suc);
+  if(selSuc){
+    // Si ya tenía una sucursal válida seleccionada, mantenerla
+    if(sucActual && suc.includes(sucActual)){
+      selSuc.value = sucActual;
+    } else if(S.sucursal && suc.includes(S.sucursal)){
+      // Primera carga: usar la sucursal del usuario
+      selSuc.value = S.sucursal;
+    }
+  }
 
   // Canal y método
   llenar("venta-canal",canFinal);
@@ -1581,7 +1590,7 @@ function onItemTamanoChange(){
 
 // Cuando cambia sucursal → recalcular todo
 L("venta-sucursal")?.addEventListener("change",()=>{
-  poblarSelectsVenta();
+  // Solo actualizar la cascada de productos, no repoblar todo (evita reset de sucursal)
   actualizarSelectoresCascada();
 });
 
