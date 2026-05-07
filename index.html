@@ -3947,11 +3947,6 @@ async function renderTablero() {
     </div>`;
 
   // Ventas del período para PE
-  const ventasPeriodoPE = esSemana ? ventasSemSel : ventasMes;
-  const peTotal = peWidget(ventasPeriodoPE, "Total empresa", gastosParaSuc(""), esSemana);
-  const peCuaji = peWidget(ventasPeriodoPE.filter(v=>v.sucursal==="Cuajimalpa"), "Cuajimalpa", gastosParaSuc("Cuajimalpa"), esSemana);
-  const pePol   = peWidget(ventasPeriodoPE.filter(v=>v.sucursal==="Polanco"),    "Polanco",    gastosParaSuc("Polanco"), esSemana);
-
   if (!esSemana) {
     // Vista mensual
     const vC = ventasMes.filter(v => v.sucursal === "Cuajimalpa");
@@ -3961,6 +3956,10 @@ async function renderTablero() {
     const total = rC.total + rP.total;
     const metaTotal = metas.cuaji + metas.polanco;
     const pctTotal  = metaTotal > 0 ? (total / metaTotal * 100) : 0;
+
+    const peTotalMes = peWidget(ventasMes, "Total empresa", gastosParaSuc(""), false);
+    const peCuajiMes = peWidget(vC, "Cuajimalpa", gastosParaSuc("Cuajimalpa"), false);
+    const pePolMes   = peWidget(vP, "Polanco",    gastosParaSuc("Polanco"),    false);
 
     contenido.innerHTML = `
       <div style="background:var(--ink);border-radius:16px;padding:20px;margin-bottom:10px;color:#fff">
@@ -3979,11 +3978,15 @@ async function renderTablero() {
       tarjetaSucursal("Cuajimalpa", rC, metas.cuaji, false) +
       tarjetaSucursal("Polanco",    rP, metas.polanco, false) +
       `<div style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin:16px 0 8px">📊 Punto de equilibrio</div>` +
-      peTotal + peCuaji + pePol;
+      peTotalMes + peCuajiMes + pePolMes;
     return;
   }
 
   // Vista semanal
+  const peTotalSem = peWidget(ventasSemSel, "Total empresa", gastosParaSuc(""), true);
+  const peCuajiSem = peWidget(vCsel, "Cuajimalpa", gastosParaSuc("Cuajimalpa"), true);
+  const pePolSem   = peWidget(vPsel, "Polanco",    gastosParaSuc("Polanco"),    true);
+
   contenido.innerHTML = graficaHTML +
     `<div style="background:var(--ink);border-radius:16px;padding:18px;margin-bottom:10px;color:#fff">
       <div style="font-size:12px;opacity:.7;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Semana ${semSel} · ${MESES_NOMBRE[mes]} ${anio}</div>
@@ -3997,7 +4000,7 @@ async function renderTablero() {
     tarjetaSucursal("Cuajimalpa", rCsel, metaSemCuaji, false) +
     tarjetaSucursal("Polanco",    rPsel, metaSemPolanco, false) +
     `<div style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin:16px 0 8px">📊 Punto de equilibrio</div>` +
-    peTotal + peCuaji + pePol;
+    peTotalSem + peCuajiSem + pePolSem;
 }
 
 
