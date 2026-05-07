@@ -288,6 +288,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <div class="nav-tab owner-only" data-tab="utilidades">Utilidad por ventas</div>
     <div class="nav-tab owner-only" data-tab="objetivos">Tablero</div>
     <div class="nav-tab owner-only" data-tab="alertas">Alertas</div>
+    <div class="nav-tab owner-only" data-tab="vacaciones">Vacaciones</div>
     <div class="nav-tab owner-only" data-tab="usuarios">Usuarios</div>
     <div class="nav-tab owner-only" data-tab="auditoria">Auditoría</div>
   </nav>
@@ -1077,6 +1078,95 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
       </div>
     </div>
 
+
+    <!-- VACACIONES -->
+    <div id="tab-vacaciones" class="tab-pane" style="display:none">
+
+      <!-- HEADER -->
+      <div class="card" style="padding:14px 16px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="font-weight:700;font-size:15px">🌴 Control de vacaciones</div>
+          <button onclick="abrirModalVacWorker(null)" style="background:var(--accent);border:none;color:#fff;padding:8px 14px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer">+ Trabajador</button>
+        </div>
+      </div>
+
+      <!-- LISTA -->
+      <div id="vac-lista"></div>
+
+      <!-- MODAL TRABAJADOR -->
+      <div id="modal-vac-worker" class="modal-overlay" style="display:none">
+        <div class="modal-box" style="max-width:440px">
+          <div class="modal-title" id="mvw-titulo">Trabajador</div>
+          <input type="hidden" id="mvw-id">
+          <div class="form-group">
+            <label class="form-label">Nombre</label>
+            <input class="form-input" id="mvw-nombre" placeholder="Nombre completo">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Fecha de inicio</label>
+            <input class="form-input" type="date" id="mvw-inicio">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Puesto (opcional)</label>
+            <input class="form-input" id="mvw-puesto" placeholder="Ej: Vendedor, Producción...">
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button onclick="guardarVacWorker()" class="btn-main btn-green" style="flex:1">Guardar</button>
+            <button onclick="cerrarModalVacWorker()" style="flex:1;background:none;border:1px solid var(--border);border-radius:10px;padding:12px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer">Cancelar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL BLOQUE DE VACACIONES -->
+      <div id="modal-vac-bloque" class="modal-overlay" style="display:none">
+        <div class="modal-box" style="max-width:440px">
+          <div class="modal-title">Agregar bloque de vacaciones</div>
+          <input type="hidden" id="mvb-worker-id">
+          <div class="form-group">
+            <label class="form-label">Año de trabajo</label>
+            <input class="form-input" type="number" id="mvb-anio" placeholder="Ej: 1" min="1">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Días asignados</label>
+            <input class="form-input" type="number" id="mvb-dias" placeholder="Ej: 12" min="1">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Fecha de generación (aniversario)</label>
+            <input class="form-input" type="date" id="mvb-fecha-gen">
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button onclick="guardarVacBloque()" class="btn-main btn-green" style="flex:1">Agregar</button>
+            <button onclick="cerrarModalVacBloque()" style="flex:1;background:none;border:1px solid var(--border);border-radius:10px;padding:12px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer">Cancelar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL REGISTRAR DÍAS DISFRUTADOS -->
+      <div id="modal-vac-usar" class="modal-overlay" style="display:none">
+        <div class="modal-box" style="max-width:440px">
+          <div class="modal-title">Registrar días disfrutados</div>
+          <input type="hidden" id="mvu-worker-id">
+          <div class="form-group">
+            <label class="form-label">Días a descontar</label>
+            <input class="form-input" type="number" id="mvu-dias" placeholder="Ej: 3" min="1">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Fecha</label>
+            <input class="form-input" type="date" id="mvu-fecha">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Notas (opcional)</label>
+            <input class="form-input" id="mvu-notas" placeholder="Ej: Viaje a Cancún">
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button onclick="guardarVacUsar()" class="btn-main btn-green" style="flex:1">Registrar</button>
+            <button onclick="cerrarModalVacUsar()" style="flex:1;background:none;border:1px solid var(--border);border-radius:10px;padding:12px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer">Cancelar</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
     <!-- USUARIOS -->
     <div id="tab-usuarios" class="tab-pane" style="display:none">
       <div class="card">
@@ -1286,6 +1376,7 @@ function setupNav() {
       L("tab-"+tab.dataset.tab).style.display="block";
       const t=tab.dataset.tab;
       if(t==="stock") cargarStock();
+      else if(t==="vacaciones") cargarVacaciones();
       else if(t==="usuarios") cargarUsuarios();
       else if(t==="auditoria") cargarAuditoria();
       else if(t==="catalogo") cargarCatalogoPantalla();
@@ -4002,6 +4093,220 @@ async function renderTablero() {
   contenido.innerHTML += peWidget(vPsel, "Polanco", gastosParaSuc("Polanco"), true);
 }
 
+
+
+// ================================================================
+// VACACIONES
+// ================================================================
+// Datos guardados en S.vacaciones = { workers: [...], bloques: [...], usos: [...] }
+// Worker: { id, nombre, inicio, puesto }
+// Bloque: { id, workerId, anio, diasAsignados, diasUsados, fechaGen, fechaVence }
+//   fechaVence = fechaGen + 18 meses
+// Uso: { id, workerId, bloqueId, dias, fecha, notas }
+
+function vacState() {
+  if (!S.vacaciones) S.vacaciones = { workers: [], bloques: [], usos: [] };
+  return S.vacaciones;
+}
+
+function vacId() { return 'VAC-' + Date.now() + Math.floor(Math.random()*1000); }
+
+function addMeses(fecha, meses) {
+  const d = new Date(fecha);
+  d.setMonth(d.getMonth() + meses);
+  return d.toISOString().split('T')[0];
+}
+
+function fmtFecha(str) {
+  if (!str) return '—';
+  const d = new Date(str + 'T00:00:00');
+  return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+async function cargarVacaciones() {
+  // Los datos de vacaciones se guardan localmente en S por ahora
+  // (no requiere backend nuevo — usa el estado del cliente)
+  renderVacaciones();
+}
+
+function renderVacaciones() {
+  const st = vacState();
+  const lista = L('vac-lista');
+  if (!lista) return;
+
+  if (!st.workers.length) {
+    lista.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">
+      <div style="font-size:40px;margin-bottom:8px">🌴</div>
+      <div>Sin trabajadores registrados — agrega el primero</div>
+    </div>`;
+    return;
+  }
+
+  const hoy = new Date().toISOString().split('T')[0];
+
+  lista.innerHTML = st.workers.map(w => {
+    // Bloques del trabajador ordenados por fecha (FIFO)
+    const bloques = st.bloques
+      .filter(b => b.workerId === w.id)
+      .sort((a, b) => a.fechaGen.localeCompare(b.fechaGen));
+
+    // Calcular días disponibles (no vencidos)
+    let diasTotales = 0, diasUsados = 0, diasDisp = 0;
+    const bloquesHTML = bloques.map(b => {
+      const vencido = b.fechaVence < hoy;
+      const restante = Math.max(0, b.diasAsignados - b.diasUsados);
+      diasTotales += b.diasAsignados;
+      diasUsados  += b.diasUsados;
+      if (!vencido) diasDisp += restante;
+      const color = vencido ? 'var(--muted)' : restante === 0 ? 'var(--success)' : 'var(--accent)';
+      const badge = vencido ? '⚠️ Vencido' : restante === 0 ? '✅ Agotado' : `${restante} días`;
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(0,0,0,.05);font-size:12px">
+        <div style="color:var(--muted)">Año ${b.anio} · Gen: ${fmtFecha(b.fechaGen)} · Vence: ${fmtFecha(b.fechaVence)}</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="color:var(--muted)">${b.diasUsados}/${b.diasAsignados}</span>
+          <span style="font-weight:700;color:${color}">${badge}</span>
+        </div>
+      </div>`;
+    }).join('');
+
+    // Años trabajados
+    const inicio = new Date(w.inicio + 'T00:00:00');
+    const aniosTrab = Math.floor((new Date() - inicio) / (365.25 * 24 * 60 * 60 * 1000));
+
+    return `<div class="card" style="margin-bottom:10px;padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+        <div>
+          <div style="font-weight:700;font-size:15px">${w.nombre}</div>
+          <div style="font-size:12px;color:var(--muted)">${w.puesto||''} · Desde ${fmtFecha(w.inicio)} · ${aniosTrab} año${aniosTrab!==1?'s':''}</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <div style="text-align:center;background:${diasDisp>0?'var(--accent)':'var(--muted)'};color:#fff;border-radius:10px;padding:4px 12px;font-weight:700;font-size:18px;min-width:50px">${diasDisp}</div>
+          <div style="font-size:11px;color:var(--muted)">días<br>disp.</div>
+        </div>
+      </div>
+
+      ${bloques.length ? `
+        <div style="margin-bottom:10px">
+          <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Bloques de vacaciones</div>
+          ${bloquesHTML}
+        </div>` : '<div style="font-size:12px;color:var(--muted);margin-bottom:10px">Sin bloques de vacaciones registrados</div>'}
+
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button onclick="abrirModalVacBloque('${w.id}')" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer">+ Agregar bloque</button>
+        ${diasDisp > 0 ? `<button onclick="abrirModalVacUsar('${w.id}')" style="background:var(--accent);border:none;color:#fff;border-radius:8px;padding:6px 12px;font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer">✈️ Registrar días</button>` : ''}
+        <button onclick="abrirModalVacWorker('${w.id}')" style="background:none;border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer">✏️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── MODAL TRABAJADOR ─────────────────────────────────────────
+function abrirModalVacWorker(id) {
+  const st = vacState();
+  const w = id ? st.workers.find(x => x.id === id) : null;
+  L('mvw-titulo').textContent = w ? 'Editar trabajador' : 'Nuevo trabajador';
+  L('mvw-id').value    = w ? w.id : '';
+  L('mvw-nombre').value = w ? w.nombre : '';
+  L('mvw-inicio').value = w ? w.inicio : '';
+  L('mvw-puesto').value  = w ? (w.puesto||'') : '';
+  L('modal-vac-worker').style.display = 'flex';
+}
+function cerrarModalVacWorker() { L('modal-vac-worker').style.display = 'none'; }
+
+function guardarVacWorker() {
+  const nombre = L('mvw-nombre').value.trim();
+  const inicio = L('mvw-inicio').value;
+  if (!nombre || !inicio) { toast('Nombre y fecha de inicio son obligatorios', 'error'); return; }
+  const st = vacState();
+  const id = L('mvw-id').value || vacId();
+  const existing = st.workers.findIndex(w => w.id === id);
+  const w = { id, nombre, inicio, puesto: L('mvw-puesto').value.trim() };
+  if (existing >= 0) st.workers[existing] = w;
+  else st.workers.push(w);
+  cerrarModalVacWorker();
+  renderVacaciones();
+  toast(`✅ ${nombre} guardado`);
+}
+
+// ── MODAL BLOQUE ─────────────────────────────────────────────
+function abrirModalVacBloque(workerId) {
+  const st = vacState();
+  const w = st.workers.find(x => x.id === workerId);
+  // Proponer el siguiente año
+  const bloques = st.bloques.filter(b => b.workerId === workerId);
+  const siguienteAnio = bloques.length + 1;
+  // Proponer fecha = inicio + (años-1) años
+  const inicio = new Date(w.inicio + 'T00:00:00');
+  const fechaGen = new Date(inicio);
+  fechaGen.setFullYear(inicio.getFullYear() + siguienteAnio - 1);
+  L('mvb-worker-id').value = workerId;
+  L('mvb-anio').value = siguienteAnio;
+  L('mvb-dias').value = '';
+  L('mvb-fecha-gen').value = fechaGen.toISOString().split('T')[0];
+  L('modal-vac-bloque').style.display = 'flex';
+}
+function cerrarModalVacBloque() { L('modal-vac-bloque').style.display = 'none'; }
+
+function guardarVacBloque() {
+  const workerId = L('mvb-worker-id').value;
+  const anio     = parseInt(L('mvb-anio').value);
+  const dias     = parseInt(L('mvb-dias').value);
+  const fechaGen = L('mvb-fecha-gen').value;
+  if (!anio || !dias || !fechaGen) { toast('Completa todos los campos', 'error'); return; }
+  const fechaVence = addMeses(fechaGen, 18);
+  const st = vacState();
+  st.bloques.push({ id: vacId(), workerId, anio, diasAsignados: dias, diasUsados: 0, fechaGen, fechaVence });
+  cerrarModalVacBloque();
+  renderVacaciones();
+  toast(`✅ Bloque año ${anio} agregado`);
+}
+
+// ── MODAL USAR DÍAS ──────────────────────────────────────────
+function abrirModalVacUsar(workerId) {
+  L('mvu-worker-id').value = workerId;
+  L('mvu-dias').value = '';
+  L('mvu-fecha').value = new Date().toISOString().split('T')[0];
+  L('mvu-notas').value = '';
+  L('modal-vac-usar').style.display = 'flex';
+}
+function cerrarModalVacUsar() { L('modal-vac-usar').style.display = 'none'; }
+
+function guardarVacUsar() {
+  const workerId = L('mvu-worker-id').value;
+  const dias     = parseInt(L('mvu-dias').value);
+  const fecha    = L('mvu-fecha').value;
+  const notas    = L('mvu-notas').value.trim();
+  if (!dias || dias < 1 || !fecha) { toast('Ingresa los días y la fecha', 'error'); return; }
+
+  const st = vacState();
+  // FIFO: descontar del bloque más antiguo no vencido con días disponibles
+  const hoy = new Date().toISOString().split('T')[0];
+  const bloques = st.bloques
+    .filter(b => b.workerId === workerId && b.fechaVence >= hoy && b.diasUsados < b.diasAsignados)
+    .sort((a, b) => a.fechaGen.localeCompare(b.fechaGen));
+
+  // Verificar que hay suficientes días
+  const dispTotal = bloques.reduce((s, b) => s + (b.diasAsignados - b.diasUsados), 0);
+  if (dias > dispTotal) { toast(`Solo hay ${dispTotal} días disponibles`, 'error'); return; }
+
+  // Descontar FIFO
+  let restante = dias;
+  const usos = [];
+  for (const b of bloques) {
+    if (restante <= 0) break;
+    const disp = b.diasAsignados - b.diasUsados;
+    const desc = Math.min(disp, restante);
+    b.diasUsados += desc;
+    restante -= desc;
+    usos.push({ id: vacId(), workerId, bloqueId: b.id, dias: desc, fecha, notas });
+  }
+  st.usos.push(...usos);
+
+  cerrarModalVacUsar();
+  renderVacaciones();
+  const w = st.workers.find(x => x.id === workerId);
+  toast(`✅ ${dias} días registrados para ${w?.nombre || ''}`);
+}
 
 L("btn-logout").addEventListener("click",()=>{
   limpiarVenta();
