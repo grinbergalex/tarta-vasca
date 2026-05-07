@@ -3542,7 +3542,7 @@ function toggleObjetivosConfig() {
   }
 }
 
-let _vistaTablero = "mes"; // "mes" | "semana"
+let _vistaTablero = "mes";
 
 function setVistaTablero(vista) {
   _vistaTablero = vista;
@@ -3562,11 +3562,111 @@ function setVistaTablero(vista) {
 }
 
 async function iniciarTablero() {
-  // Poner mes/año actual
   const hoy = new Date();
   if (L("tbl-mes"))  L("tbl-mes").value  = String(hoy.getMonth()+1);
   if (L("tbl-anio")) L("tbl-anio").value = String(hoy.getFullYear());
+  // Detectar semana actual del mes
+  const semanaActual = Math.min(4, Math.ceil(hoy.getDate() / 7));
+  if (L("tbl-semana")) L("tbl-semana").value = String(semanaActual);
   await renderTablero();
+}
+
+function getMetas() {
+  const mes  = parseInt(L("tbl-mes")?.value)  || new Date().getMonth()+1;
+  const anio = parseInt(L("tbl-anio")?.value) || new Date().getFullYear();
+  const key  = `metas_${mes}_${anio}`;
+  return S[key] || { cuaji: 1000, polanco: 1000 };
+}
+
+function guardarMetasTablero() {
+  const mes   = parseInt(L("tbl-mes")?.value)  || new Date().getMonth()+1;
+  const anio  = parseInt(L("tbl-anio")?.value) || new Date().getFullYear();
+  const key   = `metas_${mes}_${anio}`;
+  const cuaji   = parseFloat(L("tbl-meta-cuaji")?.value)   || 1000;
+  const polanco = parseFloat(L("tbl-meta-polanco")?.value) || 1000;
+  S[key] = { cuaji, polanco };
+  toast("✅ Metas guardadas");
+  renderTablero();
+}
+
+function toggleObjetivosConfig() {
+  const body  = L("tbl-config-body");
+  const arrow = L("tbl-config-arrow");
+  const open  = body.style.display === "block";
+  body.style.display  = open ? "none" : "block";
+  arrow.textContent   = open ? "▼" : "▲";
+  if (!open) {
+    const metas = getMetas();
+    if (L("tbl-meta-cuaji"))   L("tbl-meta-cuaji").value   = metas.cuaji;
+    if (L("tbl-meta-polanco")) L("tbl-meta-polanco").value = metas.polanco;
+  }
+}
+
+// Factores de equivalencia
+const EQUIV = { "Individual": 0.5, "Mediana": 1, "Mediano": 1, "Grande": 2 };
+const MESES_NOMBRE = ["","Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+
+function getSemana(fecha) {
+  // Semana 1: días 1-7, Semana 2: 8-14, Semana 3: 15-21, Semana 4: 22+
+  return Math.min(4, Math.ceil(new Date(fecha).getDate() / 7));
+}
+
+function calcEquiv(ventasList) {
+  let total = 0;
+  const desglose = {};
+  for (const v of ventasList) {
+    const factor = EQUIV[v.tamano] ?? 1;
+    total += v.cantidad * factor;
+    if (!desglose[v.tamano]) desglose[v.tamano] = { cantidad: 0, equiv: 0 };
+    desglose[v.tamano].cantidad += v.cantidad;
+    desglose[v.tamano].equiv    += v.cantidad * factor;
+  }
+  return { total, desglose };
+}
+
+function barraHTML(pct, label) {
+  const w   = Math.min(100, pct);
+  const bg  = pct >= 100 ? "#2E5C4A" : pct >= 70 ? "#86BDAD" : pct >= 40 ? "#F39C12" : "#E74C3C";
+  const txt = w > 18 ? `<span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10px;font-weight:700;color:#fff">${pct.toFixed(0)}%</span>` : "";
+  return `<div style="background:rgba(0,0,0,.08);border-radius:100px;height:12px;overflow:hidden;margin:6px 0;position:relative">
+    <div style="width:${w}%;height:12px;background:${bg};border-radius:100px;transition:.6s ease;position:relative">${txt}</div>
+  </div>`;
+}
+
+function tamanosHTML(desglose) {
+  const orden = ["Individual","Mediana","Mediano","Grande"];
+  return orden.filter(t => desglose[t]?.cantidad > 0).map(t => {
+    const d = desglose[t];
+    return `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(0,0,0,.05)">
+      <span style="font-size:12px;color:var(--muted)">${t} ×${EQUIV[t]??1}</span>
+      <span style="font-size:12px"><b>${d.cantidad}</b> pzas = <b style="color:var(--accent)">${d.equiv.toFixed(1)}</b></span>
+    </div>`;
+  }).join("") || '<div style="font-size:12px;color:var(--muted);padding:6px 0">Sin ventas</div>';
+}
+
+function tarjetaSucursal(nombre, resultado, meta, esOscura) {
+  const pct = meta > 0 ? (resultado.total / meta * 100) : 0;
+  const faltante = Math.max(0, meta - resultado.total);
+  const estado = pct >= 100 ? "✅ Meta alcanzada" : pct >= 70 ? "🟡 Buen ritmo" : pct >= 40 ? "🟠 En progreso" : "🔴 Por debajo";
+  const bg = esOscura ? "var(--ink)" : "var(--card)";
+  const textColor = esOscura ? "#fff" : "var(--ink)";
+  const mutedColor = esOscura ? "rgba(255,255,255,.6)" : "var(--muted)";
+  return `<div style="background:${bg};border-radius:16px;padding:18px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+      <div style="font-weight:700;font-size:15px;color:${textColor}">${nombre}</div>
+      <div style="font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;background:rgba(128,128,128,.15);color:${textColor}">${estado}</div>
+    </div>
+    <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:2px">
+      <div style="font-size:42px;font-weight:800;font-family:'Fraunces',serif;color:${pct>=100?'#86BDAD':textColor}">${resultado.total.toFixed(1)}</div>
+      <div style="font-size:16px;color:${mutedColor}">&nbsp;/ ${meta.toFixed(1)}</div>
+    </div>
+    <div style="font-size:11px;color:${mutedColor};margin-bottom:4px">medianas equivalentes</div>
+    ${barraHTML(pct)}
+    ${faltante > 0.1 ? `<div style="font-size:11px;color:${mutedColor};margin-top:4px">Faltan <b>${faltante.toFixed(1)}</b> para la meta</div>` : ""}
+    <div style="margin-top:12px;border-top:1px solid ${esOscura?'rgba(255,255,255,.1)':'var(--border)'};padding-top:10px">
+      ${tamanosHTML(resultado.desglose)}
+    </div>
+  </div>`;
 }
 
 async function renderTablero() {
@@ -3574,132 +3674,120 @@ async function renderTablero() {
   if (!contenido) return;
   contenido.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Calculando...</div>';
 
-  const mes   = parseInt(L("tbl-mes")?.value)   || new Date().getMonth()+1;
-  const anio  = parseInt(L("tbl-anio")?.value)  || new Date().getFullYear();
-  const semana = parseInt(L("tbl-semana")?.value) || 1;
-  const metas = getMetas();
+  const mes    = parseInt(L("tbl-mes")?.value)    || new Date().getMonth()+1;
+  const anio   = parseInt(L("tbl-anio")?.value)   || new Date().getFullYear();
+  const semSel = parseInt(L("tbl-semana")?.value) || 1;
   const esSemana = _vistaTablero === "semana";
+  const metas  = getMetas();
 
-  // Cargar ventas
   const res = await api("getVentas");
-  if (!res.ok) { contenido.innerHTML = '<div style="padding:20px;color:var(--danger)">Error cargando ventas</div>'; return; }
+  if (!res.ok) {
+    contenido.innerHTML = '<div style="padding:20px;color:var(--danger)">Error cargando ventas</div>';
+    return;
+  }
 
-  const MESES = ["","Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-
-  // Filtrar ventas del mes/año (y semana si aplica)
-  const ventas = res.ventas.filter(v => {
+  // ── Filtrar ventas del mes (excluyendo mermas y regalos) ──
+  const ventasMes = res.ventas.filter(v => {
     if (!v.fecha) return false;
     const f = new Date(v.fecha);
     if (f.getMonth()+1 !== mes || f.getFullYear() !== anio) return false;
-    if (v.canal === "Merma" || v.canal === "Cortesía") return false;
-    if (esSemana) {
-      // Semana 1 = días 1-7, Semana 2 = días 8-14, etc.
-      const dia = f.getDate();
-      const semanaVenta = Math.min(4, Math.ceil(dia / 7));
-      if (semanaVenta !== semana) return false;
-    }
-    return true;
+    return v.canal !== "Merma" && v.canal !== "Cortesía";
   });
 
-  // Meta ajustada: mensual ÷ 4.2 si vista semanal
-  const factorMeta = esSemana ? (1/4.2) : 1;
-  const metasCuajiEfectiva   = metas.cuaji   * factorMeta;
-  const metasPolancoEfectiva = metas.polanco * factorMeta;
+  // ── VISTA MENSUAL ──────────────────────────────────────────
+  if (!esSemana) {
+    const vC = ventasMes.filter(v => v.sucursal === "Cuajimalpa");
+    const vP = ventasMes.filter(v => v.sucursal === "Polanco");
+    const rC = calcEquiv(vC);
+    const rP = calcEquiv(vP);
+    const total = rC.total + rP.total;
+    const metaTotal = metas.cuaji + metas.polanco;
+    const pctTotal  = metaTotal > 0 ? (total / metaTotal * 100) : 0;
 
-  // Calcular equivalentes por sucursal
-  function calcEquiv(ventasSuc) {
-    let total = 0;
-    const desglose = {};
-    for (const v of ventasSuc) {
-      const factor = EQUIV[v.tamano] ?? 1;
-      total += v.cantidad * factor;
-      const key = v.tamano;
-      if (!desglose[key]) desglose[key] = { cantidad: 0, equiv: 0 };
-      desglose[key].cantidad += v.cantidad;
-      desglose[key].equiv    += v.cantidad * factor;
-    }
-    return { total, desglose };
-  }
-
-  const vCuaji   = ventas.filter(v => v.sucursal === "Cuajimalpa");
-  const vPolanco = ventas.filter(v => v.sucursal === "Polanco");
-  const resCuaji   = calcEquiv(vCuaji);
-  const resPolanco = calcEquiv(vPolanco);
-  const totalEquiv = resCuaji.total + resPolanco.total;
-  const metaTotal  = metasCuajiEfectiva + metasPolancoEfectiva;
-  const periodoLabel = esSemana ? `Semana ${semana} · ${MESES[mes]} ${anio}` : `${MESES[mes]} ${anio}`;
-
-  function barraHTML(pct, color) {
-    const w = Math.min(100, pct);
-    const bg = pct >= 100 ? "#2E5C4A" : pct >= 70 ? "#86BDAD" : pct >= 40 ? "#F39C12" : "#E74C3C";
-    return `<div style="background:rgba(0,0,0,.08);border-radius:100px;height:14px;overflow:hidden;margin:8px 0">
-      <div style="width:${w}%;height:14px;background:${bg};border-radius:100px;transition:.8s ease;position:relative">
-        ${w > 15 ? `<span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10px;font-weight:700;color:#fff">${pct.toFixed(0)}%</span>` : ""}
-      </div>
-    </div>`;
-  }
-
-  function tamanosHTML(desglose) {
-    const orden = ["Individual","Mediana","Mediano","Grande"];
-    const filas = orden.filter(t => desglose[t]?.cantidad > 0).map(t => {
-      const d = desglose[t];
-      const factor = EQUIV[t] ?? 1;
-      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(0,0,0,.05)">
-        <div style="font-size:13px;color:var(--muted)">${t} <span style="font-size:11px">(×${factor})</span></div>
-        <div style="display:flex;gap:16px;align-items:center">
-          <span style="font-size:13px;color:var(--ink)">${d.cantidad} pzas</span>
-          <span style="font-size:14px;font-weight:700;color:var(--accent);min-width:50px;text-align:right">= ${d.equiv.toFixed(1)}</span>
+    contenido.innerHTML = `
+      <div style="background:var(--ink);border-radius:16px;padding:20px;margin-bottom:10px;color:#fff">
+        <div style="font-size:12px;opacity:.7;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Total empresa · ${MESES_NOMBRE[mes]} ${anio}</div>
+        <div style="display:flex;align-items:baseline;gap:8px">
+          <div style="font-size:52px;font-weight:800;font-family:'Fraunces',serif">${total.toFixed(1)}</div>
+          <div style="font-size:18px;opacity:.5">/ ${metaTotal}</div>
         </div>
-      </div>`;
-    }).join("");
-    return filas || '<div style="font-size:13px;color:var(--muted);padding:8px 0">Sin ventas registradas</div>';
+        <div style="font-size:12px;opacity:.6;margin-bottom:6px">medianas equivalentes</div>
+        ${barraHTML(pctTotal)}
+        <div style="display:flex;justify-content:space-between;font-size:12px;opacity:.7;margin-top:6px">
+          <span>Cuajimalpa: ${rC.total.toFixed(1)} / ${metas.cuaji}</span>
+          <span>Polanco: ${rP.total.toFixed(1)} / ${metas.polanco}</span>
+        </div>
+      </div>` +
+      tarjetaSucursal("Cuajimalpa", rC, metas.cuaji, false) +
+      tarjetaSucursal("Polanco",    rP, metas.polanco, false);
+    return;
   }
 
-  function tarjetaSucursal(nombre, resultado, meta, color) {
-    const pct = meta > 0 ? (resultado.total / meta * 100) : 0;
-    const faltante = Math.max(0, meta - resultado.total);
-    const estado = pct >= 100 ? "✅ Meta alcanzada" : pct >= 70 ? "🟡 Buen ritmo" : pct >= 40 ? "🟠 En progreso" : "🔴 Por debajo";
-    return `
-    <div style="background:var(--card);border-radius:16px;padding:20px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.06)">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
-        <div style="font-weight:700;font-size:16px">${nombre}</div>
-        <div style="font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px;background:rgba(0,0,0,.06)">${estado}</div>
+  // ── VISTA SEMANAL ─────────────────────────────────────────
+  // Meta semanal = meta mensual ÷ 4.2
+  const metaSemCuaji   = metas.cuaji   / 4.2;
+  const metaSemPolanco = metas.polanco / 4.2;
+  const metaSemTotal   = metaSemCuaji + metaSemPolanco;
+
+  // Construir datos de las 4 semanas
+  const semanas = [1,2,3,4].map(s => {
+    const vS = ventasMes.filter(v => getSemana(v.fecha) === s);
+    const vC = vS.filter(v => v.sucursal === "Cuajimalpa");
+    const vP = vS.filter(v => v.sucursal === "Polanco");
+    const rC = calcEquiv(vC);
+    const rP = calcEquiv(vP);
+    return { sem: s, rC, rP, total: rC.total + rP.total };
+  });
+
+  // Acumulado hasta la semana seleccionada
+  const ventasSemSel = ventasMes.filter(v => getSemana(v.fecha) === semSel);
+  const vCsel = ventasSemSel.filter(v => v.sucursal === "Cuajimalpa");
+  const vPsel = ventasSemSel.filter(v => v.sucursal === "Polanco");
+  const rCsel = calcEquiv(vCsel);
+  const rPsel = calcEquiv(vPsel);
+  const totalSel = rCsel.total + rPsel.total;
+  const pctTotalSel = metaSemTotal > 0 ? (totalSel / metaSemTotal * 100) : 0;
+
+  // Gráfico de barras de las 4 semanas
+  const maxVal = Math.max(metaSemTotal, ...semanas.map(s => s.total), 1);
+  const graficaHTML = `
+    <div style="background:var(--card);border-radius:16px;padding:18px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:14px">
+        Progreso semanal · ${MESES_NOMBRE[mes]} ${anio}
       </div>
-      <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:2px">
-        <div style="font-size:44px;font-weight:800;font-family:'Fraunces',serif;color:${pct>=100?'#2E5C4A':'var(--ink)'}">${resultado.total.toFixed(1)}</div>
-        <div style="font-size:18px;color:var(--muted);margin-bottom:4px">/ ${meta}</div>
+      <div style="display:flex;align-items:flex-end;gap:8px;height:100px;margin-bottom:10px">
+        ${semanas.map(s => {
+          const h = Math.max(4, Math.round((s.total / maxVal) * 90));
+          const meta_h = Math.round((metaSemTotal / maxVal) * 90);
+          const activa = s.sem === semSel;
+          const color = s.total >= metaSemTotal ? "#2E5C4A" : s.total >= metaSemTotal*0.7 ? "#86BDAD" : s.total >= metaSemTotal*0.4 ? "#F39C12" : "#E74C3C";
+          return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="document.getElementById('tbl-semana').value='${s.sem}';renderTablero()">
+            <div style="font-size:11px;font-weight:${activa?'700':'400'};color:${activa?'var(--ink)':'var(--muted)'}">${s.total.toFixed(0)}</div>
+            <div style="width:100%;height:${h}px;background:${color};border-radius:6px 6px 0 0;opacity:${activa?1:0.5};border:${activa?'2px solid var(--ink)':'none'}"></div>
+            <div style="font-size:11px;font-weight:${activa?'700':'400'};color:${activa?'var(--ink)':'var(--muted)'}">S${s.sem}</div>
+          </div>`;
+        }).join("")}
       </div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:4px">medianas equivalentes</div>
-      ${barraHTML(pct, color)}
-      ${faltante > 0 ? `<div style="font-size:12px;color:var(--muted);margin-top:4px">Faltan <strong>${faltante.toFixed(1)}</strong> medianas equivalentes</div>` : ""}
-      <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px">
-        <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:6px;text-transform:uppercase">Desglose por tamaño</div>
-        ${tamanosHTML(resultado.desglose)}
+      <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)">
+        <div style="width:12px;height:3px;background:var(--muted);border-radius:2px"></div>
+        Meta semanal: ${metaSemTotal.toFixed(1)} medianas equiv.
       </div>
     </div>`;
-  }
 
-  // Tarjeta total empresa
-  const pctTotal = metaTotal > 0 ? (totalEquiv / metaTotal * 100) : 0;
-  const totalHTML = `
-    <div style="background:var(--ink);border-radius:16px;padding:20px;margin-bottom:12px;color:#fff">
-      <div style="font-size:13px;opacity:.7;margin-bottom:4px;font-weight:600;letter-spacing:.05em;text-transform:uppercase">Total empresa · ${periodoLabel}</div>
+  contenido.innerHTML = graficaHTML +
+    `<div style="background:var(--ink);border-radius:16px;padding:18px;margin-bottom:10px;color:#fff">
+      <div style="font-size:12px;opacity:.7;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Semana ${semSel} · ${MESES_NOMBRE[mes]} ${anio}</div>
       <div style="display:flex;align-items:baseline;gap:8px">
-        <div style="font-size:52px;font-weight:800;font-family:'Fraunces',serif">${totalEquiv.toFixed(1)}</div>
-        <div style="font-size:20px;opacity:.6">/ ${metaTotal}</div>
+        <div style="font-size:48px;font-weight:800;font-family:'Fraunces',serif">${totalSel.toFixed(1)}</div>
+        <div style="font-size:16px;opacity:.5">/ ${metaSemTotal.toFixed(1)}</div>
       </div>
-      <div style="font-size:13px;opacity:.7;margin-bottom:8px">medianas equivalentes</div>
-      ${barraHTML(pctTotal, "#86BDAD")}
-      <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:13px;opacity:.8">
-        <span>Cuajimalpa: ${resCuaji.total.toFixed(1)}</span>
-        <span>Polanco: ${resPolanco.total.toFixed(1)}</span>
-      </div>
-    </div>`;
-
-  contenido.innerHTML = totalHTML +
-    tarjetaSucursal("Cuajimalpa", resCuaji,   metasCuajiEfectiva,   "#86BDAD") +
-    tarjetaSucursal("Polanco",    resPolanco, metasPolancoEfectiva, "#86BDAD");
+      <div style="font-size:12px;opacity:.6;margin-bottom:6px">meta semanal = ${metas.cuaji+metas.polanco} ÷ 4.2</div>
+      ${barraHTML(pctTotalSel)}
+    </div>` +
+    tarjetaSucursal("Cuajimalpa", rCsel, metaSemCuaji, false) +
+    tarjetaSucursal("Polanco",    rPsel, metaSemPolanco, false);
 }
+
 
 L("btn-logout").addEventListener("click",()=>{
   limpiarVenta();
