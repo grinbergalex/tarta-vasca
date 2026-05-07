@@ -2872,13 +2872,13 @@ async function cargarGastos(){
   renderGastosList();
 }
 
-// Convierte cualquier gasto a su equivalente mensual
-// Semanal × 4.2, Mensual × 1, Por unidad / unidad-dependiente = 0 en fijos
+// Equivalente mensual — usa el valor del servidor si está disponible
 function montoMensual(g) {
   if (!g || !g.activo) return 0;
-  if (g.frecuencia === "Semanal")   return g.monto * 4.2;
-  if (g.frecuencia === "Mensual")   return g.monto;
-  return 0; // Variable, Condicional, % sobre venta — no aplica en fijos
+  if (g.montoMensual !== undefined) return g.montoMensual; // valor calculado en el Sheet
+  if (g.frecuencia === "Semanal") return g.monto * 4.2;
+  if (g.frecuencia === "Mensual") return g.monto;
+  return 0;
 }
 
 function renderGastosList(){
@@ -2896,8 +2896,11 @@ function renderGastosList(){
     if(g.frecuencia==="% sobre venta") return `${g.monto}%`;
     if(g.frecuencia==="Condicional") return `${fmtMXN(g.monto)} si se cumple`;
     if(g.frecuencia==="Por unidad") return `${fmtMXN(g.monto)}/pieza`;
-    // Todo se muestra en equivalente mensual
-    return `${fmtMXN(montoMensual(g))}/mes${g.frecuencia==="Semanal"?` <span style="font-size:11px;color:var(--muted)">(${fmtMXN(g.monto)}/sem)</span>`:""}`;
+    const mens = montoMensual(g);
+    const sufijo = g.frecuencia==="Semanal"
+      ? ` <span style="font-size:11px;color:var(--muted);font-weight:400">${fmtMXN(g.monto)}/sem × 4.2</span>`
+      : "";
+    return `<span style="color:var(--accent);font-weight:700">${fmtMXN(mens)}/mes</span>${sufijo}`;
   }
 
   function renderGrupo(lista, titulo){
