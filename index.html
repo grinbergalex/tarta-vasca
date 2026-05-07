@@ -1419,6 +1419,9 @@ function llenar(id, opciones) {
 
 // Comisiones por canal/método — se restan del ingreso (costo de ventas)
 // Comisiones — valores por defecto, sobrescritos por S.comisionesConfig si está cargado
+// Factor de merma operacional — +5% sobre costo de receta
+const FACTOR_MERMA = 1.05;
+
 const COMISIONES_DEFAULT = {"Rappi":-0.23,"Uber Eats":-0.23,"Tarjeta":-0.06,"Transferencia":-0.03,"Efectivo":0};
 function getComisionesActuales(){
   if(S.comisionesConfig && Object.keys(S.comisionesConfig).length>0) return S.comisionesConfig;
