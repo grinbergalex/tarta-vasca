@@ -2872,6 +2872,15 @@ async function cargarGastos(){
   renderGastosList();
 }
 
+// Convierte cualquier gasto a su equivalente mensual
+// Semanal × 4.2, Mensual × 1, Por unidad / unidad-dependiente = 0 en fijos
+function montoMensual(g) {
+  if (!g || !g.activo) return 0;
+  if (g.frecuencia === "Semanal")   return g.monto * 4.2;
+  if (g.frecuencia === "Mensual")   return g.monto;
+  return 0; // Variable, Condicional, % sobre venta — no aplica en fijos
+}
+
 function renderGastosList(){
   const gastos = (S.gastos||[]).filter(g=>g.activo);
   if(gastos.length === 0){
@@ -2886,7 +2895,11 @@ function renderGastosList(){
   function etiquetaFrecuencia(g){
     if(g.frecuencia==="% sobre venta") return `${g.monto}%`;
     if(g.frecuencia==="Condicional") return `${fmtMXN(g.monto)} si se cumple`;
-    return fmtMXN(g.monto) + (g.frecuencia==="Mensual"?" /mes":g.frecuencia==="Semanal"?" /sem":g.frecuencia==="Por unidad"?" /pieza":"");
+    if(g.frecuencia==="Semanal") {
+      const mens = g.monto * 4.2;
+      return `${fmtMXN(g.monto)}/sem <span style="font-size:11px;color:var(--muted)">(${fmtMXN(mens)}/mes)</span>`;
+    }
+    return fmtMXN(g.monto) + (g.frecuencia==="Mensual"?" /mes":g.frecuencia==="Por unidad"?" /pieza":"");
   }
 
   function renderGrupo(lista, titulo){
@@ -2908,7 +2921,32 @@ function renderGastosList(){
         </div>`).join("")}`;
   }
 
-  L("gastos-list").innerHTML = renderGrupo(fijos,"Gastos fijos") + renderGrupo(variables,"Gastos variables");
+  const totalMensual = gastos.reduce((s,g) => s + montoMensual(g), 0);
+  const totalCuaji = gastos.filter(g=>g.sucursal==="Cuajimalpa"||g.sucursal==="Ambas")
+    .reduce((s,g) => s + (g.sucursal==="Ambas" ? montoMensual(g)*0.5 : montoMensual(g)), 0);
+  const totalPolanco = gastos.filter(g=>g.sucursal==="Polanco"||g.sucursal==="Ambas")
+    .reduce((s,g) => s + (g.sucursal==="Ambas" ? montoMensual(g)*0.5 : montoMensual(g)), 0);
+
+  const resumenHTML = `
+    <div style="margin-top:16px;padding:14px 16px;background:var(--card);border-radius:12px;border:1px solid var(--border)">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:10px;text-transform:uppercase">Resumen mensual</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:140px;text-align:center;padding:10px;background:var(--bg);border-radius:8px">
+          <div style="font-size:18px;font-weight:700;color:var(--accent)">${fmtMXN(totalCuaji)}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">Cuajimalpa</div>
+        </div>
+        <div style="flex:1;min-width:140px;text-align:center;padding:10px;background:var(--bg);border-radius:8px">
+          <div style="font-size:18px;font-weight:700;color:var(--accent)">${fmtMXN(totalPolanco)}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">Polanco</div>
+        </div>
+        <div style="flex:1;min-width:140px;text-align:center;padding:10px;background:var(--ink);border-radius:8px">
+          <div style="font-size:18px;font-weight:700;color:#fff">${fmtMXN(totalMensual)}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:2px">Total empresa</div>
+        </div>
+      </div>
+    </div>`;
+
+  L("gastos-list").innerHTML = renderGrupo(fijos,"Gastos fijos") + renderGrupo(variables,"Gastos variables") + resumenHTML;
 }
 
 function toggleGastoCondicional(){
