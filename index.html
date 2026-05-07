@@ -3776,6 +3776,71 @@ function tarjetaSucursal(nombre, resultado, meta, esOscura) {
   </div>`;
 }
 
+// ── PE helpers (globales) ──────────────────────────────────
+
+function calcUtilidadReal(ventasList) {
+  let util = 0;
+  for (const v of ventasList) {
+    const comPct = getComision(v.canal||"", v.metodoPago||"");
+    const ingresoNeto = (v.subtotal||0) * (1 + comPct);
+    const rec = S.recetas?.find(r => r.sabor === v.sabor && r.tamano === v.tamano);
+    let costoRec = 0;
+    if (rec && S.insumos?.length) {
+      costoRec = rec.ingredientes.reduce((s, ing) => {
+        const ins = S.insumos.find(i => i.id === ing.insumoId);
+        const cant = ins ? convertirUnidad(ing.cantidad, ing.unidad||ins.buyUnit, ins.buyUnit) : ing.cantidad;
+        return s + (ins ? ins.costoPorUnidad * cant : 0);
+      }, 0) * (v.cantidad||1);
+    }
+    util += ingresoNeto - costoRec;
+  }
+  return util;
+}
+
+function gastosParaSuc(suc) {
+  const gastos = S.gastos || [];
+  if (!gastos.length) {
+    if (suc === "Cuajimalpa") return 125930;
+    if (suc === "Polanco")    return 181550;
+    return 307480;
+  }
+  let total = 0;
+  for (const g of gastos) {
+    if (!g.activo) continue;
+    const mens = montoMensual(g);
+    if (g.sucursal === "Ambas") total += suc ? mens * 0.5 : mens;
+    else if (!suc || g.sucursal === suc) total += mens;
+  }
+  return total;
+}
+
+function peWidget(ventasList, sucLabel, gastosFiltro, esSemana) {
+  const utilReal = calcUtilidadReal(ventasList);
+  const gastosPeriodo = esSemana ? gastosFiltro / 4.2 : gastosFiltro;
+  const pct = gastosPeriodo > 0 ? Math.min(100, (utilReal / gastosPeriodo) * 100) : 0;
+  const falta = Math.max(0, gastosPeriodo - utilReal);
+  const tartasFaltan = Math.ceil(falta / PE_UTIL_POR_TARTA);
+  const alcanzado = utilReal >= gastosPeriodo;
+  const colorBarra = pct >= 70 ? "#86BDAD" : pct >= 40 ? "#F39C12" : "#E74C3C";
+  const w = Math.min(100, pct).toFixed(1);
+  const periodoTxt = esSemana ? "semana" : "mes";
+  return `<div style="background:${alcanzado?'#2E5C4A':'#1a2a22'};border-radius:16px;padding:18px;margin-bottom:10px;color:#fff">
+    <div style="font-size:11px;opacity:.7;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">🎯 Punto de equilibrio · ${sucLabel}</div>
+    <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:2px">
+      <div style="font-size:36px;font-weight:800;font-family:'Fraunces',serif">${fmtMXN(utilReal)}</div>
+      <div style="font-size:14px;opacity:.5"> / ${fmtMXN(gastosPeriodo)}</div>
+    </div>
+    <div style="font-size:11px;opacity:.6;margin-bottom:8px">utilidad real vs gastos fijos del ${periodoTxt}</div>
+    <div style="background:rgba(255,255,255,.15);border-radius:100px;height:12px;overflow:hidden;margin-bottom:10px">
+      <div style="width:${w}%;height:12px;background:${alcanzado?'#86BDAD':colorBarra};border-radius:100px;transition:.8s ease"></div>
+    </div>
+    ${alcanzado
+      ? '<div style="font-size:13px;font-weight:700">✅ ¡PE alcanzado! Excedente: ' + fmtMXN(utilReal - gastosPeriodo) + '</div>'
+      : '<div style="font-size:12px;opacity:.85">Faltan <b style="font-size:15px">' + fmtMXN(falta) + '</b>  ·  <b style="font-size:15px">' + tartasFaltan + '</b> tartas medianas con tarjeta</div>'
+    }
+  </div>`;
+}
+
 async function renderTablero() {
   const contenido = L("tbl-contenido");
   if (!contenido) return;
@@ -3881,82 +3946,11 @@ async function renderTablero() {
       </div>
     </div>`;
 
-  // ── Calcular utilidad real del período para PE ──────────────
-  // Utilidad real = suma de (ingreso_neto - costo_receta) por venta
-  // Usamos las ventas ya filtradas del período
-  function calcUtilidadReal(ventasList) {
-    let util = 0;
-    for (const v of ventasList) {
-      const comPct = getComision(v.canal||"", v.metodoPago||"");
-      const ingresoNeto = v.subtotal * (1 + comPct); // comPct es negativo
-      const rec = S.recetas?.find(r => r.sabor === v.sabor && r.tamano === v.tamano);
-      let costoRec = 0;
-      if (rec && S.insumos?.length) {
-        costoRec = rec.ingredientes.reduce((s, ing) => {
-          const ins = S.insumos.find(i => i.id === ing.insumoId);
-          const cant = ins ? convertirUnidad(ing.cantidad, ing.unidad||ins.buyUnit, ins.buyUnit) : ing.cantidad;
-          return s + (ins ? ins.costoPorUnidad * cant : 0);
-        }, 0) * v.cantidad;
-      }
-      util += ingresoNeto - costoRec;
-    }
-    return util;
-  }
-
-  function peWidget(ventasList, sucLabel, gastosFiltro) {
-    const utilReal = calcUtilidadReal(ventasList);
-    const gastosPeriodo = esSemana ? gastosFiltro / 4.2 : gastosFiltro;
-    const pct = gastosPeriodo > 0 ? Math.min(100, (utilReal / gastosPeriodo) * 100) : 0;
-    const falta = Math.max(0, gastosPeriodo - utilReal);
-    const tartasFaltan = Math.ceil(falta / PE_UTIL_POR_TARTA);
-    const alcanzado = utilReal >= gastosPeriodo;
-    const colorBarra = pct >= 100 ? "#86BDAD" : pct >= 70 ? "#86BDAD" : pct >= 40 ? "#F39C12" : "#E74C3C";
-    const w = pct.toFixed(1);
-    return `
-    <div style="background:${alcanzado?'#2E5C4A':'#1a2a22'};border-radius:16px;padding:18px;margin-bottom:10px;color:#fff">
-      <div style="font-size:11px;opacity:.7;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">
-        🎯 Punto de equilibrio · ${sucLabel}
-      </div>
-      <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:2px">
-        <div style="font-size:38px;font-weight:800;font-family:'Fraunces',serif">${fmtMXN(utilReal)}</div>
-        <div style="font-size:14px;opacity:.5">/ ${fmtMXN(gastosPeriodo)}</div>
-      </div>
-      <div style="font-size:11px;opacity:.6;margin-bottom:8px">utilidad real generada vs gastos fijos</div>
-      <div style="background:rgba(255,255,255,.15);border-radius:100px;height:12px;overflow:hidden;margin-bottom:10px">
-        <div style="width:${w}%;height:12px;background:${colorBarra};border-radius:100px;transition:.8s ease;position:relative">
-          ${parseFloat(w)>18?`<span style="position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:9px;font-weight:700;color:#fff">${pct.toFixed(0)}%</span>`:""}
-        </div>
-      </div>
-      ${alcanzado
-        ? `<div style="font-size:13px;font-weight:700">✅ ¡PE alcanzado! Excedente: ${fmtMXN(utilReal - gastosPeriodo)}</div>`
-        : `<div style="font-size:12px;opacity:.85">Faltan <b style="font-size:16px">${fmtMXN(falta)}</b> · ≈ <b style="font-size:16px">${tartasFaltan}</b> tartas medianas con tarjeta</div>`
-      }
-    </div>`;
-  }
-
-  // Gastos fijos por sucursal (usando S.gastos si están cargados)
-  function gastosParaSuc(suc) {
-    const gastos = S.gastos || [];
-    if (!gastos.length) {
-      if (suc === "Cuajimalpa") return 125930;
-      if (suc === "Polanco")    return 181550;
-      return 307480;
-    }
-    let total = 0;
-    for (const g of gastos) {
-      if (!g.activo) continue;
-      const mens = montoMensual(g);
-      if (g.sucursal === "Ambas") total += suc ? mens * 0.5 : mens;
-      else if (!suc || g.sucursal === suc) total += mens;
-    }
-    return total;
-  }
-
-  // Ventas del período para PE (semana seleccionada o mes completo)
+  // Ventas del período para PE
   const ventasPeriodoPE = esSemana ? ventasSemSel : ventasMes;
-  const peTotal = peWidget(ventasPeriodoPE, "Total empresa", gastosParaSuc(""));
-  const peCuaji = peWidget(ventasPeriodoPE.filter(v=>v.sucursal==="Cuajimalpa"), "Cuajimalpa", gastosParaSuc("Cuajimalpa"));
-  const pePol   = peWidget(ventasPeriodoPE.filter(v=>v.sucursal==="Polanco"),    "Polanco",    gastosParaSuc("Polanco"));
+  const peTotal = peWidget(ventasPeriodoPE, "Total empresa", gastosParaSuc(""), esSemana);
+  const peCuaji = peWidget(ventasPeriodoPE.filter(v=>v.sucursal==="Cuajimalpa"), "Cuajimalpa", gastosParaSuc("Cuajimalpa"), esSemana);
+  const pePol   = peWidget(ventasPeriodoPE.filter(v=>v.sucursal==="Polanco"),    "Polanco",    gastosParaSuc("Polanco"), esSemana);
 
   if (!esSemana) {
     // Vista mensual
