@@ -107,6 +107,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 .hist-productos{font-size:13px;margin:3px 0}
 .hist-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
 .tag{font-size:10px;padding:2px 8px;border-radius:8px;background:var(--warm);color:var(--muted)}
+.tag-merma{background:rgba(192,57,43,.1);color:#c0392b;font-weight:600}
 .tag-total{background:#e8f5e9;color:var(--success)}
 .cat-item{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--warm)}
 .cat-item:last-child{border-bottom:none}
@@ -285,7 +286,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <div class="nav-tab owner-only" data-tab="precios">Precios</div>
     <div class="nav-tab owner-only" data-tab="costos">Costos</div>
     <div class="nav-tab owner-only" data-tab="utilidades">Utilidad por ventas</div>
-    <div class="nav-tab owner-only" data-tab="objetivos">Objetivos</div>
+    <div class="nav-tab owner-only" data-tab="objetivos">Tablero</div>
     <div class="nav-tab owner-only" data-tab="alertas">Alertas</div>
     <div class="nav-tab owner-only" data-tab="usuarios">Usuarios</div>
     <div class="nav-tab owner-only" data-tab="auditoria">Auditoría</div>
@@ -884,6 +885,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         </div>
       </div>
 
+      <!-- PUNTO DE EQUILIBRIO -->
+      <div id="util-pe-widget" style="display:none;margin-bottom:12px"></div>
+
       <!-- RESUMEN DEL PERÍODO -->
       <div id="util-resumen-periodo" style="display:none">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
@@ -920,119 +924,63 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <!-- OBJETIVOS -->
     <div id="tab-objetivos" class="tab-pane" style="display:none">
 
-      <!-- RESUMEN MES ACTUAL -->
-      <div id="obj-resumen" style="display:none;margin-bottom:12px">
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:4px">
-          <div class="summary-card">
-            <div class="summary-num" id="obj-total-meta" style="font-size:26px;color:var(--ink)">—</div>
-            <div class="summary-label">Meta del mes</div>
+      <!-- SELECTOR DE MES/AÑO -->
+      <div class="card" style="padding:14px 16px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <div style="font-weight:700;font-size:15px;flex:1">📊 Tablero de control</div>
+          <div style="display:flex;background:var(--bg);border-radius:8px;padding:2px;gap:2px">
+            <button id="tbl-btn-mes" onclick="setVistaTablero('mes')" style="padding:5px 12px;border:none;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;background:var(--ink);color:#fff">Mes</button>
+            <button id="tbl-btn-sem" onclick="setVistaTablero('semana')" style="padding:5px 12px;border:none;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;background:transparent;color:var(--muted)">Semana</button>
           </div>
-          <div class="summary-card">
-            <div class="summary-num" id="obj-total-real" style="font-size:26px">0</div>
-            <div class="summary-label">Vendidas</div>
-          </div>
-          <div class="summary-card">
-            <div class="summary-num" id="obj-total-pct" style="font-size:26px">0%</div>
-            <div class="summary-label">Cumplimiento</div>
-          </div>
+          <select class="mini-select" id="tbl-mes" onchange="renderTablero()" style="width:130px">
+            <option value="1">Enero</option><option value="2">Febrero</option>
+            <option value="3">Marzo</option><option value="4">Abril</option>
+            <option value="5" selected>Mayo</option><option value="6">Junio</option>
+            <option value="7">Julio</option><option value="8">Agosto</option>
+            <option value="9">Septiembre</option><option value="10">Octubre</option>
+            <option value="11">Noviembre</option><option value="12">Diciembre</option>
+          </select>
+          <select class="mini-select" id="tbl-anio" onchange="renderTablero()" style="width:90px">
+            <option value="2025">2025</option>
+            <option value="2026" selected>2026</option>
+            <option value="2027">2027</option>
+          </select>
+          <select class="mini-select" id="tbl-semana" onchange="renderTablero()" style="width:100px;display:none">
+            <option value="1">Semana 1</option><option value="2">Semana 2</option>
+            <option value="3">Semana 3</option><option value="4">Semana 4</option>
+          </select>
         </div>
-        <div style="background:var(--border);border-radius:8px;height:12px;overflow:hidden;margin-bottom:16px">
-          <div id="obj-barra-global" style="background:var(--accent);height:12px;width:0%;border-radius:8px;transition:.6s ease"></div>
+      </div>
+
+      <!-- OBJETIVOS CONFIG (colapsable) -->
+      <div class="card" style="margin-bottom:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleObjetivosConfig()">
+          <div style="font-weight:600;font-size:13px;color:var(--muted)">🎯 Definir objetivos</div>
+          <span id="tbl-config-arrow" style="color:var(--muted);font-size:18px">▼</span>
+        </div>
+        <div id="tbl-config-body" style="display:none;margin-top:14px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+            <div>
+              <label class="form-label">Meta Cuajimalpa (medianas equiv.)</label>
+              <input class="mini-input" id="tbl-meta-cuaji" type="number" placeholder="1000" style="width:100%">
+            </div>
+            <div>
+              <label class="form-label">Meta Polanco (medianas equiv.)</label>
+              <input class="mini-input" id="tbl-meta-polanco" type="number" placeholder="1000" style="width:100%">
+            </div>
+          </div>
+          <button onclick="guardarMetasTablero()" style="background:var(--accent);border:none;color:#fff;padding:10px 20px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;width:100%">GUARDAR METAS</button>
         </div>
       </div>
 
-      <!-- TARJETAS -->
-      <div id="obj-lista"></div>
-
-      <!-- BOTÓN NUEVO -->
-      <button onclick="mostrarFormObjetivo()" id="btn-nuevo-obj"
-        style="width:100%;padding:14px;border:2px dashed var(--border);border-radius:14px;background:none;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--muted);cursor:pointer;margin-bottom:4px">
-        + Nuevo objetivo
-      </button>
-
-      <!-- FORM — oculto por defecto -->
-      <div id="obj-form-card" class="card" style="display:none;margin-top:8px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-          <div class="card-title" id="obj-form-title" style="margin-bottom:0">Nuevo objetivo</div>
-          <button onclick="cancelarObjetivo()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">✕</button>
-        </div>
-        <input type="hidden" id="obj-id">
-
-        <!-- ENCABEZADO: nombre, sucursal, mes, año -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
-          <div style="grid-column:1/-1">
-            <label class="form-label">Nombre del objetivo *</label>
-            <input class="mini-input" id="obj-nombre" placeholder="Ej: Meta mayo red completa" style="width:100%">
-          </div>
-          <div>
-            <label class="form-label">Sucursal</label>
-            <select class="mini-select" id="obj-sucursal" style="width:100%">
-              <option value="Ambas">Ambas sucursales</option>
-              <option value="Cuajimalpa">Cuajimalpa</option>
-              <option value="Polanco">Polanco</option>
-            </select>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-            <div>
-              <label class="form-label">Mes</label>
-              <select class="mini-select" id="obj-mes" style="width:100%">
-                <option value="1">Enero</option><option value="2">Febrero</option>
-                <option value="3">Marzo</option><option value="4">Abril</option>
-                <option value="5">Mayo</option><option value="6">Junio</option>
-                <option value="7">Julio</option><option value="8">Agosto</option>
-                <option value="9">Septiembre</option><option value="10">Octubre</option>
-                <option value="11">Noviembre</option><option value="12">Diciembre</option>
-              </select>
-            </div>
-            <div>
-              <label class="form-label">Año</label>
-              <input class="mini-input" id="obj-anio" type="number" style="width:100%">
-            </div>
-          </div>
-        </div>
-
-        <!-- META TOTAL -->
-        <div style="background:var(--warm);border-radius:12px;padding:14px;margin-bottom:14px">
-          <div style="font-weight:600;font-size:13px;margin-bottom:6px">🎯 Meta total de unidades</div>
-          <div style="display:flex;align-items:center;gap:10px">
-            <input class="mini-input" id="obj-meta-total" type="number" placeholder="ej. 200"
-              style="width:100px" oninput="actualizarAvisoMeta()">
-            <span style="font-size:12px;color:var(--muted)">piezas en el mes</span>
-          </div>
-          <div id="obj-aviso-meta" style="display:none;margin-top:8px;font-size:12px;padding:6px 10px;border-radius:8px"></div>
-        </div>
-
-        <!-- DESGLOSE POR PRODUCTO -->
-        <div style="margin-bottom:10px">
-          <div style="font-weight:600;font-size:13px;margin-bottom:8px">📦 Desglose por producto <span style="font-weight:400;color:var(--muted)">(opcional)</span></div>
-          <div id="obj-lineas-list" style="margin-bottom:10px"></div>
-
-          <!-- Fila para agregar línea -->
-          <div style="display:grid;grid-template-columns:1fr 1fr 80px auto;gap:6px;align-items:end">
-            <div>
-              <label class="form-label">Sabor</label>
-              <select class="mini-select" id="obj-lin-sabor" style="width:100%"></select>
-            </div>
-            <div>
-              <label class="form-label">Tamaño</label>
-              <select class="mini-select" id="obj-lin-tamano" style="width:100%"></select>
-            </div>
-            <div>
-              <label class="form-label">Uds</label>
-              <input class="mini-input" id="obj-lin-uds" type="number" placeholder="50" style="width:100%">
-            </div>
-            <button class="btn-outline" onclick="agregarLineaObjetivo()"
-              style="padding:9px 12px;white-space:nowrap;margin-bottom:0">+ Añadir</button>
-          </div>
-        </div>
-
-        <div style="display:flex;gap:8px;margin-top:4px">
-          <button class="btn-main btn-green" onclick="guardarObjetivo()" id="btn-guardar-obj">GUARDAR OBJETIVO</button>
-        </div>
+      <!-- TABLERO PRINCIPAL -->
+      <div id="tbl-contenido">
+        <div style="text-align:center;padding:40px;color:var(--muted)">Cargando...</div>
       </div>
+
     </div>
 
-    <!-- TRANSFERENCIAS -->
+    <!-- TRANSFERENCIAS -->    <!-- TRANSFERENCIAS -->
     <div id="tab-transferencias" class="tab-pane" style="display:none">
       <div class="card">
         <div class="card-title">Transferencias a Polanco</div>
@@ -1264,8 +1212,37 @@ function toast(msg, tipo="success") {
   setTimeout(()=>el.classList.remove("show"), 3200);
 }
 
+// Convierte cantidad de receta a la misma unidad de compra del insumo
+// Ej: receta usa 250 g, insumo comprado en kg → convierte 250 g a 0.25 kg
+function convertirUnidad(cantidad, unidadReceta, unidadInsumo) {
+  const ur = (unidadReceta || "").toLowerCase().trim();
+  const ui = (unidadInsumo  || "").toLowerCase().trim();
+  if (ur === ui) return cantidad;
+  // Peso
+  if (ur === "g"   && ui === "kg")  return cantidad / 1000;
+  if (ur === "kg"  && ui === "g")   return cantidad * 1000;
+  if (ur === "g"   && ui === "mg")  return cantidad * 1000;
+  if (ur === "mg"  && ui === "g")   return cantidad / 1000;
+  // Volumen
+  if (ur === "ml"  && ui === "l")   return cantidad / 1000;
+  if (ur === "l"   && ui === "ml")  return cantidad * 1000;
+  if (ur === "ml"  && ui === "lt")  return cantidad / 1000;
+  if (ur === "lt"  && ui === "ml")  return cantidad * 1000;
+  // Densidad 1: g ≈ ml (yogurt, crema, etc.)
+  if (ur === "g"   && (ui === "l" || ui === "lt"))  return cantidad / 1000;
+  if ((ur === "l" || ur === "lt") && ui === "g")    return cantidad * 1000;
+  if (ur === "ml"  && ui === "g")   return cantidad;
+  if (ur === "g"   && ui === "ml")  return cantidad;
+  // kg ↔ L (densidad 1)
+  if (ur === "kg"  && (ui === "l" || ui === "lt"))  return cantidad;
+  if ((ur === "l" || ur === "lt") && ui === "kg")   return cantidad;
+  // Sin conversión conocida: devolver tal cual
+  return cantidad;
+}
+
+
 function fmtMXN(n) {
-  return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+  return '$'+Number(n||0).toLocaleString('es-MX',{minimumFractionDigits:0,maximumFractionDigits:0});
 }
 
 // LOGIN
@@ -1294,6 +1271,7 @@ function iniciarApp() {
   cargarComisionesConfig();
   cargarCanalPreciosAlInicio();
   cargarRecetasAlInicio();
+  cargarGastosAlInicio();
   // Cargar mensajes y refrescar cada 2 minutos
   setTimeout(cargarMensajesHeader, 1500);
   setInterval(cargarMensajesHeader, 120000);
@@ -1308,7 +1286,6 @@ function setupNav() {
       L("tab-"+tab.dataset.tab).style.display="block";
       const t=tab.dataset.tab;
       if(t==="stock") cargarStock();
-      else if(t==="precios") cargarPrecios();
       else if(t==="usuarios") cargarUsuarios();
       else if(t==="auditoria") cargarAuditoria();
       else if(t==="catalogo") cargarCatalogoPantalla();
@@ -1317,7 +1294,7 @@ function setupNav() {
       else if(t==="costos") { if(!S.insumos.length) cargarCostos(); else renderCostos(); }
       else if(t==="utilidades") cargarUtilidades();
       else if(t==="precios") { cargarPrecios(); cargarZonasEnvio(); cargarCanalPrecios(); }
-      else if(t==="objetivos") cargarObjetivos();
+      else if(t==="objetivos") iniciarTablero();
       else if(t==="transferencias") cargarTransferencias();
       else if(t==="alertas") cargarAlertas();
     });
@@ -1341,10 +1318,19 @@ function poblarSelectsVenta() {
   const can=(S.catalogo.canales||[]).filter(c=>c.activo).map(c=>c.nombre);
   const canFinal=can.length>0?can.filter(c=>c!=="Uber Eats"):["Tienda","Domicilio","Rappi"];
 
-  // Sucursal
-  llenar("venta-sucursal",suc);
+  // Sucursal — solo pre-seleccionar en la primera carga, no sobreescribir si ya eligió
   const selSuc = L("venta-sucursal");
-  if(selSuc && S.sucursal && suc.includes(S.sucursal)) selSuc.value = S.sucursal;
+  const sucActual = selSuc?.value;
+  llenar("venta-sucursal", suc);
+  if(selSuc){
+    // Si ya tenía una sucursal válida seleccionada, mantenerla
+    if(sucActual && suc.includes(sucActual)){
+      selSuc.value = sucActual;
+    } else if(S.sucursal && suc.includes(S.sucursal)){
+      // Primera carga: usar la sucursal del usuario
+      selSuc.value = S.sucursal;
+    }
+  }
 
   // Canal y método
   llenar("venta-canal",canFinal);
@@ -1581,7 +1567,7 @@ function onItemTamanoChange(){
 
 // Cuando cambia sucursal → recalcular todo
 L("venta-sucursal")?.addEventListener("change",()=>{
-  poblarSelectsVenta();
+  // Solo actualizar la cascada de productos, no repoblar todo (evita reset de sucursal)
   actualizarSelectoresCascada();
 });
 
@@ -1660,8 +1646,8 @@ function actualizarPrecioPreview(){
     else precioFinal = Math.max(0, precioBase - descVal);
   }
   const preview = descVal > 0
-    ? `<span style="text-decoration:line-through;color:var(--muted)">$${precioBase.toLocaleString('en-US')}</span> → <strong style="color:var(--accent)">$${precioFinal.toLocaleString('en-US')}</strong>`
-    : `<span style="color:var(--muted)">$${precioBase.toLocaleString('en-US')}</span>`;
+    ? `<span style="text-decoration:line-through;color:var(--muted)">$${precioBase.toLocaleString('es-MX')}</span> → <strong style="color:var(--accent)">$${precioFinal.toLocaleString('es-MX')}</strong>`
+    : `<span style="color:var(--muted)">$${precioBase.toLocaleString('es-MX')}</span>`;
   L("item-precio-preview").innerHTML = preview + ` × ${cantidad}`;
 }
 
@@ -1749,13 +1735,13 @@ function renderCarrito(){
         <div class="carrito-nombre">${item.sabor} ${item.tamano}</div>
         <div class="carrito-sub">
           ${item.cantidad} × 
-          ${tieneDesc?`<span style="text-decoration:line-through;color:var(--muted)">$${item.precioBase.toLocaleString('en-US')}</span> `:""}
-          $${item.precio.toLocaleString('en-US')}
+          ${tieneDesc?`<span style="text-decoration:line-through;color:var(--muted)">$${item.precioBase.toLocaleString('es-MX')}</span> `:""}
+          $${item.precio.toLocaleString('es-MX')}
           ${tieneDesc?`<span style="color:var(--success);font-size:11px"> ${descLabel}</span>`:""}
           ${tipoOp!=="venta"?`<span style="color:var(--muted);font-size:11px"> (${tipoOp})</span>`:""}
         </div>
       </div>
-      <span class="carrito-precio">${tipoOp==="venta"?"$"+item.subtotal.toLocaleString('en-US'):"$0"}</span>
+      <span class="carrito-precio">${tipoOp==="venta"?"$"+item.subtotal.toLocaleString('es-MX'):"$0"}</span>
       <button class="btn-remove" onclick="quitarItem(${i})">×</button>
     </div>`;
   }).join("");
@@ -1770,15 +1756,15 @@ function renderCarrito(){
   const comPct = tipoOp==="venta" ? getComision(canal,metodo) : 0;
   const comMonto = Math.round(totalConEnvio * comPct);
   const ingresoNeto = totalConEnvio + comMonto; // comPct es negativo
-  L("total-num").textContent = tipoOp==="venta" ? "$"+totalConEnvio.toLocaleString('en-US') : "$0";
+  L("total-num").textContent = tipoOp==="venta" ? "$"+totalConEnvio.toLocaleString('es-MX') : "$0";
   L("carrito-total-bar").style.display="flex";
   const descTotalLabel=L("descuento-total-label");
   if(hayDesc){
     descTotalLabel.style.display="block";
-    descTotalLabel.textContent=`Ahorro cliente: $${(totalOriginal-total).toLocaleString('en-US')}`;
+    descTotalLabel.textContent=`Ahorro cliente: $${(totalOriginal-total).toLocaleString('es-MX')}`;
   } else { descTotalLabel.style.display="none"; }
   const envioLabel = L("envio-total-label");
-  if(costoEnvio>0&&tipoOp==="venta"){ envioLabel.style.display="block"; envioLabel.textContent=`Envío: $${costoEnvio.toLocaleString('en-US')} incluido`; }
+  if(costoEnvio>0&&tipoOp==="venta"){ envioLabel.style.display="block"; envioLabel.textContent=`Envío: $${costoEnvio.toLocaleString('es-MX')} incluido`; }
   else { envioLabel.style.display="none"; }
   // Comisión label
   let comLabel = L("comision-total-label");
@@ -1792,7 +1778,7 @@ function renderCarrito(){
     const pct=Math.abs(comPct*100).toFixed(0);
     const nombre=canal==="Rappi"||canal==="Uber Eats"?canal:metodo;
     comLabel.style.display="block";
-    comLabel.textContent=`${nombre} ${pct}%: -$${Math.abs(comMonto).toLocaleString('en-US')} → Neto: $${ingresoNeto.toLocaleString('en-US')}`;
+    comLabel.textContent=`${nombre} ${pct}%: -$${Math.abs(comMonto).toLocaleString('es-MX')} → Neto: $${ingresoNeto.toLocaleString('es-MX')}`;
   } else { comLabel.style.display="none"; }
 }
 
@@ -1861,7 +1847,7 @@ L("btn-confirmar").addEventListener("click",async()=>{
     const res=await api("registrarVenta",{items,canal,metodoPago:metodo,sucursal,cliente,tipoOp,motivo});
     if(res.ok){
       const total=S.carrito.reduce((s,i)=>s+i.subtotal,0);
-      toast(tipoOp==="regalo"?`✅ Regalo registrado`:`✅ Venta $${total.toLocaleString('en-US')} registrada`);
+      toast(tipoOp==="regalo"?`✅ Regalo registrado`:`✅ Venta $${total.toLocaleString('es-MX')} registrada`);
       limpiarVenta(); cargarStock();
     } else toast(res.error,"error");
   }
@@ -1912,7 +1898,7 @@ async function cargarVentas(){
       <div class="hist-meta">
         <span class="tag">${g.canal}</span><span class="tag">${g.metodoPago}</span><span class="tag">${g.sucursal}</span>
         ${g.clienteNombre?`<span class="tag">${g.clienteNombre}</span>`:""}
-        <span class="tag tag-total">$${g.items.reduce((s,i)=>s+i.subtotal,0).toLocaleString('en-US')}</span>
+        <span class="tag tag-total">$${g.items.reduce((s,i)=>s+i.subtotal,0).toLocaleString('es-MX')}</span>
       </div>
     </div>`).join("");
 }
@@ -1960,7 +1946,7 @@ async function cargarPrecios(silencioso=false){
   L("precios-content").innerHTML=tamanos.map(tamano=>`
     <div class="precio-row">
       <span class="precio-label">${tamano}</span>
-      <span class="precio-val" onclick="abrirModalPrecio('${tamano}',${getP(tamano)})">$${getP(tamano).toLocaleString('en-US')}</span>
+      <span class="precio-val" onclick="abrirModalPrecio('${tamano}',${getP(tamano)})">$${getP(tamano).toLocaleString('es-MX')}</span>
     </div>`).join("");
 }
 async function repararPrecios(){
@@ -1978,7 +1964,7 @@ L("btn-guardar-precio").addEventListener("click",async()=>{
   const sabores=(S.catalogo?.sabores||[]).filter(s=>s.activo).map(s=>s.nombre);
   const promesas=sabores.map(sabor=>api("updatePrecio",{sabor,tamano,precio}));
   const resultados=await Promise.all(promesas);
-  if(resultados.every(r=>r.ok)){toast(`✅ Precio ${tamano} = $${precio.toLocaleString('en-US')}`);L("modal-precio").classList.remove("show");cargarPrecios();}
+  if(resultados.every(r=>r.ok)){toast(`✅ Precio ${tamano} = $${precio.toLocaleString('es-MX')}`);L("modal-precio").classList.remove("show");cargarPrecios();}
   else toast("Error al guardar precio","error");
 });
 
@@ -2121,7 +2107,8 @@ function renderIngredientesReceta(){
   el.innerHTML=S.recetaActual.map((ing,idx)=>{
     const ins=S.insumos.find(i=>i.id===ing.insumoId);
     const costoPorUni=ins?ins.costoPorUnidad:0;
-    const costoLinea=costoPorUni*ing.cantidad;
+    const cantConvertida=ins?convertirUnidad(ing.cantidad,ing.unidad,ins.buyUnit):ing.cantidad;
+    const costoLinea=costoPorUni*cantConvertida;
     return `<div class="receta-row">
       <div><div class="receta-row-nombre">${ing.insumoNombre||"Insumo"}</div></div>
       <div class="receta-row-cant">${ing.cantidad} ${ing.unidad}</div>
@@ -2129,7 +2116,7 @@ function renderIngredientesReceta(){
       <button class="btn-del-small" onclick="quitarIngredienteReceta(${idx})">✕</button>
     </div>`;
   }).join("");
-  const costoTotal=S.recetaActual.reduce((s,ing)=>{const ins=S.insumos.find(i=>i.id===ing.insumoId);return s+(ins?ins.costoPorUnidad*ing.cantidad:0);},0);
+  const costoTotal=S.recetaActual.reduce((s,ing)=>{const ins=S.insumos.find(i=>i.id===ing.insumoId);const cant=ins?convertirUnidad(ing.cantidad,ing.unidad,ins.buyUnit):ing.cantidad;return s+(ins?ins.costoPorUnidad*cant:0);},0);
   el.innerHTML+=`<div class="calc-total-row"><span style="color:var(--muted)">Subtotal ingredientes:&nbsp;<strong style="color:var(--accent);font-size:16px">${fmtMXN(costoTotal)}</strong></span></div>`;
 }
 
@@ -2833,6 +2820,15 @@ async function cargarGastos(){
   renderGastosList();
 }
 
+// Equivalente mensual — usa el valor del servidor si está disponible
+function montoMensual(g) {
+  if (!g || !g.activo) return 0;
+  if (g.montoMensual !== undefined) return g.montoMensual; // valor calculado en el Sheet
+  if (g.frecuencia === "Semanal") return g.monto * 4.2;
+  if (g.frecuencia === "Mensual") return g.monto;
+  return 0;
+}
+
 function renderGastosList(){
   const gastos = (S.gastos||[]).filter(g=>g.activo);
   if(gastos.length === 0){
@@ -2847,7 +2843,12 @@ function renderGastosList(){
   function etiquetaFrecuencia(g){
     if(g.frecuencia==="% sobre venta") return `${g.monto}%`;
     if(g.frecuencia==="Condicional") return `${fmtMXN(g.monto)} si se cumple`;
-    return fmtMXN(g.monto) + (g.frecuencia==="Mensual"?" /mes":g.frecuencia==="Semanal"?" /sem":g.frecuencia==="Por unidad"?" /pieza":"");
+    if(g.frecuencia==="Por unidad") return `${fmtMXN(g.monto)}/pieza`;
+    const mens = montoMensual(g);
+    const sufijo = g.frecuencia==="Semanal"
+      ? ` <span style="font-size:11px;color:var(--muted);font-weight:400">${fmtMXN(g.monto)}/sem × 4.2</span>`
+      : "";
+    return `<span style="color:var(--accent);font-weight:700">${fmtMXN(mens)}/mes</span>${sufijo}`;
   }
 
   function renderGrupo(lista, titulo){
@@ -2869,7 +2870,32 @@ function renderGastosList(){
         </div>`).join("")}`;
   }
 
-  L("gastos-list").innerHTML = renderGrupo(fijos,"Gastos fijos") + renderGrupo(variables,"Gastos variables");
+  const totalMensual = gastos.reduce((s,g) => s + montoMensual(g), 0);
+  const totalCuaji = gastos.filter(g=>g.sucursal==="Cuajimalpa"||g.sucursal==="Ambas")
+    .reduce((s,g) => s + (g.sucursal==="Ambas" ? montoMensual(g)*0.5 : montoMensual(g)), 0);
+  const totalPolanco = gastos.filter(g=>g.sucursal==="Polanco"||g.sucursal==="Ambas")
+    .reduce((s,g) => s + (g.sucursal==="Ambas" ? montoMensual(g)*0.5 : montoMensual(g)), 0);
+
+  const resumenHTML = `
+    <div style="margin-top:16px;padding:14px 16px;background:var(--card);border-radius:12px;border:1px solid var(--border)">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:10px;text-transform:uppercase">Resumen mensual</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:140px;text-align:center;padding:10px;background:var(--bg);border-radius:8px">
+          <div style="font-size:18px;font-weight:700;color:var(--accent)">${fmtMXN(totalCuaji)}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">Cuajimalpa</div>
+        </div>
+        <div style="flex:1;min-width:140px;text-align:center;padding:10px;background:var(--bg);border-radius:8px">
+          <div style="font-size:18px;font-weight:700;color:var(--accent)">${fmtMXN(totalPolanco)}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">Polanco</div>
+        </div>
+        <div style="flex:1;min-width:140px;text-align:center;padding:10px;background:var(--ink);border-radius:8px">
+          <div style="font-size:18px;font-weight:700;color:#fff">${fmtMXN(totalMensual)}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:2px">Total empresa</div>
+        </div>
+      </div>
+    </div>`;
+
+  L("gastos-list").innerHTML = renderGrupo(fijos,"Gastos fijos") + renderGrupo(variables,"Gastos variables") + resumenHTML;
 }
 
 function toggleGastoCondicional(){
@@ -2949,7 +2975,7 @@ async function cargarZonasEnvio(){
   if(sel){
     const activas = (S.zonasEnvio||[]).filter(z=>z.activo);
     sel.innerHTML = `<option value="">— Sin costo de envío —</option>` +
-      activas.map(z=>`<option value="${z.id}" data-costo="${z.costo}">${z.nombre} — $${z.costo.toLocaleString('en-US')}</option>`).join("");
+      activas.map(z=>`<option value="${z.id}" data-costo="${z.costo}">${z.nombre} — $${z.costo.toLocaleString('es-MX')}</option>`).join("");
   }
 }
 
@@ -2965,7 +2991,7 @@ function renderZonasList(){
         <div style="font-weight:600;font-size:13px">${z.nombre}</div>
         <div style="font-size:11px;color:var(--muted);margin-top:2px">${z.colonias.slice(0,5).join(", ")}${z.colonias.length>5?" ...":""}</div>
       </div>
-      <div style="font-weight:700;color:var(--accent);margin:0 12px">$${z.costo.toLocaleString('en-US')}</div>
+      <div style="font-weight:700;color:var(--accent);margin:0 12px">$${z.costo.toLocaleString('es-MX')}</div>
       <button class="btn-icon" onclick="eliminarZona('${z.id}')">✕</button>
     </div>`).join("");
 }
@@ -2999,7 +3025,7 @@ function onZonaChange(){
   const aviso = L("envio-costo-aviso");
   if(costo > 0){
     aviso.style.display = "block";
-    aviso.textContent = `🚗 Costo de envío: $${costo.toLocaleString('en-US')} — se sumará al total`;
+    aviso.textContent = `🚗 Costo de envío: $${costo.toLocaleString('es-MX')} — se sumará al total`;
   } else {
     aviso.style.display = "none";
   }
@@ -3143,7 +3169,8 @@ async function renderTablaUtilidades(){
     .map(r => {
       const costo = r.ingredientes.reduce((sum, ing) => {
         const ins = insumosIdx[ing.insumoId];
-        return sum + (ins ? ins.costoPorUnidad * ing.cantidad : 0);
+        const cantConvU = ins ? convertirUnidad(ing.cantidad, ing.unidad||ins.buyUnit, ins.buyUnit) : ing.cantidad;
+        return sum + (ins ? ins.costoPorUnidad * cantConvU : 0);
       }, 0);
       const precio = getPrecio(r.sabor, r.tamano);
       const utilidad = precio > 0 ? precio - costo : null;
@@ -3278,6 +3305,100 @@ function limpiarFiltrosUtil(){
   renderUtilidades();
 }
 
+
+// ================================================================
+// PUNTO DE EQUILIBRIO
+// ================================================================
+// Utilidad promedio por tarta mediana pagada con tarjeta:
+// $390 × (1-0.06) - $178.35 = $188.25
+const PE_UTIL_POR_TARTA = 188.25;
+const PE_COMISION_TARJETA = 0.06;
+
+function calcGastosFijos(sucursalFiltro) {
+  // Lee gastos del estado S.gastos (cargados en la pestaña Costos)
+  // Si no están cargados, usa los valores conocidos
+  const gastos = S.gastos || [];
+  if (!gastos.length) {
+    // Fallback con valores hardcodeados del Sheet
+    if (!sucursalFiltro || sucursalFiltro === "") return 307480;
+    if (sucursalFiltro === "Cuajimalpa") return 125930;
+    if (sucursalFiltro === "Polanco")    return 181550;
+    return 307480;
+  }
+  let total = 0;
+  for (const g of gastos) {
+    if (!g.activo) continue;
+    const mens = montoMensual(g);
+    if (g.sucursal === "Ambas") {
+      if (!sucursalFiltro || sucursalFiltro === "") total += mens;
+      else total += mens * 0.5; // 50% por sucursal
+    } else if (!sucursalFiltro || sucursalFiltro === "" || g.sucursal === sucursalFiltro) {
+      total += mens;
+    }
+  }
+  return total;
+}
+
+function renderPE(utilidadAcumulada, sucursalFiltro) {
+  const widget = L("util-pe-widget");
+  if (!widget) return;
+  if (utilidadAcumulada === null || utilidadAcumulada === undefined) {
+    widget.style.display = "none"; return;
+  }
+
+  const gastosFijos = calcGastosFijos(sucursalFiltro);
+  // Para vista semanal, dividir gastos entre 4.2
+  const desde = L("f-desde")?.value;
+  const hasta  = L("f-hasta")?.value;
+  let esSemana = false;
+  if (desde && hasta) {
+    const dias = (new Date(hasta) - new Date(desde)) / (1000*60*60*24);
+    esSemana = dias <= 8;
+  }
+  const gastosPeriodo = esSemana ? gastosFijos / 4.2 : gastosFijos;
+  const metaUtil = gastosPeriodo;
+
+  const pct = metaUtil > 0 ? Math.min(100, (utilidadAcumulada / metaUtil) * 100) : 0;
+  const faltaUtil = Math.max(0, metaUtil - utilidadAcumulada);
+  const tartasFaltan = Math.ceil(faltaUtil / PE_UTIL_POR_TARTA);
+  const alcanzado = utilidadAcumulada >= metaUtil;
+
+  const color = pct >= 100 ? "#2E5C4A" : pct >= 70 ? "#86BDAD" : pct >= 40 ? "#F39C12" : "#E74C3C";
+  const periodoLabel = esSemana ? "semana" : "mes";
+  const sucLabel = sucursalFiltro || "Total empresa";
+
+  widget.style.display = "block";
+  widget.innerHTML = `
+    <div style="background:${alcanzado?'#2E5C4A':'var(--ink)'};border-radius:16px;padding:20px;color:#fff">
+      <div style="font-size:11px;opacity:.7;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">
+        🎯 Punto de equilibrio · ${sucLabel} · ${periodoLabel}
+      </div>
+      <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:2px">
+        <div style="font-size:42px;font-weight:800;font-family:'Fraunces',serif">${fmtMXN(utilidadAcumulada)}</div>
+        <div style="font-size:16px;opacity:.5">/ ${fmtMXN(metaUtil)}</div>
+      </div>
+      <div style="font-size:12px;opacity:.6;margin-bottom:8px">
+        utilidad generada vs gastos fijos del ${periodoLabel}
+      </div>
+      <div style="background:rgba(255,255,255,.15);border-radius:100px;height:14px;overflow:hidden;margin-bottom:10px">
+        <div style="width:${pct.toFixed(1)}%;height:14px;background:${alcanzado?'#86BDAD':'#fff'};border-radius:100px;transition:.8s ease;position:relative">
+          ${pct > 15 ? `<span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10px;font-weight:700;color:${alcanzado?'#2E5C4A':'var(--ink)'}">${pct.toFixed(0)}%</span>` : ""}
+        </div>
+      </div>
+      ${alcanzado
+        ? `<div style="font-size:14px;font-weight:700">✅ ¡Punto de equilibrio alcanzado! Excedente: ${fmtMXN(utilidadAcumulada - metaUtil)}</div>`
+        : `<div style="font-size:13px;opacity:.85">
+            Faltan <strong style="font-size:18px">${fmtMXN(faltaUtil)}</strong> de utilidad
+            &nbsp;·&nbsp; ≈ <strong style="font-size:18px">${tartasFaltan}</strong> tartas medianas con tarjeta
+           </div>`
+      }
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.2);font-size:11px;opacity:.6">
+        Gastos fijos ${periodoLabel}: ${fmtMXN(gastosFijos)}${esSemana?' ÷ 4.2':''} = ${fmtMXN(metaUtil)}
+        &nbsp;·&nbsp; Utilidad ref. por tarta: $${PE_UTIL_POR_TARTA} (mediana, tarjeta 6%)
+      </div>
+    </div>`;
+}
+
 function renderUtilidades(){
   if(!utilState.listo){ L("util-ops-list").innerHTML=`<div class="loading"><div class="spinner"></div></div>`; return; }
 
@@ -3302,7 +3423,8 @@ function renderUtilidades(){
     if(!rec || !rec.ingredientes.length) return null;
     return rec.ingredientes.reduce((s, ing) => {
       const ins = insumosIdx[ing.insumoId];
-      return s + (ins ? ins.costoPorUnidad * ing.cantidad : 0);
+      const cantConv = ins ? convertirUnidad(ing.cantidad, ing.unidad||ins.buyUnit, ins.buyUnit) : ing.cantidad;
+      return s + (ins ? ins.costoPorUnidad * cantConv : 0);
     }, 0);
   }
 
@@ -3360,6 +3482,10 @@ function renderUtilidades(){
   L("up-costos").textContent    = fmtMXN(totalCostos);
   L("up-utilidad").textContent  = fmtMXN(totalUtilidad);
   L("up-utilidad").style.color  = totalUtilidad >= 0 ? "var(--success)" : "var(--danger)";
+
+  // Punto de equilibrio
+  const fSucursal = L("f-sucursal")?.value || "";
+  renderPE(totalUtilidad, fSucursal);
   L("up-margen").textContent    = totalMargen.toFixed(1) + "%";
   L("up-margen").style.color    = totalMargen >= 30 ? "var(--success)" : totalMargen >= 0 ? "var(--warning)" : "var(--danger)";
 
@@ -3383,13 +3509,13 @@ function renderUtilidades(){
       <div class="op-fecha">${g.fecha ? g.fecha.substring(0,16).replace('T',' ') : ''}</div>
       <div class="op-prods">${g.items.map(i=>`${i.cantidad}× ${i.sabor} ${i.tamano}`).join(' · ')}</div>
       <div class="op-nums">
-        <div class="op-num-card"><div class="op-num-val">${fmtMXN(g.ingreso)}</div><div class="op-num-label">Ingreso neto${g.comMonto<0?` <span style="font-size:10px;color:var(--danger)">-$${Math.abs(g.comMonto).toLocaleString('en-US')}</span>`:''}</div></div>
+        <div class="op-num-card"><div class="op-num-val">${fmtMXN(g.ingreso)}</div><div class="op-num-label">Ingreso neto${g.comMonto<0?` <span style="font-size:10px;color:var(--danger)">-$${Math.abs(g.comMonto).toLocaleString('es-MX')}</span>`:''}</div></div>
         <div class="op-num-card"><div class="op-num-val">${g.calculable ? fmtMXN(g.costo) : '—'}</div><div class="op-num-label">Costo</div></div>
         <div class="op-num-card"><div class="op-num-val ${uCls}">${g.utilidad !== null ? fmtMXN(g.utilidad) : '—'}</div><div class="op-num-label">Utilidad</div></div>
       </div>
       <div class="op-tags">
-        <span class="tag">${g.canal||''}</span>
-        <span class="tag">${g.metodoPago||''}</span>
+        <span class="tag${g.canal==='Merma'?' tag-merma':g.canal==='Cortesía'?' tag-regalo':''}">${g.canal||''}</span>
+        ${g.canal!=='Merma'?`<span class="tag">${g.metodoPago||''}</span>`:''}
         <span class="tag">${g.sucursal||''}</span>
         ${g.clienteNombre ? `<span class="tag">${g.clienteNombre}</span>` : ''}
         ${g.margen !== null
@@ -3472,11 +3598,408 @@ async function cargarCanalPreciosAlInicio(){
   const res = await api("getCanalPrecios");
   if(res.ok) S.canalPrecios = res.reglas || [];
 }
+// Carga silenciosa de gastos al arrancar (necesario para punto de equilibrio en tablero)
+async function cargarGastosAlInicio(){
+  const res = await api("getGastos");
+  if(res.ok) S.gastos = res.gastos || [];
+}
+
 // Carga silenciosa de recetas al arrancar (necesario para preview de costos)
 async function cargarRecetasAlInicio(){
   const res = await api("getRecetas");
   if(res.ok) S.recetas = res.recetas || [];
 }
+
+
+// ================================================================
+// TABLERO DE CONTROL
+// ================================================================
+
+// Factores de equivalencia
+
+// Metas guardadas localmente (persisten en S)
+function getMetas() {
+  const mes  = parseInt(L("tbl-mes")?.value)  || new Date().getMonth()+1;
+  const anio = parseInt(L("tbl-anio")?.value) || new Date().getFullYear();
+  const key  = `metas_${mes}_${anio}`;
+  return S[key] || { cuaji: 1000, polanco: 1000 };
+}
+
+function guardarMetasTablero() {
+  const mes   = parseInt(L("tbl-mes")?.value)  || new Date().getMonth()+1;
+  const anio  = parseInt(L("tbl-anio")?.value) || new Date().getFullYear();
+  const key   = `metas_${mes}_${anio}`;
+  const cuaji   = parseFloat(L("tbl-meta-cuaji")?.value)   || 1000;
+  const polanco = parseFloat(L("tbl-meta-polanco")?.value) || 1000;
+  S[key] = { cuaji, polanco };
+  toast("✅ Metas guardadas");
+  renderTablero();
+}
+
+function toggleObjetivosConfig() {
+  const body  = L("tbl-config-body");
+  const arrow = L("tbl-config-arrow");
+  const open  = body.style.display === "block";
+  body.style.display  = open ? "none" : "block";
+  arrow.textContent   = open ? "▼" : "▲";
+  if (!open) {
+    const metas = getMetas();
+    if (L("tbl-meta-cuaji"))   L("tbl-meta-cuaji").value   = metas.cuaji;
+    if (L("tbl-meta-polanco")) L("tbl-meta-polanco").value = metas.polanco;
+  }
+}
+
+let _vistaTablero = "mes";
+
+function setVistaTablero(vista) {
+  _vistaTablero = vista;
+  const btnMes = L("tbl-btn-mes");
+  const btnSem = L("tbl-btn-sem");
+  const selSem = L("tbl-semana");
+  if (vista === "mes") {
+    btnMes.style.background = "var(--ink)"; btnMes.style.color = "#fff";
+    btnSem.style.background = "transparent"; btnSem.style.color = "var(--muted)";
+    if (selSem) selSem.style.display = "none";
+  } else {
+    btnSem.style.background = "var(--ink)"; btnSem.style.color = "#fff";
+    btnMes.style.background = "transparent"; btnMes.style.color = "var(--muted)";
+    if (selSem) selSem.style.display = "";
+  }
+  renderTablero();
+}
+
+async function iniciarTablero() {
+  const hoy = new Date();
+  if (L("tbl-mes"))  L("tbl-mes").value  = String(hoy.getMonth()+1);
+  if (L("tbl-anio")) L("tbl-anio").value = String(hoy.getFullYear());
+  // Detectar semana actual del mes
+  const semanaActual = Math.min(4, Math.ceil(hoy.getDate() / 7));
+  if (L("tbl-semana")) L("tbl-semana").value = String(semanaActual);
+  await renderTablero();
+}
+
+function getMetas() {
+  const mes  = parseInt(L("tbl-mes")?.value)  || new Date().getMonth()+1;
+  const anio = parseInt(L("tbl-anio")?.value) || new Date().getFullYear();
+  const key  = `metas_${mes}_${anio}`;
+  return S[key] || { cuaji: 1000, polanco: 1000 };
+}
+
+function guardarMetasTablero() {
+  const mes   = parseInt(L("tbl-mes")?.value)  || new Date().getMonth()+1;
+  const anio  = parseInt(L("tbl-anio")?.value) || new Date().getFullYear();
+  const key   = `metas_${mes}_${anio}`;
+  const cuaji   = parseFloat(L("tbl-meta-cuaji")?.value)   || 1000;
+  const polanco = parseFloat(L("tbl-meta-polanco")?.value) || 1000;
+  S[key] = { cuaji, polanco };
+  toast("✅ Metas guardadas");
+  renderTablero();
+}
+
+function toggleObjetivosConfig() {
+  const body  = L("tbl-config-body");
+  const arrow = L("tbl-config-arrow");
+  const open  = body.style.display === "block";
+  body.style.display  = open ? "none" : "block";
+  arrow.textContent   = open ? "▼" : "▲";
+  if (!open) {
+    const metas = getMetas();
+    if (L("tbl-meta-cuaji"))   L("tbl-meta-cuaji").value   = metas.cuaji;
+    if (L("tbl-meta-polanco")) L("tbl-meta-polanco").value = metas.polanco;
+  }
+}
+
+// Factores de equivalencia
+const EQUIV = { "Individual": 0.5, "Mediana": 1, "Mediano": 1, "Grande": 2 };
+const MESES_NOMBRE = ["","Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+
+function getSemana(fecha) {
+  // Semana 1: días 1-7, Semana 2: 8-14, Semana 3: 15-21, Semana 4: 22+
+  return Math.min(4, Math.ceil(new Date(fecha).getDate() / 7));
+}
+
+function calcEquiv(ventasList) {
+  let total = 0;
+  const desglose = {};
+  for (const v of ventasList) {
+    const factor = EQUIV[v.tamano] ?? 1;
+    total += v.cantidad * factor;
+    if (!desglose[v.tamano]) desglose[v.tamano] = { cantidad: 0, equiv: 0 };
+    desglose[v.tamano].cantidad += v.cantidad;
+    desglose[v.tamano].equiv    += v.cantidad * factor;
+  }
+  return { total, desglose };
+}
+
+function barraHTML(pct, label) {
+  const w   = Math.min(100, pct);
+  const bg  = pct >= 100 ? "#2E5C4A" : pct >= 70 ? "#86BDAD" : pct >= 40 ? "#F39C12" : "#E74C3C";
+  const txt = w > 18 ? `<span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10px;font-weight:700;color:#fff">${pct.toFixed(0)}%</span>` : "";
+  return `<div style="background:rgba(0,0,0,.08);border-radius:100px;height:12px;overflow:hidden;margin:6px 0;position:relative">
+    <div style="width:${w}%;height:12px;background:${bg};border-radius:100px;transition:.6s ease;position:relative">${txt}</div>
+  </div>`;
+}
+
+function tamanosHTML(desglose) {
+  const orden = ["Individual","Mediana","Mediano","Grande"];
+  return orden.filter(t => desglose[t]?.cantidad > 0).map(t => {
+    const d = desglose[t];
+    return `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(0,0,0,.05)">
+      <span style="font-size:12px;color:var(--muted)">${t} ×${EQUIV[t]??1}</span>
+      <span style="font-size:12px"><b>${d.cantidad}</b> pzas = <b style="color:var(--accent)">${d.equiv.toFixed(1)}</b></span>
+    </div>`;
+  }).join("") || '<div style="font-size:12px;color:var(--muted);padding:6px 0">Sin ventas</div>';
+}
+
+function tarjetaSucursal(nombre, resultado, meta, esOscura) {
+  const pct = meta > 0 ? (resultado.total / meta * 100) : 0;
+  const faltante = Math.max(0, meta - resultado.total);
+  const estado = pct >= 100 ? "✅ Meta alcanzada" : pct >= 70 ? "🟡 Buen ritmo" : pct >= 40 ? "🟠 En progreso" : "🔴 Por debajo";
+  const bg = esOscura ? "var(--ink)" : "var(--card)";
+  const textColor = esOscura ? "#fff" : "var(--ink)";
+  const mutedColor = esOscura ? "rgba(255,255,255,.6)" : "var(--muted)";
+  return `<div style="background:${bg};border-radius:16px;padding:18px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+      <div style="font-weight:700;font-size:15px;color:${textColor}">${nombre}</div>
+      <div style="font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;background:rgba(128,128,128,.15);color:${textColor}">${estado}</div>
+    </div>
+    <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:2px">
+      <div style="font-size:42px;font-weight:800;font-family:'Fraunces',serif;color:${pct>=100?'#86BDAD':textColor}">${resultado.total.toFixed(1)}</div>
+      <div style="font-size:16px;color:${mutedColor}">&nbsp;/ ${meta.toFixed(1)}</div>
+    </div>
+    <div style="font-size:11px;color:${mutedColor};margin-bottom:4px">medianas equivalentes</div>
+    ${barraHTML(pct)}
+    ${faltante > 0.1 ? `<div style="font-size:11px;color:${mutedColor};margin-top:4px">Faltan <b>${faltante.toFixed(1)}</b> para la meta</div>` : ""}
+    <div style="margin-top:12px;border-top:1px solid ${esOscura?'rgba(255,255,255,.1)':'var(--border)'};padding-top:10px">
+      ${tamanosHTML(resultado.desglose)}
+    </div>
+  </div>`;
+}
+
+// ── PE helpers (globales) ──────────────────────────────────
+
+function calcUtilidadReal(ventasList) {
+  let util = 0;
+  for (const v of ventasList) {
+    const comPct = getComision(v.canal||"", v.metodoPago||"");
+    const ingresoNeto = (v.subtotal||0) * (1 + comPct);
+    const rec = S.recetas?.find(r => r.sabor === v.sabor && r.tamano === v.tamano);
+    let costoRec = 0;
+    if (rec && S.insumos?.length) {
+      costoRec = rec.ingredientes.reduce((s, ing) => {
+        const ins = S.insumos.find(i => i.id === ing.insumoId);
+        const cant = ins ? convertirUnidad(ing.cantidad, ing.unidad||ins.buyUnit, ins.buyUnit) : ing.cantidad;
+        return s + (ins ? ins.costoPorUnidad * cant : 0);
+      }, 0) * (v.cantidad||1);
+    }
+    util += ingresoNeto - costoRec;
+  }
+  return util;
+}
+
+function gastosParaSuc(suc) {
+  const gastos = S.gastos || [];
+  if (!gastos.length) {
+    if (suc === "Cuajimalpa") return 125930;
+    if (suc === "Polanco")    return 181550;
+    return 307480;
+  }
+  let total = 0;
+  for (const g of gastos) {
+    if (!g.activo) continue;
+    const mens = montoMensual(g);
+    if (g.sucursal === "Ambas") total += suc ? mens * 0.5 : mens;
+    else if (!suc || g.sucursal === suc) total += mens;
+  }
+  return total;
+}
+
+function peWidget(ventasList, sucLabel, gastosFiltro, esSemana) {
+  const utilReal = calcUtilidadReal(ventasList);
+  const gastosPeriodo = esSemana ? gastosFiltro / 4.2 : gastosFiltro;
+  const pct = gastosPeriodo > 0 ? Math.min(100, (utilReal / gastosPeriodo) * 100) : 0;
+  const falta = Math.max(0, gastosPeriodo - utilReal);
+  const tartasFaltan = Math.ceil(falta / PE_UTIL_POR_TARTA);
+  const alcanzado = utilReal >= gastosPeriodo;
+  const colorBarra = pct >= 70 ? "#86BDAD" : pct >= 40 ? "#F39C12" : "#E74C3C";
+  const w = Math.min(100, pct).toFixed(1);
+  const periodoTxt = esSemana ? "semana" : "mes";
+  return `<div style="background:${alcanzado?'#2E5C4A':'#1a2a22'};border-radius:16px;padding:18px;margin-bottom:10px;color:#fff">
+    <div style="font-size:11px;opacity:.7;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">🎯 Punto de equilibrio · ${sucLabel}</div>
+    <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:2px">
+      <div style="font-size:36px;font-weight:800;font-family:'Fraunces',serif">${fmtMXN(utilReal)}</div>
+      <div style="font-size:14px;opacity:.5"> / ${fmtMXN(gastosPeriodo)}</div>
+    </div>
+    <div style="font-size:11px;opacity:.6;margin-bottom:8px">utilidad real vs gastos fijos del ${periodoTxt}</div>
+    <div style="background:rgba(255,255,255,.15);border-radius:100px;height:12px;overflow:hidden;margin-bottom:10px">
+      <div style="width:${w}%;height:12px;background:${alcanzado?'#86BDAD':colorBarra};border-radius:100px;transition:.8s ease"></div>
+    </div>
+    ${alcanzado
+      ? '<div style="font-size:13px;font-weight:700">✅ ¡PE alcanzado! Excedente: ' + fmtMXN(utilReal - gastosPeriodo) + '</div>'
+      : '<div style="font-size:12px;opacity:.85">Faltan <b style="font-size:15px">' + fmtMXN(falta) + '</b>  ·  <b style="font-size:15px">' + tartasFaltan + '</b> tartas medianas con tarjeta</div>'
+    }
+  </div>`;
+}
+
+async function renderTablero() {
+  const contenido = L("tbl-contenido");
+  if (!contenido) return;
+  contenido.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Calculando...</div>';
+
+  const mes    = parseInt(L("tbl-mes")?.value)    || new Date().getMonth()+1;
+  const anio   = parseInt(L("tbl-anio")?.value)   || new Date().getFullYear();
+  const semSel = parseInt(L("tbl-semana")?.value) || 1;
+  const esSemana = _vistaTablero === "semana";
+  const metas  = getMetas();
+
+  const res = await api("getVentas");
+  if (!res.ok) {
+    contenido.innerHTML = '<div style="padding:20px;color:var(--danger)">Error cargando ventas</div>';
+    return;
+  }
+
+  // ── Filtrar ventas del mes (excluyendo mermas y regalos) ──
+  const ventasMes = res.ventas.filter(v => {
+    if (!v.fecha) return false;
+    const f = new Date(v.fecha);
+    if (f.getMonth()+1 !== mes || f.getFullYear() !== anio) return false;
+    return v.canal !== "Merma" && v.canal !== "Cortesía";
+  });
+
+  // ── VISTA MENSUAL ──────────────────────────────────────────
+  if (!esSemana) {
+    const vC = ventasMes.filter(v => v.sucursal === "Cuajimalpa");
+    const vP = ventasMes.filter(v => v.sucursal === "Polanco");
+    const rC = calcEquiv(vC);
+    const rP = calcEquiv(vP);
+    const total = rC.total + rP.total;
+    const metaTotal = metas.cuaji + metas.polanco;
+    const pctTotal  = metaTotal > 0 ? (total / metaTotal * 100) : 0;
+
+    contenido.innerHTML = `
+      <div style="background:var(--ink);border-radius:16px;padding:20px;margin-bottom:10px;color:#fff">
+        <div style="font-size:12px;opacity:.7;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Total empresa · ${MESES_NOMBRE[mes]} ${anio}</div>
+        <div style="display:flex;align-items:baseline;gap:8px">
+          <div style="font-size:52px;font-weight:800;font-family:'Fraunces',serif">${total.toFixed(1)}</div>
+          <div style="font-size:18px;opacity:.5">/ ${metaTotal}</div>
+        </div>
+        <div style="font-size:12px;opacity:.6;margin-bottom:6px">medianas equivalentes</div>
+        ${barraHTML(pctTotal)}
+        <div style="display:flex;justify-content:space-between;font-size:12px;opacity:.7;margin-top:6px">
+          <span>Cuajimalpa: ${rC.total.toFixed(1)} / ${metas.cuaji}</span>
+          <span>Polanco: ${rP.total.toFixed(1)} / ${metas.polanco}</span>
+        </div>
+      </div>` +
+      tarjetaSucursal("Cuajimalpa", rC, metas.cuaji, false) +
+      tarjetaSucursal("Polanco",    rP, metas.polanco, false);
+    return;
+  }
+
+  // ── VISTA SEMANAL ─────────────────────────────────────────
+  // Meta semanal = meta mensual ÷ 4.2
+  const metaSemCuaji   = metas.cuaji   / 4.2;
+  const metaSemPolanco = metas.polanco / 4.2;
+  const metaSemTotal   = metaSemCuaji + metaSemPolanco;
+
+  // Construir datos de las 4 semanas
+  const semanas = [1,2,3,4].map(s => {
+    const vS = ventasMes.filter(v => getSemana(v.fecha) === s);
+    const vC = vS.filter(v => v.sucursal === "Cuajimalpa");
+    const vP = vS.filter(v => v.sucursal === "Polanco");
+    const rC = calcEquiv(vC);
+    const rP = calcEquiv(vP);
+    return { sem: s, rC, rP, total: rC.total + rP.total };
+  });
+
+  // Acumulado hasta la semana seleccionada
+  const ventasSemSel = ventasMes.filter(v => getSemana(v.fecha) === semSel);
+  const vCsel = ventasSemSel.filter(v => v.sucursal === "Cuajimalpa");
+  const vPsel = ventasSemSel.filter(v => v.sucursal === "Polanco");
+  const rCsel = calcEquiv(vCsel);
+  const rPsel = calcEquiv(vPsel);
+  const totalSel = rCsel.total + rPsel.total;
+  const pctTotalSel = metaSemTotal > 0 ? (totalSel / metaSemTotal * 100) : 0;
+
+  // Gráfico de barras de las 4 semanas
+  const maxVal = Math.max(metaSemTotal, ...semanas.map(s => s.total), 1);
+  const graficaHTML = `
+    <div style="background:var(--card);border-radius:16px;padding:18px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:14px">
+        Progreso semanal · ${MESES_NOMBRE[mes]} ${anio}
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:8px;height:100px;margin-bottom:10px">
+        ${semanas.map(s => {
+          const h = Math.max(4, Math.round((s.total / maxVal) * 90));
+          const meta_h = Math.round((metaSemTotal / maxVal) * 90);
+          const activa = s.sem === semSel;
+          const color = s.total >= metaSemTotal ? "#2E5C4A" : s.total >= metaSemTotal*0.7 ? "#86BDAD" : s.total >= metaSemTotal*0.4 ? "#F39C12" : "#E74C3C";
+          return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="document.getElementById('tbl-semana').value='${s.sem}';renderTablero()">
+            <div style="font-size:11px;font-weight:${activa?'700':'400'};color:${activa?'var(--ink)':'var(--muted)'}">${s.total.toFixed(0)}</div>
+            <div style="width:100%;height:${h}px;background:${color};border-radius:6px 6px 0 0;opacity:${activa?1:0.5};border:${activa?'2px solid var(--ink)':'none'}"></div>
+            <div style="font-size:11px;font-weight:${activa?'700':'400'};color:${activa?'var(--ink)':'var(--muted)'}">S${s.sem}</div>
+          </div>`;
+        }).join("")}
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)">
+        <div style="width:12px;height:3px;background:var(--muted);border-radius:2px"></div>
+        Meta semanal: ${metaSemTotal.toFixed(1)} medianas equiv.
+      </div>
+    </div>`;
+
+  // Ventas del período para PE
+  const ventasPeriodoPE = esSemana ? ventasSemSel : ventasMes;
+  const peTotal = peWidget(ventasPeriodoPE, "Total empresa", gastosParaSuc(""), esSemana);
+  const peCuaji = peWidget(ventasPeriodoPE.filter(v=>v.sucursal==="Cuajimalpa"), "Cuajimalpa", gastosParaSuc("Cuajimalpa"), esSemana);
+  const pePol   = peWidget(ventasPeriodoPE.filter(v=>v.sucursal==="Polanco"),    "Polanco",    gastosParaSuc("Polanco"), esSemana);
+
+  if (!esSemana) {
+    // Vista mensual
+    const vC = ventasMes.filter(v => v.sucursal === "Cuajimalpa");
+    const vP = ventasMes.filter(v => v.sucursal === "Polanco");
+    const rC = calcEquiv(vC);
+    const rP = calcEquiv(vP);
+    const total = rC.total + rP.total;
+    const metaTotal = metas.cuaji + metas.polanco;
+    const pctTotal  = metaTotal > 0 ? (total / metaTotal * 100) : 0;
+
+    contenido.innerHTML = `
+      <div style="background:var(--ink);border-radius:16px;padding:20px;margin-bottom:10px;color:#fff">
+        <div style="font-size:12px;opacity:.7;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Total empresa · ${MESES_NOMBRE[mes]} ${anio}</div>
+        <div style="display:flex;align-items:baseline;gap:8px">
+          <div style="font-size:52px;font-weight:800;font-family:'Fraunces',serif">${total.toFixed(1)}</div>
+          <div style="font-size:18px;opacity:.5">/ ${metaTotal}</div>
+        </div>
+        <div style="font-size:12px;opacity:.6;margin-bottom:6px">medianas equivalentes</div>
+        ${barraHTML(pctTotal)}
+        <div style="display:flex;justify-content:space-between;font-size:12px;opacity:.7;margin-top:6px">
+          <span>Cuajimalpa: ${rC.total.toFixed(1)} / ${metas.cuaji}</span>
+          <span>Polanco: ${rP.total.toFixed(1)} / ${metas.polanco}</span>
+        </div>
+      </div>` +
+      tarjetaSucursal("Cuajimalpa", rC, metas.cuaji, false) +
+      tarjetaSucursal("Polanco",    rP, metas.polanco, false) +
+      `<div style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin:16px 0 8px">📊 Punto de equilibrio</div>` +
+      peTotal + peCuaji + pePol;
+    return;
+  }
+
+  // Vista semanal
+  contenido.innerHTML = graficaHTML +
+    `<div style="background:var(--ink);border-radius:16px;padding:18px;margin-bottom:10px;color:#fff">
+      <div style="font-size:12px;opacity:.7;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Semana ${semSel} · ${MESES_NOMBRE[mes]} ${anio}</div>
+      <div style="display:flex;align-items:baseline;gap:8px">
+        <div style="font-size:48px;font-weight:800;font-family:'Fraunces',serif">${totalSel.toFixed(1)}</div>
+        <div style="font-size:16px;opacity:.5">/ ${metaSemTotal.toFixed(1)}</div>
+      </div>
+      <div style="font-size:12px;opacity:.6;margin-bottom:6px">meta semanal = ${metas.cuaji+metas.polanco} ÷ 4.2</div>
+      ${barraHTML(pctTotalSel)}
+    </div>` +
+    tarjetaSucursal("Cuajimalpa", rCsel, metaSemCuaji, false) +
+    tarjetaSucursal("Polanco",    rPsel, metaSemPolanco, false) +
+    `<div style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin:16px 0 8px">📊 Punto de equilibrio</div>` +
+    peTotal + peCuaji + pePol;
+}
+
 
 L("btn-logout").addEventListener("click",()=>{
   limpiarVenta();
