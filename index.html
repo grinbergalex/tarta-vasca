@@ -925,6 +925,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
       <div class="card" style="padding:14px 16px;margin-bottom:12px">
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <div style="font-weight:700;font-size:15px;flex:1">📊 Tablero de control</div>
+          <div style="display:flex;background:var(--bg);border-radius:8px;padding:2px;gap:2px">
+            <button id="tbl-btn-mes" onclick="setVistaTablero('mes')" style="padding:5px 12px;border:none;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;background:var(--ink);color:#fff">Mes</button>
+            <button id="tbl-btn-sem" onclick="setVistaTablero('semana')" style="padding:5px 12px;border:none;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;background:transparent;color:var(--muted)">Semana</button>
+          </div>
           <select class="mini-select" id="tbl-mes" onchange="renderTablero()" style="width:130px">
             <option value="1">Enero</option><option value="2">Febrero</option>
             <option value="3">Marzo</option><option value="4">Abril</option>
@@ -937,6 +941,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
             <option value="2025">2025</option>
             <option value="2026" selected>2026</option>
             <option value="2027">2027</option>
+          </select>
+          <select class="mini-select" id="tbl-semana" onchange="renderTablero()" style="width:100px;display:none">
+            <option value="1">Semana 1</option><option value="2">Semana 2</option>
+            <option value="3">Semana 3</option><option value="4">Semana 4</option>
           </select>
         </div>
       </div>
@@ -3534,6 +3542,25 @@ function toggleObjetivosConfig() {
   }
 }
 
+let _vistaTablero = "mes"; // "mes" | "semana"
+
+function setVistaTablero(vista) {
+  _vistaTablero = vista;
+  const btnMes = L("tbl-btn-mes");
+  const btnSem = L("tbl-btn-sem");
+  const selSem = L("tbl-semana");
+  if (vista === "mes") {
+    btnMes.style.background = "var(--ink)"; btnMes.style.color = "#fff";
+    btnSem.style.background = "transparent"; btnSem.style.color = "var(--muted)";
+    if (selSem) selSem.style.display = "none";
+  } else {
+    btnSem.style.background = "var(--ink)"; btnSem.style.color = "#fff";
+    btnMes.style.background = "transparent"; btnMes.style.color = "var(--muted)";
+    if (selSem) selSem.style.display = "";
+  }
+  renderTablero();
+}
+
 async function iniciarTablero() {
   // Poner mes/año actual
   const hoy = new Date();
@@ -3547,24 +3574,37 @@ async function renderTablero() {
   if (!contenido) return;
   contenido.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Calculando...</div>';
 
-  const mes  = parseInt(L("tbl-mes")?.value)  || new Date().getMonth()+1;
-  const anio = parseInt(L("tbl-anio")?.value) || new Date().getFullYear();
+  const mes   = parseInt(L("tbl-mes")?.value)   || new Date().getMonth()+1;
+  const anio  = parseInt(L("tbl-anio")?.value)  || new Date().getFullYear();
+  const semana = parseInt(L("tbl-semana")?.value) || 1;
   const metas = getMetas();
+  const esSemana = _vistaTablero === "semana";
 
-  // Cargar ventas si no las tenemos
+  // Cargar ventas
   const res = await api("getVentas");
   if (!res.ok) { contenido.innerHTML = '<div style="padding:20px;color:var(--danger)">Error cargando ventas</div>'; return; }
 
   const MESES = ["","Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
-  // Filtrar ventas del mes/año seleccionado (excluir mermas y regalos)
+  // Filtrar ventas del mes/año (y semana si aplica)
   const ventas = res.ventas.filter(v => {
     if (!v.fecha) return false;
     const f = new Date(v.fecha);
     if (f.getMonth()+1 !== mes || f.getFullYear() !== anio) return false;
     if (v.canal === "Merma" || v.canal === "Cortesía") return false;
+    if (esSemana) {
+      // Semana 1 = días 1-7, Semana 2 = días 8-14, etc.
+      const dia = f.getDate();
+      const semanaVenta = Math.min(4, Math.ceil(dia / 7));
+      if (semanaVenta !== semana) return false;
+    }
     return true;
   });
+
+  // Meta ajustada: mensual ÷ 4.2 si vista semanal
+  const factorMeta = esSemana ? (1/4.2) : 1;
+  const metasCuajiEfectiva   = metas.cuaji   * factorMeta;
+  const metasPolancoEfectiva = metas.polanco * factorMeta;
 
   // Calcular equivalentes por sucursal
   function calcEquiv(ventasSuc) {
@@ -3586,7 +3626,8 @@ async function renderTablero() {
   const resCuaji   = calcEquiv(vCuaji);
   const resPolanco = calcEquiv(vPolanco);
   const totalEquiv = resCuaji.total + resPolanco.total;
-  const metaTotal  = metas.cuaji + metas.polanco;
+  const metaTotal  = metasCuajiEfectiva + metasPolancoEfectiva;
+  const periodoLabel = esSemana ? `Semana ${semana} · ${MESES[mes]} ${anio}` : `${MESES[mes]} ${anio}`;
 
   function barraHTML(pct, color) {
     const w = Math.min(100, pct);
@@ -3642,7 +3683,7 @@ async function renderTablero() {
   const pctTotal = metaTotal > 0 ? (totalEquiv / metaTotal * 100) : 0;
   const totalHTML = `
     <div style="background:var(--ink);border-radius:16px;padding:20px;margin-bottom:12px;color:#fff">
-      <div style="font-size:13px;opacity:.7;margin-bottom:4px;font-weight:600;letter-spacing:.05em;text-transform:uppercase">Total empresa · ${MESES[mes]} ${anio}</div>
+      <div style="font-size:13px;opacity:.7;margin-bottom:4px;font-weight:600;letter-spacing:.05em;text-transform:uppercase">Total empresa · ${periodoLabel}</div>
       <div style="display:flex;align-items:baseline;gap:8px">
         <div style="font-size:52px;font-weight:800;font-family:'Fraunces',serif">${totalEquiv.toFixed(1)}</div>
         <div style="font-size:20px;opacity:.6">/ ${metaTotal}</div>
@@ -3656,8 +3697,8 @@ async function renderTablero() {
     </div>`;
 
   contenido.innerHTML = totalHTML +
-    tarjetaSucursal("Cuajimalpa", resCuaji,   metas.cuaji,   "#86BDAD") +
-    tarjetaSucursal("Polanco",    resPolanco, metas.polanco, "#86BDAD");
+    tarjetaSucursal("Cuajimalpa", resCuaji,   metasCuajiEfectiva,   "#86BDAD") +
+    tarjetaSucursal("Polanco",    resPolanco, metasPolancoEfectiva, "#86BDAD");
 }
 
 L("btn-logout").addEventListener("click",()=>{
