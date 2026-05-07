@@ -885,6 +885,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         </div>
       </div>
 
+      <!-- PUNTO DE EQUILIBRIO -->
+      <div id="util-pe-widget" style="display:none;margin-bottom:12px"></div>
+
       <!-- RESUMEN DEL PERÍODO -->
       <div id="util-resumen-periodo" style="display:none">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
@@ -3301,6 +3304,100 @@ function limpiarFiltrosUtil(){
   renderUtilidades();
 }
 
+
+// ================================================================
+// PUNTO DE EQUILIBRIO
+// ================================================================
+// Utilidad promedio por tarta mediana pagada con tarjeta:
+// $390 × (1-0.06) - $178.35 = $188.25
+const PE_UTIL_POR_TARTA = 188.25;
+const PE_COMISION_TARJETA = 0.06;
+
+function calcGastosFijos(sucursalFiltro) {
+  // Lee gastos del estado S.gastos (cargados en la pestaña Costos)
+  // Si no están cargados, usa los valores conocidos
+  const gastos = S.gastos || [];
+  if (!gastos.length) {
+    // Fallback con valores hardcodeados del Sheet
+    if (!sucursalFiltro || sucursalFiltro === "") return 307480;
+    if (sucursalFiltro === "Cuajimalpa") return 125930;
+    if (sucursalFiltro === "Polanco")    return 181550;
+    return 307480;
+  }
+  let total = 0;
+  for (const g of gastos) {
+    if (!g.activo) continue;
+    const mens = montoMensual(g);
+    if (g.sucursal === "Ambas") {
+      if (!sucursalFiltro || sucursalFiltro === "") total += mens;
+      else total += mens * 0.5; // 50% por sucursal
+    } else if (!sucursalFiltro || sucursalFiltro === "" || g.sucursal === sucursalFiltro) {
+      total += mens;
+    }
+  }
+  return total;
+}
+
+function renderPE(utilidadAcumulada, sucursalFiltro) {
+  const widget = L("util-pe-widget");
+  if (!widget) return;
+  if (utilidadAcumulada === null || utilidadAcumulada === undefined) {
+    widget.style.display = "none"; return;
+  }
+
+  const gastosFijos = calcGastosFijos(sucursalFiltro);
+  // Para vista semanal, dividir gastos entre 4.2
+  const desde = L("f-desde")?.value;
+  const hasta  = L("f-hasta")?.value;
+  let esSemana = false;
+  if (desde && hasta) {
+    const dias = (new Date(hasta) - new Date(desde)) / (1000*60*60*24);
+    esSemana = dias <= 8;
+  }
+  const gastosPeriodo = esSemana ? gastosFijos / 4.2 : gastosFijos;
+  const metaUtil = gastosPeriodo;
+
+  const pct = metaUtil > 0 ? Math.min(100, (utilidadAcumulada / metaUtil) * 100) : 0;
+  const faltaUtil = Math.max(0, metaUtil - utilidadAcumulada);
+  const tartasFaltan = Math.ceil(faltaUtil / PE_UTIL_POR_TARTA);
+  const alcanzado = utilidadAcumulada >= metaUtil;
+
+  const color = pct >= 100 ? "#2E5C4A" : pct >= 70 ? "#86BDAD" : pct >= 40 ? "#F39C12" : "#E74C3C";
+  const periodoLabel = esSemana ? "semana" : "mes";
+  const sucLabel = sucursalFiltro || "Total empresa";
+
+  widget.style.display = "block";
+  widget.innerHTML = `
+    <div style="background:${alcanzado?'#2E5C4A':'var(--ink)'};border-radius:16px;padding:20px;color:#fff">
+      <div style="font-size:11px;opacity:.7;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">
+        🎯 Punto de equilibrio · ${sucLabel} · ${periodoLabel}
+      </div>
+      <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:2px">
+        <div style="font-size:42px;font-weight:800;font-family:'Fraunces',serif">${fmtMXN(utilidadAcumulada)}</div>
+        <div style="font-size:16px;opacity:.5">/ ${fmtMXN(metaUtil)}</div>
+      </div>
+      <div style="font-size:12px;opacity:.6;margin-bottom:8px">
+        utilidad generada vs gastos fijos del ${periodoLabel}
+      </div>
+      <div style="background:rgba(255,255,255,.15);border-radius:100px;height:14px;overflow:hidden;margin-bottom:10px">
+        <div style="width:${pct.toFixed(1)}%;height:14px;background:${alcanzado?'#86BDAD':'#fff'};border-radius:100px;transition:.8s ease;position:relative">
+          ${pct > 15 ? `<span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10px;font-weight:700;color:${alcanzado?'#2E5C4A':'var(--ink)'}">${pct.toFixed(0)}%</span>` : ""}
+        </div>
+      </div>
+      ${alcanzado
+        ? `<div style="font-size:14px;font-weight:700">✅ ¡Punto de equilibrio alcanzado! Excedente: ${fmtMXN(utilidadAcumulada - metaUtil)}</div>`
+        : `<div style="font-size:13px;opacity:.85">
+            Faltan <strong style="font-size:18px">${fmtMXN(faltaUtil)}</strong> de utilidad
+            &nbsp;·&nbsp; ≈ <strong style="font-size:18px">${tartasFaltan}</strong> tartas medianas con tarjeta
+           </div>`
+      }
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.2);font-size:11px;opacity:.6">
+        Gastos fijos ${periodoLabel}: ${fmtMXN(gastosFijos)}${esSemana?' ÷ 4.2':''} = ${fmtMXN(metaUtil)}
+        &nbsp;·&nbsp; Utilidad ref. por tarta: $${PE_UTIL_POR_TARTA} (mediana, tarjeta 6%)
+      </div>
+    </div>`;
+}
+
 function renderUtilidades(){
   if(!utilState.listo){ L("util-ops-list").innerHTML=`<div class="loading"><div class="spinner"></div></div>`; return; }
 
@@ -3384,6 +3481,10 @@ function renderUtilidades(){
   L("up-costos").textContent    = fmtMXN(totalCostos);
   L("up-utilidad").textContent  = fmtMXN(totalUtilidad);
   L("up-utilidad").style.color  = totalUtilidad >= 0 ? "var(--success)" : "var(--danger)";
+
+  // Punto de equilibrio
+  const fSucursal = L("f-sucursal")?.value || "";
+  renderPE(totalUtilidad, fSucursal);
   L("up-margen").textContent    = totalMargen.toFixed(1) + "%";
   L("up-margen").style.color    = totalMargen >= 30 ? "var(--success)" : totalMargen >= 0 ? "var(--warning)" : "var(--danger)";
 
