@@ -3952,10 +3952,11 @@ async function renderTablero() {
     return total;
   }
 
-  const vTodasSel = esSemana ? ventasSemSel : ventasMes;
-  const peTotal   = peWidget(vTodasSel, "Total empresa", gastosParaSuc(""));
-  const peCuaji   = peWidget(esSemana ? vCsel.filter(v=>v.sucursal==="Cuajimalpa") : ventasMes.filter(v=>v.sucursal==="Cuajimalpa"), "Cuajimalpa", gastosParaSuc("Cuajimalpa"));
-  const pePol     = peWidget(esSemana ? vPsel.filter(v=>v.sucursal==="Polanco")    : ventasMes.filter(v=>v.sucursal==="Polanco"),    "Polanco",    gastosParaSuc("Polanco"));
+  // Ventas del período para PE (semana seleccionada o mes completo)
+  const ventasPeriodoPE = esSemana ? ventasSemSel : ventasMes;
+  const peTotal = peWidget(ventasPeriodoPE, "Total empresa", gastosParaSuc(""));
+  const peCuaji = peWidget(ventasPeriodoPE.filter(v=>v.sucursal==="Cuajimalpa"), "Cuajimalpa", gastosParaSuc("Cuajimalpa"));
+  const pePol   = peWidget(ventasPeriodoPE.filter(v=>v.sucursal==="Polanco"),    "Polanco",    gastosParaSuc("Polanco"));
 
   if (!esSemana) {
     // Vista mensual
