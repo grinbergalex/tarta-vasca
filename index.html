@@ -3340,11 +3340,12 @@ function renderUtilidades(){
   function getCostoReceta(sabor, tamano){
     const rec = utilState.recetas.find(r => r.sabor === sabor && r.tamano === tamano);
     if(!rec || !rec.ingredientes.length) return null;
-    return rec.ingredientes.reduce((s, ing) => {
+    const costoBase = rec.ingredientes.reduce((s, ing) => {
       const ins = insumosIdx[ing.insumoId];
       const cantConv = ins ? convertirUnidad(ing.cantidad, ing.unidad||ins.buyUnit, ins.buyUnit) : ing.cantidad;
       return s + (ins ? ins.costoPorUnidad * cantConv : 0);
     }, 0);
+    return costoBase * FACTOR_MERMA; // +5% merma operacional
   }
 
   // Filtrar ventas individuales
