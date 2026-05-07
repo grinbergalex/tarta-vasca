@@ -286,7 +286,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <div class="nav-tab owner-only" data-tab="precios">Precios</div>
     <div class="nav-tab owner-only" data-tab="costos">Costos</div>
     <div class="nav-tab owner-only" data-tab="utilidades">Utilidad por ventas</div>
-    <div class="nav-tab owner-only" data-tab="objetivos">Objetivos</div>
+    <div class="nav-tab owner-only" data-tab="objetivos">Tablero</div>
     <div class="nav-tab owner-only" data-tab="alertas">Alertas</div>
     <div class="nav-tab owner-only" data-tab="usuarios">Usuarios</div>
     <div class="nav-tab owner-only" data-tab="auditoria">Auditoría</div>
@@ -921,119 +921,55 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <!-- OBJETIVOS -->
     <div id="tab-objetivos" class="tab-pane" style="display:none">
 
-      <!-- RESUMEN MES ACTUAL -->
-      <div id="obj-resumen" style="display:none;margin-bottom:12px">
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:4px">
-          <div class="summary-card">
-            <div class="summary-num" id="obj-total-meta" style="font-size:26px;color:var(--ink)">—</div>
-            <div class="summary-label">Meta del mes</div>
-          </div>
-          <div class="summary-card">
-            <div class="summary-num" id="obj-total-real" style="font-size:26px">0</div>
-            <div class="summary-label">Vendidas</div>
-          </div>
-          <div class="summary-card">
-            <div class="summary-num" id="obj-total-pct" style="font-size:26px">0%</div>
-            <div class="summary-label">Cumplimiento</div>
-          </div>
+      <!-- SELECTOR DE MES/AÑO -->
+      <div class="card" style="padding:14px 16px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <div style="font-weight:700;font-size:15px;flex:1">📊 Tablero de control</div>
+          <select class="mini-select" id="tbl-mes" onchange="renderTablero()" style="width:130px">
+            <option value="1">Enero</option><option value="2">Febrero</option>
+            <option value="3">Marzo</option><option value="4">Abril</option>
+            <option value="5" selected>Mayo</option><option value="6">Junio</option>
+            <option value="7">Julio</option><option value="8">Agosto</option>
+            <option value="9">Septiembre</option><option value="10">Octubre</option>
+            <option value="11">Noviembre</option><option value="12">Diciembre</option>
+          </select>
+          <select class="mini-select" id="tbl-anio" onchange="renderTablero()" style="width:90px">
+            <option value="2025">2025</option>
+            <option value="2026" selected>2026</option>
+            <option value="2027">2027</option>
+          </select>
         </div>
-        <div style="background:var(--border);border-radius:8px;height:12px;overflow:hidden;margin-bottom:16px">
-          <div id="obj-barra-global" style="background:var(--accent);height:12px;width:0%;border-radius:8px;transition:.6s ease"></div>
+      </div>
+
+      <!-- OBJETIVOS CONFIG (colapsable) -->
+      <div class="card" style="margin-bottom:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleObjetivosConfig()">
+          <div style="font-weight:600;font-size:13px;color:var(--muted)">🎯 Definir objetivos</div>
+          <span id="tbl-config-arrow" style="color:var(--muted);font-size:18px">▼</span>
+        </div>
+        <div id="tbl-config-body" style="display:none;margin-top:14px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+            <div>
+              <label class="form-label">Meta Cuajimalpa (medianas equiv.)</label>
+              <input class="mini-input" id="tbl-meta-cuaji" type="number" placeholder="1000" style="width:100%">
+            </div>
+            <div>
+              <label class="form-label">Meta Polanco (medianas equiv.)</label>
+              <input class="mini-input" id="tbl-meta-polanco" type="number" placeholder="1000" style="width:100%">
+            </div>
+          </div>
+          <button onclick="guardarMetasTablero()" style="background:var(--accent);border:none;color:#fff;padding:10px 20px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;width:100%">GUARDAR METAS</button>
         </div>
       </div>
 
-      <!-- TARJETAS -->
-      <div id="obj-lista"></div>
-
-      <!-- BOTÓN NUEVO -->
-      <button onclick="mostrarFormObjetivo()" id="btn-nuevo-obj"
-        style="width:100%;padding:14px;border:2px dashed var(--border);border-radius:14px;background:none;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--muted);cursor:pointer;margin-bottom:4px">
-        + Nuevo objetivo
-      </button>
-
-      <!-- FORM — oculto por defecto -->
-      <div id="obj-form-card" class="card" style="display:none;margin-top:8px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-          <div class="card-title" id="obj-form-title" style="margin-bottom:0">Nuevo objetivo</div>
-          <button onclick="cancelarObjetivo()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">✕</button>
-        </div>
-        <input type="hidden" id="obj-id">
-
-        <!-- ENCABEZADO: nombre, sucursal, mes, año -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
-          <div style="grid-column:1/-1">
-            <label class="form-label">Nombre del objetivo *</label>
-            <input class="mini-input" id="obj-nombre" placeholder="Ej: Meta mayo red completa" style="width:100%">
-          </div>
-          <div>
-            <label class="form-label">Sucursal</label>
-            <select class="mini-select" id="obj-sucursal" style="width:100%">
-              <option value="Ambas">Ambas sucursales</option>
-              <option value="Cuajimalpa">Cuajimalpa</option>
-              <option value="Polanco">Polanco</option>
-            </select>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-            <div>
-              <label class="form-label">Mes</label>
-              <select class="mini-select" id="obj-mes" style="width:100%">
-                <option value="1">Enero</option><option value="2">Febrero</option>
-                <option value="3">Marzo</option><option value="4">Abril</option>
-                <option value="5">Mayo</option><option value="6">Junio</option>
-                <option value="7">Julio</option><option value="8">Agosto</option>
-                <option value="9">Septiembre</option><option value="10">Octubre</option>
-                <option value="11">Noviembre</option><option value="12">Diciembre</option>
-              </select>
-            </div>
-            <div>
-              <label class="form-label">Año</label>
-              <input class="mini-input" id="obj-anio" type="number" style="width:100%">
-            </div>
-          </div>
-        </div>
-
-        <!-- META TOTAL -->
-        <div style="background:var(--warm);border-radius:12px;padding:14px;margin-bottom:14px">
-          <div style="font-weight:600;font-size:13px;margin-bottom:6px">🎯 Meta total de unidades</div>
-          <div style="display:flex;align-items:center;gap:10px">
-            <input class="mini-input" id="obj-meta-total" type="number" placeholder="ej. 200"
-              style="width:100px" oninput="actualizarAvisoMeta()">
-            <span style="font-size:12px;color:var(--muted)">piezas en el mes</span>
-          </div>
-          <div id="obj-aviso-meta" style="display:none;margin-top:8px;font-size:12px;padding:6px 10px;border-radius:8px"></div>
-        </div>
-
-        <!-- DESGLOSE POR PRODUCTO -->
-        <div style="margin-bottom:10px">
-          <div style="font-weight:600;font-size:13px;margin-bottom:8px">📦 Desglose por producto <span style="font-weight:400;color:var(--muted)">(opcional)</span></div>
-          <div id="obj-lineas-list" style="margin-bottom:10px"></div>
-
-          <!-- Fila para agregar línea -->
-          <div style="display:grid;grid-template-columns:1fr 1fr 80px auto;gap:6px;align-items:end">
-            <div>
-              <label class="form-label">Sabor</label>
-              <select class="mini-select" id="obj-lin-sabor" style="width:100%"></select>
-            </div>
-            <div>
-              <label class="form-label">Tamaño</label>
-              <select class="mini-select" id="obj-lin-tamano" style="width:100%"></select>
-            </div>
-            <div>
-              <label class="form-label">Uds</label>
-              <input class="mini-input" id="obj-lin-uds" type="number" placeholder="50" style="width:100%">
-            </div>
-            <button class="btn-outline" onclick="agregarLineaObjetivo()"
-              style="padding:9px 12px;white-space:nowrap;margin-bottom:0">+ Añadir</button>
-          </div>
-        </div>
-
-        <div style="display:flex;gap:8px;margin-top:4px">
-          <button class="btn-main btn-green" onclick="guardarObjetivo()" id="btn-guardar-obj">GUARDAR OBJETIVO</button>
-        </div>
+      <!-- TABLERO PRINCIPAL -->
+      <div id="tbl-contenido">
+        <div style="text-align:center;padding:40px;color:var(--muted)">Cargando...</div>
       </div>
+
     </div>
 
-    <!-- TRANSFERENCIAS -->
+    <!-- TRANSFERENCIAS -->    <!-- TRANSFERENCIAS -->
     <div id="tab-transferencias" class="tab-pane" style="display:none">
       <div class="card">
         <div class="card-title">Transferencias a Polanco</div>
@@ -1346,7 +1282,7 @@ function setupNav() {
       else if(t==="costos") { if(!S.insumos.length) cargarCostos(); else renderCostos(); }
       else if(t==="utilidades") cargarUtilidades();
       else if(t==="precios") { cargarPrecios(); cargarZonasEnvio(); cargarCanalPrecios(); }
-      else if(t==="objetivos") cargarObjetivos();
+      else if(t==="objetivos") iniciarTablero();
       else if(t==="transferencias") cargarTransferencias();
       else if(t==="alertas") cargarAlertas();
     });
@@ -3556,6 +3492,172 @@ async function cargarCanalPreciosAlInicio(){
 async function cargarRecetasAlInicio(){
   const res = await api("getRecetas");
   if(res.ok) S.recetas = res.recetas || [];
+}
+
+
+// ================================================================
+// TABLERO DE CONTROL
+// ================================================================
+
+// Factores de equivalencia
+const EQUIV = { "Individual": 0.5, "Mediana": 1, "Mediano": 1, "Grande": 2 };
+
+// Metas guardadas localmente (persisten en S)
+function getMetas() {
+  const mes  = parseInt(L("tbl-mes")?.value)  || new Date().getMonth()+1;
+  const anio = parseInt(L("tbl-anio")?.value) || new Date().getFullYear();
+  const key  = `metas_${mes}_${anio}`;
+  return S[key] || { cuaji: 1000, polanco: 1000 };
+}
+
+function guardarMetasTablero() {
+  const mes   = parseInt(L("tbl-mes")?.value)  || new Date().getMonth()+1;
+  const anio  = parseInt(L("tbl-anio")?.value) || new Date().getFullYear();
+  const key   = `metas_${mes}_${anio}`;
+  const cuaji   = parseFloat(L("tbl-meta-cuaji")?.value)   || 1000;
+  const polanco = parseFloat(L("tbl-meta-polanco")?.value) || 1000;
+  S[key] = { cuaji, polanco };
+  toast("✅ Metas guardadas");
+  renderTablero();
+}
+
+function toggleObjetivosConfig() {
+  const body  = L("tbl-config-body");
+  const arrow = L("tbl-config-arrow");
+  const open  = body.style.display === "block";
+  body.style.display  = open ? "none" : "block";
+  arrow.textContent   = open ? "▼" : "▲";
+  if (!open) {
+    const metas = getMetas();
+    if (L("tbl-meta-cuaji"))   L("tbl-meta-cuaji").value   = metas.cuaji;
+    if (L("tbl-meta-polanco")) L("tbl-meta-polanco").value = metas.polanco;
+  }
+}
+
+async function iniciarTablero() {
+  // Poner mes/año actual
+  const hoy = new Date();
+  if (L("tbl-mes"))  L("tbl-mes").value  = String(hoy.getMonth()+1);
+  if (L("tbl-anio")) L("tbl-anio").value = String(hoy.getFullYear());
+  await renderTablero();
+}
+
+async function renderTablero() {
+  const contenido = L("tbl-contenido");
+  if (!contenido) return;
+  contenido.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Calculando...</div>';
+
+  const mes  = parseInt(L("tbl-mes")?.value)  || new Date().getMonth()+1;
+  const anio = parseInt(L("tbl-anio")?.value) || new Date().getFullYear();
+  const metas = getMetas();
+
+  // Cargar ventas si no las tenemos
+  const res = await api("getVentas");
+  if (!res.ok) { contenido.innerHTML = '<div style="padding:20px;color:var(--danger)">Error cargando ventas</div>'; return; }
+
+  const MESES = ["","Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+
+  // Filtrar ventas del mes/año seleccionado (excluir mermas y regalos)
+  const ventas = res.ventas.filter(v => {
+    if (!v.fecha) return false;
+    const f = new Date(v.fecha);
+    if (f.getMonth()+1 !== mes || f.getFullYear() !== anio) return false;
+    if (v.canal === "Merma" || v.canal === "Cortesía") return false;
+    return true;
+  });
+
+  // Calcular equivalentes por sucursal
+  function calcEquiv(ventasSuc) {
+    let total = 0;
+    const desglose = {};
+    for (const v of ventasSuc) {
+      const factor = EQUIV[v.tamano] ?? 1;
+      total += v.cantidad * factor;
+      const key = v.tamano;
+      if (!desglose[key]) desglose[key] = { cantidad: 0, equiv: 0 };
+      desglose[key].cantidad += v.cantidad;
+      desglose[key].equiv    += v.cantidad * factor;
+    }
+    return { total, desglose };
+  }
+
+  const vCuaji   = ventas.filter(v => v.sucursal === "Cuajimalpa");
+  const vPolanco = ventas.filter(v => v.sucursal === "Polanco");
+  const resCuaji   = calcEquiv(vCuaji);
+  const resPolanco = calcEquiv(vPolanco);
+  const totalEquiv = resCuaji.total + resPolanco.total;
+  const metaTotal  = metas.cuaji + metas.polanco;
+
+  function barraHTML(pct, color) {
+    const w = Math.min(100, pct);
+    const bg = pct >= 100 ? "#2E5C4A" : pct >= 70 ? "#86BDAD" : pct >= 40 ? "#F39C12" : "#E74C3C";
+    return `<div style="background:rgba(0,0,0,.08);border-radius:100px;height:14px;overflow:hidden;margin:8px 0">
+      <div style="width:${w}%;height:14px;background:${bg};border-radius:100px;transition:.8s ease;position:relative">
+        ${w > 15 ? `<span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10px;font-weight:700;color:#fff">${pct.toFixed(0)}%</span>` : ""}
+      </div>
+    </div>`;
+  }
+
+  function tamanosHTML(desglose) {
+    const orden = ["Individual","Mediana","Mediano","Grande"];
+    const filas = orden.filter(t => desglose[t]?.cantidad > 0).map(t => {
+      const d = desglose[t];
+      const factor = EQUIV[t] ?? 1;
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(0,0,0,.05)">
+        <div style="font-size:13px;color:var(--muted)">${t} <span style="font-size:11px">(×${factor})</span></div>
+        <div style="display:flex;gap:16px;align-items:center">
+          <span style="font-size:13px;color:var(--ink)">${d.cantidad} pzas</span>
+          <span style="font-size:14px;font-weight:700;color:var(--accent);min-width:50px;text-align:right">= ${d.equiv.toFixed(1)}</span>
+        </div>
+      </div>`;
+    }).join("");
+    return filas || '<div style="font-size:13px;color:var(--muted);padding:8px 0">Sin ventas registradas</div>';
+  }
+
+  function tarjetaSucursal(nombre, resultado, meta, color) {
+    const pct = meta > 0 ? (resultado.total / meta * 100) : 0;
+    const faltante = Math.max(0, meta - resultado.total);
+    const estado = pct >= 100 ? "✅ Meta alcanzada" : pct >= 70 ? "🟡 Buen ritmo" : pct >= 40 ? "🟠 En progreso" : "🔴 Por debajo";
+    return `
+    <div style="background:var(--card);border-radius:16px;padding:20px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+        <div style="font-weight:700;font-size:16px">${nombre}</div>
+        <div style="font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px;background:rgba(0,0,0,.06)">${estado}</div>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:2px">
+        <div style="font-size:44px;font-weight:800;font-family:'Fraunces',serif;color:${pct>=100?'#2E5C4A':'var(--ink)'}">${resultado.total.toFixed(1)}</div>
+        <div style="font-size:18px;color:var(--muted);margin-bottom:4px">/ ${meta}</div>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:4px">medianas equivalentes</div>
+      ${barraHTML(pct, color)}
+      ${faltante > 0 ? `<div style="font-size:12px;color:var(--muted);margin-top:4px">Faltan <strong>${faltante.toFixed(1)}</strong> medianas equivalentes</div>` : ""}
+      <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:6px;text-transform:uppercase">Desglose por tamaño</div>
+        ${tamanosHTML(resultado.desglose)}
+      </div>
+    </div>`;
+  }
+
+  // Tarjeta total empresa
+  const pctTotal = metaTotal > 0 ? (totalEquiv / metaTotal * 100) : 0;
+  const totalHTML = `
+    <div style="background:var(--ink);border-radius:16px;padding:20px;margin-bottom:12px;color:#fff">
+      <div style="font-size:13px;opacity:.7;margin-bottom:4px;font-weight:600;letter-spacing:.05em;text-transform:uppercase">Total empresa · ${MESES[mes]} ${anio}</div>
+      <div style="display:flex;align-items:baseline;gap:8px">
+        <div style="font-size:52px;font-weight:800;font-family:'Fraunces',serif">${totalEquiv.toFixed(1)}</div>
+        <div style="font-size:20px;opacity:.6">/ ${metaTotal}</div>
+      </div>
+      <div style="font-size:13px;opacity:.7;margin-bottom:8px">medianas equivalentes</div>
+      ${barraHTML(pctTotal, "#86BDAD")}
+      <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:13px;opacity:.8">
+        <span>Cuajimalpa: ${resCuaji.total.toFixed(1)}</span>
+        <span>Polanco: ${resPolanco.total.toFixed(1)}</span>
+      </div>
+    </div>`;
+
+  contenido.innerHTML = totalHTML +
+    tarjetaSucursal("Cuajimalpa", resCuaji,   metas.cuaji,   "#86BDAD") +
+    tarjetaSucursal("Polanco",    resPolanco, metas.polanco, "#86BDAD");
 }
 
 L("btn-logout").addEventListener("click",()=>{
