@@ -1271,6 +1271,7 @@ function iniciarApp() {
   cargarComisionesConfig();
   cargarCanalPreciosAlInicio();
   cargarRecetasAlInicio();
+  cargarGastosAlInicio();
   // Cargar mensajes y refrescar cada 2 minutos
   setTimeout(cargarMensajesHeader, 1500);
   setInterval(cargarMensajesHeader, 120000);
@@ -3597,6 +3598,12 @@ async function cargarCanalPreciosAlInicio(){
   const res = await api("getCanalPrecios");
   if(res.ok) S.canalPrecios = res.reglas || [];
 }
+// Carga silenciosa de gastos al arrancar (necesario para punto de equilibrio en tablero)
+async function cargarGastosAlInicio(){
+  const res = await api("getGastos");
+  if(res.ok) S.gastos = res.gastos || [];
+}
+
 // Carga silenciosa de recetas al arrancar (necesario para preview de costos)
 async function cargarRecetasAlInicio(){
   const res = await api("getRecetas");
