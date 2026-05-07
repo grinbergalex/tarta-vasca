@@ -107,6 +107,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 .hist-productos{font-size:13px;margin:3px 0}
 .hist-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
 .tag{font-size:10px;padding:2px 8px;border-radius:8px;background:var(--warm);color:var(--muted)}
+.tag-merma{background:rgba(192,57,43,.1);color:#c0392b;font-weight:600}
 .tag-total{background:#e8f5e9;color:var(--success)}
 .cat-item{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--warm)}
 .cat-item:last-child{border-bottom:none}
@@ -1264,8 +1265,37 @@ function toast(msg, tipo="success") {
   setTimeout(()=>el.classList.remove("show"), 3200);
 }
 
+// Convierte cantidad de receta a la misma unidad de compra del insumo
+// Ej: receta usa 250 g, insumo comprado en kg → convierte 250 g a 0.25 kg
+function convertirUnidad(cantidad, unidadReceta, unidadInsumo) {
+  const ur = (unidadReceta || "").toLowerCase().trim();
+  const ui = (unidadInsumo  || "").toLowerCase().trim();
+  if (ur === ui) return cantidad;
+  // Peso
+  if (ur === "g"   && ui === "kg")  return cantidad / 1000;
+  if (ur === "kg"  && ui === "g")   return cantidad * 1000;
+  if (ur === "g"   && ui === "mg")  return cantidad * 1000;
+  if (ur === "mg"  && ui === "g")   return cantidad / 1000;
+  // Volumen
+  if (ur === "ml"  && ui === "l")   return cantidad / 1000;
+  if (ur === "l"   && ui === "ml")  return cantidad * 1000;
+  if (ur === "ml"  && ui === "lt")  return cantidad / 1000;
+  if (ur === "lt"  && ui === "ml")  return cantidad * 1000;
+  // Densidad 1: g ≈ ml (yogurt, crema, etc.)
+  if (ur === "g"   && (ui === "l" || ui === "lt"))  return cantidad / 1000;
+  if ((ur === "l" || ur === "lt") && ui === "g")    return cantidad * 1000;
+  if (ur === "ml"  && ui === "g")   return cantidad;
+  if (ur === "g"   && ui === "ml")  return cantidad;
+  // kg ↔ L (densidad 1)
+  if (ur === "kg"  && (ui === "l" || ui === "lt"))  return cantidad;
+  if ((ur === "l" || ur === "lt") && ui === "kg")   return cantidad;
+  // Sin conversión conocida: devolver tal cual
+  return cantidad;
+}
+
+
 function fmtMXN(n) {
-  return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+  return '$'+Number(n||0).toLocaleString('es-MX',{minimumFractionDigits:0,maximumFractionDigits:0});
 }
 
 // LOGIN
@@ -1308,7 +1338,6 @@ function setupNav() {
       L("tab-"+tab.dataset.tab).style.display="block";
       const t=tab.dataset.tab;
       if(t==="stock") cargarStock();
-      else if(t==="precios") cargarPrecios();
       else if(t==="usuarios") cargarUsuarios();
       else if(t==="auditoria") cargarAuditoria();
       else if(t==="catalogo") cargarCatalogoPantalla();
@@ -1341,10 +1370,19 @@ function poblarSelectsVenta() {
   const can=(S.catalogo.canales||[]).filter(c=>c.activo).map(c=>c.nombre);
   const canFinal=can.length>0?can.filter(c=>c!=="Uber Eats"):["Tienda","Domicilio","Rappi"];
 
-  // Sucursal
-  llenar("venta-sucursal",suc);
+  // Sucursal — solo pre-seleccionar en la primera carga, no sobreescribir si ya eligió
   const selSuc = L("venta-sucursal");
-  if(selSuc && S.sucursal && suc.includes(S.sucursal)) selSuc.value = S.sucursal;
+  const sucActual = selSuc?.value;
+  llenar("venta-sucursal", suc);
+  if(selSuc){
+    // Si ya tenía una sucursal válida seleccionada, mantenerla
+    if(sucActual && suc.includes(sucActual)){
+      selSuc.value = sucActual;
+    } else if(S.sucursal && suc.includes(S.sucursal)){
+      // Primera carga: usar la sucursal del usuario
+      selSuc.value = S.sucursal;
+    }
+  }
 
   // Canal y método
   llenar("venta-canal",canFinal);
@@ -1581,7 +1619,7 @@ function onItemTamanoChange(){
 
 // Cuando cambia sucursal → recalcular todo
 L("venta-sucursal")?.addEventListener("change",()=>{
-  poblarSelectsVenta();
+  // Solo actualizar la cascada de productos, no repoblar todo (evita reset de sucursal)
   actualizarSelectoresCascada();
 });
 
@@ -1660,8 +1698,8 @@ function actualizarPrecioPreview(){
     else precioFinal = Math.max(0, precioBase - descVal);
   }
   const preview = descVal > 0
-    ? `<span style="text-decoration:line-through;color:var(--muted)">$${precioBase.toLocaleString('en-US')}</span> → <strong style="color:var(--accent)">$${precioFinal.toLocaleString('en-US')}</strong>`
-    : `<span style="color:var(--muted)">$${precioBase.toLocaleString('en-US')}</span>`;
+    ? `<span style="text-decoration:line-through;color:var(--muted)">$${precioBase.toLocaleString('es-MX')}</span> → <strong style="color:var(--accent)">$${precioFinal.toLocaleString('es-MX')}</strong>`
+    : `<span style="color:var(--muted)">$${precioBase.toLocaleString('es-MX')}</span>`;
   L("item-precio-preview").innerHTML = preview + ` × ${cantidad}`;
 }
 
@@ -1749,13 +1787,13 @@ function renderCarrito(){
         <div class="carrito-nombre">${item.sabor} ${item.tamano}</div>
         <div class="carrito-sub">
           ${item.cantidad} × 
-          ${tieneDesc?`<span style="text-decoration:line-through;color:var(--muted)">$${item.precioBase.toLocaleString('en-US')}</span> `:""}
-          $${item.precio.toLocaleString('en-US')}
+          ${tieneDesc?`<span style="text-decoration:line-through;color:var(--muted)">$${item.precioBase.toLocaleString('es-MX')}</span> `:""}
+          $${item.precio.toLocaleString('es-MX')}
           ${tieneDesc?`<span style="color:var(--success);font-size:11px"> ${descLabel}</span>`:""}
           ${tipoOp!=="venta"?`<span style="color:var(--muted);font-size:11px"> (${tipoOp})</span>`:""}
         </div>
       </div>
-      <span class="carrito-precio">${tipoOp==="venta"?"$"+item.subtotal.toLocaleString('en-US'):"$0"}</span>
+      <span class="carrito-precio">${tipoOp==="venta"?"$"+item.subtotal.toLocaleString('es-MX'):"$0"}</span>
       <button class="btn-remove" onclick="quitarItem(${i})">×</button>
     </div>`;
   }).join("");
@@ -1770,15 +1808,15 @@ function renderCarrito(){
   const comPct = tipoOp==="venta" ? getComision(canal,metodo) : 0;
   const comMonto = Math.round(totalConEnvio * comPct);
   const ingresoNeto = totalConEnvio + comMonto; // comPct es negativo
-  L("total-num").textContent = tipoOp==="venta" ? "$"+totalConEnvio.toLocaleString('en-US') : "$0";
+  L("total-num").textContent = tipoOp==="venta" ? "$"+totalConEnvio.toLocaleString('es-MX') : "$0";
   L("carrito-total-bar").style.display="flex";
   const descTotalLabel=L("descuento-total-label");
   if(hayDesc){
     descTotalLabel.style.display="block";
-    descTotalLabel.textContent=`Ahorro cliente: $${(totalOriginal-total).toLocaleString('en-US')}`;
+    descTotalLabel.textContent=`Ahorro cliente: $${(totalOriginal-total).toLocaleString('es-MX')}`;
   } else { descTotalLabel.style.display="none"; }
   const envioLabel = L("envio-total-label");
-  if(costoEnvio>0&&tipoOp==="venta"){ envioLabel.style.display="block"; envioLabel.textContent=`Envío: $${costoEnvio.toLocaleString('en-US')} incluido`; }
+  if(costoEnvio>0&&tipoOp==="venta"){ envioLabel.style.display="block"; envioLabel.textContent=`Envío: $${costoEnvio.toLocaleString('es-MX')} incluido`; }
   else { envioLabel.style.display="none"; }
   // Comisión label
   let comLabel = L("comision-total-label");
@@ -1792,7 +1830,7 @@ function renderCarrito(){
     const pct=Math.abs(comPct*100).toFixed(0);
     const nombre=canal==="Rappi"||canal==="Uber Eats"?canal:metodo;
     comLabel.style.display="block";
-    comLabel.textContent=`${nombre} ${pct}%: -$${Math.abs(comMonto).toLocaleString('en-US')} → Neto: $${ingresoNeto.toLocaleString('en-US')}`;
+    comLabel.textContent=`${nombre} ${pct}%: -$${Math.abs(comMonto).toLocaleString('es-MX')} → Neto: $${ingresoNeto.toLocaleString('es-MX')}`;
   } else { comLabel.style.display="none"; }
 }
 
@@ -1861,7 +1899,7 @@ L("btn-confirmar").addEventListener("click",async()=>{
     const res=await api("registrarVenta",{items,canal,metodoPago:metodo,sucursal,cliente,tipoOp,motivo});
     if(res.ok){
       const total=S.carrito.reduce((s,i)=>s+i.subtotal,0);
-      toast(tipoOp==="regalo"?`✅ Regalo registrado`:`✅ Venta $${total.toLocaleString('en-US')} registrada`);
+      toast(tipoOp==="regalo"?`✅ Regalo registrado`:`✅ Venta $${total.toLocaleString('es-MX')} registrada`);
       limpiarVenta(); cargarStock();
     } else toast(res.error,"error");
   }
@@ -1912,7 +1950,7 @@ async function cargarVentas(){
       <div class="hist-meta">
         <span class="tag">${g.canal}</span><span class="tag">${g.metodoPago}</span><span class="tag">${g.sucursal}</span>
         ${g.clienteNombre?`<span class="tag">${g.clienteNombre}</span>`:""}
-        <span class="tag tag-total">$${g.items.reduce((s,i)=>s+i.subtotal,0).toLocaleString('en-US')}</span>
+        <span class="tag tag-total">$${g.items.reduce((s,i)=>s+i.subtotal,0).toLocaleString('es-MX')}</span>
       </div>
     </div>`).join("");
 }
@@ -1960,7 +1998,7 @@ async function cargarPrecios(silencioso=false){
   L("precios-content").innerHTML=tamanos.map(tamano=>`
     <div class="precio-row">
       <span class="precio-label">${tamano}</span>
-      <span class="precio-val" onclick="abrirModalPrecio('${tamano}',${getP(tamano)})">$${getP(tamano).toLocaleString('en-US')}</span>
+      <span class="precio-val" onclick="abrirModalPrecio('${tamano}',${getP(tamano)})">$${getP(tamano).toLocaleString('es-MX')}</span>
     </div>`).join("");
 }
 async function repararPrecios(){
@@ -1978,7 +2016,7 @@ L("btn-guardar-precio").addEventListener("click",async()=>{
   const sabores=(S.catalogo?.sabores||[]).filter(s=>s.activo).map(s=>s.nombre);
   const promesas=sabores.map(sabor=>api("updatePrecio",{sabor,tamano,precio}));
   const resultados=await Promise.all(promesas);
-  if(resultados.every(r=>r.ok)){toast(`✅ Precio ${tamano} = $${precio.toLocaleString('en-US')}`);L("modal-precio").classList.remove("show");cargarPrecios();}
+  if(resultados.every(r=>r.ok)){toast(`✅ Precio ${tamano} = $${precio.toLocaleString('es-MX')}`);L("modal-precio").classList.remove("show");cargarPrecios();}
   else toast("Error al guardar precio","error");
 });
 
@@ -2121,7 +2159,8 @@ function renderIngredientesReceta(){
   el.innerHTML=S.recetaActual.map((ing,idx)=>{
     const ins=S.insumos.find(i=>i.id===ing.insumoId);
     const costoPorUni=ins?ins.costoPorUnidad:0;
-    const costoLinea=costoPorUni*ing.cantidad;
+    const cantConvertida=ins?convertirUnidad(ing.cantidad,ing.unidad,ins.buyUnit):ing.cantidad;
+    const costoLinea=costoPorUni*cantConvertida;
     return `<div class="receta-row">
       <div><div class="receta-row-nombre">${ing.insumoNombre||"Insumo"}</div></div>
       <div class="receta-row-cant">${ing.cantidad} ${ing.unidad}</div>
@@ -2129,7 +2168,7 @@ function renderIngredientesReceta(){
       <button class="btn-del-small" onclick="quitarIngredienteReceta(${idx})">✕</button>
     </div>`;
   }).join("");
-  const costoTotal=S.recetaActual.reduce((s,ing)=>{const ins=S.insumos.find(i=>i.id===ing.insumoId);return s+(ins?ins.costoPorUnidad*ing.cantidad:0);},0);
+  const costoTotal=S.recetaActual.reduce((s,ing)=>{const ins=S.insumos.find(i=>i.id===ing.insumoId);const cant=ins?convertirUnidad(ing.cantidad,ing.unidad,ins.buyUnit):ing.cantidad;return s+(ins?ins.costoPorUnidad*cant:0);},0);
   el.innerHTML+=`<div class="calc-total-row"><span style="color:var(--muted)">Subtotal ingredientes:&nbsp;<strong style="color:var(--accent);font-size:16px">${fmtMXN(costoTotal)}</strong></span></div>`;
 }
 
@@ -2833,6 +2872,15 @@ async function cargarGastos(){
   renderGastosList();
 }
 
+// Convierte cualquier gasto a su equivalente mensual
+// Semanal × 4.2, Mensual × 1, Por unidad / unidad-dependiente = 0 en fijos
+function montoMensual(g) {
+  if (!g || !g.activo) return 0;
+  if (g.frecuencia === "Semanal")   return g.monto * 4.2;
+  if (g.frecuencia === "Mensual")   return g.monto;
+  return 0; // Variable, Condicional, % sobre venta — no aplica en fijos
+}
+
 function renderGastosList(){
   const gastos = (S.gastos||[]).filter(g=>g.activo);
   if(gastos.length === 0){
@@ -2847,7 +2895,9 @@ function renderGastosList(){
   function etiquetaFrecuencia(g){
     if(g.frecuencia==="% sobre venta") return `${g.monto}%`;
     if(g.frecuencia==="Condicional") return `${fmtMXN(g.monto)} si se cumple`;
-    return fmtMXN(g.monto) + (g.frecuencia==="Mensual"?" /mes":g.frecuencia==="Semanal"?" /sem":g.frecuencia==="Por unidad"?" /pieza":"");
+    if(g.frecuencia==="Por unidad") return `${fmtMXN(g.monto)}/pieza`;
+    // Todo se muestra en equivalente mensual
+    return `${fmtMXN(montoMensual(g))}/mes${g.frecuencia==="Semanal"?` <span style="font-size:11px;color:var(--muted)">(${fmtMXN(g.monto)}/sem)</span>`:""}`;
   }
 
   function renderGrupo(lista, titulo){
@@ -2869,7 +2919,32 @@ function renderGastosList(){
         </div>`).join("")}`;
   }
 
-  L("gastos-list").innerHTML = renderGrupo(fijos,"Gastos fijos") + renderGrupo(variables,"Gastos variables");
+  const totalMensual = gastos.reduce((s,g) => s + montoMensual(g), 0);
+  const totalCuaji = gastos.filter(g=>g.sucursal==="Cuajimalpa"||g.sucursal==="Ambas")
+    .reduce((s,g) => s + (g.sucursal==="Ambas" ? montoMensual(g)*0.5 : montoMensual(g)), 0);
+  const totalPolanco = gastos.filter(g=>g.sucursal==="Polanco"||g.sucursal==="Ambas")
+    .reduce((s,g) => s + (g.sucursal==="Ambas" ? montoMensual(g)*0.5 : montoMensual(g)), 0);
+
+  const resumenHTML = `
+    <div style="margin-top:16px;padding:14px 16px;background:var(--card);border-radius:12px;border:1px solid var(--border)">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:10px;text-transform:uppercase">Resumen mensual</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:140px;text-align:center;padding:10px;background:var(--bg);border-radius:8px">
+          <div style="font-size:18px;font-weight:700;color:var(--accent)">${fmtMXN(totalCuaji)}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">Cuajimalpa</div>
+        </div>
+        <div style="flex:1;min-width:140px;text-align:center;padding:10px;background:var(--bg);border-radius:8px">
+          <div style="font-size:18px;font-weight:700;color:var(--accent)">${fmtMXN(totalPolanco)}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">Polanco</div>
+        </div>
+        <div style="flex:1;min-width:140px;text-align:center;padding:10px;background:var(--ink);border-radius:8px">
+          <div style="font-size:18px;font-weight:700;color:#fff">${fmtMXN(totalMensual)}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:2px">Total empresa</div>
+        </div>
+      </div>
+    </div>`;
+
+  L("gastos-list").innerHTML = renderGrupo(fijos,"Gastos fijos") + renderGrupo(variables,"Gastos variables") + resumenHTML;
 }
 
 function toggleGastoCondicional(){
@@ -2949,7 +3024,7 @@ async function cargarZonasEnvio(){
   if(sel){
     const activas = (S.zonasEnvio||[]).filter(z=>z.activo);
     sel.innerHTML = `<option value="">— Sin costo de envío —</option>` +
-      activas.map(z=>`<option value="${z.id}" data-costo="${z.costo}">${z.nombre} — $${z.costo.toLocaleString('en-US')}</option>`).join("");
+      activas.map(z=>`<option value="${z.id}" data-costo="${z.costo}">${z.nombre} — $${z.costo.toLocaleString('es-MX')}</option>`).join("");
   }
 }
 
@@ -2965,7 +3040,7 @@ function renderZonasList(){
         <div style="font-weight:600;font-size:13px">${z.nombre}</div>
         <div style="font-size:11px;color:var(--muted);margin-top:2px">${z.colonias.slice(0,5).join(", ")}${z.colonias.length>5?" ...":""}</div>
       </div>
-      <div style="font-weight:700;color:var(--accent);margin:0 12px">$${z.costo.toLocaleString('en-US')}</div>
+      <div style="font-weight:700;color:var(--accent);margin:0 12px">$${z.costo.toLocaleString('es-MX')}</div>
       <button class="btn-icon" onclick="eliminarZona('${z.id}')">✕</button>
     </div>`).join("");
 }
@@ -2999,7 +3074,7 @@ function onZonaChange(){
   const aviso = L("envio-costo-aviso");
   if(costo > 0){
     aviso.style.display = "block";
-    aviso.textContent = `🚗 Costo de envío: $${costo.toLocaleString('en-US')} — se sumará al total`;
+    aviso.textContent = `🚗 Costo de envío: $${costo.toLocaleString('es-MX')} — se sumará al total`;
   } else {
     aviso.style.display = "none";
   }
@@ -3143,7 +3218,8 @@ async function renderTablaUtilidades(){
     .map(r => {
       const costo = r.ingredientes.reduce((sum, ing) => {
         const ins = insumosIdx[ing.insumoId];
-        return sum + (ins ? ins.costoPorUnidad * ing.cantidad : 0);
+        const cantConvU = ins ? convertirUnidad(ing.cantidad, ing.unidad||ins.buyUnit, ins.buyUnit) : ing.cantidad;
+        return sum + (ins ? ins.costoPorUnidad * cantConvU : 0);
       }, 0);
       const precio = getPrecio(r.sabor, r.tamano);
       const utilidad = precio > 0 ? precio - costo : null;
@@ -3302,7 +3378,8 @@ function renderUtilidades(){
     if(!rec || !rec.ingredientes.length) return null;
     return rec.ingredientes.reduce((s, ing) => {
       const ins = insumosIdx[ing.insumoId];
-      return s + (ins ? ins.costoPorUnidad * ing.cantidad : 0);
+      const cantConv = ins ? convertirUnidad(ing.cantidad, ing.unidad||ins.buyUnit, ins.buyUnit) : ing.cantidad;
+      return s + (ins ? ins.costoPorUnidad * cantConv : 0);
     }, 0);
   }
 
@@ -3383,13 +3460,13 @@ function renderUtilidades(){
       <div class="op-fecha">${g.fecha ? g.fecha.substring(0,16).replace('T',' ') : ''}</div>
       <div class="op-prods">${g.items.map(i=>`${i.cantidad}× ${i.sabor} ${i.tamano}`).join(' · ')}</div>
       <div class="op-nums">
-        <div class="op-num-card"><div class="op-num-val">${fmtMXN(g.ingreso)}</div><div class="op-num-label">Ingreso neto${g.comMonto<0?` <span style="font-size:10px;color:var(--danger)">-$${Math.abs(g.comMonto).toLocaleString('en-US')}</span>`:''}</div></div>
+        <div class="op-num-card"><div class="op-num-val">${fmtMXN(g.ingreso)}</div><div class="op-num-label">Ingreso neto${g.comMonto<0?` <span style="font-size:10px;color:var(--danger)">-$${Math.abs(g.comMonto).toLocaleString('es-MX')}</span>`:''}</div></div>
         <div class="op-num-card"><div class="op-num-val">${g.calculable ? fmtMXN(g.costo) : '—'}</div><div class="op-num-label">Costo</div></div>
         <div class="op-num-card"><div class="op-num-val ${uCls}">${g.utilidad !== null ? fmtMXN(g.utilidad) : '—'}</div><div class="op-num-label">Utilidad</div></div>
       </div>
       <div class="op-tags">
-        <span class="tag">${g.canal||''}</span>
-        <span class="tag">${g.metodoPago||''}</span>
+        <span class="tag${g.canal==='Merma'?' tag-merma':g.canal==='Cortesía'?' tag-regalo':''}">${g.canal||''}</span>
+        ${g.canal!=='Merma'?`<span class="tag">${g.metodoPago||''}</span>`:''}
         <span class="tag">${g.sucursal||''}</span>
         ${g.clienteNombre ? `<span class="tag">${g.clienteNombre}</span>` : ''}
         ${g.margen !== null
