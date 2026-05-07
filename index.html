@@ -3957,10 +3957,6 @@ async function renderTablero() {
     const metaTotal = metas.cuaji + metas.polanco;
     const pctTotal  = metaTotal > 0 ? (total / metaTotal * 100) : 0;
 
-    const peTotalMes = peWidget(ventasMes, "Total empresa", gastosParaSuc(""), false);
-    const peCuajiMes = peWidget(vC, "Cuajimalpa", gastosParaSuc("Cuajimalpa"), false);
-    const pePolMes   = peWidget(vP, "Polanco",    gastosParaSuc("Polanco"),    false);
-
     contenido.innerHTML = `
       <div style="background:var(--ink);border-radius:16px;padding:20px;margin-bottom:10px;color:#fff">
         <div style="font-size:12px;opacity:.7;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Total empresa · ${MESES_NOMBRE[mes]} ${anio}</div>
@@ -3976,17 +3972,17 @@ async function renderTablero() {
         </div>
       </div>` +
       tarjetaSucursal("Cuajimalpa", rC, metas.cuaji, false) +
-      tarjetaSucursal("Polanco",    rP, metas.polanco, false) +
-      `<div style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin:16px 0 8px">📊 Punto de equilibrio</div>` +
-      peTotalMes + peCuajiMes + pePolMes;
+      tarjetaSucursal("Polanco",    rP, metas.polanco, false);
+
+    // Agregar PE después (evita problemas de scope en template literals)
+    contenido.innerHTML += '<div style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin:16px 0 8px">📊 Punto de equilibrio</div>';
+    contenido.innerHTML += peWidget(ventasMes, "Total empresa", gastosParaSuc(""), false);
+    contenido.innerHTML += peWidget(vC, "Cuajimalpa", gastosParaSuc("Cuajimalpa"), false);
+    contenido.innerHTML += peWidget(vP, "Polanco", gastosParaSuc("Polanco"), false);
     return;
   }
 
   // Vista semanal
-  const peTotalSem = peWidget(ventasSemSel, "Total empresa", gastosParaSuc(""), true);
-  const peCuajiSem = peWidget(vCsel, "Cuajimalpa", gastosParaSuc("Cuajimalpa"), true);
-  const pePolSem   = peWidget(vPsel, "Polanco",    gastosParaSuc("Polanco"),    true);
-
   contenido.innerHTML = graficaHTML +
     `<div style="background:var(--ink);border-radius:16px;padding:18px;margin-bottom:10px;color:#fff">
       <div style="font-size:12px;opacity:.7;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Semana ${semSel} · ${MESES_NOMBRE[mes]} ${anio}</div>
@@ -3998,9 +3994,12 @@ async function renderTablero() {
       ${barraHTML(pctTotalSel)}
     </div>` +
     tarjetaSucursal("Cuajimalpa", rCsel, metaSemCuaji, false) +
-    tarjetaSucursal("Polanco",    rPsel, metaSemPolanco, false) +
-    `<div style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin:16px 0 8px">📊 Punto de equilibrio</div>` +
-    peTotalSem + peCuajiSem + pePolSem;
+    tarjetaSucursal("Polanco",    rPsel, metaSemPolanco, false);
+
+  contenido.innerHTML += '<div style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin:16px 0 8px">📊 Punto de equilibrio</div>';
+  contenido.innerHTML += peWidget(ventasSemSel, "Total empresa", gastosParaSuc(""), true);
+  contenido.innerHTML += peWidget(vCsel, "Cuajimalpa", gastosParaSuc("Cuajimalpa"), true);
+  contenido.innerHTML += peWidget(vPsel, "Polanco", gastosParaSuc("Polanco"), true);
 }
 
 
