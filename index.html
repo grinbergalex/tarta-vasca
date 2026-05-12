@@ -39,7 +39,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 .app-nav::-webkit-scrollbar{display:none}
 .nav-tab{flex-shrink:0;padding:14px 18px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap}
 .nav-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
-.app-content{flex:1;padding:20px 16px 100px}
+.app-content{flex:1;padding:10px 16px 100px}
 .card{background:var(--card);border-radius:16px;padding:20px;margin-bottom:12px;box-shadow:var(--shadow);border:1px solid var(--border)}
 .card-title{font-family:'Fraunces',serif;font-size:18px;font-weight:500;margin-bottom:4px}
 .card-sub{font-size:12px;color:var(--muted);margin-bottom:16px}
@@ -58,6 +58,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 .summary-label{font-size:11px;color:var(--muted);margin-top:4px}
 .stock-search{width:100%;padding:11px 16px;border:1px solid var(--border);border-radius:12px;font-family:'DM Sans',sans-serif;font-size:14px;background:white;outline:none;margin-bottom:10px;color:var(--ink)}
 .filter-row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.filter-row:empty{display:none}
+/* Colapsar elementos vacíos que generan espacio fantasma arriba de pestañas */
+.summary-grid:empty,.summary-grid[style*="display:none"]+*{margin-top:0}
+.card-sub:empty{display:none}
+.tab-pane>.card:first-child{margin-top:0}
 .chip{padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:white;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;color:var(--muted);transition:all .15s}
 .chip.active{background:var(--ink);color:white;border-color:var(--ink)}
 .stock-table{width:100%;border-collapse:collapse}
@@ -987,7 +992,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <div style="display:grid;grid-template-columns:1fr 1fr 80px;gap:8px;align-items:end;margin-bottom:8px">
           <div>
             <label class="form-label">Sabor</label>
-            <select class="mini-select" id="trf-sabor" style="width:100%" onchange="actualizarStockTrf()"></select>
+            <select class="mini-select" id="trf-sabor" style="width:100%" onchange="onCambioSaborTrf()"></select>
           </div>
           <div>
             <label class="form-label">Tamaño</label>
@@ -1538,41 +1543,35 @@ function actualizarSelectoresCascada(){
   // Stock disponible filtrado por sucursal
   const stockSuc = S.stock.filter(s=>!s.vencido&&s.cantActual>0&&s.sucursal===suc);
 
-  // Sabores disponibles en esta sucursal
+  // Sabores disponibles en esta sucursal (solo mostrar los que SÍ tienen stock)
   const saboresConStock = [...new Set(stockSuc.map(s=>s.sabor))];
-  const todosSabores = (S.catalogo.sabores||[]).filter(s=>s.activo).map(s=>s.nombre);
   const selSab = L("item-sabor");
   if(selSab){
-    // Mantener selección actual si sigue siendo válida
-    selSab.innerHTML = todosSabores.map(n=>{
-      const tieneStock = saboresConStock.includes(n);
-      return `<option value="${n}" ${!tieneStock?'disabled':''}>${tieneStock?'':'✗ '}${n}</option>`;
-    }).join("");
-    // Restaurar selección o elegir el primero disponible
-    if(sabActual && saboresConStock.includes(sabActual)){
-      selSab.value = sabActual;
-    } else if(saboresConStock.length>0){
-      // no cambiar selección si está deshabilitada, dejar que el usuario elija
-      if(sabActual) selSab.value = sabActual; // mantener aunque esté disabled
+    if(saboresConStock.length === 0){
+      selSab.innerHTML = '<option value="">— Sin stock disponible —</option>';
+      selSab.disabled = true;
+    } else {
+      selSab.disabled = false;
+      selSab.innerHTML = saboresConStock.map(n=>`<option value="${n}">${n}</option>`).join("");
+      // Restaurar selección si sigue siendo válida
+      if(sabActual && saboresConStock.includes(sabActual)) selSab.value = sabActual;
     }
   }
 
   const sabFinal = L("item-sabor")?.value;
 
-  // Tamaños disponibles para el sabor seleccionado
+  // Tamaños disponibles para el sabor seleccionado (solo los que tienen stock)
   const stockSabSuc = sabFinal ? stockSuc.filter(s=>s.sabor===sabFinal) : [];
   const tamanosConStock = [...new Set(stockSabSuc.map(s=>s.tamano))];
-  const todosTaganos = (S.catalogo.tamanos||[]).filter(t=>t.activo).map(t=>t.nombre);
   const selTam = L("item-tamano");
   if(selTam){
-    selTam.innerHTML = todosTaganos.map(n=>{
-      const tieneStock = tamanosConStock.includes(n);
-      return `<option value="${n}" ${!tieneStock?'disabled':''}>${tieneStock?'':'✗ '}${n}</option>`;
-    }).join("");
-    if(tamActual && tamanosConStock.includes(tamActual)){
-      selTam.value = tamActual;
-    } else if(tamActual){
-      selTam.value = tamActual; // mantener aunque esté disabled
+    if(tamanosConStock.length === 0){
+      selTam.innerHTML = '<option value="">—</option>';
+      selTam.disabled = true;
+    } else {
+      selTam.disabled = false;
+      selTam.innerHTML = tamanosConStock.map(n=>`<option value="${n}">${n}</option>`).join("");
+      if(tamActual && tamanosConStock.includes(tamActual)) selTam.value = tamActual;
     }
   }
 
@@ -1826,7 +1825,7 @@ function renderCarrito(){
     comLabel.style.cssText="font-size:11px;color:rgba(255,255,255,.6)";
     L("carrito-total-bar").firstElementChild.appendChild(comLabel);
   }
-  if(comMonto!==0&&tipoOp==="venta"){
+  if(comMonto!==0&&tipoOp==="venta"&&getPermisos().esAdmin){
     const pct=Math.abs(comPct*100).toFixed(0);
     const nombre=canal==="Rappi"||canal==="Uber Eats"?canal:metodo;
     comLabel.style.display="block";
@@ -2786,6 +2785,19 @@ function aplicarSugerenciaTransferencia(sabor,tamano,cantidad){
   setTimeout(()=>{ L("trf-sabor").value=sabor; L("trf-tamano").value=tamano; L("trf-cantidad").value=cantidad; },400);
 }
 
+function onCambioSaborTrf(){
+  // Cuando cambia el sabor, recalcular qué tamaños tienen stock en Cuajimalpa para ese sabor
+  const stock = S.stock || [];
+  const sabor = L("trf-sabor").value;
+  const enCuaji = stock.filter(s => s.sucursal === "Cuajimalpa" && !s.vencido && s.cantActual > 0 && s.sabor === sabor);
+  const tamanosValidos = [...new Set(enCuaji.map(s => s.tamano))];
+  const selTamano = L("trf-tamano");
+  const tamActual = selTamano.value;
+  selTamano.innerHTML = tamanosValidos.map(t => `<option>${t}</option>`).join("");
+  if(tamanosValidos.includes(tamActual)) selTamano.value = tamActual;
+  actualizarStockTrf();
+}
+
 function actualizarStockTrf(){
   const sabor  = L("trf-sabor")?.value;
   const tamano = L("trf-tamano")?.value;
@@ -2818,6 +2830,61 @@ function actualizarStockTrf(){
 // TRANSFERENCIAS
 // ============================================================
 async function cargarTransferencias(){
+  if(!S.catalogo?.sabores){
+    const resC=await api("getCatalogo"); if(resC.ok) S.catalogo=resC;
+  }
+  // Refrescar stock para que los selectores muestren disponibilidad actualizada
+  const resStock = await api("getStock");
+  if(resStock.ok) S.stock = resStock.stock;
+  
+  if(S.catalogo?.sabores){
+    poblarSelectoresTransferencia();
+    actualizarStockTrf();
+  }
+  L("trf-lista").innerHTML=`<div class="loading"><div class="spinner"></div>Cargando...</div>`;
+  const res=await api("getTransferencias");
+  if(!res.ok){ L("trf-lista").innerHTML=`<div class="empty-state">Error al cargar</div>`; return; }
+  S.transferencias=res.transferencias||[];
+  renderTransferenciasList();
+}
+
+function poblarSelectoresTransferencia(){
+  // Solo mostrar sabores y tamaños que TIENEN stock disponible en Cuajimalpa (no vencido, cantidad>0)
+  const stock = S.stock || [];
+  const enCuaji = stock.filter(s => s.sucursal === "Cuajimalpa" && !s.vencido && s.cantActual > 0);
+  
+  const saboresValidos = [...new Set(enCuaji.map(s => s.sabor))];
+  const tamanosValidos = [...new Set(enCuaji.map(s => s.tamano))];
+  
+  const selSabor = L("trf-sabor");
+  const selTamano = L("trf-tamano");
+  
+  if(saboresValidos.length === 0){
+    selSabor.innerHTML = '<option value="">— Sin stock en Cuajimalpa —</option>';
+    selTamano.innerHTML = '<option value="">—</option>';
+    selSabor.disabled = true;
+    selTamano.disabled = true;
+    return;
+  }
+  
+  selSabor.disabled = false;
+  selTamano.disabled = false;
+  
+  // Preservar selección actual si sigue siendo válida
+  const sabActual = selSabor.value;
+  const tamActual = selTamano.value;
+  
+  selSabor.innerHTML = saboresValidos.map(s => `<option>${s}</option>`).join("");
+  if(saboresValidos.includes(sabActual)) selSabor.value = sabActual;
+  
+  // Filtrar tamaños según el sabor elegido
+  const sabSel = selSabor.value;
+  const tamanosParaSabor = [...new Set(enCuaji.filter(s => s.sabor === sabSel).map(s => s.tamano))];
+  selTamano.innerHTML = tamanosParaSabor.map(t => `<option>${t}</option>`).join("");
+  if(tamanosParaSabor.includes(tamActual)) selTamano.value = tamActual;
+}
+
+async function cargarTransferenciasLegacy(){
   if(!S.catalogo?.sabores){
     const resC=await api("getCatalogo"); if(resC.ok) S.catalogo=resC;
   }
