@@ -240,7 +240,113 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 .dem-tag-agotado{background:rgba(192,57,43,.12);color:#c0392b}
 .dem-tag-disponible{background:rgba(134,189,173,.18);color:var(--success)}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js">
+// ============================================================
+// v4.4b: RESERVAS
+// ============================================================
+function irAReservas(){
+  const tab = document.querySelector('.nav-tab[data-tab="reservas"]');
+  if(tab) tab.click();
+}
+
+async function cargarReservas(){
+  const cont = L("reservas-list");
+  cont.innerHTML = `<div class="loading"><div class="spinner"></div></div>`;
+  const res = await api("getReservas");
+  if(!res.ok){ cont.innerHTML = `<div class="empty-state">${res.error||"Error"}</div>`; return; }
+  if(!res.reservas || res.reservas.length === 0){
+    cont.innerHTML = `<div class="empty-state"><div class="empty-icon">📌</div><div>Sin reservas abiertas</div></div>`;
+    return;
+  }
+  cont.innerHTML = res.reservas.map(r => {
+    const items = r.items.map(i => `${i.cantidad}× ${i.sabor} ${i.tamano}`).join(" · ");
+    const anticipoLabel = r.anticipo > 0 ? `<span class="tag" style="background:rgba(134,189,173,.18);color:var(--success)">Anticipo: $${Number(r.anticipo).toLocaleString('es-MX')}</span>` : '';
+    return `
+      <div class="historial-item" style="border-left:3px solid #a87a14">
+        <div class="hist-fecha">🕐 ${formatFechaHoraMX(r.fecha)} · ID ${r.idVenta}</div>
+        <div class="hist-productos">${items}</div>
+        <div class="hist-meta">
+          <span class="tag">${r.sucursal}</span>
+          ${r.clienteNombre ? `<span class="tag">${r.clienteNombre}</span>` : ''}
+          ${anticipoLabel}
+          <span class="tag tag-total">$${Number(r.total).toLocaleString('es-MX')}</span>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <button class="btn-outline" style="font-size:12px;padding:8px 14px;background:var(--accent);color:white;border-color:var(--accent)" onclick='convertirReserva(${JSON.stringify(JSON.stringify(r))})'>→ Convertir a venta</button>
+          <button class="btn-outline" style="font-size:12px;padding:8px 14px;color:var(--danger);border-color:var(--danger)" onclick="liberarReserva('${r.idVenta}','${(r.clienteNombre||'').replace(/'/g,"\\'")}')">Liberar</button>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+async function liberarReserva(idVenta, clienteNombre){
+  const motivo = prompt(`Liberar reserva de ${clienteNombre||'cliente'}.\n\n¿Motivo? (ej: cliente canceló, no llegó, etc)`, "Cliente canceló");
+  if(motivo === null) return;
+  const res = await api("liberarReserva", { idVenta, motivo: motivo || "Sin motivo" });
+  if(res.ok){ toast(res.mensaje || "Reserva liberada"); cargarReservas(); }
+  else toast(res.error || "Error","error");
+}
+
+// Convertir reserva → precargar carrito en Nueva Venta
+function convertirReserva(reservaJsonStr){
+  let reserva;
+  try { reserva = JSON.parse(reservaJsonStr); } catch(e){ toast("Error parseando reserva","error"); return; }
+
+  // 1. Ir a tab Nueva venta
+  const tabVenta = document.querySelector('.nav-tab[data-tab="venta"]');
+  if(tabVenta) tabVenta.click();
+
+  // 2. Marcar tipoOp como Venta normal
+  setTimeout(() => {
+    setTipoOp("venta", L("op-venta"));
+
+    // 3. Pre-cargar el carrito con los items
+    S.carrito = reserva.items.map(it => ({
+      sabor: it.sabor,
+      tamano: it.tamano,
+      cantidad: it.cantidad,
+      precio: it.precio,
+      precioBase: it.precio,
+      subtotal: it.subtotal,
+      descuento: 0,
+      descTipo: "pct"
+    }));
+
+    // 4. Pre-llenar canal/método si la reserva ya los tenía (no "Reservado"/"Pendiente")
+    if(reserva.canal && reserva.canal !== "Reservado"){
+      const selCanal = L("venta-canal");
+      if(selCanal) selCanal.value = reserva.canal;
+    }
+    if(reserva.metodoPago && reserva.metodoPago !== "Pendiente"){
+      const selMet = L("venta-metodo");
+      if(selMet) selMet.value = reserva.metodoPago;
+    }
+
+    // 5. Sucursal
+    if(reserva.sucursal){
+      const selSuc = L("venta-sucursal");
+      if(selSuc) selSuc.value = reserva.sucursal;
+    }
+
+    // 6. Cliente
+    if(reserva.clienteNombre){
+      const inputCli = L("cliente-nombre") || L("venta-cliente-nombre");
+      if(inputCli) inputCli.value = reserva.clienteNombre;
+      S.clienteSel = { nombre: reserva.clienteNombre, id: reserva.clienteId };
+    }
+
+    // 7. Guardar referencia a la reserva original (para convertirla al confirmar)
+    S.reservaOrigen = reserva.idVenta;
+
+    // 8. Re-renderizar carrito + total
+    if(typeof renderCarrito === "function") renderCarrito();
+    if(typeof actualizarTotalCarrito === "function") actualizarTotalCarrito();
+
+    toast(`📌 Reserva ${reserva.idVenta} cargada al carrito. Completa los datos faltantes y confirma.`);
+  }, 200);
+}
+
+</script>
 </head>
 <body>
 
@@ -311,6 +417,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <div class="nav-tab perm-producir" data-tab="produccion">Producción</div>
     <div class="nav-tab perm-transferir" data-tab="transferencias">Transferencias</div>
     <div class="nav-tab perm-vender" data-tab="venta">Nueva venta</div>
+    <div class="nav-tab perm-vender" data-tab="reservas">📌 Reservas</div>
     <div class="nav-tab owner-only" data-tab="ventas">Ventas</div>
     <div class="nav-tab owner-only" data-tab="movimientos">Movimientos</div>
     <div class="nav-tab owner-only" data-tab="catalogo">Catálogo</div>
@@ -338,6 +445,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button class="btn-outline" id="btn-abrir-dia" onclick="abrirDia()" style="font-size:12px;padding:8px 14px">▶ Abrir tienda</button>
             <button class="btn-outline" id="btn-cerrar-dia" onclick="cerrarDia()" style="font-size:12px;padding:8px 14px;display:none">■ Cerrar tienda</button>
+            <button class="btn-outline perm-vender" onclick="irAReservas()" style="font-size:12px;padding:8px 14px">📌 Ver reservas</button>
             <button class="btn-outline" id="btn-export-word" onclick="exportarWord()" style="font-size:12px;padding:8px 14px">📄 Descargar Word</button>
           </div>
         </div>
@@ -509,6 +617,19 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <div class="form-group"><label class="form-label">Tamaño</label><select class="form-select" id="prod-tamano"></select></div>
         <div class="form-group"><label class="form-label">Cantidad</label><input class="form-input" type="number" id="prod-cantidad" min="1" value="1"></div>
         <button class="btn-main btn-green" id="btn-cargar-prod">Cargar producción</button>
+      </div>
+    </div>
+
+    
+    <!-- v4.4b: RESERVAS -->
+    <div id="tab-reservas" class="tab-pane" style="display:none">
+      <div class="card" style="padding:14px 16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+          <div class="card-title" style="margin-bottom:0">📌 Reservas abiertas</div>
+          <button class="btn-outline" onclick="cargarReservas()" style="font-size:12px;padding:6px 12px">↻ Refrescar</button>
+        </div>
+        <div class="card-sub">Click "Convertir a venta" para mover la reserva al carrito de Nueva venta y completar.</div>
+        <div id="reservas-list"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
       </div>
     </div>
 
@@ -1525,6 +1646,7 @@ function setupNav() {
       else if(t==="stock") actualizarEstadoDia();
       else if(t==="analisis") { cargarUtil(); setSubAnalisis("utilidades"); }
       else if(t==="demanda") cargarDemanda();
+      else if(t==="reservas") cargarReservas();
       else if(t==="ventas") cargarVentas();
       else if(t==="venta") iniciarVenta();
       else if(t==="costos") { if(!S.insumos.length) cargarCostos(); else renderCostos(); }
@@ -2024,7 +2146,14 @@ L("btn-confirmar").addEventListener("click",async()=>{
       sabor:i.sabor, tamano:i.tamano, cantidad:i.cantidad,
       precioUnitario:i.precio, descuento:i.descuento||0, descTipo:i.descTipo||""
     }));
-    const res=await api("registrarVenta",{items,canal,metodoPago:metodo,sucursal,cliente,tipoOp,motivo});
+    let res;
+    if(S.reservaOrigen && tipoOp === "venta"){
+      // Era una conversión de reserva → llamar al endpoint de conversión
+      res = await api("convertirReservaAVenta", { idVenta: S.reservaOrigen, canal, metodoPago: metodo, cliente });
+      if(res.ok) S.reservaOrigen = null;
+    } else {
+      res = await api("registrarVenta",{items,canal,metodoPago:metodo,sucursal,cliente,tipoOp,motivo,anticipo: L("anticipo-reserva")? Number(L("anticipo-reserva").value||0) : 0});
+    }
     if(res.ok){
       const total=S.carrito.reduce((s,i)=>s+i.subtotal,0);
       toast(tipoOp==="regalo"?`✅ Regalo registrado`:`✅ Venta $${total.toLocaleString('es-MX')} registrada`);
@@ -3917,25 +4046,28 @@ async function actualizarEstadoDia(){
 }
 
 async function abrirDia(){
-  let sucursal = (S.sucursal && S.sucursal !== "Ambas") ? S.sucursal : null;
-  if(!sucursal){
-    sucursal = prompt("¿Qué sucursal abrir? (Polanco o Cuajimalpa)","Polanco");
-    if(!sucursal) return;
-  }
-  if(!confirm(`¿Abrir ${sucursal}? Esto toma snapshot del inventario actual como inicio del día.`)) return;
-  const res = await api("abrirDia",{sucursal});
-  if(res.ok){ toast(res.mensaje); await actualizarEstadoDia(); }
-  else toast(res.error,"error");
+  await elegirSucursalYEjecutar("abrir");
 }
-
 async function cerrarDia(){
-  let sucursal = (S.sucursal && S.sucursal !== "Ambas") ? S.sucursal : null;
-  if(!sucursal){
-    sucursal = prompt("¿Qué sucursal cerrar? (Polanco o Cuajimalpa)","Polanco");
-    if(!sucursal) return;
+  await elegirSucursalYEjecutar("cerrar");
+}
+async function elegirSucursalYEjecutar(accion){
+  const sucs = (S.sucursal && S.sucursal !== "Ambas") ? [S.sucursal] : ["Polanco","Cuajimalpa"];
+  if(sucs.length === 1){
+    return ejecutarAccionDia(accion, sucs[0]);
   }
-  if(!confirm(`¿Cerrar ${sucursal}?`)) return;
-  const res = await api("cerrarDia",{sucursal});
+  // Mostrar modal con opciones
+  const modal = L("modal-sucursal");
+  L("modal-suc-title").textContent = accion === "abrir" ? "¿Qué sucursal abrir?" : "¿Qué sucursal cerrar?";
+  L("modal-suc-sub").textContent = accion === "abrir"
+    ? "Se tomará un snapshot del inventario actual como inicio del día."
+    : "Se cerrará el día y se registrará el snapshot final.";
+  L("modal-suc-options").innerHTML = sucs.map(s => `<button class="btn-outline" style="padding:14px;font-size:14px;font-weight:600" onclick="document.getElementById('modal-sucursal').classList.remove('show'); ejecutarAccionDia('${accion}','${s}')">${s}</button>`).join("");
+  modal.classList.add("show");
+}
+async function ejecutarAccionDia(accion, sucursal){
+  const endpoint = accion === "abrir" ? "abrirDia" : "cerrarDia";
+  const res = await api(endpoint,{sucursal});
   if(res.ok){ toast(res.mensaje); await actualizarEstadoDia(); }
   else toast(res.error,"error");
 }
@@ -4047,5 +4179,18 @@ async function cargarDemanda(){
 }
 
 </script>
+
+<!-- v4.4b: Modal selector de sucursal para abrir/cerrar tienda -->
+<div class="modal-overlay" id="modal-sucursal">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-title" id="modal-suc-title">Seleccionar sucursal</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px" id="modal-suc-sub"></p>
+    <div id="modal-suc-options" style="display:grid;gap:10px"></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:14px">
+      <button class="btn-outline" onclick="document.getElementById('modal-sucursal').classList.remove('show')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
