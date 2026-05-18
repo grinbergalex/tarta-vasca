@@ -230,123 +230,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 .btn-editar-mini:hover{background:var(--accent);color:white;border-color:var(--accent)}
 .sesion-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--warm);border-radius:10px;margin-bottom:6px;font-size:12px}
 .sesion-row.actual{background:#e8f5e9;border:1px solid var(--success)}
-/* v4.4 */
-.filtro-btn{background:none;border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;color:var(--muted)}
-.filtro-btn.active{background:var(--ink);color:#fff;border-color:var(--ink)}
-.tag-reserva{background:rgba(231,165,40,.18);color:#a87a14;font-weight:600}
-.dem-row{display:grid;grid-template-columns:1fr 80px 80px 100px 120px;gap:6px;padding:8px;border-bottom:1px solid var(--border);font-size:12px;align-items:center}
-.dem-row.dem-header{font-weight:600;background:var(--bg);font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)}
-.dem-tag{padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;display:inline-block}
-.dem-tag-agotado{background:rgba(192,57,43,.12);color:#c0392b}
-.dem-tag-disponible{background:rgba(134,189,173,.18);color:var(--success)}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/chart.js">
-// ============================================================
-// v4.4b: RESERVAS
-// ============================================================
-function irAReservas(){
-  const tab = document.querySelector('.nav-tab[data-tab="reservas"]');
-  if(tab) tab.click();
-}
-
-async function cargarReservas(){
-  const cont = L("reservas-list");
-  cont.innerHTML = `<div class="loading"><div class="spinner"></div></div>`;
-  const res = await api("getReservas");
-  if(!res.ok){ cont.innerHTML = `<div class="empty-state">${res.error||"Error"}</div>`; return; }
-  if(!res.reservas || res.reservas.length === 0){
-    cont.innerHTML = `<div class="empty-state"><div class="empty-icon">📌</div><div>Sin reservas abiertas</div></div>`;
-    return;
-  }
-  cont.innerHTML = res.reservas.map(r => {
-    const items = r.items.map(i => `${i.cantidad}× ${i.sabor} ${i.tamano}`).join(" · ");
-    const anticipoLabel = r.anticipo > 0 ? `<span class="tag" style="background:rgba(134,189,173,.18);color:var(--success)">Anticipo: $${Number(r.anticipo).toLocaleString('es-MX')}</span>` : '';
-    return `
-      <div class="historial-item" style="border-left:3px solid #a87a14">
-        <div class="hist-fecha">🕐 ${formatFechaHoraMX(r.fecha)} · ID ${r.idVenta}</div>
-        <div class="hist-productos">${items}</div>
-        <div class="hist-meta">
-          <span class="tag">${r.sucursal}</span>
-          ${r.clienteNombre ? `<span class="tag">${r.clienteNombre}</span>` : ''}
-          ${anticipoLabel}
-          <span class="tag tag-total">$${Number(r.total).toLocaleString('es-MX')}</span>
-        </div>
-        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-          <button class="btn-outline" style="font-size:12px;padding:8px 14px;background:var(--accent);color:white;border-color:var(--accent)" onclick='convertirReserva(${JSON.stringify(JSON.stringify(r))})'>→ Convertir a venta</button>
-          <button class="btn-outline" style="font-size:12px;padding:8px 14px;color:var(--danger);border-color:var(--danger)" onclick="liberarReserva('${r.idVenta}','${(r.clienteNombre||'').replace(/'/g,"\\'")}')">Liberar</button>
-        </div>
-      </div>`;
-  }).join("");
-}
-
-async function liberarReserva(idVenta, clienteNombre){
-  const motivo = prompt(`Liberar reserva de ${clienteNombre||'cliente'}.\n\n¿Motivo? (ej: cliente canceló, no llegó, etc)`, "Cliente canceló");
-  if(motivo === null) return;
-  const res = await api("liberarReserva", { idVenta, motivo: motivo || "Sin motivo" });
-  if(res.ok){ toast(res.mensaje || "Reserva liberada"); cargarReservas(); }
-  else toast(res.error || "Error","error");
-}
-
-// Convertir reserva → precargar carrito en Nueva Venta
-function convertirReserva(reservaJsonStr){
-  let reserva;
-  try { reserva = JSON.parse(reservaJsonStr); } catch(e){ toast("Error parseando reserva","error"); return; }
-
-  // 1. Ir a tab Nueva venta
-  const tabVenta = document.querySelector('.nav-tab[data-tab="venta"]');
-  if(tabVenta) tabVenta.click();
-
-  // 2. Marcar tipoOp como Venta normal
-  setTimeout(() => {
-    setTipoOp("venta", L("op-venta"));
-
-    // 3. Pre-cargar el carrito con los items
-    S.carrito = reserva.items.map(it => ({
-      sabor: it.sabor,
-      tamano: it.tamano,
-      cantidad: it.cantidad,
-      precio: it.precio,
-      precioBase: it.precio,
-      subtotal: it.subtotal,
-      descuento: 0,
-      descTipo: "pct"
-    }));
-
-    // 4. Pre-llenar canal/método si la reserva ya los tenía (no "Reservado"/"Pendiente")
-    if(reserva.canal && reserva.canal !== "Reservado"){
-      const selCanal = L("venta-canal");
-      if(selCanal) selCanal.value = reserva.canal;
-    }
-    if(reserva.metodoPago && reserva.metodoPago !== "Pendiente"){
-      const selMet = L("venta-metodo");
-      if(selMet) selMet.value = reserva.metodoPago;
-    }
-
-    // 5. Sucursal
-    if(reserva.sucursal){
-      const selSuc = L("venta-sucursal");
-      if(selSuc) selSuc.value = reserva.sucursal;
-    }
-
-    // 6. Cliente
-    if(reserva.clienteNombre){
-      const inputCli = L("cliente-nombre") || L("venta-cliente-nombre");
-      if(inputCli) inputCli.value = reserva.clienteNombre;
-      S.clienteSel = { nombre: reserva.clienteNombre, id: reserva.clienteId };
-    }
-
-    // 7. Guardar referencia a la reserva original (para convertirla al confirmar)
-    S.reservaOrigen = reserva.idVenta;
-
-    // 8. Re-renderizar carrito + total
-    if(typeof renderCarrito === "function") renderCarrito();
-    if(typeof actualizarTotalCarrito === "function") actualizarTotalCarrito();
-
-    toast(`📌 Reserva ${reserva.idVenta} cargada al carrito. Completa los datos faltantes y confirma.`);
-  }, 200);
-}
-
-</script>
 </head>
 <body>
 
@@ -417,15 +301,13 @@ function convertirReserva(reservaJsonStr){
     <div class="nav-tab perm-producir" data-tab="produccion">Producción</div>
     <div class="nav-tab perm-transferir" data-tab="transferencias">Transferencias</div>
     <div class="nav-tab perm-vender" data-tab="venta">Nueva venta</div>
-    <div class="nav-tab perm-vender" data-tab="reservas">📌 Reservas</div>
     <div class="nav-tab owner-only" data-tab="ventas">Ventas</div>
     <div class="nav-tab owner-only" data-tab="movimientos">Movimientos</div>
     <div class="nav-tab owner-only" data-tab="catalogo">Catálogo</div>
     <div class="nav-tab owner-only" data-tab="precios">Precios</div>
     <div class="nav-tab owner-only" data-tab="costos">Costos</div>
-    <div class="nav-tab owner-only" data-tab="analisis">Análisis de ventas</div>
+    <div class="nav-tab owner-only" data-tab="utilidades">Utilidad por ventas</div>
     <div class="nav-tab owner-only" data-tab="objetivos">Tablero</div>
-    <div class="nav-tab perm-demanda" data-tab="demanda">Análisis de demanda</div>
     <div class="nav-tab owner-only" data-tab="alertas">Alertas</div>
     <div class="nav-tab owner-only" data-tab="usuarios">Usuarios</div>
     <div class="nav-tab owner-only" data-tab="auditoria">Auditoría</div>
@@ -435,22 +317,6 @@ function convertirReserva(reservaJsonStr){
 
     <!-- STOCK -->
     <div id="tab-stock" class="tab-pane">
-      <!-- v4.4: Estado del día + botones Abrir/Cerrar/Word -->
-      <div class="card" id="estado-dia-card" style="padding:14px 16px;margin-bottom:10px">
-        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-          <div>
-            <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)">Estado del día · hoy <span id="estado-dia-hoy"></span></div>
-            <div id="estado-dia-info" style="font-weight:600;font-size:14px;margin-top:2px">Cargando...</div>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button class="btn-outline" id="btn-abrir-dia" onclick="abrirDia()" style="font-size:12px;padding:8px 14px">▶ Abrir tienda</button>
-            <button class="btn-outline" id="btn-cerrar-dia" onclick="cerrarDia()" style="font-size:12px;padding:8px 14px;display:none">■ Cerrar tienda</button>
-            <button class="btn-outline perm-vender" onclick="irAReservas()" style="font-size:12px;padding:8px 14px">📌 Ver reservas</button>
-            <button class="btn-outline" id="btn-export-word" onclick="exportarWord()" style="font-size:12px;padding:8px 14px">📄 Descargar Word</button>
-          </div>
-        </div>
-      </div>
-
       <div class="card">
         <div class="card-title">Inventario actual</div>
         <div class="card-sub" id="stock-sub">Cargando...</div>
@@ -483,7 +349,6 @@ function convertirReserva(reservaJsonStr){
         <!-- TIPO DE OPERACIÓN -->
         <div style="display:flex;gap:8px;margin-bottom:14px">
           <button class="tipo-op-btn active" onclick="setTipoOp('venta',this)" id="op-venta">🛍 Venta</button>
-          <button class="tipo-op-btn" onclick="setTipoOp('reserva',this)" id="op-reserva">📌 Reservar</button>
           <button class="tipo-op-btn" onclick="setTipoOp('regalo',this)" id="op-regalo">🎁 Regalo</button>
           <button class="tipo-op-btn" onclick="setTipoOp('merma',this)" id="op-merma">🗑 Merma</button>
         </div>
@@ -617,19 +482,6 @@ function convertirReserva(reservaJsonStr){
         <div class="form-group"><label class="form-label">Tamaño</label><select class="form-select" id="prod-tamano"></select></div>
         <div class="form-group"><label class="form-label">Cantidad</label><input class="form-input" type="number" id="prod-cantidad" min="1" value="1"></div>
         <button class="btn-main btn-green" id="btn-cargar-prod">Cargar producción</button>
-      </div>
-    </div>
-
-    
-    <!-- v4.4b: RESERVAS -->
-    <div id="tab-reservas" class="tab-pane" style="display:none">
-      <div class="card" style="padding:14px 16px">
-        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px">
-          <div class="card-title" style="margin-bottom:0">📌 Reservas abiertas</div>
-          <button class="btn-outline" onclick="cargarReservas()" style="font-size:12px;padding:6px 12px">↻ Refrescar</button>
-        </div>
-        <div class="card-sub">Click "Convertir a venta" para mover la reserva al carrito de Nueva venta y completar.</div>
-        <div id="reservas-list"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
       </div>
     </div>
 
@@ -1020,16 +872,9 @@ function convertirReserva(reservaJsonStr){
       </div>
     </div>
 
-    <!-- v4.4: ANÁLISIS DE VENTAS (antes Utilidad por ventas) -->
-    <div id="tab-analisis" class="tab-pane" style="display:none">
-
-      <!-- Sub-pestañas internas -->
-      <div style="display:flex;gap:8px;margin-bottom:14px;border-bottom:2px solid var(--border)">
-        <button class="sub-tab active" id="sub-utilidades" onclick="setSubAnalisis('utilidades')" style="background:none;border:none;padding:10px 16px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border-bottom:2px solid var(--accent);color:var(--ink);margin-bottom:-2px">Utilidad por ventas</button>
-        <button class="sub-tab" id="sub-seguimiento" onclick="setSubAnalisis('seguimiento')" style="background:none;border:none;padding:10px 16px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted);margin-bottom:-2px">Seguimiento de ventas</button>
-      </div>
-
-      <div id="sub-content-utilidades">
+    <!-- UTILIDADES -->
+    <!-- UTILIDAD POR VENTAS -->
+    <div id="tab-utilidades" class="tab-pane" style="display:none">
 
       <!-- FILTROS -->
       <div class="card" style="padding:16px 20px">
@@ -1121,58 +966,6 @@ function convertirReserva(reservaJsonStr){
         <div id="util-ops-list"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
       </div>
     </div>
-      </div>
-      <!-- v4.4: Sub-tab Seguimiento de ventas -->
-      <div id="sub-content-seguimiento" style="display:none">
-        <div class="card" style="padding:16px 20px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-            <div class="card-title" style="margin-bottom:0">Seguimiento de ventas</div>
-            <input type="date" class="mini-input" id="seg-fecha" style="width:160px" onchange="cargarSeguimiento()">
-          </div>
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px">
-            <div class="summary-card"><div class="summary-num" id="seg-total-und">0</div><div class="summary-label">Unidades</div></div>
-            <div class="summary-card"><div class="summary-num" id="seg-total-dinero" style="font-size:20px">$0</div><div class="summary-label">Total $</div></div>
-            <div class="summary-card"><div class="summary-num" id="seg-pico-hora">—</div><div class="summary-label">Hora pico</div></div>
-            <div class="summary-card"><div class="summary-num" id="seg-canal-top" style="font-size:14px">—</div><div class="summary-label">Canal top</div></div>
-          </div>
-          <div style="margin-bottom:12px">
-            <label class="form-label">Sucursal</label>
-            <div style="display:flex;gap:6px;flex-wrap:wrap">
-              <button class="filtro-btn active" onclick="setSegSucursal('Total',this)">Total</button>
-              <button class="filtro-btn" onclick="setSegSucursal('Polanco',this)">Polanco</button>
-              <button class="filtro-btn" onclick="setSegSucursal('Cuajimalpa',this)">Cuajimalpa</button>
-            </div>
-          </div>
-          <canvas id="seg-grafica-hora" height="200"></canvas>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px">
-            <div><div class="card-title" style="font-size:13px">Por sabor</div><div id="seg-por-sabor" style="font-size:12px"></div></div>
-            <div><div class="card-title" style="font-size:13px">Por tamaño</div><div id="seg-por-tamano" style="font-size:12px"></div></div>
-          </div>
-          <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:10px">v4.4 inicial</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- v4.4: ANÁLISIS DE DEMANDA -->
-    <div id="tab-demanda" class="tab-pane" style="display:none">
-      <div class="card" style="padding:16px 20px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-          <div class="card-title" style="margin-bottom:0">Análisis de demanda</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <input type="date" class="mini-input" id="dem-fecha" style="width:150px">
-            <select class="mini-select" id="dem-sucursal" style="width:160px">
-              <option value="Ambas">Ambas</option>
-              <option value="Polanco">Polanco</option>
-              <option value="Cuajimalpa">Cuajimalpa</option>
-            </select>
-            <button class="btn-outline" onclick="cargarDemanda()" style="font-size:12px;padding:6px 12px">Actualizar</button>
-          </div>
-        </div>
-        <div style="background:var(--warm);border-radius:8px;padding:10px;font-size:12px;color:var(--muted);margin-bottom:12px">
-          Requiere haber abierto la tienda hoy. Calcula promedio de ventas por hora y proyecta pérdida si un SKU se agotó antes del cierre.
-        </div>
-        <div id="demanda-content"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
-      </div>
     </div>
 
     <!-- OBJETIVOS -->
@@ -1610,18 +1403,11 @@ function iniciarApp() {
   cargarRecetasAlInicio();
   setTimeout(cargarMensajesHeader, 1500);
   setInterval(cargarMensajesHeader, 120000);
-  // v4.4
-  iniciarPingSesion();
-  setTimeout(actualizarEstadoDia, 600);
 }
 
 function aplicarPermisosUI() {
   const p = getPermisos();
   document.querySelectorAll(".owner-only").forEach(el => { el.style.display = p.esAdmin ? "" : "none"; });
-  // v4.4: Demanda solo Owner + Rebeca
-  const u = String(S.usuario||"").toLowerCase();
-  const verDemanda = p.esAdmin || u === "rebeca" || u === "rebe";
-  document.querySelectorAll(".perm-demanda").forEach(el => { el.style.display = verDemanda ? "" : "none"; });
   document.querySelectorAll(".perm-vender").forEach(el => { el.style.display = p.puedeVender ? "" : "none"; });
   document.querySelectorAll(".perm-producir").forEach(el => { el.style.display = p.puedeProducir ? "" : "none"; });
   document.querySelectorAll(".perm-transferir").forEach(el => { el.style.display = p.puedeTransferir ? "" : "none"; });
@@ -1643,10 +1429,6 @@ function setupNav() {
       else if(t==="movimientos") cargarMovimientos();  // v3.2
       else if(t==="auditoria") cargarAuditoria();
       else if(t==="catalogo") cargarCatalogoPantalla();
-      else if(t==="stock") actualizarEstadoDia();
-      else if(t==="analisis") { cargarUtil(); setSubAnalisis("utilidades"); }
-      else if(t==="demanda") cargarDemanda();
-      else if(t==="reservas") cargarReservas();
       else if(t==="ventas") cargarVentas();
       else if(t==="venta") iniciarVenta();
       else if(t==="costos") { if(!S.insumos.length) cargarCostos(); else renderCostos(); }
@@ -1924,12 +1706,6 @@ function setTipoOp(tipo, btn){
     clienteSection.style.display = "block";
     btnConfirmar.textContent = "Registrar regalo 🎁";
     btnConfirmar.style.background = "#2E5C4A";
-  } else if(tipo === "reserva"){
-    L("op-reserva").classList.add("active");
-    aviso.style.display="block";aviso.style.background="rgba(231,165,40,.15)";aviso.style.color="#a87a14";aviso.innerHTML="📌 Reservación — el pago es opcional. La pieza se aparta del disponible.";
-    L("motivo-row").style.display="none";
-    btnConfirmar.textContent = "Reservar 📌";
-    ventaFields.style.display = "";
   } else if(tipo === "merma"){
     aviso.style.display = "block";
     aviso.style.background = "rgba(192,57,43,.08)";
@@ -2146,14 +1922,7 @@ L("btn-confirmar").addEventListener("click",async()=>{
       sabor:i.sabor, tamano:i.tamano, cantidad:i.cantidad,
       precioUnitario:i.precio, descuento:i.descuento||0, descTipo:i.descTipo||""
     }));
-    let res;
-    if(S.reservaOrigen && tipoOp === "venta"){
-      // Era una conversión de reserva → llamar al endpoint de conversión
-      res = await api("convertirReservaAVenta", { idVenta: S.reservaOrigen, canal, metodoPago: metodo, cliente });
-      if(res.ok) S.reservaOrigen = null;
-    } else {
-      res = await api("registrarVenta",{items,canal,metodoPago:metodo,sucursal,cliente,tipoOp,motivo,anticipo: L("anticipo-reserva")? Number(L("anticipo-reserva").value||0) : 0});
-    }
+    const res=await api("registrarVenta",{items,canal,metodoPago:metodo,sucursal,cliente,tipoOp,motivo});
     if(res.ok){
       const total=S.carrito.reduce((s,i)=>s+i.subtotal,0);
       toast(tipoOp==="regalo"?`✅ Regalo registrado`:`✅ Venta $${total.toLocaleString('es-MX')} registrada`);
@@ -2201,7 +1970,7 @@ async function cargarVentas(){
   });
   L("ventas-list").innerHTML=Object.values(grupos).map(g=>`
     <div class="historial-item">
-      <div class="hist-fecha">🕐 ${formatFechaHoraMX(g.fecha)}</div>
+      <div class="hist-fecha">${g.fecha?g.fecha.substring(0,16).replace('T',' '):''}</div>
       <div class="hist-productos">${g.items.map(i=>`${i.cantidad}× ${i.sabor} ${i.tamano}`).join(" · ")}</div>
       <div class="hist-meta">
         <span class="tag">${g.canal}</span><span class="tag">${g.metodoPago}</span><span class="tag">${g.sucursal}</span>
@@ -3979,218 +3748,6 @@ L("btn-logout").addEventListener("click",async()=>{
 });
 
 document.querySelectorAll(".modal-overlay").forEach(o=>{o.addEventListener("click",e=>{if(e.target===o)o.classList.remove("show");});});
-
-// ============================================================
-// ████ CÓDIGO NUEVO v4.4 — agregado 18-may-2026 ████
-// ============================================================
-
-const TZ_MX_FRONT = "America/Mexico_City";
-
-function formatHoraMX(iso){
-  if(!iso) return "";
-  try{
-    return new Intl.DateTimeFormat('es-MX',{timeZone:TZ_MX_FRONT,hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(iso));
-  }catch(e){ return ""; }
-}
-function formatFechaHoraMX(iso){
-  if(!iso) return "";
-  try{
-    return new Intl.DateTimeFormat('es-MX',{timeZone:TZ_MX_FRONT,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(iso)).replace(',','');
-  }catch(e){ return ""; }
-}
-function hoyMX(){
-  return new Intl.DateTimeFormat('en-CA',{timeZone:TZ_MX_FRONT,year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
-}
-
-// --- A3: Ping de sesión (cada 5 min, cierra si expira) ---
-let _sesionPingInterval = null;
-function iniciarPingSesion(){
-  if(_sesionPingInterval) clearInterval(_sesionPingInterval);
-  _sesionPingInterval = setInterval(async () => {
-    const res = await api("getMisPermisos");
-    if(!res.ok){
-      clearInterval(_sesionPingInterval);
-      _sesionPingInterval = null;
-      toast("Tu sesión se cerró por inactividad.","error");
-      setTimeout(() => { try { logout(); } catch(e){ location.reload(); } }, 1200);
-    }
-  }, 5 * 60 * 1000);
-}
-
-// --- A6: Abrir / Cerrar tienda + estado del día ---
-async function actualizarEstadoDia(){
-  const hoyEl = L("estado-dia-hoy");
-  if(hoyEl) hoyEl.textContent = new Date().toLocaleDateString('es-MX',{timeZone:TZ_MX_FRONT,weekday:'long',day:'2-digit',month:'short'});
-  const info = L("estado-dia-info");
-  const btnAbrir = L("btn-abrir-dia");
-  const btnCerrar = L("btn-cerrar-dia");
-  if(!info) return;
-  const sucursal = (S.sucursal && S.sucursal !== "Ambas") ? S.sucursal : "Polanco";
-  const res = await api("getDiaActual", {sucursal});
-  if(!res.ok){ info.textContent = "—"; return; }
-  const dia = res.dia;
-  if(!dia){ info.textContent = "Sin info"; return; }
-  if(dia.estado === "ABIERTA"){
-    info.innerHTML = `<span style="color:var(--success)">🟢 ${dia.sucursal}: Abierta desde ${formatHoraMX(dia.abierto_at)}</span>`;
-    if(btnAbrir) btnAbrir.style.display = "none";
-    if(btnCerrar) btnCerrar.style.display = "";
-  } else if(dia.estado === "CERRADA"){
-    info.innerHTML = `<span style="color:var(--muted)">⚫ ${dia.sucursal}: Cerrada (${formatHoraMX(dia.cerrado_at)})</span>`;
-    if(btnAbrir) btnAbrir.style.display = "none";
-    if(btnCerrar) btnCerrar.style.display = "none";
-  } else {
-    info.innerHTML = `<span style="color:var(--warning)">🟡 ${dia.sucursal}: Sin abrir hoy</span>`;
-    if(btnAbrir) btnAbrir.style.display = "";
-    if(btnCerrar) btnCerrar.style.display = "none";
-  }
-}
-
-async function abrirDia(){
-  await elegirSucursalYEjecutar("abrir");
-}
-async function cerrarDia(){
-  await elegirSucursalYEjecutar("cerrar");
-}
-async function elegirSucursalYEjecutar(accion){
-  const sucs = (S.sucursal && S.sucursal !== "Ambas") ? [S.sucursal] : ["Polanco","Cuajimalpa"];
-  if(sucs.length === 1){
-    return ejecutarAccionDia(accion, sucs[0]);
-  }
-  // Mostrar modal con opciones
-  const modal = L("modal-sucursal");
-  L("modal-suc-title").textContent = accion === "abrir" ? "¿Qué sucursal abrir?" : "¿Qué sucursal cerrar?";
-  L("modal-suc-sub").textContent = accion === "abrir"
-    ? "Se tomará un snapshot del inventario actual como inicio del día."
-    : "Se cerrará el día y se registrará el snapshot final.";
-  L("modal-suc-options").innerHTML = sucs.map(s => `<button class="btn-outline" style="padding:14px;font-size:14px;font-weight:600" onclick="document.getElementById('modal-sucursal').classList.remove('show'); ejecutarAccionDia('${accion}','${s}')">${s}</button>`).join("");
-  modal.classList.add("show");
-}
-async function ejecutarAccionDia(accion, sucursal){
-  const endpoint = accion === "abrir" ? "abrirDia" : "cerrarDia";
-  const res = await api(endpoint,{sucursal});
-  if(res.ok){ toast(res.mensaje); await actualizarEstadoDia(); }
-  else toast(res.error,"error");
-}
-
-// --- A7: Word export ---
-async function exportarWord(){
-  const btn = L("btn-export-word");
-  if(btn){ btn.disabled = true; btn.textContent = "Generando..."; }
-  const sucursal = (S.sucursal && S.sucursal !== "Ambas") ? S.sucursal : "Ambas";
-  const res = await api("exportarDisponibleDocx",{sucursal});
-  if(btn){ btn.disabled = false; btn.textContent = "📄 Descargar Word"; }
-  if(res.ok){ window.open(res.downloadUrl,"_blank"); toast("Documento generado"); }
-  else toast(res.error||"Error generando Word","error");
-}
-
-// --- A4: Sub-pestañas Análisis ---
-function setSubAnalisis(sub){
-  ["utilidades","seguimiento"].forEach(s => {
-    const tab = L("sub-"+s);
-    const cont = L("sub-content-"+s);
-    if(!tab || !cont) return;
-    if(s === sub){
-      tab.style.borderBottomColor = "var(--accent)";
-      tab.style.color = "var(--ink)";
-      cont.style.display = "";
-    } else {
-      tab.style.borderBottomColor = "transparent";
-      tab.style.color = "var(--muted)";
-      cont.style.display = "none";
-    }
-  });
-  if(sub === "seguimiento") cargarSeguimiento();
-}
-
-// --- C: Seguimiento de ventas ---
-let _segSucursal = "Total";
-let _segChart = null;
-function setSegSucursal(suc, btn){
-  _segSucursal = suc;
-  document.querySelectorAll("#sub-content-seguimiento .filtro-btn").forEach(b => b.classList.remove("active"));
-  if(btn) btn.classList.add("active");
-  renderSegGrafica();
-}
-async function cargarSeguimiento(){
-  if(!L("seg-fecha").value) L("seg-fecha").value = hoyMX();
-  const fecha = L("seg-fecha").value;
-  const res = await api("getSeguimientoVentas",{fecha});
-  if(!res.ok){ toast(res.error||"Error","error"); return; }
-  L("seg-total-und").textContent = res.totalUnidades;
-  L("seg-total-dinero").textContent = "$" + Number(res.totalDinero||0).toLocaleString('es-MX');
-  let pico = "—", picoMax = 0;
-  Object.keys(res.porHora.Total||{}).forEach(h => { if(res.porHora.Total[h] > picoMax){ picoMax = res.porHora.Total[h]; pico = h; }});
-  L("seg-pico-hora").textContent = pico;
-  let canalTop = "—", canalMax = 0;
-  Object.keys(res.porCanal||{}).forEach(c => { if(res.porCanal[c] > canalMax){ canalMax = res.porCanal[c]; canalTop = c; }});
-  L("seg-canal-top").textContent = canalTop;
-  L("seg-por-sabor").innerHTML = Object.entries(res.porSabor||{}).sort((a,b)=>b[1]-a[1]).map(([s,n]) => `<div style="display:flex;justify-content:space-between;padding:3px 0">${s}<strong>${n}</strong></div>`).join("");
-  L("seg-por-tamano").innerHTML = Object.entries(res.porTamano||{}).sort((a,b)=>b[1]-a[1]).map(([s,n]) => `<div style="display:flex;justify-content:space-between;padding:3px 0">${s}<strong>${n}</strong></div>`).join("");
-  S.segData = res;
-  renderSegGrafica();
-}
-function renderSegGrafica(){
-  if(!S.segData || typeof Chart === "undefined") return;
-  const data = S.segData.porHora[_segSucursal] || {};
-  const horas = Array.from({length:24},(_,i)=>String(i).padStart(2,"0")+":00");
-  const valores = horas.map(h => data[h] || 0);
-  const ctx = L("seg-grafica-hora").getContext("2d");
-  if(_segChart) _segChart.destroy();
-  _segChart = new Chart(ctx, {
-    type:"bar",
-    data:{ labels:horas, datasets:[{ label:`Unidades — ${_segSucursal}`, data:valores, backgroundColor:"rgba(200,96,42,.7)" }] },
-    options:{ plugins:{legend:{display:true}}, scales:{y:{beginAtZero:true}} }
-  });
-}
-
-// --- C: Análisis de Demanda ---
-async function cargarDemanda(){
-  if(!L("dem-fecha").value) L("dem-fecha").value = hoyMX();
-  const fecha = L("dem-fecha").value;
-  const sucursal = L("dem-sucursal").value;
-  L("demanda-content").innerHTML = `<div class="loading"><div class="spinner"></div></div>`;
-  const res = await api("getAnalisisDemanda",{fecha, sucursal});
-  if(!res.ok){ L("demanda-content").innerHTML = `<div class="empty-state">${res.error||"Error"}</div>`; return; }
-  L("demanda-content").innerHTML = (res.resultado||[]).map(g => {
-    if(g.error) return `<div style="margin-bottom:14px"><div style="font-weight:600;margin-bottom:6px">${g.sucursal}</div><div class="empty-state">${g.error}</div></div>`;
-    const rows = (g.items||[]).map(it => `
-      <div class="dem-row">
-        <div>${it.sabor} <span style="color:var(--muted)">${it.tamano}</span></div>
-        <div>${it.stockInicial}</div>
-        <div>${it.vendido}</div>
-        <div>${it.ventasPorHora}/h</div>
-        <div>
-          ${it.estado==="AGOTADO" ? `<span class="dem-tag dem-tag-agotado">Agotó ${it.horaAgotamiento}</span><br><span style="font-size:10px;color:var(--muted)">Pérdida ~${it.perdidaProyectada}</span>` : ""}
-          ${it.estado==="DISPONIBLE" && it.horasStockRestante !== null ? `<span class="dem-tag dem-tag-disponible">${it.horasStockRestante}h stock</span>` : ""}
-          ${it.estado==="AGOTADO_SIN_VENTAS" ? `<span class="dem-tag" style="background:var(--bg);color:var(--muted)">Sin movimiento</span>` : ""}
-        </div>
-      </div>`).join("");
-    const tot = (g.items||[]).reduce((s,it)=>({ini:s.ini+it.stockInicial, vend:s.vend+it.vendido, perdidas:s.perdidas+(it.perdidaProyectada||0)}),{ini:0,vend:0,perdidas:0});
-    return `
-      <div style="margin-bottom:18px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px">
-          <div style="font-weight:600;font-size:14px">${g.sucursal} <span style="color:var(--muted);font-size:11px">${g.horario.abre}–${g.horario.cierra}</span></div>
-          <div style="font-size:11px;color:var(--muted)">${tot.ini} inicial · ${tot.vend} vendidas · pérdidas ~${tot.perdidas}</div>
-        </div>
-        <div class="dem-row dem-header"><div>Producto</div><div>Inicial</div><div>Vendido</div><div>Velocidad</div><div>Estado</div></div>
-        ${rows || `<div class="empty-state">Sin SKUs con stock inicial</div>`}
-      </div>`;
-  }).join("");
-}
-
 </script>
-
-<!-- v4.4b: Modal selector de sucursal para abrir/cerrar tienda -->
-<div class="modal-overlay" id="modal-sucursal">
-  <div class="modal" style="max-width:380px">
-    <div class="modal-title" id="modal-suc-title">Seleccionar sucursal</div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:14px" id="modal-suc-sub"></p>
-    <div id="modal-suc-options" style="display:grid;gap:10px"></div>
-    <div style="display:flex;justify-content:flex-end;margin-top:14px">
-      <button class="btn-outline" onclick="document.getElementById('modal-sucursal').classList.remove('show')">Cancelar</button>
-    </div>
-  </div>
-</div>
-
 </body>
 </html>
