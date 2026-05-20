@@ -387,6 +387,22 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <!-- AGREGAR PRODUCTO -->
         <div class="add-item-box">
           <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:12px">Agregar producto</div>
+          <!-- FEAT-PAQUETE: toggle modo (solo visible en venta) -->
+          <div id="modo-item-row" style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
+            <button type="button" class="btn-outline modo-item-btn active" id="modo-suelto-btn" onclick="setModoItem('suelto')" style="flex:1;min-width:120px;font-size:11px;padding:8px 4px">Producto suelto</button>
+            <button type="button" class="btn-outline modo-item-btn" id="modo-paquete3-btn" onclick="setModoItem('paquete3')" style="flex:1;min-width:120px;font-size:11px;padding:8px 4px">🎁 Paq 3 — $590</button>
+            <button type="button" class="btn-outline modo-item-btn" id="modo-paquete4-btn" onclick="setModoItem('paquete4')" style="flex:1;min-width:120px;font-size:11px;padding:8px 4px">🎁 Paq 4 — $720</button>
+          </div>
+          <!-- FEAT-PAQUETE: sección paquete (oculta por default, dinámica para 3 o 4) -->
+          <div id="paquete-box" style="display:none;background:rgba(200,96,42,.06);border:1px dashed var(--accent);border-radius:10px;padding:14px;margin-bottom:12px">
+            <div id="paq-titulo" style="font-size:13px;color:var(--accent);font-weight:600;margin-bottom:10px">🎁 Paquete</div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Selecciona los sabores (pueden combinarse o repetirse):</div>
+            <div id="paq-selectores"></div>
+            <div id="paq-aviso" style="font-size:11px;color:var(--muted);min-height:14px;margin-bottom:10px"></div>
+            <button class="btn-main" id="btn-agregar-paquete" style="background:var(--accent);color:white;width:100%">+ Agregar paquete al carrito</button>
+          </div>
+          <!-- /FEAT-PAQUETE -->
+          <div id="suelto-box">
           <div class="add-item-row">
             <div class="form-group"><label class="form-label">Sabor</label><select class="form-select" id="item-sabor" onchange="onItemSaborChange()"></select></div>
             <div class="form-group"><label class="form-label">Tamaño</label><select class="form-select" id="item-tamano" onchange="onItemTamanoChange()"></select></div>
@@ -416,6 +432,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
             <div style="padding-bottom:14px;font-size:13px;color:var(--muted)" id="item-precio-preview"></div>
           </div>
           <button class="btn-outline" id="btn-agregar-item" style="margin-top:0">+ Agregar al carrito</button>
+          </div><!-- /suelto-box -->
         </div>
 
         <!-- MOTIVO — solo merma/regalo -->
@@ -1307,7 +1324,9 @@ let S = {
   movimientos:[], anularPendiente:null,  // v3.2
   // FEAT-PROD-MEMORIA: último sabor/tamaño usado en producción
   lastProdSabor: localStorage.getItem("tv_lastProdSabor") || null,
-  lastProdTamano: localStorage.getItem("tv_lastProdTamano") || null
+  lastProdTamano: localStorage.getItem("tv_lastProdTamano") || null,
+  // FEAT-PAQUETE: modo de agregar items
+  modoItem: "suelto"
 };
 
 // Permisos por defecto si el backend no los devuelve
@@ -1706,7 +1725,13 @@ function setTipoOp(tipo, btn){
     clienteSection.style.display = "block";
     btnConfirmar.textContent = "Confirmar venta ✓";
     btnConfirmar.style.background = "";
+    // FEAT-PAQUETE: toggle modo solo en venta
+    L("modo-item-row").style.display = "flex";
   } else if(tipo === "regalo"){
+    L("modo-item-row").style.display = "none";
+    L("paquete-box").style.display = "none";
+    L("suelto-box").style.display = "block";
+    S.modoItem = "suelto";
     aviso.style.display = "block";
     aviso.style.background = "rgba(46,92,74,.1)";
     aviso.style.color = "var(--success)";
@@ -1718,6 +1743,10 @@ function setTipoOp(tipo, btn){
     btnConfirmar.textContent = "Registrar regalo 🎁";
     btnConfirmar.style.background = "#2E5C4A";
   } else if(tipo === "merma"){
+    L("modo-item-row").style.display = "none";
+    L("paquete-box").style.display = "none";
+    L("suelto-box").style.display = "block";
+    S.modoItem = "suelto";
     aviso.style.display = "block";
     aviso.style.background = "rgba(192,57,43,.08)";
     aviso.style.color = "var(--danger)";
@@ -1824,9 +1853,9 @@ function renderCarrito(){
   items.innerHTML=S.carrito.map((item,i)=>{
     const tieneDesc=item.descuento>0&&tipoOp==="venta";
     const descLabel=tieneDesc?(item.descTipo==="pct"?`-${item.descuento}%`:`-$${item.descuento}`):"";
-    return `<div class="carrito-item">
+    return `<div class="carrito-item"${item.esPaquete?' style="background:rgba(200,96,42,.05);border-left:3px solid var(--accent);padding-left:8px"':''}>
       <div class="carrito-info">
-        <div class="carrito-nombre">${item.sabor} ${item.tamano}</div>
+        <div class="carrito-nombre">${item.sabor} ${item.tamano}${item.esPaquete?' <span style="font-size:9px;background:var(--accent);color:white;padding:2px 6px;border-radius:6px;letter-spacing:1px;margin-left:4px">PAQ</span>':''}</div>
         <div class="carrito-sub">
           ${item.cantidad} ×
           ${tieneDesc?`<span style="text-decoration:line-through;color:var(--muted)">$${item.precioBase.toLocaleString('es-MX')}</span> `:""}
@@ -1931,7 +1960,9 @@ L("btn-confirmar").addEventListener("click",async()=>{
     }
     const items=S.carrito.map(i=>({
       sabor:i.sabor, tamano:i.tamano, cantidad:i.cantidad,
-      precioUnitario:i.precio, descuento:i.descuento||0, descTipo:i.descTipo||""
+      precioUnitario:i.precio, descuento:i.descuento||0, descTipo:i.descTipo||"",
+      esPaquete: i.esPaquete === true,
+      paqueteId: i.paqueteId || ""  // FEAT-PAQUETE
     }));
     const res=await api("registrarVenta",{items,canal,metodoPago:metodo,sucursal,cliente,tipoOp,motivo});
     if(res.ok){
@@ -1973,6 +2004,209 @@ L("btn-cargar-prod").addEventListener("click",async()=>{
   btn.disabled=false;btn.textContent="Cargar producción";
 });
 
+// ============================================================
+// FEAT-PAQUETE — Paquetes 3 ($590) y 4 ($720) individuales
+// ============================================================
+
+const PAQUETE_CONFIG = {
+  paquete3: { size: 3, totalBase: 590, totalRappi: 630, tituloBase: "🎁 Paquete 3 indiv — $590 (no Rappi)", tituloRappi: "🎁 Paquete 3 indiv — $630 (Rappi)" },
+  paquete4: { size: 4, totalBase: 720, totalRappi: 760, tituloBase: "🎁 Paquete 4 indiv — $720 (no Rappi)", tituloRappi: "🎁 Paquete 4 indiv — $760 (Rappi)" }
+};
+
+function _esCanalRappi() {
+  return (L("venta-canal")?.value || "") === "Rappi";
+}
+function getPaqueteTotal(modo) {
+  const cfg = PAQUETE_CONFIG[modo];
+  return _esCanalRappi() ? cfg.totalRappi : cfg.totalBase;
+}
+function getPaqueteTitulo(modo) {
+  const cfg = PAQUETE_CONFIG[modo];
+  return _esCanalRappi() ? cfg.tituloRappi : cfg.tituloBase;
+}
+
+function setModoItem(modo) {
+  S.modoItem = modo;
+  document.querySelectorAll(".modo-item-btn").forEach(b => b.classList.remove("active"));
+  const btnId = modo === "suelto" ? "modo-suelto-btn" : (modo === "paquete3" ? "modo-paquete3-btn" : "modo-paquete4-btn");
+  L(btnId).classList.add("active");
+  L("suelto-box").style.display = (modo === "suelto") ? "block" : "none";
+  L("paquete-box").style.display = (modo === "suelto") ? "none" : "block";
+  if (modo !== "suelto") {
+    const cfg = PAQUETE_CONFIG[modo];
+    L("paq-titulo").textContent = getPaqueteTitulo(modo);
+    L("btn-agregar-paquete").textContent = `+ Agregar paquete al carrito ($${getPaqueteTotal(modo)})`;
+    // Renderizar N selectores
+    let h = "";
+    for (let i = 1; i <= cfg.size; i++) {
+      h += `<div class="form-group" style="margin-bottom:8px"><label class="form-label">Individual ${i}</label><select class="form-select paq-sabor" id="paq-sabor-${i}" onchange="actualizarPaqueteStocks()"></select></div>`;
+    }
+    L("paq-selectores").innerHTML = h;
+    poblarSelectsPaquete();
+  }
+}
+
+function _getStockIndividual() {
+  // Devuelve objeto {sabor: cantidadDisponible} considerando carrito
+  if (!S.stock) return {};
+  const sucursal = getSucursalVenta();
+  const stockInd = (S.stock || []).filter(s => s.tamano === "Individual" && !s.vencido && s.cantActual > 0 && (!sucursal || s.sucursal === sucursal));
+  const porSabor = {};
+  stockInd.forEach(s => { porSabor[s.sabor] = (porSabor[s.sabor] || 0) + Number(s.cantActual); });
+  // Restar lo que ya está en el carrito
+  S.carrito.forEach(it => {
+    if (it.tamano === "Individual") porSabor[it.sabor] = (porSabor[it.sabor] || 0) - it.cantidad;
+  });
+  return porSabor;
+}
+
+function poblarSelectsPaquete() {
+  if (!S.stock) return;
+  const modo = S.modoItem;
+  if (modo === "suelto") return;
+  const size = PAQUETE_CONFIG[modo].size;
+  const porSabor = _getStockIndividual();
+  const sabores = Object.keys(porSabor).filter(s => porSabor[s] > 0).sort();
+  if (sabores.length === 0) {
+    L("paq-aviso").innerHTML = '<span style="color:var(--danger)">⚠ Sin stock de individuales</span>';
+    for (let i = 1; i <= size; i++) L("paq-sabor-" + i).innerHTML = '<option value="">— sin stock —</option>';
+    return;
+  }
+  for (let i = 1; i <= size; i++) L("paq-sabor-" + i).innerHTML = '<option value="">— Selecciona —</option>';
+  // Pre-render: todas las opciones para todos
+  actualizarPaqueteStocks();
+}
+
+function actualizarPaqueteStocks() {
+  const modo = S.modoItem;
+  if (modo === "suelto") return;
+  const size = PAQUETE_CONFIG[modo].size;
+  const porSabor = _getStockIndividual();
+  // Recolectar selecciones actuales por índice
+  const seleccionados = [];
+  for (let i = 1; i <= size; i++) seleccionados.push(L("paq-sabor-" + i).value || "");
+  // Para cada select i, calcular qué cantidad de cada sabor ya consumieron los OTROS selects
+  for (let i = 1; i <= size; i++) {
+    const sel = L("paq-sabor-" + i);
+    const valActual = sel.value;
+    const consumidoOtros = {};
+    seleccionados.forEach((s, j) => {
+      if (j !== i - 1 && s) consumidoOtros[s] = (consumidoOtros[s] || 0) + 1;
+    });
+    // Opciones permitidas: sabores con stock > consumidoOtros
+    const sabores = Object.keys(porSabor).filter(s => porSabor[s] > (consumidoOtros[s] || 0)).sort();
+    // También incluir el valor actual aunque ya esté agotado (para no perderlo)
+    if (valActual && !sabores.includes(valActual)) sabores.push(valActual);
+    sabores.sort();
+    let opts = '<option value="">— Selecciona —</option>';
+    sabores.forEach(s => {
+      const dispParaEsteSelect = (porSabor[s] || 0) - (consumidoOtros[s] || 0);
+      opts += `<option value="${s}"${s===valActual?' selected':''}>${s} (${dispParaEsteSelect} disp)</option>`;
+    });
+    sel.innerHTML = opts;
+    if (valActual) sel.value = valActual;
+  }
+  // Validar: ¿se eligieron todos? ¿el conteo cabe en stock?
+  const completos = seleccionados.every(s => s);
+  const conteo = {};
+  seleccionados.forEach(s => { if (s) conteo[s] = (conteo[s] || 0) + 1; });
+  const conflictos = [];
+  for (const s in conteo) {
+    if (conteo[s] > (porSabor[s] || 0)) conflictos.push(`${s} (${conteo[s]}/${porSabor[s]||0})`);
+  }
+  if (conflictos.length > 0) {
+    L("paq-aviso").innerHTML = '<span style="color:var(--danger)">⚠ Stock insuficiente: ' + conflictos.join(", ") + '</span>';
+    L("btn-agregar-paquete").disabled = true;
+  } else if (!completos) {
+    L("paq-aviso").innerHTML = `<span style="color:var(--muted)">Selecciona los ${size} sabores</span>`;
+    L("btn-agregar-paquete").disabled = true;
+  } else {
+    L("paq-aviso").textContent = "";
+    L("btn-agregar-paquete").disabled = false;
+  }
+}
+
+L("btn-agregar-paquete").addEventListener("click", () => {
+  const modo = S.modoItem;
+  if (modo === "suelto") return;
+  const cfg = PAQUETE_CONFIG[modo];
+  const total = getPaqueteTotal(modo);
+  const sabores = [];
+  for (let i = 1; i <= cfg.size; i++) sabores.push(L("paq-sabor-" + i).value);
+  if (sabores.some(s => !s)) { toast(`Selecciona los ${cfg.size} sabores`, "error"); return; }
+  const porSabor = _getStockIndividual();
+  const conteo = {};
+  sabores.forEach(s => { conteo[s] = (conteo[s] || 0) + 1; });
+  for (const s in conteo) {
+    if (conteo[s] > (porSabor[s] || 0)) {
+      toast(`Stock insuficiente de ${s}: necesitas ${conteo[s]}, hay ${porSabor[s] || 0}`, "error");
+      return;
+    }
+  }
+  // Distribución de precios: cubrir total exacto
+  const precios = new Array(cfg.size).fill(Math.floor(total / cfg.size));
+  let resto = total - precios.reduce((s,p)=>s+p, 0);
+  for (let i = 0; i < cfg.size && resto > 0; i++) { precios[i]++; resto--; }
+  const pid = "PKG-" + Date.now() + "-" + Math.floor(Math.random()*1000);
+  sabores.forEach((sabor, idx) => {
+    const precio = precios[idx];
+    S.carrito.push({
+      sabor, tamano: "Individual", cantidad: 1,
+      precio, precioBase: precio,
+      descuento: 0, descTipo: "", subtotal: precio,
+      esPaquete: true, paqueteId: pid, paqueteSize: cfg.size
+    });
+  });
+  for (let i = 1; i <= cfg.size; i++) L("paq-sabor-" + i).value = "";
+  toast(`✅ Paquete ${cfg.size} individuales agregado ($${total})`);
+  renderCarrito();
+  actualizarDisp();
+  poblarSelectsPaquete();
+});
+
+// FEAT-PAQUETE: cuando cambie el canal, recalcular precios de paquetes en el carrito
+function recalcularPreciosPaquetesEnCarrito() {
+  if (!S.carrito || S.carrito.length === 0) return;
+  // Agrupar por paqueteId
+  const grupos = {};
+  S.carrito.forEach((it, idx) => {
+    if (!it.esPaquete || !it.paqueteId) return;
+    if (!grupos[it.paqueteId]) grupos[it.paqueteId] = [];
+    grupos[it.paqueteId].push({ it, idx });
+  });
+  let cambio = false;
+  for (const pid in grupos) {
+    const g = grupos[pid];
+    const size = g.length;
+    const modo = size === 3 ? "paquete3" : (size === 4 ? "paquete4" : null);
+    if (!modo) continue;
+    const nuevoTotal = getPaqueteTotal(modo);
+    const sumaActual = g.reduce((s,x)=>s+x.it.precio, 0);
+    if (sumaActual === nuevoTotal) continue;
+    // Redistribuir
+    const precios = new Array(size).fill(Math.floor(nuevoTotal / size));
+    let resto = nuevoTotal - precios.reduce((s,p)=>s+p, 0);
+    for (let i = 0; i < size && resto > 0; i++) { precios[i]++; resto--; }
+    g.forEach((x, i) => {
+      S.carrito[x.idx].precio = precios[i];
+      S.carrito[x.idx].precioBase = precios[i];
+      S.carrito[x.idx].subtotal = precios[i];
+    });
+    cambio = true;
+  }
+  if (cambio) { toast("Precios de paquetes recalculados para nuevo canal"); renderCarrito(); }
+}
+// Listener: cuando cambie el canal de venta, recalcular paquetes
+document.addEventListener("DOMContentLoaded", () => {
+  const sel = L("venta-canal");
+  if (sel) sel.addEventListener("change", () => {
+    // actualizar título del paquete si está abierto
+    if (S.modoItem !== "suelto") setModoItem(S.modoItem);
+    recalcularPreciosPaquetesEnCarrito();
+  });
+});
+
+// // ============================================================
 // ============================================================
 // VENTAS
 // ============================================================
