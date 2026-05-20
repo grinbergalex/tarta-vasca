@@ -1304,7 +1304,10 @@ let S = {
   carrito:[], clienteSel:null, comisionesConfig:{},
   filtroSuc:null, filtroTam:null, precioEditar:null, itemTipo:null,
   insumos:[], recetas:[], recetaActual:[],
-  movimientos:[], anularPendiente:null  // v3.2
+  movimientos:[], anularPendiente:null,  // v3.2
+  // FEAT-PROD-MEMORIA: último sabor/tamaño usado en producción
+  lastProdSabor: localStorage.getItem("tv_lastProdSabor") || null,
+  lastProdTamano: localStorage.getItem("tv_lastProdTamano") || null
 };
 
 // Permisos por defecto si el backend no los devuelve
@@ -1475,8 +1478,16 @@ function poblarSelectsVenta() {
 
   const sabAll=(S.catalogo.sabores||[]).filter(s=>s.activo).map(s=>s.nombre);
   const tamAll=(S.catalogo.tamanos||[]).filter(t=>t.activo).map(t=>t.nombre);
+  // FIX BUG: preservar selección actual del usuario antes de repoblar
+  const prodSaborActual = L("prod-sabor")?.value;
+  const prodTamanoActual = L("prod-tamano")?.value;
   llenar("prod-sabor", sabAll);
   llenar("prod-tamano", tamAll);
+  // Restaurar selección: primero la actual, después memoria persistida
+  if (prodSaborActual && sabAll.includes(prodSaborActual)) L("prod-sabor").value = prodSaborActual;
+  else if (S.lastProdSabor && sabAll.includes(S.lastProdSabor)) L("prod-sabor").value = S.lastProdSabor;
+  if (prodTamanoActual && tamAll.includes(prodTamanoActual)) L("prod-tamano").value = prodTamanoActual;
+  else if (S.lastProdTamano && tamAll.includes(S.lastProdTamano)) L("prod-tamano").value = S.lastProdTamano;
 
   ["receta-sabor","calc-sabor","bulk-receta-sabor"].forEach(id=>llenar(id,sabAll));
   ["receta-tamano","calc-tamano","bulk-receta-tamano"].forEach(id=>llenar(id,tamAll));
@@ -1950,8 +1961,15 @@ L("btn-cargar-prod").addEventListener("click",async()=>{
   if(!sabor||!tamano||cantidad<1){toast("Completa todos los campos","error");return;}
   const btn=L("btn-cargar-prod");btn.disabled=true;btn.textContent="Cargando...";
   const res=await api("altaProduccion",{sabor,tamano,sucursal:"Cuajimalpa",cantidad});
-  if(res.ok){toast(res.mensaje);L("prod-cantidad").value="1";cargarStock();}
-  else toast(res.error,"error");
+  if(res.ok){
+    toast(res.mensaje);
+    L("prod-cantidad").value="1";
+    // FEAT-PROD-MEMORIA: persistir último sabor/tamaño usado
+    S.lastProdSabor = sabor;
+    S.lastProdTamano = tamano;
+    try { localStorage.setItem("tv_lastProdSabor", sabor); localStorage.setItem("tv_lastProdTamano", tamano); } catch(e) {}
+    cargarStock();
+  } else toast(res.error,"error");
   btn.disabled=false;btn.textContent="Cargar producción";
 });
 
