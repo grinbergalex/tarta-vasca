@@ -232,6 +232,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 .sesion-row.actual{background:#e8f5e9;border:1px solid var(--success)}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
 </head>
 <body>
 
@@ -4140,23 +4141,22 @@ function _resumenVentas(ventas) {
   return { total, piezas, transacciones: idVentas.size, porTamano, porCanal, porSabor };
 }
 
-function _tarjetaResumen(titulo, r, color, secId, ventasSeccion) {
-  const rowsT = Object.keys(r.porTamano).sort().map(t =>
-    `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--warm);font-size:12px">
-      <span>${t}</span>
-      <span><strong>${r.porTamano[t].piezas}</strong> uds · $${r.porTamano[t].monto.toLocaleString('es-MX')}</span>
-    </div>`).join("");
-  const rowsC = Object.keys(r.porCanal).sort().map(c =>
-    `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--warm);font-size:12px">
-      <span>${c}</span>
-      <span><strong>${r.porCanal[c].piezas}</strong> uds · $${r.porCanal[c].monto.toLocaleString('es-MX')}</span>
-    </div>`).join("");
-  const sabOrdenados = Object.keys(r.porSabor || {}).sort((a,b) => (r.porSabor[b].piezas||0) - (r.porSabor[a].piezas||0));
-  const rowsS = sabOrdenados.map(sa =>
-    `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--warm);font-size:12px">
-      <span>${sa}</span>
-      <span><strong>${r.porSabor[sa].piezas}</strong> uds · $${r.porSabor[sa].monto.toLocaleString('es-MX')}</span>
-    </div>`).join("");
+function _tarjetaResumen(titulo, r, color, secId) {
+  // Helper para renderizar filas en 2 columnas
+  function rowsGrid(obj, ordenarPorPiezas) {
+    let keys = Object.keys(obj || {});
+    if (ordenarPorPiezas) keys.sort((a,b) => (obj[b].piezas||0) - (obj[a].piezas||0));
+    else keys.sort();
+    if (keys.length === 0) return '';
+    return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px">` +
+      keys.map(k => `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--warm);font-size:12px">
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:6px">${k}</span>
+        <span style="white-space:nowrap"><strong>${obj[k].piezas}</strong> · $${obj[k].monto.toLocaleString('es-MX')}</span>
+      </div>`).join("") + `</div>`;
+  }
+  const rowsT = rowsGrid(r.porTamano, false);
+  const rowsC = rowsGrid(r.porCanal, false);
+  const rowsS = rowsGrid(r.porSabor, true);
   return `<div class="card" style="margin-bottom:12px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
       <div style="font-weight:700;font-size:16px">${titulo}</div>
@@ -4167,17 +4167,19 @@ function _tarjetaResumen(titulo, r, color, secId, ventasSeccion) {
       <div class="summary-card" style="padding:10px"><div class="summary-num" style="font-size:22px">${r.transacciones}</div><div class="summary-label">Tickets</div></div>
       <div class="summary-card" style="padding:10px"><div class="summary-num" style="font-size:22px;color:${color}">${r.piezas > 0 ? '$' + Math.round(r.total / r.piezas).toLocaleString('es-MX') : '—'}</div><div class="summary-label">Prom/pieza</div></div>
     </div>
-    ${rowsT ? `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:4px;text-transform:uppercase">Por tamaño</div>${rowsT}` : ''}
-    ${rowsC ? `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:4px;margin-top:10px;text-transform:uppercase">Por canal</div>${rowsC}` : ''}
-    ${rowsS ? `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:4px;margin-top:10px;text-transform:uppercase">Por sabor</div>${rowsS}` : ''}
-    <!-- SECCIÓN PIES DRILL-DOWN -->
-    <div id="pies-${secId}" style="margin-top:18px;border-top:1px solid var(--warm);padding-top:14px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <div style="font-size:13px;font-weight:700;color:var(--ink)">📊 Análisis gráfico</div>
-        <button onclick="resetPieDrillDown('${secId}')" class="btn-outline" style="width:auto;font-size:11px;padding:4px 10px;margin-top:0">↺ Reiniciar</button>
-      </div>
-      <div id="pie-container-${secId}"></div>
+    ${rowsT ? `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:6px;text-transform:uppercase">Por tamaño</div>${rowsT}` : ''}
+    ${rowsC ? `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:6px;margin-top:12px;text-transform:uppercase">Por canal</div>${rowsC}` : ''}
+    ${rowsS ? `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:6px;margin-top:12px;text-transform:uppercase">Por sabor</div>${rowsS}` : ''}
+  </div>`;
+}
+
+function _tarjetaPie(titulo, color, secId) {
+  return `<div class="card" style="margin-bottom:12px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="font-weight:700;font-size:16px;color:${color}">📊 ${titulo}</div>
+      <button onclick="resetPieDrillDown('${secId}')" class="btn-outline" style="width:auto;font-size:11px;padding:4px 10px;margin-top:0">↺ Reiniciar</button>
     </div>
+    <div id="pie-container-${secId}"></div>
   </div>`;
 }
 
@@ -4198,9 +4200,14 @@ function renderReporte() {
   // Guardar ventas por sección para los pies drill-down
   S.ventasPorSeccion = { total: ventasHoy, cuaji: vCuaji, polanco: vPolanco };
   L("reporte-content").innerHTML =
-    _tarjetaResumen("🏢 Total empresa", total, "var(--accent)", "total", ventasHoy) +
-    _tarjetaResumen("🍰 Cuajimalpa", cuaji, "var(--green)", "cuaji", vCuaji) +
-    _tarjetaResumen("🍰 Polanco", polanco, "var(--accent)", "polanco", vPolanco);
+    _tarjetaResumen("🏢 Total empresa", total, "var(--accent)", "total") +
+    _tarjetaResumen("🍰 Cuajimalpa", cuaji, "var(--green)", "cuaji") +
+    _tarjetaResumen("🍰 Polanco", polanco, "var(--accent)", "polanco") +
+    `<div style="height:6px;background:linear-gradient(90deg,transparent,var(--border),transparent);border-radius:3px;margin:18px 0"></div>` +
+    `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.1em;margin-bottom:10px;text-transform:uppercase;text-align:center">Análisis gráfico (drill-down)</div>` +
+    _tarjetaPie("Total empresa", "var(--accent)", "total") +
+    _tarjetaPie("Cuajimalpa", "var(--green)", "cuaji") +
+    _tarjetaPie("Polanco", "var(--accent)", "polanco");
   // Renderizar pies de cada sección
   setTimeout(() => {
     ["total", "cuaji", "polanco"].forEach(secId => renderPiesSeccion(secId));
@@ -4314,6 +4321,7 @@ function renderPiesSeccion(secId) {
     const colores = labels.map((_, i) => COLORES_PIE[i % COLORES_PIE.length]);
     const chart = new Chart(ctx, {
       type: "pie",
+      plugins: [window.ChartDataLabels],
       data: { labels, datasets: [{ data, backgroundColor: colores, borderColor: "#fff", borderWidth: 2 }] },
       options: {
         responsive: true, maintainAspectRatio: false,
@@ -4321,14 +4329,27 @@ function renderPiesSeccion(secId) {
           legend: { position: "right", labels: { font: { size: 11 }, boxWidth: 12 } },
           tooltip: { callbacks: { label: (ctx) => {
             const i = ctx.dataIndex;
-            return `${labels[i]}: ${grupos[i].piezas} uds · $${grupos[i].monto.toLocaleString('es-MX')}`;
-          }}}
+            const total = data.reduce((s, v) => s + v, 0);
+            const pct = total > 0 ? (grupos[i].piezas / total * 100).toFixed(1) : 0;
+            return `${labels[i]}: ${grupos[i].piezas} uds (${pct}%) · $${grupos[i].monto.toLocaleString('es-MX')}`;
+          }}},
+          datalabels: {
+            color: "#fff",
+            font: { weight: "bold", size: 13 },
+            textShadowBlur: 4,
+            textShadowColor: "rgba(0,0,0,0.6)",
+            formatter: (value, ctx) => {
+              const total = ctx.chart.data.datasets[0].data.reduce((s, v) => s + v, 0);
+              const pct = total > 0 ? value / total * 100 : 0;
+              if (pct < 4) return "";  // ocultar etiquetas en rebanadas muy chicas
+              return value;
+            }
+          }
         },
         onClick: (evt, elements) => {
           if (elements.length === 0) return;
           const idx = elements[0].index;
           const valor = labels[idx];
-          // Avanzar al siguiente nivel
           S.pieEstado[secId].push({ dimension: dimSel, valorSeleccionado: valor });
           renderPiesSeccion(secId);
         }
