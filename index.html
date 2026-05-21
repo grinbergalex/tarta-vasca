@@ -325,7 +325,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <div class="card-sub" id="stock-sub">Cargando...</div>
         <div class="summary-grid" id="stock-summary" style="display:none">
           <div class="summary-card"><div class="summary-num" id="sum-total">0</div><div class="summary-label">Piezas disponibles</div></div>
-          <div class="summary-card"><div class="summary-num" id="sum-vencer" style="color:var(--warning)">0</div><div class="summary-label">Por vencer hoy</div></div>
+          
         </div>
         <input class="stock-search" type="text" id="stock-search" placeholder="Buscar sabor...">
         <div class="filter-row" id="filtros-suc"></div>
@@ -337,7 +337,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
             <option value="sucursal">Sucursal</option>
             <option value="tamano">Tamaño</option>
             <option value="cantidad">Cantidad</option>
-            <option value="vence">Caducidad</option>
+            
           </select>
         </div>
         <div id="stock-content"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
@@ -1645,12 +1645,10 @@ function renderStock(){
     if(orden==="sucursal")  return a.sucursal.localeCompare(b.sucursal)||a.sabor.localeCompare(b.sabor);
     if(orden==="tamano")    return a.tamano.localeCompare(b.tamano)||a.sabor.localeCompare(b.sabor);
     if(orden==="cantidad")  return b.cantActual-a.cantActual;
-    if(orden==="vence")     return a.diasRestantes-b.diasRestantes;
     return 0;
   });
 
   L("sum-total").textContent=f.reduce((s,i)=>s+i.cantActual,0);
-  L("sum-vencer").textContent=f.filter(s=>s.porVencer).length;
   L("stock-summary").style.display="grid";
   L("stock-sub").textContent=S.filtroSuc||(!getPermisos().puedeVerAmbas?S.sucursal:"todas las sucursales");
   if(S.catalogo&&getPermisos().puedeVerAmbas){
@@ -1667,12 +1665,10 @@ function renderStock(){
   }
   if(f.length===0){L("stock-content").innerHTML=`<div class="empty-state"><div class="empty-icon">📦</div><div>Sin stock disponible</div></div>`;return;}
   L("stock-content").innerHTML=`<table class="stock-table">
-    <thead><tr><th>Sabor</th><th>Tam.</th>${getPermisos().puedeVerAmbas?"<th>Suc.</th>":""}<th>Cant.</th><th>Vence</th></tr></thead>
+    <thead><tr><th>Sabor</th><th>Tam.</th>${getPermisos().puedeVerAmbas?"<th>Suc.</th>":""}<th>Cant.</th></tr></thead>
     <tbody>${f.map(s=>{
       const qCls=s.cantActual<=2?"qty-low":"qty-ok";
-      const cCls=s.vencido?"cad-bad":s.porVencer?"cad-warn":"cad-ok";
-      const cTxt=s.vencido?"Vencido":s.diasRestantes===1?"Hoy":s.diasRestantes+"d";
-      return `<tr><td><strong>${s.sabor}</strong></td><td style="color:var(--muted);font-size:12px">${s.tamano}</td>${getPermisos().puedeVerAmbas?`<td><span class="suc-tag">${s.sucursal.substring(0,4)}</span></td>`:""}<td><span class="qty-badge ${qCls}">${s.cantActual}</span></td><td><span class="cad-badge ${cCls}">${cTxt}</span></td></tr>`;
+      return `<tr><td><strong>${s.sabor}</strong></td><td style="color:var(--muted);font-size:12px">${s.tamano}</td>${getPermisos().puedeVerAmbas?`<td><span class="suc-tag">${s.sucursal.substring(0,4)}</span></td>`:""}<td><span class="qty-badge ${qCls}">${s.cantActual}</span></td></tr>`;
     }).join("")}</tbody></table>`;
 }
 L("stock-search").addEventListener("input",renderStock);
