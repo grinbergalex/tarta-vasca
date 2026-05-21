@@ -231,6 +231,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 .sesion-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--warm);border-radius:10px;margin-bottom:6px;font-size:12px}
 .sesion-row.actual{background:#e8f5e9;border:1px solid var(--success)}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -302,7 +303,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <div class="nav-tab perm-transferir" data-tab="transferencias">Transferencias</div>
     <div class="nav-tab perm-vender" data-tab="venta">Nueva venta</div>
     <div class="nav-tab owner-only" data-tab="ventas">Ventas</div>
-    <div class="nav-tab owner-only" data-tab="reporte">📊 Reporte</div>
+    <div class="nav-tab owner-only" data-tab="reporte">📊 Reportes</div>
     <div class="nav-tab owner-only" data-tab="movimientos">Movimientos</div>
     <div class="nav-tab owner-only" data-tab="catalogo">Catálogo</div>
     <div class="nav-tab owner-only" data-tab="precios">Precios</div>
@@ -511,31 +512,50 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <div id="ventas-list"><div class="loading"><div class="spinner"></div></div></div>
       </div>
     </div>
-    <!-- REPORTE -->
+    <!-- REPORTES -->
     <div id="tab-reporte" class="tab-pane" style="display:none">
-      <div class="card" style="padding:14px 16px;margin-bottom:12px">
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px">
-          <div class="card-title" style="margin-bottom:0">📊 Reporte del día</div>
-          <button onclick="cargarReporte()" class="btn-outline" style="width:auto;font-size:12px;padding:6px 14px;margin-top:0">🔄 Recargar</button>
-        </div>
-        <div id="reporte-fecha" style="font-size:13px;color:var(--muted);margin-bottom:10px"></div>
-        <!-- FILTROS -->
-        <div style="display:grid;grid-template-columns:1fr;gap:10px">
-          <div>
-            <label class="form-label">Sabores (vacío = todos)</label>
-            <div id="reporte-filtros-sabor" class="filter-row" style="margin-bottom:0"></div>
-          </div>
-          <div>
-            <label class="form-label">Tamaños (vacío = todos)</label>
-            <div id="reporte-filtros-tamano" class="filter-row" style="margin-bottom:0"></div>
-          </div>
-          <div>
-            <label class="form-label">Canales (vacío = todos)</label>
-            <div id="reporte-filtros-canal" class="filter-row" style="margin-bottom:0"></div>
-          </div>
-        </div>
+      <!-- Sub-pestañas -->
+      <div class="costos-tabs" style="margin-bottom:14px">
+        <button class="costos-tab active" onclick="setReporteTab('diario')">📅 Seguimiento diario</button>
+        <button class="costos-tab" onclick="setReporteTab('semanal')">📆 Semanal</button>
+        <button class="costos-tab" onclick="setReporteTab('mensual')">🗓 Mensual</button>
       </div>
-      <div id="reporte-content"><div class="loading"><div class="spinner"></div>Cargando reporte...</div></div>
+
+      <!-- SUB-PESTAÑA: DIARIO -->
+      <div id="reporte-diario" class="costos-section active">
+        <div class="card" style="padding:14px 16px;margin-bottom:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px">
+            <div class="card-title" style="margin-bottom:0">Seguimiento diario</div>
+            <button onclick="cargarReporte()" class="btn-outline" style="width:auto;font-size:12px;padding:6px 14px;margin-top:0">🔄 Recargar</button>
+          </div>
+          <div id="reporte-fecha" style="font-size:13px;color:var(--muted);margin-bottom:10px"></div>
+          <div style="display:grid;grid-template-columns:1fr;gap:10px">
+            <div>
+              <label class="form-label">Sabores (vacío = todos)</label>
+              <div id="reporte-filtros-sabor" class="filter-row" style="margin-bottom:0"></div>
+            </div>
+            <div>
+              <label class="form-label">Tamaños (vacío = todos)</label>
+              <div id="reporte-filtros-tamano" class="filter-row" style="margin-bottom:0"></div>
+            </div>
+            <div>
+              <label class="form-label">Canales (vacío = todos)</label>
+              <div id="reporte-filtros-canal" class="filter-row" style="margin-bottom:0"></div>
+            </div>
+          </div>
+        </div>
+        <div id="reporte-content"><div class="loading"><div class="spinner"></div>Cargando reporte...</div></div>
+      </div>
+
+      <!-- SUB-PESTAÑA: SEMANAL -->
+      <div id="reporte-semanal" class="costos-section">
+        <div class="card"><div class="empty-state"><div class="empty-icon">📆</div><div>Reporte semanal — próxima sesión</div></div></div>
+      </div>
+
+      <!-- SUB-PESTAÑA: MENSUAL -->
+      <div id="reporte-mensual" class="costos-section">
+        <div class="card"><div class="empty-state"><div class="empty-icon">🗓</div><div>Reporte mensual — próxima sesión</div></div></div>
+      </div>
     </div>
 
     <!-- MOVIMIENTOS — anular ventas, cargas, transferencias -->
@@ -4120,7 +4140,7 @@ function _resumenVentas(ventas) {
   return { total, piezas, transacciones: idVentas.size, porTamano, porCanal, porSabor };
 }
 
-function _tarjetaResumen(titulo, r, color) {
+function _tarjetaResumen(titulo, r, color, secId, ventasSeccion) {
   const rowsT = Object.keys(r.porTamano).sort().map(t =>
     `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--warm);font-size:12px">
       <span>${t}</span>
@@ -4131,7 +4151,6 @@ function _tarjetaResumen(titulo, r, color) {
       <span>${c}</span>
       <span><strong>${r.porCanal[c].piezas}</strong> uds · $${r.porCanal[c].monto.toLocaleString('es-MX')}</span>
     </div>`).join("");
-  // Por sabor: ordenar por piezas descendente
   const sabOrdenados = Object.keys(r.porSabor || {}).sort((a,b) => (r.porSabor[b].piezas||0) - (r.porSabor[a].piezas||0));
   const rowsS = sabOrdenados.map(sa =>
     `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--warm);font-size:12px">
@@ -4151,6 +4170,14 @@ function _tarjetaResumen(titulo, r, color) {
     ${rowsT ? `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:4px;text-transform:uppercase">Por tamaño</div>${rowsT}` : ''}
     ${rowsC ? `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:4px;margin-top:10px;text-transform:uppercase">Por canal</div>${rowsC}` : ''}
     ${rowsS ? `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:4px;margin-top:10px;text-transform:uppercase">Por sabor</div>${rowsS}` : ''}
+    <!-- SECCIÓN PIES DRILL-DOWN -->
+    <div id="pies-${secId}" style="margin-top:18px;border-top:1px solid var(--warm);padding-top:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:700;color:var(--ink)">📊 Análisis gráfico</div>
+        <button onclick="resetPieDrillDown('${secId}')" class="btn-outline" style="width:auto;font-size:11px;padding:4px 10px;margin-top:0">↺ Reiniciar</button>
+      </div>
+      <div id="pie-container-${secId}"></div>
+    </div>
   </div>`;
 }
 
@@ -4163,16 +4190,160 @@ function renderReporte() {
     L("reporte-content").innerHTML = `<div class="card"><div class="empty-state"><div class="empty-icon">📊</div><div>Sin ventas hoy${(S.reporteFiltros.sabores.length || S.reporteFiltros.tamanos.length || S.reporteFiltros.canales.length) ? ' (con los filtros aplicados)' : ''}</div></div></div>`;
     return;
   }
+  const vCuaji = ventasHoy.filter(v => v.sucursal === "Cuajimalpa");
+  const vPolanco = ventasHoy.filter(v => v.sucursal === "Polanco");
   const total = _resumenVentas(ventasHoy);
-  const cuaji = _resumenVentas(ventasHoy.filter(v => v.sucursal === "Cuajimalpa"));
-  const polanco = _resumenVentas(ventasHoy.filter(v => v.sucursal === "Polanco"));
+  const cuaji = _resumenVentas(vCuaji);
+  const polanco = _resumenVentas(vPolanco);
+  // Guardar ventas por sección para los pies drill-down
+  S.ventasPorSeccion = { total: ventasHoy, cuaji: vCuaji, polanco: vPolanco };
   L("reporte-content").innerHTML =
-    _tarjetaResumen("🏢 Total empresa", total, "var(--accent)") +
-    _tarjetaResumen("🍰 Cuajimalpa", cuaji, "var(--green)") +
-    _tarjetaResumen("🍰 Polanco", polanco, "var(--accent)");
+    _tarjetaResumen("🏢 Total empresa", total, "var(--accent)", "total", ventasHoy) +
+    _tarjetaResumen("🍰 Cuajimalpa", cuaji, "var(--green)", "cuaji", vCuaji) +
+    _tarjetaResumen("🍰 Polanco", polanco, "var(--accent)", "polanco", vPolanco);
+  // Renderizar pies de cada sección
+  setTimeout(() => {
+    ["total", "cuaji", "polanco"].forEach(secId => renderPiesSeccion(secId));
+  }, 50);
 }
 
 // /FEAT-REPORTE
+
+
+// ============================================================
+// FEAT-REPORTE-PIES — Pies con drill-down jerárquico
+// ============================================================
+
+const DIMENSIONES = {
+  sabor: { label: "Por sabor", campo: "sabor" },
+  tamano: { label: "Por tamaño", campo: "tamano" },
+  canal: { label: "Por canal", campo: "canal" }
+};
+
+const COLORES_PIE = ["#C8602A", "#2E5C4A", "#86BDAD", "#C9A84C", "#1976D2", "#9C27B0", "#FF9800", "#4CAF50", "#E91E63", "#607D8B", "#795548", "#3F51B5"];
+
+// Estado del drill-down por sección
+if (!S.pieEstado) S.pieEstado = { total: [], cuaji: [], polanco: [] };
+// Cada elemento del arreglo = { dimension, valorSeleccionado }
+
+function setReporteTab(tab) {
+  document.querySelectorAll("#tab-reporte > .costos-tabs > .costos-tab").forEach(t =>
+    t.classList.toggle("active", t.getAttribute("onclick") === `setReporteTab('${tab}')`));
+  ["diario", "semanal", "mensual"].forEach(s =>
+    L("reporte-" + s).classList.toggle("active", s === tab));
+}
+
+function resetPieDrillDown(secId) {
+  S.pieEstado[secId] = [];
+  renderPiesSeccion(secId);
+}
+
+function _ventasFiltradasPorEstado(ventas, estado) {
+  let resultado = ventas;
+  estado.forEach(nivel => {
+    resultado = resultado.filter(v => v[DIMENSIONES[nivel.dimension].campo] === nivel.valorSeleccionado);
+  });
+  return resultado;
+}
+
+function _agruparPor(ventas, campo) {
+  const grupos = {};
+  ventas.forEach(v => {
+    const k = v[campo] || "(sin)";
+    if (!grupos[k]) grupos[k] = { piezas: 0, monto: 0 };
+    grupos[k].piezas += Number(v.cantidad) || 0;
+    grupos[k].monto += Number(v.subtotal) || 0;
+  });
+  // Rankear por piezas descendente
+  return Object.keys(grupos).sort((a, b) => grupos[b].piezas - grupos[a].piezas).map(k => ({ key: k, ...grupos[k] }));
+}
+
+function _dimensionesDisponibles(secId) {
+  const usadas = S.pieEstado[secId].map(n => n.dimension);
+  return Object.keys(DIMENSIONES).filter(d => !usadas.includes(d));
+}
+
+function renderPiesSeccion(secId) {
+  const container = L("pie-container-" + secId);
+  if (!container) return;
+  const ventasSec = S.ventasPorSeccion?.[secId] || [];
+  if (ventasSec.length === 0) { container.innerHTML = '<div style="font-size:12px;color:var(--muted)">Sin datos para mostrar</div>'; return; }
+  const estado = S.pieEstado[secId];
+  const niveles = estado.length;  // niveles ya seleccionados (0, 1, 2)
+  // Niveles a mostrar = niveles seleccionados + 1 (el siguiente)
+  // Filtrar ventas según niveles ya seleccionados
+  const ventasFiltradas = _ventasFiltradasPorEstado(ventasSec, estado);
+  const disponibles = _dimensionesDisponibles(secId);
+  if (disponibles.length === 0) {
+    container.innerHTML = `<div style="background:var(--warm);border-radius:10px;padding:14px;text-align:center;font-size:12px;color:var(--muted)">
+      ✓ Has llegado al nivel más profundo. Click en ↺ Reiniciar para empezar de nuevo.
+    </div>`;
+    return;
+  }
+  // Renderizar selector de dimensión + canvas
+  // El nivel actual (a elegir) es el siguiente
+  const nivelActual = niveles + 1;
+  const breadcrumb = estado.length === 0 ? "" :
+    estado.map((n, i) => `<span style="font-size:11px;background:var(--warm);padding:3px 8px;border-radius:6px;margin-right:4px">${DIMENSIONES[n.dimension].label}: <strong>${n.valorSeleccionado}</strong></span>`).join("");
+  // Si no hay dimensión seleccionada para este nivel, pedir al usuario que elija
+  // Por simplicidad: por default, la primera disponible
+  if (!S.pieDimensionPorNivel) S.pieDimensionPorNivel = {};
+  const keyNivel = `${secId}-${nivelActual}`;
+  if (!S.pieDimensionPorNivel[keyNivel] || !disponibles.includes(S.pieDimensionPorNivel[keyNivel])) {
+    S.pieDimensionPorNivel[keyNivel] = disponibles[0];
+  }
+  const dimSel = S.pieDimensionPorNivel[keyNivel];
+  const grupos = _agruparPor(ventasFiltradas, DIMENSIONES[dimSel].campo);
+  const canvasId = `pie-${secId}-n${nivelActual}`;
+  const selOpts = disponibles.map(d => `<option value="${d}"${d===dimSel?' selected':''}>${DIMENSIONES[d].label}</option>`).join("");
+  container.innerHTML = `
+    <div style="margin-bottom:10px">${breadcrumb}</div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+      <span style="font-size:11px;color:var(--muted)">Nivel ${nivelActual}:</span>
+      <select class="mini-select" style="width:auto;flex:1" onchange="cambiarDimensionPie('${secId}', ${nivelActual}, this.value)">${selOpts}</select>
+    </div>
+    <div style="position:relative;width:100%;height:280px"><canvas id="${canvasId}"></canvas></div>
+    <div style="font-size:11px;color:var(--muted);margin-top:6px;text-align:center">Click en una rebanada para ver el siguiente nivel</div>
+  `;
+  // Renderizar Chart.js
+  setTimeout(() => {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return;
+    const labels = grupos.map(g => g.key);
+    const data = grupos.map(g => g.piezas);
+    const colores = labels.map((_, i) => COLORES_PIE[i % COLORES_PIE.length]);
+    const chart = new Chart(ctx, {
+      type: "pie",
+      data: { labels, datasets: [{ data, backgroundColor: colores, borderColor: "#fff", borderWidth: 2 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: "right", labels: { font: { size: 11 }, boxWidth: 12 } },
+          tooltip: { callbacks: { label: (ctx) => {
+            const i = ctx.dataIndex;
+            return `${labels[i]}: ${grupos[i].piezas} uds · $${grupos[i].monto.toLocaleString('es-MX')}`;
+          }}}
+        },
+        onClick: (evt, elements) => {
+          if (elements.length === 0) return;
+          const idx = elements[0].index;
+          const valor = labels[idx];
+          // Avanzar al siguiente nivel
+          S.pieEstado[secId].push({ dimension: dimSel, valorSeleccionado: valor });
+          renderPiesSeccion(secId);
+        }
+      }
+    });
+  }, 50);
+}
+
+function cambiarDimensionPie(secId, nivel, dim) {
+  const key = `${secId}-${nivel}`;
+  S.pieDimensionPorNivel[key] = dim;
+  renderPiesSeccion(secId);
+}
+
+// /FEAT-REPORTE-PIES
 
 </script>
 </body>
