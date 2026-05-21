@@ -4111,7 +4111,13 @@ function _resumenVentas(ventas) {
     porCanal[v.canal].piezas += Number(v.cantidad) || 0;
     porCanal[v.canal].monto += Number(v.subtotal) || 0;
   });
-  return { total, piezas, transacciones: idVentas.size, porTamano, porCanal };
+  const porSabor = {};
+  ventas.forEach(v => {
+    if (!porSabor[v.sabor]) porSabor[v.sabor] = { piezas: 0, monto: 0 };
+    porSabor[v.sabor].piezas += Number(v.cantidad) || 0;
+    porSabor[v.sabor].monto += Number(v.subtotal) || 0;
+  });
+  return { total, piezas, transacciones: idVentas.size, porTamano, porCanal, porSabor };
 }
 
 function _tarjetaResumen(titulo, r, color) {
@@ -4125,6 +4131,13 @@ function _tarjetaResumen(titulo, r, color) {
       <span>${c}</span>
       <span><strong>${r.porCanal[c].piezas}</strong> uds · $${r.porCanal[c].monto.toLocaleString('es-MX')}</span>
     </div>`).join("");
+  // Por sabor: ordenar por piezas descendente
+  const sabOrdenados = Object.keys(r.porSabor || {}).sort((a,b) => (r.porSabor[b].piezas||0) - (r.porSabor[a].piezas||0));
+  const rowsS = sabOrdenados.map(sa =>
+    `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--warm);font-size:12px">
+      <span>${sa}</span>
+      <span><strong>${r.porSabor[sa].piezas}</strong> uds · $${r.porSabor[sa].monto.toLocaleString('es-MX')}</span>
+    </div>`).join("");
   return `<div class="card" style="margin-bottom:12px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
       <div style="font-weight:700;font-size:16px">${titulo}</div>
@@ -4137,6 +4150,7 @@ function _tarjetaResumen(titulo, r, color) {
     </div>
     ${rowsT ? `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:4px;text-transform:uppercase">Por tamaño</div>${rowsT}` : ''}
     ${rowsC ? `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:4px;margin-top:10px;text-transform:uppercase">Por canal</div>${rowsC}` : ''}
+    ${rowsS ? `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:4px;margin-top:10px;text-transform:uppercase">Por sabor</div>${rowsS}` : ''}
   </div>`;
 }
 
