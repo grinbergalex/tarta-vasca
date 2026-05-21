@@ -302,6 +302,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <div class="nav-tab perm-transferir" data-tab="transferencias">Transferencias</div>
     <div class="nav-tab perm-vender" data-tab="venta">Nueva venta</div>
     <div class="nav-tab owner-only" data-tab="ventas">Ventas</div>
+    <div class="nav-tab owner-only" data-tab="reporte">📊 Reporte</div>
     <div class="nav-tab owner-only" data-tab="movimientos">Movimientos</div>
     <div class="nav-tab owner-only" data-tab="catalogo">Catálogo</div>
     <div class="nav-tab owner-only" data-tab="precios">Precios</div>
@@ -509,6 +510,32 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <div class="card-sub">Últimas operaciones</div>
         <div id="ventas-list"><div class="loading"><div class="spinner"></div></div></div>
       </div>
+    </div>
+    <!-- REPORTE -->
+    <div id="tab-reporte" class="tab-pane" style="display:none">
+      <div class="card" style="padding:14px 16px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px">
+          <div class="card-title" style="margin-bottom:0">📊 Reporte del día</div>
+          <button onclick="cargarReporte()" class="btn-outline" style="width:auto;font-size:12px;padding:6px 14px;margin-top:0">🔄 Recargar</button>
+        </div>
+        <div id="reporte-fecha" style="font-size:13px;color:var(--muted);margin-bottom:10px"></div>
+        <!-- FILTROS -->
+        <div style="display:grid;grid-template-columns:1fr;gap:10px">
+          <div>
+            <label class="form-label">Sabores (vacío = todos)</label>
+            <div id="reporte-filtros-sabor" class="filter-row" style="margin-bottom:0"></div>
+          </div>
+          <div>
+            <label class="form-label">Tamaños (vacío = todos)</label>
+            <div id="reporte-filtros-tamano" class="filter-row" style="margin-bottom:0"></div>
+          </div>
+          <div>
+            <label class="form-label">Canales (vacío = todos)</label>
+            <div id="reporte-filtros-canal" class="filter-row" style="margin-bottom:0"></div>
+          </div>
+        </div>
+      </div>
+      <div id="reporte-content"><div class="loading"><div class="spinner"></div>Cargando reporte...</div></div>
     </div>
 
     <!-- MOVIMIENTOS — anular ventas, cargas, transferencias -->
@@ -1326,7 +1353,10 @@ let S = {
   lastProdSabor: localStorage.getItem("tv_lastProdSabor") || null,
   lastProdTamano: localStorage.getItem("tv_lastProdTamano") || null,
   // FEAT-PAQUETE: modo de agregar items
-  modoItem: "suelto"
+  modoItem: "suelto",
+  // FEAT-REPORTE: filtros activos del reporte
+  reporteFiltros: { sabores: [], tamanos: [], canales: [] },
+  ventasReporte: []
 };
 
 // Permisos por defecto si el backend no los devuelve
@@ -1452,6 +1482,7 @@ function setupNav() {
       else if(t==="auditoria") cargarAuditoria();
       else if(t==="catalogo") cargarCatalogoPantalla();
       else if(t==="ventas") cargarVentas();
+      else if(t==="reporte") cargarReporte();
       else if(t==="venta") iniciarVenta();
       else if(t==="costos") { if(!S.insumos.length) cargarCostos(); else renderCostos(); }
       else if(t==="utilidades") cargarUtilidades();
@@ -4000,6 +4031,135 @@ L("btn-logout").addEventListener("click",async()=>{
 });
 
 document.querySelectorAll(".modal-overlay").forEach(o=>{o.addEventListener("click",e=>{if(e.target===o)o.classList.remove("show");});});
+
+// ============================================================
+// FEAT-REPORTE — Reporte de ventas (día acumulado, sub-tarea 1)
+// ============================================================
+
+async function cargarReporte() {
+  if (!S.catalogo) { const res = await api("getCatalogo"); if (res.ok) S.catalogo = res; }
+  L("reporte-content").innerHTML = '<div class="loading"><div class="spinner"></div>Cargando...</div>';
+  const res = await api("getVentas");
+  if (!res.ok) { L("reporte-content").innerHTML = '<div class="empty-state"><div>Error al cargar ventas</div></div>'; return; }
+  S.ventasReporte = res.ventas || [];
+  _renderFiltrosReporte();
+  renderReporte();
+}
+
+function _renderFiltrosReporte() {
+  const sabores = (S.catalogo?.sabores || []).filter(s => s.activo).map(s => s.nombre);
+  const tamanos = (S.catalogo?.tamanos || []).filter(t => t.activo).map(t => t.nombre);
+  const canales = ["Tienda", "Domicilio", "Rappi", "Uber Eats"];
+  const f = S.reporteFiltros;
+  L("reporte-filtros-sabor").innerHTML = sabores.map(s =>
+    `<div class="chip ${f.sabores.includes(s) ? 'active' : ''}" onclick="toggleFiltroReporte('sabores','${s}')">${s}</div>`).join("");
+  L("reporte-filtros-tamano").innerHTML = tamanos.map(t =>
+    `<div class="chip ${f.tamanos.includes(t) ? 'active' : ''}" onclick="toggleFiltroReporte('tamanos','${t}')">${t}</div>`).join("");
+  L("reporte-filtros-canal").innerHTML = canales.map(c =>
+    `<div class="chip ${f.canales.includes(c) ? 'active' : ''}" onclick="toggleFiltroReporte('canales','${c}')">${c}</div>`).join("");
+}
+
+function toggleFiltroReporte(tipo, valor) {
+  const arr = S.reporteFiltros[tipo];
+  const idx = arr.indexOf(valor);
+  if (idx >= 0) arr.splice(idx, 1); else arr.push(valor);
+  _renderFiltrosReporte();
+  renderReporte();
+}
+
+function _hoyCDMXString() {
+  // Hora local del navegador (asumiendo equipo en CDMX)
+  const hoy = new Date();
+  const y = hoy.getFullYear();
+  const m = String(hoy.getMonth() + 1).padStart(2, "0");
+  const d = String(hoy.getDate()).padStart(2, "0");
+  return y + "-" + m + "-" + d;
+}
+
+function _ventasFiltradas(rangoFn) {
+  const hoyStr = _hoyCDMXString();
+  const f = S.reporteFiltros;
+  return (S.ventasReporte || []).filter(v => {
+    if (!v.fecha) return false;
+    if (v.canal === "Merma" || v.canal === "Cortesía") return false; // excluir mermas y cortesías
+    if (!rangoFn(v.fecha, hoyStr)) return false;
+    if (f.sabores.length && !f.sabores.includes(v.sabor)) return false;
+    if (f.tamanos.length && !f.tamanos.includes(v.tamano)) return false;
+    if (f.canales.length && !f.canales.includes(v.canal)) return false;
+    return true;
+  });
+}
+
+function _esHoy(fechaStr, hoyStr) {
+  // fecha viene como "yyyy-MM-ddTHH:mm:ss" en CDMX (después de FIX-TZ v4.4.1)
+  return String(fechaStr).startsWith(hoyStr);
+}
+
+function _resumenVentas(ventas) {
+  const idVentas = new Set(ventas.map(v => v.idVenta));
+  const total = ventas.reduce((s, v) => s + (Number(v.subtotal) || 0), 0);
+  const piezas = ventas.reduce((s, v) => s + (Number(v.cantidad) || 0), 0);
+  const porTamano = {};
+  ventas.forEach(v => {
+    if (!porTamano[v.tamano]) porTamano[v.tamano] = { piezas: 0, monto: 0 };
+    porTamano[v.tamano].piezas += Number(v.cantidad) || 0;
+    porTamano[v.tamano].monto += Number(v.subtotal) || 0;
+  });
+  const porCanal = {};
+  ventas.forEach(v => {
+    if (!porCanal[v.canal]) porCanal[v.canal] = { piezas: 0, monto: 0 };
+    porCanal[v.canal].piezas += Number(v.cantidad) || 0;
+    porCanal[v.canal].monto += Number(v.subtotal) || 0;
+  });
+  return { total, piezas, transacciones: idVentas.size, porTamano, porCanal };
+}
+
+function _tarjetaResumen(titulo, r, color) {
+  const rowsT = Object.keys(r.porTamano).sort().map(t =>
+    `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--warm);font-size:12px">
+      <span>${t}</span>
+      <span><strong>${r.porTamano[t].piezas}</strong> uds · $${r.porTamano[t].monto.toLocaleString('es-MX')}</span>
+    </div>`).join("");
+  const rowsC = Object.keys(r.porCanal).sort().map(c =>
+    `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--warm);font-size:12px">
+      <span>${c}</span>
+      <span><strong>${r.porCanal[c].piezas}</strong> uds · $${r.porCanal[c].monto.toLocaleString('es-MX')}</span>
+    </div>`).join("");
+  return `<div class="card" style="margin-bottom:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="font-weight:700;font-size:16px">${titulo}</div>
+      <div style="font-family:'Fraunces',serif;font-size:32px;font-weight:500;color:${color}">$${r.total.toLocaleString('es-MX')}</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+      <div class="summary-card" style="padding:10px"><div class="summary-num" style="font-size:22px">${r.piezas}</div><div class="summary-label">Piezas</div></div>
+      <div class="summary-card" style="padding:10px"><div class="summary-num" style="font-size:22px">${r.transacciones}</div><div class="summary-label">Tickets</div></div>
+      <div class="summary-card" style="padding:10px"><div class="summary-num" style="font-size:22px;color:${color}">${r.piezas > 0 ? '$' + Math.round(r.total / r.piezas).toLocaleString('es-MX') : '—'}</div><div class="summary-label">Prom/pieza</div></div>
+    </div>
+    ${rowsT ? `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:4px;text-transform:uppercase">Por tamaño</div>${rowsT}` : ''}
+    ${rowsC ? `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:4px;margin-top:10px;text-transform:uppercase">Por canal</div>${rowsC}` : ''}
+  </div>`;
+}
+
+function renderReporte() {
+  const ventasHoy = _ventasFiltradas(_esHoy);
+  const hoyStr = _hoyCDMXString();
+  const ahora = new Date();
+  L("reporte-fecha").innerHTML = `📅 Hoy: <strong>${hoyStr}</strong> · Actualizado ${String(ahora.getHours()).padStart(2,'0')}:${String(ahora.getMinutes()).padStart(2,'0')} hrs`;
+  if (ventasHoy.length === 0) {
+    L("reporte-content").innerHTML = `<div class="card"><div class="empty-state"><div class="empty-icon">📊</div><div>Sin ventas hoy${(S.reporteFiltros.sabores.length || S.reporteFiltros.tamanos.length || S.reporteFiltros.canales.length) ? ' (con los filtros aplicados)' : ''}</div></div></div>`;
+    return;
+  }
+  const total = _resumenVentas(ventasHoy);
+  const cuaji = _resumenVentas(ventasHoy.filter(v => v.sucursal === "Cuajimalpa"));
+  const polanco = _resumenVentas(ventasHoy.filter(v => v.sucursal === "Polanco"));
+  L("reporte-content").innerHTML =
+    _tarjetaResumen("🏢 Total empresa", total, "var(--accent)") +
+    _tarjetaResumen("🍰 Cuajimalpa", cuaji, "var(--green)") +
+    _tarjetaResumen("🍰 Polanco", polanco, "var(--accent)");
+}
+
+// /FEAT-REPORTE
+
 </script>
 </body>
 </html>
