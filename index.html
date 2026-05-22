@@ -598,6 +598,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           </div>
         </div>
         <div id="movimientos-list"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
+        <div id="mov-multi-bar" style="display:none;position:sticky;bottom:0;background:var(--ink);color:white;padding:12px 16px;border-radius:12px;margin-top:10px;align-items:center;gap:12px;box-shadow:0 -4px 12px rgba(0,0,0,.15)">
+          <div style="flex:1;font-size:13px"><strong id="mov-multi-count">0</strong> movimiento(s) seleccionado(s)</div>
+          <button onclick="abrirModalAnularMulti()" style="background:var(--danger);color:white;border:none;border-radius:8px;padding:8px 16px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer">Anular seleccionados</button>
+        </div>
       </div>
     </div>
 
@@ -1328,6 +1332,24 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
   </div>
 </div>
 
+<!-- v3.2.13 MODAL ANULAR MÚLTIPLE -->
+<div class="modal-overlay" id="modal-anular-multi">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Anular múltiples movimientos</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:12px">Estás por anular <strong id="modal-anular-multi-count" style="color:var(--ink)">0</strong> movimientos.</p>
+    <div style="background:rgba(231,126,34,.08);border-left:3px solid var(--warning);padding:10px 12px;border-radius:6px;font-size:12px;color:var(--ink);margin-bottom:16px">
+      ⚠️ Todos quedarán registrados en auditoría con tu nombre, fecha y el motivo común. Si alguno era venta, el stock se devuelve al inventario.
+    </div>
+    <div class="form-group">
+      <label class="form-label">Motivo común <span style="color:var(--danger)">*</span></label>
+      <textarea class="form-input" id="mov-multi-motivo" rows="3" placeholder="Ej. Error de captura masivo, ajuste de inventario..." style="resize:vertical;min-height:60px"></textarea>
+    </div>
+    <button class="btn-main" id="btn-anular-multi" onclick="anularSeleccionadosMov()" style="background:var(--danger)">Anular seleccionados</button>
+    <button class="btn-outline" onclick="document.getElementById('modal-anular-multi').classList.remove('show')">Cancelar</button>
+  </div>
+</div>
+
 <!-- v3.2 MODAL ANULAR MOVIMIENTO -->
 <div class="modal-overlay" id="modal-anular-mov">
   <div class="modal">
@@ -1390,7 +1412,9 @@ let S = {
   modoItem: "suelto",
   // FEAT-REPORTE: filtros activos del reporte
   reporteFiltros: { sabores: [], tamanos: [], canales: [] },
-  ventasReporte: []
+  ventasReporte: [],
+  // FEAT-MOV-MULTI: selección múltiple en Movimientos
+  movSeleccionados: new Set()
 };
 
 // Permisos por defecto si el backend no los devuelve
@@ -2736,13 +2760,26 @@ function renderMovimientos(){
   const movs = S.movimientos || [];
   if(movs.length === 0){
     L("movimientos-list").innerHTML=`<div class="empty-state"><div class="empty-icon">📋</div><div>Sin movimientos en este rango</div></div>`;
+    const bar = L("mov-multi-bar"); if(bar) bar.style.display = "none";
     return;
   }
   const puedeAnular = getPermisos().puedeAnular || getPermisos().esAdmin;
-  L("movimientos-list").innerHTML = movs.map(m => {
+  if (!S.movSeleccionados) S.movSeleccionados = new Set();
+  const idsValidos = new Set(movs.filter(m => m.estado !== "ANULADO").map(m => `${m.hoja}|${m.id}`));
+  S.movSeleccionados = new Set([...S.movSeleccionados].filter(k => idsValidos.has(k)));
+  const cabecera = puedeAnular ? `
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--warm);border-radius:8px;margin-bottom:8px">
+      <input type="checkbox" id="mov-todos" onchange="toggleTodosMov(this.checked)" style="width:16px;height:16px;cursor:pointer">
+      <label for="mov-todos" style="font-size:12px;cursor:pointer;flex:1">Seleccionar todos los anulables</label>
+      <span id="mov-count" style="font-size:11px;color:var(--muted)"></span>
+    </div>` : "";
+  L("movimientos-list").innerHTML = cabecera + movs.map(m => {
     const anulado = m.estado === "ANULADO";
     const fechaFmt = m.fecha ? m.fecha.substring(0,16).replace("T"," ") : "";
-    return `<div class="mov-row${anulado?' anulado':''}">
+    const key = `${m.hoja}|${m.id}`;
+    const checked = S.movSeleccionados.has(key);
+    return `<div class="mov-row${anulado?' anulado':''}" style="grid-template-columns:auto auto 1fr auto auto">
+      ${puedeAnular && !anulado ? `<input type="checkbox" data-mov-key="${key}" onchange="toggleMovSel('${key}',this.checked)" ${checked?'checked':''} style="width:16px;height:16px;cursor:pointer">` : '<div></div>'}
       <div class="mov-fecha">${fechaFmt}</div>
       <div>
         <div style="font-size:13px;font-weight:500">${m.detalle||""}</div>
@@ -2758,6 +2795,71 @@ function renderMovimientos(){
       </div>
     </div>`;
   }).join("");
+  actualizarBarraMovMulti();
+}
+
+function toggleMovSel(key, checked) {
+  if (checked) S.movSeleccionados.add(key);
+  else S.movSeleccionados.delete(key);
+  actualizarBarraMovMulti();
+  const sel = L("mov-todos");
+  if (sel) {
+    const total = (S.movimientos||[]).filter(m => m.estado !== "ANULADO").length;
+    sel.checked = S.movSeleccionados.size === total && total > 0;
+  }
+}
+
+function toggleTodosMov(checked) {
+  if (checked) {
+    (S.movimientos||[]).forEach(m => {
+      if (m.estado !== "ANULADO") S.movSeleccionados.add(`${m.hoja}|${m.id}`);
+    });
+  } else {
+    S.movSeleccionados.clear();
+  }
+  renderMovimientos();
+}
+
+function actualizarBarraMovMulti() {
+  const bar = L("mov-multi-bar");
+  if (!bar) return;
+  const count = S.movSeleccionados.size;
+  if (count === 0) { bar.style.display = "none"; return; }
+  bar.style.display = "flex";
+  L("mov-multi-count").textContent = count;
+  const lbl = L("mov-count");
+  if (lbl) lbl.textContent = `${count} seleccionado${count !== 1 ? 's' : ''}`;
+}
+
+async function anularSeleccionadosMov() {
+  const motivo = L("mov-multi-motivo").value.trim();
+  if (!motivo) { toast("El motivo es obligatorio", "error"); return; }
+  const keys = [...S.movSeleccionados];
+  if (keys.length === 0) return;
+  const btn = L("btn-anular-multi");
+  btn.disabled = true; btn.textContent = "Anulando...";
+  let exitosos = 0, fallidos = 0;
+  for (const key of keys) {
+    const [hoja, id] = key.split("|");
+    try {
+      const res = await api("eliminarMovimiento", { hoja, id, motivo });
+      if (res.ok) exitosos++; else fallidos++;
+    } catch(e) { fallidos++; }
+  }
+  btn.disabled = false; btn.textContent = "Anular seleccionados";
+  toast(`${exitosos} anulado${exitosos!==1?'s':''}${fallidos>0?` · ${fallidos} con error`:''}`, fallidos>0?"error":"success");
+  S.movSeleccionados.clear();
+  L("mov-multi-motivo").value = "";
+  L("modal-anular-multi").classList.remove("show");
+  cargarMovimientos();
+  cargarStock();
+}
+
+function abrirModalAnularMulti() {
+  if (S.movSeleccionados.size === 0) { toast("No hay seleccionados", "error"); return; }
+  L("modal-anular-multi-count").textContent = S.movSeleccionados.size;
+  L("mov-multi-motivo").value = "";
+  L("modal-anular-multi").classList.add("show");
 }
 
 function abrirAnularMovimiento(hoja, id, detalle, monto, fecha){
@@ -3284,7 +3386,7 @@ async function solicitarTransferencia(){
   const btn=L("btn-trf"); btn.disabled=true; btn.textContent="Registrando...";
   const res=await api("registrarTransferencia",{sabor,tamano,cantidad,notas});
   btn.disabled=false; btn.textContent="REGISTRAR TRANSFERENCIA";
-  if(res.ok){ toast(res.mensaje); L("trf-cantidad").value=""; L("trf-notas").value=""; cargarTransferencias(); cargarMensajesHeader(); }
+  if(res.ok){ toast(res.mensaje); L("trf-cantidad").value=""; L("trf-notas").value=""; cargarTransferencias(); cargarStock(); cargarMensajesHeader(); }
   else toast(res.error,"error");
 }
 
