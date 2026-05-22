@@ -496,6 +496,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 
     <!-- RUTAS -->
     <div id="tab-rutas" class="tab-pane" style="display:none">
+      <!-- Sub-pestañas Rutas -->
+      <div class="costos-tabs" style="margin-bottom:14px">
+        <button class="costos-tab active" onclick="setRutaTab('nueva')">🚚 Nueva ruta</button>
+        <button class="costos-tab" onclick="setRutaTab('abiertas')">📋 Rutas abiertas</button>
+        <button class="costos-tab" onclick="setRutaTab('cerradas')">📦 Rutas cerradas (hoy)</button>
+      </div>
+
+      <!-- SUB: Nueva ruta -->
+      <div id="ruta-tab-nueva" class="costos-section active">
       <div class="card">
         <div class="card-title">🚚 Nueva ruta</div>
         <div class="card-sub">Planea entregas a domicilio. Cada parada se registra como venta con la fecha de la ruta. Sucursal de salida: <strong>Cuajimalpa</strong>.</div>
@@ -535,6 +544,31 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <div class="separador"></div>
         <button class="btn-main" id="btn-ruta-confirmar" onclick="confirmarRuta()" style="background:var(--accent)">Confirmar ruta (0 paradas)</button>
         <button class="btn-outline" onclick="limpiarRuta()">Cancelar / Limpiar ruta</button>
+      </div>
+      </div><!-- /ruta-tab-nueva -->
+
+      <!-- SUB: Rutas abiertas -->
+      <div id="ruta-tab-abiertas" class="costos-section">
+        <div class="card" style="padding:14px 16px;margin-bottom:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:6px">
+            <div class="card-title" style="margin-bottom:0">📋 Rutas abiertas</div>
+            <button onclick="cargarRutasAbiertas()" class="btn-outline" style="width:auto;font-size:12px;padding:6px 14px;margin-top:0">🔄 Recargar</button>
+          </div>
+          <div style="font-size:12px;color:var(--muted)">Define el método de pago de cada cliente. Puedes elegir varios y luego apretar 'Confirmar pagos' UNA sola vez por ruta. Cuando todos tengan método, podrás archivar.</div>
+        </div>
+        <div id="rutas-abiertas-list"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
+      </div>
+
+      <!-- SUB: Rutas cerradas -->
+      <div id="ruta-tab-cerradas" class="costos-section">
+        <div class="card" style="padding:14px 16px;margin-bottom:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:6px">
+            <div class="card-title" style="margin-bottom:0">📦 Rutas cerradas — hoy</div>
+            <button onclick="cargarRutasCerradas()" class="btn-outline" style="width:auto;font-size:12px;padding:6px 14px;margin-top:0">🔄 Recargar</button>
+          </div>
+          <div style="font-size:12px;color:var(--muted)">Solo se muestran rutas archivadas con fecha de hoy. Al pasar el día desaparecen del listado pero quedan en la base.</div>
+        </div>
+        <div id="rutas-cerradas-list"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
       </div>
     </div>
 
@@ -1589,7 +1623,7 @@ function setupNav() {
       else if(t==="ventas") cargarVentas();
       else if(t==="reporte") cargarReporte();
       else if(t==="venta") iniciarVenta();
-      else if(t==="rutas") iniciarRuta();
+      else if(t==="rutas") { iniciarRuta(); cargarRutasAbiertas(); }
       else if(t==="costos") { if(!S.insumos.length) cargarCostos(); else renderCostos(); }
       else if(t==="utilidades") cargarUtilidades();
       else if(t==="precios") { cargarPrecios(); cargarZonasEnvio(); cargarCanalPrecios(); }
@@ -2354,17 +2388,24 @@ async function cargarVentas(){
   res.ventas.forEach(v=>{
     if(!grupos[v.idVenta]) grupos[v.idVenta]={...v,items:[]};
     grupos[v.idVenta].items.push({sabor:v.sabor,tamano:v.tamano,cantidad:v.cantidad,subtotal:v.subtotal});
+    // FEAT-RUTAS: heredar rutaId del primer item si no está
+    if (v.rutaId && !grupos[v.idVenta].rutaId) grupos[v.idVenta].rutaId = v.rutaId;
   });
-  L("ventas-list").innerHTML=Object.values(grupos).map(g=>`
+  L("ventas-list").innerHTML=Object.values(grupos).map(g=>{
+    const rutaTag = g.rutaId ? `<span class="tag" style="background:rgba(200,96,42,.15);color:var(--accent);font-weight:700">🚚 ${g.rutaId}</span>` : "";
+    const metodoColor = (!g.metodoPago || g.metodoPago === "Por definir") ? 'style="background:#FFEBEE;color:#C0392B;font-weight:700"' : "";
+    return `
     <div class="historial-item">
-      <div class="hist-fecha">${g.fecha?g.fecha.substring(0,16).replace('T',' '):''}</div>
+      <div class="hist-fecha">${g.fecha?g.fecha.substring(0,16).replace('T',' '):''} · <code style="font-size:10px;color:var(--muted)">${g.idVenta}</code></div>
       <div class="hist-productos">${g.items.map(i=>`${i.cantidad}× ${i.sabor} ${i.tamano}`).join(" · ")}</div>
       <div class="hist-meta">
-        <span class="tag">${g.canal}</span><span class="tag">${g.metodoPago}</span><span class="tag">${g.sucursal}</span>
+        <span class="tag">${g.canal}</span><span class="tag" ${metodoColor}>${g.metodoPago}</span><span class="tag">${g.sucursal}</span>
         ${g.clienteNombre?`<span class="tag">${g.clienteNombre}</span>`:""}
+        ${rutaTag}
         <span class="tag tag-total">$${g.items.reduce((s,i)=>s+i.subtotal,0).toLocaleString('es-MX')}</span>
       </div>
-    </div>`).join("");
+    </div>`;
+  }).join("");
 }
 
 // ============================================================
@@ -4864,7 +4905,7 @@ async function confirmarRuta() {
   if (paradas.length === 0) { toast("Sin paradas en la ruta", "error"); return; }
   const fechaInput = L("ruta-fecha").value;
   if (!fechaInput) { toast("Selecciona la fecha de la ruta", "error"); return; }
-  if (!confirm(`¿Confirmar ruta de ${paradas.length} parada(s) para ${fechaInput}? Cada parada se registrará como venta con esa fecha.`)) return;
+  // FIX v3.3.3: NO pedir confirmación; el usuario ya hizo click en el botón
   const btn = L("btn-ruta-confirmar");
   btn.disabled = true; btn.textContent = "Registrando ruta...";
   const rutaId = "RUTA-" + Date.now();
@@ -4891,14 +4932,24 @@ async function confirmarRuta() {
   btn.disabled = false;
   btn.textContent = `Confirmar ruta (${(S.ruta.paradas||[]).length} paradas)`;
   if (fallidos === 0) {
-    toast(`✅ Ruta registrada: ${exitosos} paradas. ${rutaId}`);
-    limpiarRuta();
+    toast(`✅ Ruta ${rutaId} registrada: ${exitosos} paradas`);
+    _resetRutaSinConfirmar();
     await cargarStock();
+    setRutaTab("abiertas");  // llevarlo automático a Rutas abiertas
   } else {
     toast(`⚠ ${exitosos} OK, ${fallidos} con error. Ver detalles.`, "error");
     console.error("Errores ruta:", errores);
     alert("Errores en la ruta:\n" + errores.join("\n"));
   }
+}
+
+function _resetRutaSinConfirmar() {
+  S.ruta = { paradas: [], tartasActuales: [] };
+  if (L("ruta-cli-nombre")) L("ruta-cli-nombre").value = "";
+  if (L("ruta-cli-tel")) L("ruta-cli-tel").value = "";
+  renderTartasParada();
+  renderParadasRuta();
+  poblarSelectoresRuta();
 }
 
 function limpiarRuta() {
@@ -4912,6 +4963,185 @@ function limpiarRuta() {
 }
 
 // /FEAT-RUTAS
+
+// ============================================================
+// FEAT-RUTAS-ABIERTAS — gestión de pagos pendientes
+// ============================================================
+
+function setRutaTab(tab) {
+  document.querySelectorAll("#tab-rutas > .costos-tabs > .costos-tab").forEach(t =>
+    t.classList.toggle("active", t.getAttribute("onclick") === `setRutaTab('${tab}')`));
+  ["nueva", "abiertas", "cerradas"].forEach(s =>
+    L("ruta-tab-" + s).classList.toggle("active", s === tab));
+  if (tab === "abiertas") cargarRutasAbiertas();
+  if (tab === "cerradas") cargarRutasCerradas();
+}
+
+async function cargarRutasAbiertas() {
+  const el = L("rutas-abiertas-list");
+  if (!el) return;
+  el.innerHTML = '<div class="loading"><div class="spinner"></div>Cargando rutas...</div>';
+  const res = await api("getRutasAbiertas");
+  if (!res.ok) { el.innerHTML = `<div class="empty-state"><div>Error: ${res.error || "sin datos"}</div></div>`; return; }
+  S.rutasAbiertas = res.rutas || [];
+  renderRutasAbiertas();
+}
+
+function renderRutasAbiertas() {
+  const rutas = S.rutasAbiertas || [];
+  const el = L("rutas-abiertas-list");
+  if (rutas.length === 0) {
+    el.innerHTML = '<div class="card"><div class="empty-state"><div class="empty-icon">✅</div><div>Sin rutas abiertas</div></div></div>';
+    return;
+  }
+  el.innerHTML = rutas.map(r => {
+    const headerColor = r.completa ? "var(--success)" : "var(--accent)";
+    const headerLabel = r.completa ? "✅ Lista para archivar" : `${r.pendientes} pendiente(s)`;
+    const paradasHTML = r.paradas.map(p => {
+      const yaPago = p.metodoPago && p.metodoPago !== "Por definir";
+      const itemsTxt = p.items.map(i => `${i.cantidad}× ${i.sabor} ${i.tamano}`).join(" · ");
+      return `<div style="background:${yaPago ? 'rgba(46,92,74,.06)' : 'var(--warm)'};border-left:3px solid ${yaPago ? 'var(--success)' : 'var(--accent)'};border-radius:10px;padding:12px;margin-bottom:8px" data-ruta-id="${r.rutaId}" data-venta-id="${p.idVenta}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px">
+          <div style="flex:1">
+            <div style="font-weight:700;font-size:13px">${p.clienteNombre || "(sin nombre)"} ${yaPago ? '<span style="font-size:10px;background:var(--success);color:white;padding:2px 8px;border-radius:6px;margin-left:6px">PAGADO</span>' : ''}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">${itemsTxt}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:2px">ID venta: <code>${p.idVenta}</code></div>
+          </div>
+          <div style="font-family:'Fraunces',serif;font-size:18px;color:var(--accent)">$${(p.total || 0).toLocaleString('es-MX')}</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;margin-top:6px">
+          <label style="font-size:11px;color:var(--muted);min-width:60px">Pago:</label>
+          <select class="mini-select metodo-pago-select" id="metodo-${p.idVenta}" data-venta-id="${p.idVenta}" data-original="${p.metodoPago || 'Por definir'}" style="flex:1">
+            <option value="">— Por definir —</option>
+            <option value="Efectivo" ${p.metodoPago === "Efectivo" ? "selected" : ""}>Efectivo</option>
+            <option value="Tarjeta" ${p.metodoPago === "Tarjeta" ? "selected" : ""}>Tarjeta</option>
+            <option value="Transferencia" ${p.metodoPago === "Transferencia" ? "selected" : ""}>Transferencia</option>
+          </select>
+        </div>
+      </div>`;
+    }).join("");
+    const totalRuta = r.paradas.reduce((s, p) => s + (p.total || 0), 0);
+    return `<div class="card" style="margin-bottom:12px;border-left:4px solid ${headerColor}" data-card-ruta="${r.rutaId}">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px">
+        <div>
+          <div style="font-weight:700;font-size:15px">🚚 ${r.rutaId}</div>
+          <div style="font-size:11px;color:var(--muted)">Fecha ruta: <strong>${r.fechaRuta}</strong> · ${r.totalParadas} paradas · Total: $${totalRuta.toLocaleString('es-MX')}</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span style="font-size:11px;font-weight:700;color:${headerColor};background:rgba(0,0,0,.04);padding:4px 10px;border-radius:12px">${headerLabel}</span>
+        </div>
+      </div>
+      ${paradasHTML}
+      <div style="display:flex;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+        <button onclick="confirmarPagosRutaBatch('${r.rutaId}')" class="btn-main" style="flex:1;background:var(--accent);margin-top:0">💾 Confirmar pagos de esta ruta</button>
+        ${r.completa ? `<button onclick="archivarRutaUI('${r.rutaId}')" style="background:var(--success);color:white;border:none;border-radius:8px;padding:0 16px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer">📦 Archivar</button>` : ''}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+async function confirmarPagosRutaBatch(rutaId) {
+  // Recolectar todos los selects de esta ruta cuyo valor cambió
+  const card = document.querySelector(`[data-card-ruta="${rutaId}"]`);
+  if (!card) return;
+  const selects = card.querySelectorAll(".metodo-pago-select");
+  const items = [];
+  let sinCambios = 0;
+  selects.forEach(sel => {
+    const valor = sel.value;
+    if (!valor || valor === "Por definir") return;  // sin elegir, ignorar
+    const original = sel.dataset.original || "";
+    if (valor === original) { sinCambios++; return; }  // sin cambio
+    items.push({ idVenta: sel.dataset.ventaId, nuevoMetodo: valor });
+  });
+  if (items.length === 0) {
+    toast(sinCambios > 0 ? "Sin cambios para confirmar" : "Selecciona al menos un método antes de confirmar", "error");
+    return;
+  }
+  const res = await api("actualizarMetodoVentaBatch", { items });
+  if (!res.ok) { toast(res.error || "Error al actualizar", "error"); return; }
+  toast(`✅ ${res.exitosos} pago(s) confirmado(s)${res.fallidos > 0 ? ` · ${res.fallidos} con error` : ''}`);
+  await cargarRutasAbiertas();
+  // Si quedó completa tras este batch, ofrecer archivar
+  const ruta = (S.rutasAbiertas || []).find(r => r.rutaId === rutaId);
+  if (ruta && ruta.completa) {
+    setTimeout(() => {
+      if (confirm(`✅ Todos los clientes de ${rutaId} ya pagaron. ¿Archivar la ruta?`)) {
+        archivarRutaUI(rutaId);
+      }
+    }, 300);
+  }
+}
+
+async function cargarRutasCerradas() {
+  const el = L("rutas-cerradas-list");
+  if (!el) return;
+  el.innerHTML = '<div class="loading"><div class="spinner"></div>Cargando...</div>';
+  const res = await api("getRutasCerradas");
+  if (!res.ok) { el.innerHTML = `<div class="empty-state"><div>Error: ${res.error || "sin datos"}</div></div>`; return; }
+  const rutas = res.rutas || [];
+  if (rutas.length === 0) {
+    el.innerHTML = '<div class="card"><div class="empty-state"><div class="empty-icon">📦</div><div>Sin rutas cerradas hoy</div></div></div>';
+    return;
+  }
+  el.innerHTML = rutas.map(r => {
+    const totalRuta = r.paradas.reduce((s, p) => s + (p.total || 0), 0);
+    const paradasHTML = r.paradas.map(p => {
+      const itemsTxt = p.items.map(i => `${i.cantidad}× ${i.sabor} ${i.tamano}`).join(" · ");
+      return `<div style="background:rgba(46,92,74,.04);border-left:3px solid var(--success);border-radius:10px;padding:10px 12px;margin-bottom:6px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+          <div style="flex:1">
+            <div style="font-weight:600;font-size:13px">${p.clienteNombre || "(sin nombre)"}</div>
+            <div style="font-size:11px;color:var(--muted)">${itemsTxt}</div>
+            <div style="font-size:10px;color:var(--muted)">ID: <code>${p.idVenta}</code> · ${p.metodoPago}</div>
+          </div>
+          <div style="font-family:'Fraunces',serif;font-size:16px;color:var(--accent)">$${(p.total || 0).toLocaleString('es-MX')}</div>
+        </div>
+      </div>`;
+    }).join("");
+    return `<div class="card" style="margin-bottom:12px;border-left:4px solid var(--success)">
+      <div style="margin-bottom:10px">
+        <div style="font-weight:700;font-size:15px">📦 ${r.rutaId}</div>
+        <div style="font-size:11px;color:var(--muted)">Fecha: <strong>${r.fechaRuta}</strong> · ${r.totalParadas} paradas · Total: $${totalRuta.toLocaleString('es-MX')}</div>
+      </div>
+      ${paradasHTML}
+    </div>`;
+  }).join("");
+}
+
+async function confirmarPagoRuta(rutaId, idVenta) {
+  const sel = L("metodo-" + idVenta);
+  if (!sel) return;
+  const nuevoMetodo = sel.value || "Por definir";
+  if (!nuevoMetodo || nuevoMetodo === "Por definir") {
+    toast("Selecciona un método antes de confirmar", "error");
+    return;
+  }
+  const res = await api("actualizarMetodoVenta", { idVenta, nuevoMetodo });
+  if (!res.ok) { toast(res.error || "Error al actualizar", "error"); return; }
+  toast(`✅ ${nuevoMetodo} confirmado`);
+  await cargarRutasAbiertas();
+  // Si la ruta quedó completa, preguntar si archivar
+  const ruta = (S.rutasAbiertas || []).find(r => r.rutaId === rutaId);
+  if (ruta && ruta.completa) {
+    setTimeout(() => {
+      if (confirm(`✅ Todos los clientes de ${rutaId} ya pagaron. ¿Archivar la ruta?\n\n(Si archivas, dejará de aparecer en 'Rutas abiertas'.)`)) {
+        archivarRutaUI(rutaId);
+      }
+    }, 300);
+  }
+}
+
+async function archivarRutaUI(rutaId) {
+  const res = await api("archivarRuta", { rutaId });
+  if (!res.ok) { toast(res.error || "Error al archivar", "error"); return; }
+  toast(`✅ Ruta ${rutaId} archivada`);
+  await cargarRutasAbiertas();
+}
+
+// /FEAT-RUTAS-ABIERTAS
+
+
 
 </script>
 </body>
