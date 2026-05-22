@@ -1700,7 +1700,9 @@ L("stock-search").addEventListener("input",renderStock);
 // ============================================================
 // VENTA
 // ============================================================
-function iniciarVenta(){
+async function iniciarVenta(){
+  // FIX-STOCK-FRESCO: siempre recarga stock al entrar a Nueva venta
+  await cargarStock();
   if(S.catalogo) poblarSelectsVenta();
   actualizarUICanal();
   actualizarSelectoresCascada();
@@ -3386,7 +3388,7 @@ async function solicitarTransferencia(){
   const btn=L("btn-trf"); btn.disabled=true; btn.textContent="Registrando...";
   const res=await api("registrarTransferencia",{sabor,tamano,cantidad,notas});
   btn.disabled=false; btn.textContent="REGISTRAR TRANSFERENCIA";
-  if(res.ok){ toast(res.mensaje); L("trf-cantidad").value=""; L("trf-notas").value=""; cargarTransferencias(); cargarStock(); cargarMensajesHeader(); }
+  if(res.ok){ toast(res.mensaje); L("trf-cantidad").value=""; L("trf-notas").value=""; await cargarStock(); cargarTransferencias(); cargarMensajesHeader(); }
   else toast(res.error,"error");
 }
 
