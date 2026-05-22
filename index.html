@@ -303,6 +303,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <div class="nav-tab perm-producir" data-tab="produccion">Producción</div>
     <div class="nav-tab perm-transferir" data-tab="transferencias">Transferencias</div>
     <div class="nav-tab perm-vender" data-tab="venta">Nueva venta</div>
+    <div class="nav-tab owner-only" data-tab="rutas">🚚 Rutas</div>
     <div class="nav-tab owner-only" data-tab="ventas">Ventas</div>
     <div class="nav-tab owner-only" data-tab="reporte">📊 Reportes</div>
     <div class="nav-tab owner-only" data-tab="movimientos">Movimientos</div>
@@ -490,6 +491,45 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <div class="separador"></div>
         <button class="btn-main btn-green" id="btn-confirmar" style="margin-top:0">Confirmar venta ✓</button>
         <button class="btn-outline" id="btn-limpiar-venta">Limpiar todo</button>
+      </div>
+    </div>
+
+    <!-- RUTAS -->
+    <div id="tab-rutas" class="tab-pane" style="display:none">
+      <div class="card">
+        <div class="card-title">🚚 Nueva ruta</div>
+        <div class="card-sub">Planea entregas a domicilio. Cada parada se registra como venta cuando confirmas la ruta. Sucursal de salida: <strong>Cuajimalpa</strong>.</div>
+
+        <!-- FORM PARADA -->
+        <div class="add-item-box" id="ruta-parada-form">
+          <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:12px">Datos del cliente</div>
+          <div class="add-item-row" style="margin-bottom:10px">
+            <div class="form-group" style="margin-bottom:0"><label class="form-label">Nombre *</label><input class="form-input" type="text" id="ruta-cli-nombre" placeholder="Nombre del cliente"></div>
+            <div class="form-group" style="margin-bottom:0"><label class="form-label">Teléfono *</label><input class="form-input" type="tel" id="ruta-cli-tel" placeholder="55 0000 0000"></div>
+          </div>
+          <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;margin-top:8px">Tartas para esta parada</div>
+          <div class="add-item-row">
+            <div class="form-group"><label class="form-label">Sabor</label><select class="form-select" id="ruta-tarta-sabor" onchange="onRutaSaborChange()"></select></div>
+            <div class="form-group"><label class="form-label">Tamaño</label><select class="form-select" id="ruta-tarta-tamano" onchange="onRutaTamanoChange()"></select></div>
+          </div>
+          <div class="add-item-row">
+            <div class="form-group"><label class="form-label">Cantidad</label><select class="form-select" id="ruta-tarta-cantidad" disabled><option value="">— selecciona sabor y tamaño —</option></select></div>
+            <div style="display:flex;align-items:flex-end;padding-bottom:14px"><div id="ruta-tarta-disp"></div></div>
+          </div>
+          <button class="btn-outline" id="btn-ruta-add-tarta" onclick="rutaAgregarTarta()">+ Agregar tarta</button>
+          <div id="ruta-tartas-parada" style="margin-top:10px"></div>
+          <button class="btn-main btn-green" onclick="rutaAgregarParada()" style="margin-top:12px">+ Agregar parada a la ruta</button>
+        </div>
+
+        <div class="separador"></div>
+
+        <!-- LISTA DE PARADAS -->
+        <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Paradas en la ruta</div>
+        <div id="ruta-paradas-list"><div class="carrito-vacio">Sin paradas todavía — agrega arriba</div></div>
+
+        <div class="separador"></div>
+        <button class="btn-main" id="btn-ruta-confirmar" onclick="confirmarRuta()" style="background:var(--accent)">Confirmar ruta (0 paradas)</button>
+        <button class="btn-outline" onclick="limpiarRuta()">Cancelar / Limpiar ruta</button>
       </div>
     </div>
 
@@ -1414,7 +1454,9 @@ let S = {
   reporteFiltros: { sabores: [], tamanos: [], canales: [] },
   ventasReporte: [],
   // FEAT-MOV-MULTI: selección múltiple en Movimientos
-  movSeleccionados: new Set()
+  movSeleccionados: new Set(),
+  // FEAT-RUTAS: ruta de entregas en construcción
+  ruta: { paradas: [], tartasActuales: [] }
 };
 
 // Permisos por defecto si el backend no los devuelve
@@ -1542,6 +1584,7 @@ function setupNav() {
       else if(t==="ventas") cargarVentas();
       else if(t==="reporte") cargarReporte();
       else if(t==="venta") iniciarVenta();
+      else if(t==="rutas") iniciarRuta();
       else if(t==="costos") { if(!S.insumos.length) cargarCostos(); else renderCostos(); }
       else if(t==="utilidades") cargarUtilidades();
       else if(t==="precios") { cargarPrecios(); cargarZonasEnvio(); cargarCanalPrecios(); }
@@ -4643,6 +4686,216 @@ function _renderTablaStockHora(loc, sabores, tamanos, horas, stockInicial, venta
 }
 
 // /FEAT-STOCK-HORA
+
+
+
+// ============================================================
+// FEAT-RUTAS — Módulo de rutas de entregas
+// ============================================================
+
+async function iniciarRuta() {
+  if (!S.catalogo) await cargarCatalogo();
+  await cargarStock();
+  poblarSelectoresRuta();
+  renderTartasParada();
+  renderParadasRuta();
+}
+
+function poblarSelectoresRuta() {
+  if (!S.stock || !S.catalogo) return;
+  // Sabores con stock en Cuajimalpa
+  const stockCuaji = (S.stock || []).filter(s => s.sucursal === "Cuajimalpa" && s.cantActual > 0);
+  const sabores = [...new Set(stockCuaji.map(s => s.sabor))].sort();
+  const selS = L("ruta-tarta-sabor");
+  if (sabores.length === 0) {
+    selS.innerHTML = '<option value="">— Sin stock en Cuajimalpa —</option>';
+    selS.disabled = true;
+    L("ruta-tarta-tamano").innerHTML = '<option value="">—</option>';
+    L("ruta-tarta-tamano").disabled = true;
+    return;
+  }
+  selS.disabled = false;
+  const sabActual = selS.value;
+  selS.innerHTML = sabores.map(s => `<option value="${s}">${s}</option>`).join("");
+  if (sabores.includes(sabActual)) selS.value = sabActual;
+  onRutaSaborChange();
+}
+
+function onRutaSaborChange() {
+  if (!S.stock) return;
+  const sabor = L("ruta-tarta-sabor")?.value;
+  if (!sabor) return;
+  const stockSab = (S.stock || []).filter(s => s.sucursal === "Cuajimalpa" && s.sabor === sabor && s.cantActual > 0);
+  const tamanos = [...new Set(stockSab.map(s => s.tamano))];
+  const selT = L("ruta-tarta-tamano");
+  if (tamanos.length === 0) {
+    selT.innerHTML = '<option value="">— sin stock —</option>';
+    selT.disabled = true;
+  } else {
+    selT.disabled = false;
+    selT.innerHTML = tamanos.map(t => `<option value="${t}">${t}</option>`).join("");
+  }
+  onRutaTamanoChange();
+}
+
+function onRutaTamanoChange() {
+  const sabor = L("ruta-tarta-sabor")?.value;
+  const tamano = L("ruta-tarta-tamano")?.value;
+  const selC = L("ruta-tarta-cantidad");
+  if (!sabor || !tamano) {
+    selC.innerHTML = '<option value="">— selecciona sabor y tamaño —</option>';
+    selC.disabled = true;
+    L("ruta-tarta-disp").innerHTML = "";
+    return;
+  }
+  // Stock disponible = stock en Cuaji - tartas YA reservadas en parada en construcción + paradas confirmadas de la ruta
+  const enStock = (S.stock || []).filter(s => s.sucursal === "Cuajimalpa" && s.sabor === sabor && s.tamano === tamano && s.cantActual > 0).reduce((a, s) => a + s.cantActual, 0);
+  const enParadasYaAgregadas = (S.ruta.paradas || []).reduce((a, p) => a + (p.items || []).filter(i => i.sabor === sabor && i.tamano === tamano).reduce((b, i) => b + i.cantidad, 0), 0);
+  const enParadaActual = (S.ruta.tartasActuales || []).filter(t => t.sabor === sabor && t.tamano === tamano).reduce((a, t) => a + t.cantidad, 0);
+  const disp = Math.max(0, enStock - enParadasYaAgregadas - enParadaActual);
+  if (disp <= 0) {
+    selC.innerHTML = '<option value="">Sin stock disponible</option>';
+    selC.disabled = true;
+    L("ruta-tarta-disp").innerHTML = '<span class="disp-badge disp-out">Sin stock</span>';
+    return;
+  }
+  selC.innerHTML = Array.from({length: disp}, (_, i) => i + 1).map(n => `<option value="${n}">${n}</option>`).join("");
+  selC.disabled = false;
+  L("ruta-tarta-disp").innerHTML = `<span class="disp-badge ${disp <= 2 ? 'disp-low' : 'disp-ok'}">${disp} disponibles</span>`;
+}
+
+function rutaAgregarTarta() {
+  const sabor = L("ruta-tarta-sabor")?.value;
+  const tamano = L("ruta-tarta-tamano")?.value;
+  const cantidad = parseInt(L("ruta-tarta-cantidad")?.value) || 0;
+  if (!sabor || !tamano || cantidad <= 0) { toast("Completa los datos de la tarta", "error"); return; }
+  S.ruta.tartasActuales.push({ sabor, tamano, cantidad });
+  renderTartasParada();
+  onRutaTamanoChange();  // refrescar disponibilidad
+}
+
+function renderTartasParada() {
+  const tartas = S.ruta.tartasActuales || [];
+  const el = L("ruta-tartas-parada");
+  if (tartas.length === 0) { el.innerHTML = ""; return; }
+  el.innerHTML = '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">Tartas de esta parada:</div>' + tartas.map((t, i) =>
+    `<div style="display:flex;justify-content:space-between;background:white;padding:6px 10px;border-radius:8px;margin-bottom:4px;font-size:13px">
+      <span><strong>${t.cantidad}</strong> × ${t.sabor} ${t.tamano}</span>
+      <button onclick="rutaQuitarTarta(${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:16px">×</button>
+    </div>`).join("");
+}
+
+function rutaQuitarTarta(idx) {
+  S.ruta.tartasActuales.splice(idx, 1);
+  renderTartasParada();
+  onRutaTamanoChange();
+}
+
+function rutaAgregarParada() {
+  const nombre = L("ruta-cli-nombre").value.trim();
+  const telefono = L("ruta-cli-tel").value.trim();
+  const tartas = S.ruta.tartasActuales || [];
+  if (!nombre) { toast("El nombre del cliente es obligatorio", "error"); return; }
+  if (!telefono) { toast("El teléfono del cliente es obligatorio", "error"); return; }
+  if (tartas.length === 0) { toast("Agrega al menos una tarta", "error"); return; }
+  S.ruta.paradas.push({
+    id: "P-" + Date.now(),
+    nombre, telefono,
+    items: tartas.slice()
+  });
+  // Limpiar form de parada
+  L("ruta-cli-nombre").value = "";
+  L("ruta-cli-tel").value = "";
+  S.ruta.tartasActuales = [];
+  renderTartasParada();
+  renderParadasRuta();
+  poblarSelectoresRuta();
+  toast(`✅ Parada ${S.ruta.paradas.length} agregada: ${nombre}`);
+}
+
+function renderParadasRuta() {
+  const paradas = S.ruta.paradas || [];
+  const el = L("ruta-paradas-list");
+  const btn = L("btn-ruta-confirmar");
+  if (paradas.length === 0) {
+    el.innerHTML = '<div class="carrito-vacio">Sin paradas todavía — agrega arriba</div>';
+    btn.textContent = "Confirmar ruta (0 paradas)";
+    btn.disabled = true;
+    return;
+  }
+  btn.disabled = false;
+  btn.textContent = `Confirmar ruta (${paradas.length} parada${paradas.length !== 1 ? 's' : ''})`;
+  const totalTartas = paradas.reduce((s, p) => s + p.items.reduce((a, i) => a + i.cantidad, 0), 0);
+  el.innerHTML = paradas.map((p, i) =>
+    `<div style="background:var(--warm);border-radius:12px;padding:12px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+        <div>
+          <div style="font-weight:700;font-size:14px">${i+1}. ${p.nombre}</div>
+          <div style="font-size:11px;color:var(--muted)">📞 ${p.telefono}</div>
+        </div>
+        <button onclick="rutaQuitarParada(${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:18px;padding:0 4px">×</button>
+      </div>
+      <div style="font-size:12px;color:var(--ink)">${p.items.map(it => `${it.cantidad}× ${it.sabor} ${it.tamano}`).join(" · ")}</div>
+    </div>`).join("") +
+    `<div style="background:var(--ink);color:white;border-radius:10px;padding:10px 14px;font-size:13px;margin-top:6px">
+      <strong>${paradas.length}</strong> parada${paradas.length !== 1 ? 's' : ''} · <strong>${totalTartas}</strong> tarta${totalTartas !== 1 ? 's' : ''} totales
+    </div>`;
+}
+
+function rutaQuitarParada(idx) {
+  if (!confirm("¿Quitar esta parada de la ruta?")) return;
+  S.ruta.paradas.splice(idx, 1);
+  renderParadasRuta();
+  poblarSelectoresRuta();
+}
+
+async function confirmarRuta() {
+  const paradas = S.ruta.paradas || [];
+  if (paradas.length === 0) { toast("Sin paradas en la ruta", "error"); return; }
+  if (!confirm(`¿Confirmar ruta de ${paradas.length} parada(s)? Cada parada se registrará como venta a domicilio con método 'Por definir'.`)) return;
+  const btn = L("btn-ruta-confirmar");
+  btn.disabled = true; btn.textContent = "Registrando ruta...";
+  const rutaId = "RUTA-" + Date.now();
+  let exitosos = 0, fallidos = 0;
+  const errores = [];
+  for (let i = 0; i < paradas.length; i++) {
+    const p = paradas[i];
+    btn.textContent = `Registrando parada ${i+1}/${paradas.length}...`;
+    const items = p.items.map(it => ({ sabor: it.sabor, tamano: it.tamano, cantidad: it.cantidad, precioUnitario: 0, descuento: 0, descTipo: "" }));
+    const cliente = { nombre: p.nombre, telefono: p.telefono, email: "" };
+    try {
+      const res = await api("registrarVenta", {
+        items, canal: "Domicilio", metodoPago: "Por definir",
+        sucursal: "Cuajimalpa", cliente, tipoOp: "venta",
+        motivo: rutaId  // marca de ruta en notas
+      });
+      if (res.ok) exitosos++; else { fallidos++; errores.push(`${p.nombre}: ${res.error}`); }
+    } catch(e) { fallidos++; errores.push(`${p.nombre}: ${e.message}`); }
+  }
+  btn.disabled = false;
+  btn.textContent = `Confirmar ruta (${(S.ruta.paradas||[]).length} paradas)`;
+  if (fallidos === 0) {
+    toast(`✅ Ruta registrada: ${exitosos} paradas. ${rutaId}`);
+    limpiarRuta();
+    await cargarStock();
+  } else {
+    toast(`⚠ ${exitosos} OK, ${fallidos} con error. Ver detalles.`, "error");
+    console.error("Errores ruta:", errores);
+    alert("Errores en la ruta:\n" + errores.join("\n"));
+  }
+}
+
+function limpiarRuta() {
+  if (S.ruta.paradas.length > 0 && !confirm("¿Descartar TODA la ruta? Se perderán las paradas no registradas.")) return;
+  S.ruta = { paradas: [], tartasActuales: [] };
+  L("ruta-cli-nombre").value = "";
+  L("ruta-cli-tel").value = "";
+  renderTartasParada();
+  renderParadasRuta();
+  poblarSelectoresRuta();
+}
+
+// /FEAT-RUTAS
 
 </script>
 </body>
