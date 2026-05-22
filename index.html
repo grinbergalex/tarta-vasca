@@ -498,14 +498,19 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <div id="tab-rutas" class="tab-pane" style="display:none">
       <div class="card">
         <div class="card-title">🚚 Nueva ruta</div>
-        <div class="card-sub">Planea entregas a domicilio. Cada parada se registra como venta cuando confirmas la ruta. Sucursal de salida: <strong>Cuajimalpa</strong>.</div>
+        <div class="card-sub">Planea entregas a domicilio. Cada parada se registra como venta con la fecha de la ruta. Sucursal de salida: <strong>Cuajimalpa</strong>.</div>
 
-        <!-- FORM PARADA -->
+        <div style="background:rgba(200,96,42,.06);border:1px dashed var(--accent);border-radius:10px;padding:14px;margin-bottom:14px">
+          <label class="form-label">📅 Fecha en que se ejecuta esta ruta</label>
+          <input class="form-input" type="date" id="ruta-fecha" style="max-width:200px">
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">Stock se descuenta hoy; las ventas se registran con esta fecha.</div>
+        </div>
+
         <div class="add-item-box" id="ruta-parada-form">
           <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:12px">Datos del cliente</div>
           <div class="add-item-row" style="margin-bottom:10px">
             <div class="form-group" style="margin-bottom:0"><label class="form-label">Nombre *</label><input class="form-input" type="text" id="ruta-cli-nombre" placeholder="Nombre del cliente"></div>
-            <div class="form-group" style="margin-bottom:0"><label class="form-label">Teléfono *</label><input class="form-input" type="tel" id="ruta-cli-tel" placeholder="55 0000 0000"></div>
+            <div class="form-group" style="margin-bottom:0"><label class="form-label">Teléfono (opcional)</label><input class="form-input" type="tel" id="ruta-cli-tel" placeholder="55 0000 0000"></div>
           </div>
           <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;margin-top:8px">Tartas para esta parada</div>
           <div class="add-item-row">
@@ -4696,6 +4701,12 @@ function _renderTablaStockHora(loc, sabores, tamanos, horas, stockInicial, venta
 async function iniciarRuta() {
   if (!S.catalogo) await cargarCatalogo();
   await cargarStock();
+  const inp = L("ruta-fecha");
+  if (inp && !inp.value) {
+    const m = new Date();
+    m.setDate(m.getDate() + 1);
+    inp.value = `${m.getFullYear()}-${String(m.getMonth()+1).padStart(2,'0')}-${String(m.getDate()).padStart(2,'0')}`;
+  }
   poblarSelectoresRuta();
   renderTartasParada();
   renderParadasRuta();
@@ -4796,7 +4807,6 @@ function rutaAgregarParada() {
   const telefono = L("ruta-cli-tel").value.trim();
   const tartas = S.ruta.tartasActuales || [];
   if (!nombre) { toast("El nombre del cliente es obligatorio", "error"); return; }
-  if (!telefono) { toast("El teléfono del cliente es obligatorio", "error"); return; }
   if (tartas.length === 0) { toast("Agrega al menos una tarta", "error"); return; }
   S.ruta.paradas.push({
     id: "P-" + Date.now(),
@@ -4852,7 +4862,9 @@ function rutaQuitarParada(idx) {
 async function confirmarRuta() {
   const paradas = S.ruta.paradas || [];
   if (paradas.length === 0) { toast("Sin paradas en la ruta", "error"); return; }
-  if (!confirm(`¿Confirmar ruta de ${paradas.length} parada(s)? Cada parada se registrará como venta a domicilio con método 'Por definir'.`)) return;
+  const fechaInput = L("ruta-fecha").value;
+  if (!fechaInput) { toast("Selecciona la fecha de la ruta", "error"); return; }
+  if (!confirm(`¿Confirmar ruta de ${paradas.length} parada(s) para ${fechaInput}? Cada parada se registrará como venta con esa fecha.`)) return;
   const btn = L("btn-ruta-confirmar");
   btn.disabled = true; btn.textContent = "Registrando ruta...";
   const rutaId = "RUTA-" + Date.now();
@@ -4862,12 +4874,16 @@ async function confirmarRuta() {
     const p = paradas[i];
     btn.textContent = `Registrando parada ${i+1}/${paradas.length}...`;
     const items = p.items.map(it => ({ sabor: it.sabor, tamano: it.tamano, cantidad: it.cantidad, precioUnitario: 0, descuento: 0, descTipo: "" }));
-    const cliente = { nombre: p.nombre, telefono: p.telefono, email: "" };
+    const cliente = { nombre: p.nombre, telefono: p.telefono || "", email: "" };
+    // Hora actual + fecha indicada
+    const ahoraT = new Date();
+    const fechaPersonalizada = `${fechaInput}T${String(ahoraT.getHours()).padStart(2,'0')}:${String(ahoraT.getMinutes()).padStart(2,'0')}:${String(ahoraT.getSeconds()).padStart(2,'0')}`;
     try {
       const res = await api("registrarVenta", {
         items, canal: "Domicilio", metodoPago: "Por definir",
         sucursal: "Cuajimalpa", cliente, tipoOp: "venta",
-        motivo: rutaId  // marca de ruta en notas
+        motivo: rutaId,
+        fechaPersonalizada
       });
       if (res.ok) exitosos++; else { fallidos++; errores.push(`${p.nombre}: ${res.error}`); }
     } catch(e) { fallidos++; errores.push(`${p.nombre}: ${e.message}`); }
