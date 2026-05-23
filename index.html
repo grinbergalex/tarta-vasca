@@ -722,8 +722,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           <div class="card-sub">Documentación de las fórmulas y ejemplos usados en los reportes.</div>
 
           <div style="margin-top:18px;border-left:4px solid var(--accent);padding-left:14px">
-            <div style="font-weight:700;font-size:15px;margin-bottom:8px">1. Venta promedio por día (últimos 30 días)</div>
-            <div style="font-size:13px;color:var(--ink);margin-bottom:6px"><strong>Fórmula:</strong> <code>suma de ventas en 30 días ÷ 30</code></div>
+            <div style="font-weight:700;font-size:15px;margin-bottom:8px">1. Venta promedio por día</div>
+            <div style="font-size:13px;color:var(--ink);margin-bottom:6px"><strong>Fórmula:</strong> <code>suma de ventas ÷ días efectivos con datos</code></div>
+            <div style="font-size:13px;color:var(--ink);margin-bottom:6px">Días efectivos = <code>mínimo(30, días desde primera venta hasta hoy)</code>. Si llevas 5 días vendiendo, divide entre 5. Si llevas 60, divide entre 30 (últimos 30).</div>
             <div style="font-size:12px;color:var(--muted);background:var(--warm);padding:10px 12px;border-radius:8px">
               <strong>Ejemplo:</strong> Lotus Individual en Polanco vendió 114 piezas en los últimos 30 días → <strong>promedio = 114 ÷ 30 = 3.8 piezas/día</strong>.
             </div>
@@ -4530,11 +4531,15 @@ function _tarjetaResumen(titulo, r, color, secId) {
     if (ordenarPorPiezas) keys.sort((a,b) => (obj[b].piezas||0) - (obj[a].piezas||0));
     else keys.sort();
     if (keys.length === 0) return '';
+    const totalPiezas = keys.reduce((s, k) => s + (obj[k].piezas || 0), 0);
     return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px">` +
-      keys.map(k => `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--warm);font-size:12px">
-        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:6px">${k}</span>
-        <span style="white-space:nowrap"><strong>${obj[k].piezas}</strong> · $${obj[k].monto.toLocaleString('es-MX')}</span>
-      </div>`).join("") + `</div>`;
+      keys.map(k => {
+        const pct = totalPiezas > 0 ? (obj[k].piezas / totalPiezas * 100).toFixed(0) : 0;
+        return `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--warm);font-size:12px">
+          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:6px">${k} <span style="color:var(--muted);font-size:11px">(${pct}%)</span></span>
+          <span style="white-space:nowrap"><strong>${obj[k].piezas}</strong> · $${obj[k].monto.toLocaleString('es-MX')}</span>
+        </div>`;
+      }).join("") + `</div>`;
   }
   const rowsT = rowsGrid(r.porTamano, false);
   const rowsC = rowsGrid(r.porCanal, false);
@@ -5116,7 +5121,6 @@ let _chartLineaPeriodo = null;
 function _renderGraficaLineaPeriodo(ventas) {
   const ctx = L("grafica-linea-periodo");
   if (!ctx) return;
-  // Calcular rango de días
   let ini, fin;
   if (S.periodoActual.preset === "custom") {
     const d = L("periodo-desde").value, h = L("periodo-hasta").value;
@@ -5127,40 +5131,47 @@ function _renderGraficaLineaPeriodo(ventas) {
     fin = new Date(S.periodoActual.hasta);
   }
   if (!ini || !fin) return;
-  // Generar lista de días
   const dias = [];
   const cur = new Date(ini.getFullYear(), ini.getMonth(), ini.getDate());
   while (cur <= fin) {
     dias.push(_fmtFecha(cur));
     cur.setDate(cur.getDate() + 1);
   }
-  // Agrupar ventas por día y por sucursal
-  const acc = {};  // acc[fecha] = { total, cuaji, polanco }
-  dias.forEach(d => acc[d] = { total: 0, cuaji: 0, polanco: 0 });
+  // Agrupar ventas y unidades por día y por sucursal
+  const acc = {};
+  dias.forEach(d => acc[d] = { total: 0, cuaji: 0, polanco: 0, totalU: 0, cuajiU: 0, polancoU: 0 });
   ventas.forEach(v => {
     const fechaStr = String(v.fecha).substring(0, 10);
     if (!acc[fechaStr]) return;
     const monto = Number(v.subtotal) || 0;
-    acc[fechaStr].total += monto;
-    if (v.sucursal === "Cuajimalpa") acc[fechaStr].cuaji += monto;
-    else if (v.sucursal === "Polanco") acc[fechaStr].polanco += monto;
+    const uds = Number(v.cantidad) || 0;
+    acc[fechaStr].total += monto; acc[fechaStr].totalU += uds;
+    if (v.sucursal === "Cuajimalpa") { acc[fechaStr].cuaji += monto; acc[fechaStr].cuajiU += uds; }
+    else if (v.sucursal === "Polanco") { acc[fechaStr].polanco += monto; acc[fechaStr].polancoU += uds; }
   });
   let totales = dias.map(d => acc[d].total);
   let cuajis = dias.map(d => acc[d].cuaji);
   let polancos = dias.map(d => acc[d].polanco);
-  // Modo acumulado: prefix sum
+  let totalesU = dias.map(d => acc[d].totalU);
+  let cuajisU = dias.map(d => acc[d].cuajiU);
+  let polancosU = dias.map(d => acc[d].polancoU);
   if (S.periodoActual.modoLinea === "acumulado") {
     let sT = 0, sC = 0, sP = 0;
     totales = totales.map(x => sT += x);
     cuajis = cuajis.map(x => sC += x);
     polancos = polancos.map(x => sP += x);
+    let sTu = 0, sCu = 0, sPu = 0;
+    totalesU = totalesU.map(x => sTu += x);
+    cuajisU = cuajisU.map(x => sCu += x);
+    polancosU = polancosU.map(x => sPu += x);
   }
-  // Destruir chart anterior si existe
+  // Guardar unidades para tooltip
+  const unidadesPorLabel = { "Total": totalesU, "Cuajimalpa": cuajisU, "Polanco": polancosU };
   if (_chartLineaPeriodo) { try { _chartLineaPeriodo.destroy(); } catch(e) {} }
   _chartLineaPeriodo = new Chart(ctx, {
     type: "line",
     data: {
-      labels: dias.map(d => { const p = d.split('-'); return p[2] + '-' + p[1]; }),  // DD-MM
+      labels: dias.map(d => { const p = d.split('-'); return p[2] + '-' + p[1]; }),
       datasets: [
         { label: "Total", data: totales, borderColor: "#C8602A", backgroundColor: "rgba(200,96,42,.1)", tension: 0.3, fill: false, borderWidth: 3 },
         { label: "Cuajimalpa", data: cuajis, borderColor: "#2E5C4A", backgroundColor: "rgba(46,92,74,.1)", tension: 0.3, fill: false, borderWidth: 2 },
@@ -5171,7 +5182,10 @@ function _renderGraficaLineaPeriodo(ventas) {
       responsive: true, maintainAspectRatio: false,
       plugins: {
         legend: { position: "top", labels: { font: { size: 12 }, boxWidth: 14 } },
-        tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: $${ctx.parsed.y.toLocaleString('es-MX')}` } }
+        tooltip: { callbacks: { label: (ctx) => {
+          const uds = unidadesPorLabel[ctx.dataset.label]?.[ctx.dataIndex] ?? 0;
+          return `${ctx.dataset.label}: $${ctx.parsed.y.toLocaleString('es-MX')} · ${uds} piezas`;
+        }}}
       },
       scales: {
         x: { ticks: { font: { size: 10 }, maxRotation: 60 } },
@@ -5628,6 +5642,11 @@ function renderOportunidad() {
     el.innerHTML = '<div class="card"><div class="empty-state"><div class="empty-icon">📊</div><div>Sin ventas en los últimos 30 días</div></div></div>';
     return;
   }
+  // Calcular días efectivos del sistema (desde la 1a venta dentro del rango hasta hoy)
+  const fechasMs = ventas30d.map(v => new Date(v.fecha).getTime());
+  const fechaMin = Math.min(...fechasMs);
+  const hoyMs = new Date().setHours(23, 59, 59, 999);
+  const diasEfectivos = Math.max(1, Math.min(30, Math.ceil((hoyMs - fechaMin) / (24 * 3600 * 1000)) + 1));
   // Agrupar por (sucursal, sabor, tamaño, día)
   const agrupado = {};  // [`${suc}|${sab}|${tam}`]: { porDia: { 'yyyy-MM-dd': { qty, lastHour } } }
   ventas30d.forEach(v => {
@@ -5664,8 +5683,8 @@ function renderOportunidad() {
         totalPotencial += dato.qty;
       }
     });
-    const promReal = totalReal / 30;
-    const promPotencial = totalPotencial / 30;
+    const promReal = totalReal / diasEfectivos;
+    const promPotencial = totalPotencial / diasEfectivos;
     const oportunidad = Math.max(0, promPotencial - promReal);
     if (totalReal > 0) {
       resultados.push({
@@ -5683,7 +5702,7 @@ function renderOportunidad() {
 
   // Renderizar por sucursal, ordenado por tamaño y dentro de cada tamaño por oportunidad desc
   const ordenTam = { "Individual": 1, "Mediana": 2, "Grande": 3 };
-  let html = "";
+  let html = `<div style="background:rgba(46,92,74,.08);border-left:3px solid var(--green);padding:8px 12px;border-radius:6px;font-size:12px;color:var(--ink);margin-bottom:12px">📊 <strong>Promedios calculados sobre ${diasEfectivos} día(s)</strong> con datos (desde el primer registro disponible hasta hoy). Si hubiera más datos históricos, se usarían hasta 30.</div>`;
   ["Cuajimalpa", "Polanco"].forEach(suc => {
     const datos = resultados.filter(r => r.sucursal === suc);
     if (datos.length === 0) return;
