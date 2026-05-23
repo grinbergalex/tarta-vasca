@@ -600,8 +600,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <button class="costos-tab" onclick="setReporteTab('periodo')">📈 Por período</button>
         <button class="costos-tab" onclick="setReporteTab('stockhora')">📦 Stock por hora</button>
         <button class="costos-tab" onclick="setReporteTab('formulas')">📐 Cómo se calcula</button>
-        <button class="costos-tab" onclick="setReporteTab('semanal')">📆 Semanal</button>
-        <button class="costos-tab" onclick="setReporteTab('mensual')">🗓 Mensual</button>
       </div>
 
       <!-- SUB-PESTAÑA: DIARIO -->
@@ -693,24 +691,47 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
       <div id="reporte-stockhora" class="costos-section">
         <div class="card" style="padding:14px 16px;margin-bottom:12px">
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:6px">
-            <div class="card-title" style="margin-bottom:0">📦 Stock por hora</div>
+            <div class="card-title" style="margin-bottom:0">📦 Stock por hora · 🎯 Oportunidad</div>
             <button onclick="cargarStockHora()" class="btn-outline" style="width:auto;font-size:12px;padding:6px 14px;margin-top:0">🔄 Recargar</button>
           </div>
-          <div style="font-size:12px;color:var(--muted)">Stock inicial = stock actual + ventas del día. Cada celda muestra el stock al final de esa hora. <strong style="color:var(--danger)">Rojo = agotado</strong>.</div>
+          <div style="font-size:12px;color:var(--muted)">Filtros (vacío = todos). Aplican a las dos tablas. Tip: filtrar canal "Rappi"/"Uber Eats" sirve para ver preparaciones especiales (p.ej. refrigerados).</div>
         </div>
+
+        <!-- FILTROS comunes a Oportunidad y Stock por hora -->
+        <div class="card" style="padding:14px 16px;margin-bottom:12px">
+          <div style="display:grid;grid-template-columns:1fr;gap:10px">
+            <div>
+              <label class="form-label">Sabores (vacío = todos)</label>
+              <div id="oport-filtros-sabor" class="filter-row" style="margin-bottom:0"></div>
+            </div>
+            <div>
+              <label class="form-label">Tamaños (vacío = todos)</label>
+              <div id="oport-filtros-tamano" class="filter-row" style="margin-bottom:0"></div>
+            </div>
+            <div>
+              <label class="form-label">Canales (vacío = todos)</label>
+              <div id="oport-filtros-canal" class="filter-row" style="margin-bottom:0"></div>
+            </div>
+          </div>
+        </div>
+
         <!-- OPORTUNIDAD DE VENTA (arriba) -->
         <div class="card" style="padding:14px 16px;margin-bottom:12px">
-          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:6px">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:8px">
             <div class="card-title" style="margin-bottom:0">🎯 Oportunidad de venta (últimos 30 días)</div>
-            <button onclick="cargarOportunidad()" class="btn-outline" style="width:auto;font-size:12px;padding:6px 14px;margin-top:0">🔄 Recargar</button>
           </div>
-          <div style="font-size:12px;color:var(--muted)">Compara las ventas promedio diarias (últimos 30 días) vs lo que se podría vender si el sabor no se agotara. La oportunidad es lo que estás dejando de facturar.</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Compara ventas reales vs lo que se podría vender si no se agotara. La oportunidad = lo que se está dejando de facturar.</div>
+          <div>
+            <label class="form-label">Vista de la tabla</label>
+            <div id="oport-agrup-chips" class="filter-row" style="margin-bottom:0"></div>
+          </div>
         </div>
         <div id="oportunidad-content" style="margin-bottom:16px"></div>
 
         <!-- STOCK POR HORA (abajo) -->
         <div class="card" style="padding:14px 16px;margin-bottom:12px">
           <div class="card-title" style="margin-bottom:0">📦 Stock por hora — hoy</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:4px">Stock inicial = stock actual + ventas del día. Cada celda muestra el stock al final de esa hora. <strong style="color:var(--danger)">Rojo = agotado</strong>. Respeta los filtros de arriba.</div>
         </div>
         <div id="stockhora-content"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
       </div>
@@ -1673,6 +1694,9 @@ let S = {
   // FEAT-REPORTE-PERIODO
   periodoActual: { preset: "semana", desde: null, hasta: null, modoLinea: "dia" },
   periodoFiltros: { sabores: [], tamanos: [], canales: [] },
+  // FEAT-OPORTUNIDAD: filtros y agrupación (compartidos con Stock por hora)
+  oportFiltros: { sabores: [], tamanos: [], canales: [] },
+  oportAgrupacion: "sabor_tamano", // "sabor_tamano" | "tamano" | "sabor" | "general"
   // FEAT-MOV-MULTI: selección múltiple en Movimientos
   movSeleccionados: new Set(),
   // FEAT-RUTAS: ruta de entregas en construcción
@@ -4802,12 +4826,68 @@ async function cargarStockHora() {
   }
   S.stock = resStock.stock || [];
   S.ventasReporte = resVentas.ventas || [];
+  _renderFiltrosOportunidad();
   renderStockHora();
   renderOportunidad();
 }
 
 async function cargarOportunidad() {
   await cargarStockHora();
+}
+
+// FEAT-OPORTUNIDAD-FILTROS — chips compartidos entre Oportunidad y Stock por hora
+function _renderFiltrosOportunidad() {
+  const sabores = (S.catalogo?.sabores || []).filter(s => s.activo).map(s => s.nombre);
+  const tamanos = (S.catalogo?.tamanos || []).filter(t => t.activo).map(t => t.nombre);
+  const canales = ["Tienda", "Domicilio", "Rappi", "Uber Eats"];
+  const f = S.oportFiltros;
+  const elS = L("oport-filtros-sabor");
+  const elT = L("oport-filtros-tamano");
+  const elC = L("oport-filtros-canal");
+  if (elS) elS.innerHTML = sabores.map(s =>
+    `<div class="chip ${f.sabores.includes(s) ? 'active' : ''}" onclick="toggleFiltroOport('sabores','${s}')">${s}</div>`).join("");
+  if (elT) elT.innerHTML = tamanos.map(t =>
+    `<div class="chip ${f.tamanos.includes(t) ? 'active' : ''}" onclick="toggleFiltroOport('tamanos','${t}')">${t}</div>`).join("");
+  if (elC) elC.innerHTML = canales.map(c =>
+    `<div class="chip ${f.canales.includes(c) ? 'active' : ''}" onclick="toggleFiltroOport('canales','${c}')">${c}</div>`).join("");
+  // Selector de agrupación
+  const elA = L("oport-agrup-chips");
+  if (elA) {
+    const ag = S.oportAgrupacion || "sabor_tamano";
+    const opts = [
+      ["sabor_tamano", "Sabor + Tamaño"],
+      ["tamano",       "Solo Tamaño"],
+      ["sabor",        "Solo Sabor"],
+      ["general",      "General (total)"]
+    ];
+    elA.innerHTML = opts.map(([k,lbl]) =>
+      `<div class="chip ${ag === k ? 'active' : ''}" onclick="setOportAgrupacion('${k}')">${lbl}</div>`).join("");
+  }
+}
+
+function toggleFiltroOport(tipo, valor) {
+  const arr = S.oportFiltros[tipo];
+  const idx = arr.indexOf(valor);
+  if (idx >= 0) arr.splice(idx, 1); else arr.push(valor);
+  _renderFiltrosOportunidad();
+  renderStockHora();
+  renderOportunidad();
+}
+
+function setOportAgrupacion(modo) {
+  S.oportAgrupacion = modo;
+  _renderFiltrosOportunidad();
+  renderOportunidad();
+}
+
+function _ventasOportFiltradas(ventas) {
+  const f = S.oportFiltros || { sabores:[], tamanos:[], canales:[] };
+  return (ventas || []).filter(v => {
+    if (f.sabores.length && !f.sabores.includes(v.sabor)) return false;
+    if (f.tamanos.length && !f.tamanos.includes(v.tamano)) return false;
+    if (f.canales.length && !f.canales.includes(v.canal)) return false;
+    return true;
+  });
 }
 
 function _extraerHora(fechaStr) {
@@ -4818,21 +4898,33 @@ function _extraerHora(fechaStr) {
 
 function renderStockHora() {
   const hoyStr = _hoyCDMXString();
-  const ventasHoy = (S.ventasReporte || []).filter(v =>
-    v.fecha && String(v.fecha).startsWith(hoyStr) && v.canal !== "Merma" && v.canal !== "Cortesía");
+  const f = S.oportFiltros || { sabores:[], tamanos:[], canales:[] };
+  const ventasHoy = (S.ventasReporte || []).filter(v => {
+    if (!v.fecha || !String(v.fecha).startsWith(hoyStr)) return false;
+    if (v.canal === "Merma" || v.canal === "Cortesía") return false;
+    if (f.sabores.length && !f.sabores.includes(v.sabor)) return false;
+    if (f.tamanos.length && !f.tamanos.includes(v.tamano)) return false;
+    if (f.canales.length && !f.canales.includes(v.canal)) return false;
+    return true;
+  });
   // Hora actual
   const ahora = new Date();
   const horaActual = ahora.getHours();
-  // Catálogo
-  const tamanos = (S.catalogo?.tamanos || []).filter(t => t.activo).map(t => t.nombre);
-  const sabores = (S.catalogo?.sabores || []).filter(s => s.activo).map(s => s.nombre);
+  // Catálogo (filtrado por chips activos)
+  const tamanosAll = (S.catalogo?.tamanos || []).filter(t => t.activo).map(t => t.nombre);
+  const saboresAll = (S.catalogo?.sabores || []).filter(s => s.activo).map(s => s.nombre);
+  const tamanos = f.tamanos.length ? tamanosAll.filter(t => f.tamanos.includes(t)) : tamanosAll;
+  const sabores = f.sabores.length ? saboresAll.filter(s => f.sabores.includes(s)) : saboresAll;
   // Sucursales
   const sucursales = ["Cuajimalpa", "Polanco"];
 
-  // Construir índice: stock actual por (suc, sabor, tamano)
+  // Construir índice: stock actual por (suc, sabor, tamano). El stock no tiene canal,
+  // así que el filtro de canal solo afecta a las ventas, no al stock disponible.
   const stockActual = {};
   (S.stock || []).forEach(s => {
     if (s.vencido || s.cantActual <= 0) return;
+    if (f.sabores.length && !f.sabores.includes(s.sabor)) return;
+    if (f.tamanos.length && !f.tamanos.includes(s.tamano)) return;
     const k = `${s.sucursal}|${s.sabor}|${s.tamano}`;
     stockActual[k] = (stockActual[k] || 0) + Number(s.cantActual);
   });
@@ -5637,18 +5729,21 @@ function renderOportunidad() {
     el.innerHTML = '<div class="card"><div class="empty-state"><div>Sin datos</div></div></div>';
     return;
   }
-  const ventas30d = _ventasUltimosNDias(S.ventasReporte, 30);
+  // Filtrar ventas (filtros chips arriba) ANTES de la ventana de 30 días
+  let ventasBase = _ventasOportFiltradas(S.ventasReporte);
+  const ventas30d = _ventasUltimosNDias(ventasBase, 30);
   if (ventas30d.length === 0) {
-    el.innerHTML = '<div class="card"><div class="empty-state"><div class="empty-icon">📊</div><div>Sin ventas en los últimos 30 días</div></div></div>';
+    el.innerHTML = '<div class="card"><div class="empty-state"><div class="empty-icon">📊</div><div>Sin ventas en los últimos 30 días (con los filtros aplicados)</div></div></div>';
     return;
   }
-  // Calcular días efectivos del sistema (desde la 1a venta dentro del rango hasta hoy)
+  // Días efectivos del sistema (desde 1a venta dentro del rango hasta hoy)
   const fechasMs = ventas30d.map(v => new Date(v.fecha).getTime());
   const fechaMin = Math.min(...fechasMs);
   const hoyMs = new Date().setHours(23, 59, 59, 999);
   const diasEfectivos = Math.max(1, Math.min(30, Math.ceil((hoyMs - fechaMin) / (24 * 3600 * 1000)) + 1));
-  // Agrupar por (sucursal, sabor, tamaño, día)
-  const agrupado = {};  // [`${suc}|${sab}|${tam}`]: { porDia: { 'yyyy-MM-dd': { qty, lastHour } } }
+
+  // Agrupar SIEMPRE por (sucursal, sabor, tamaño, día) para calcular bien la heurística de agotamiento
+  const agrupado = {};
   ventas30d.forEach(v => {
     const key = `${v.sucursal}|${v.sabor}|${v.tamano}`;
     const fechaStr = String(v.fecha).substring(0, 10);
@@ -5659,8 +5754,8 @@ function renderOportunidad() {
     if (hora > agrupado[key].porDia[fechaStr].lastHour) agrupado[key].porDia[fechaStr].lastHour = hora;
   });
 
-  // Calcular promedio y potencial por (sucursal, sabor, tamaño)
-  const resultados = [];
+  // Calcular promedio y potencial por cada (sucursal, sabor, tamaño)
+  const base = [];
   for (const key in agrupado) {
     const g = agrupado[key];
     const horario = HORAS_APERTURA[g.sucursal] || { abre: 10, cierra: 19 };
@@ -5670,9 +5765,7 @@ function renderOportunidad() {
     dias.forEach(d => {
       const dato = g.porDia[d];
       totalReal += dato.qty;
-      // Heurística: si la última venta fue >= 2 horas antes del cierre, probablemente se agotó
-      // Solo aplica si hubo al menos 2 ventas y horas con stock > 0
-      const horasConStock = Math.max(0.5, dato.lastHour - horario.abre + 1);  // +1 porque la hora cuenta como entera
+      const horasConStock = Math.max(0.5, dato.lastHour - horario.abre + 1);
       const sePuedeProyectar = dato.lastHour > 0 && (horario.cierra - dato.lastHour) >= 2 && dato.qty >= 2;
       if (sePuedeProyectar) {
         diasAgotamiento++;
@@ -5683,61 +5776,103 @@ function renderOportunidad() {
         totalPotencial += dato.qty;
       }
     });
-    const promReal = totalReal / diasEfectivos;
-    const promPotencial = totalPotencial / diasEfectivos;
-    const oportunidad = Math.max(0, promPotencial - promReal);
     if (totalReal > 0) {
-      resultados.push({
+      base.push({
         sucursal: g.sucursal, sabor: g.sabor, tamano: g.tamano,
-        totalReal, promReal, promPotencial, oportunidad,
+        totalReal, totalPotencial,
+        promReal: totalReal / diasEfectivos,
+        promPotencial: totalPotencial / diasEfectivos,
+        oportunidad: Math.max(0, (totalPotencial - totalReal) / diasEfectivos),
         diasConVentas: dias.length, diasAgotamiento
       });
     }
   }
 
-  if (resultados.length === 0) {
+  if (base.length === 0) {
     el.innerHTML = '<div class="card"><div class="empty-state"><div>Sin oportunidades detectadas</div></div></div>';
     return;
   }
 
-  // Renderizar por sucursal, ordenado por tamaño y dentro de cada tamaño por oportunidad desc
+  // Aplicar agrupación: re-sumar base[] según modo
+  const modo = S.oportAgrupacion || "sabor_tamano";
   const ordenTam = { "Individual": 1, "Mediana": 2, "Grande": 3 };
-  let html = `<div style="background:rgba(46,92,74,.08);border-left:3px solid var(--green);padding:8px 12px;border-radius:6px;font-size:12px;color:var(--ink);margin-bottom:12px">📊 <strong>Promedios calculados sobre ${diasEfectivos} día(s)</strong> con datos (desde el primer registro disponible hasta hoy). Si hubiera más datos históricos, se usarían hasta 30.</div>`;
+
+  function keyAgrup(r) {
+    if (modo === "tamano")  return `${r.sucursal}||${r.tamano}`;
+    if (modo === "sabor")   return `${r.sucursal}|${r.sabor}|`;
+    if (modo === "general") return `${r.sucursal}||`;
+    return `${r.sucursal}|${r.sabor}|${r.tamano}`;
+  }
+  const agg = {};
+  base.forEach(r => {
+    const k = keyAgrup(r);
+    if (!agg[k]) agg[k] = { sucursal: r.sucursal,
+                            sabor: (modo === "tamano" || modo === "general") ? "—" : r.sabor,
+                            tamano: (modo === "sabor"  || modo === "general") ? "—" : r.tamano,
+                            promReal: 0, promPotencial: 0, oportunidad: 0,
+                            diasAgotamiento: 0, diasConVentas: 0, _filas: 0 };
+    agg[k].promReal      += r.promReal;
+    agg[k].promPotencial += r.promPotencial;
+    agg[k].oportunidad   += r.oportunidad;
+    agg[k].diasAgotamiento += r.diasAgotamiento;
+    agg[k].diasConVentas   = Math.max(agg[k].diasConVentas, r.diasConVentas);
+    agg[k]._filas++;
+  });
+  const resultados = Object.values(agg);
+
+  const headerInfo = `<div style="background:rgba(46,92,74,.08);border-left:3px solid var(--green);padding:8px 12px;border-radius:6px;font-size:12px;color:var(--ink);margin-bottom:12px">📊 <strong>Promedios sobre ${diasEfectivos} día(s)</strong> · vista: <strong>${({sabor_tamano:"Sabor + Tamaño",tamano:"Solo Tamaño",sabor:"Solo Sabor",general:"General"})[modo]}</strong></div>`;
+
+  // Render por sucursal
+  let html = headerInfo;
   ["Cuajimalpa", "Polanco"].forEach(suc => {
     const datos = resultados.filter(r => r.sucursal === suc);
     if (datos.length === 0) return;
-    datos.sort((a, b) => (ordenTam[a.tamano] || 9) - (ordenTam[b.tamano] || 9) || b.oportunidad - a.oportunidad);
+    // Ordenar: por tamaño (si aplica) y oportunidad desc
+    datos.sort((a, b) => {
+      const oA = ordenTam[a.tamano] || 9, oB = ordenTam[b.tamano] || 9;
+      if (oA !== oB) return oA - oB;
+      return b.oportunidad - a.oportunidad;
+    });
     const color = suc === "Cuajimalpa" ? "var(--green)" : "var(--accent)";
-    html += `<div class="card" style="margin-bottom:12px;border-left:4px solid ${color}">
-      <div style="font-weight:700;font-size:16px;color:${color};margin-bottom:10px">📍 ${suc}</div>
-      <table style="width:100%;border-collapse:collapse;font-size:12px">
-        <thead><tr>
-          <th style="text-align:left;padding:8px 6px;border-bottom:2px solid var(--border);background:var(--warm)">Sabor</th>
-          <th style="text-align:left;padding:8px 6px;border-bottom:2px solid var(--border);background:var(--warm)">Tamaño</th>
+    const showSabor = (modo === "sabor_tamano" || modo === "sabor");
+    const showTamano = (modo === "sabor_tamano" || modo === "tamano");
+    const colCount = 2 + (showSabor?1:0) + (showTamano?1:0) + 1; // venta+pot+opor+(agot)
+    // Header
+    let theadCells = "";
+    if (showSabor)  theadCells += `<th style="text-align:left;padding:8px 6px;border-bottom:2px solid var(--border);background:var(--warm)">Sabor</th>`;
+    if (showTamano) theadCells += `<th style="text-align:left;padding:8px 6px;border-bottom:2px solid var(--border);background:var(--warm)">Tamaño</th>`;
+    if (!showSabor && !showTamano) theadCells += `<th style="text-align:left;padding:8px 6px;border-bottom:2px solid var(--border);background:var(--warm)">Vista</th>`;
+    theadCells += `
           <th style="text-align:right;padding:8px 6px;border-bottom:2px solid var(--border);background:var(--warm)">Venta/día</th>
           <th style="text-align:right;padding:8px 6px;border-bottom:2px solid var(--border);background:var(--warm)">Potencial/día</th>
           <th style="text-align:right;padding:8px 6px;border-bottom:2px solid var(--border);background:var(--warm)">Oportunidad</th>
-          <th style="text-align:center;padding:8px 6px;border-bottom:2px solid var(--border);background:var(--warm)">Días agotó</th>
-        </tr></thead><tbody>`;
+          <th style="text-align:center;padding:8px 6px;border-bottom:2px solid var(--border);background:var(--warm)">Días agotó</th>`;
+    html += `<div class="card" style="margin-bottom:12px;border-left:4px solid ${color}">
+      <div style="font-weight:700;font-size:16px;color:${color};margin-bottom:10px">📍 ${suc}</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr>${theadCells}</tr></thead><tbody>`;
+    // Agrupador visual por tamaño (solo en modo sabor_tamano)
     let tamActual = "";
     datos.forEach(r => {
-      if (r.tamano !== tamActual) {
+      if (modo === "sabor_tamano" && r.tamano !== tamActual) {
         tamActual = r.tamano;
-        html += `<tr><td colspan="6" style="background:rgba(200,96,42,.08);padding:5px 8px;font-weight:700;font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:1px">${tamActual}</td></tr>`;
+        html += `<tr><td colspan="${colCount+1}" style="background:rgba(200,96,42,.08);padding:5px 8px;font-weight:700;font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:1px">${tamActual}</td></tr>`;
       }
       const oportColor = r.oportunidad > 0.5 ? "var(--danger)" : "var(--muted)";
-      html += `<tr>
-        <td style="padding:6px;border-bottom:1px solid var(--warm)">${r.sabor}</td>
-        <td style="padding:6px;border-bottom:1px solid var(--warm);color:var(--muted)">${r.tamano}</td>
+      let rowCells = "";
+      if (showSabor)  rowCells += `<td style="padding:6px;border-bottom:1px solid var(--warm)">${r.sabor}</td>`;
+      if (showTamano) rowCells += `<td style="padding:6px;border-bottom:1px solid var(--warm);color:var(--muted)">${r.tamano}</td>`;
+      if (!showSabor && !showTamano) rowCells += `<td style="padding:6px;border-bottom:1px solid var(--warm);color:var(--muted)">Total ${suc}</td>`;
+      rowCells += `
         <td style="padding:6px;border-bottom:1px solid var(--warm);text-align:right"><strong>${r.promReal.toFixed(1)}</strong></td>
         <td style="padding:6px;border-bottom:1px solid var(--warm);text-align:right;color:var(--success)"><strong>${r.promPotencial.toFixed(1)}</strong></td>
         <td style="padding:6px;border-bottom:1px solid var(--warm);text-align:right;color:${oportColor};font-weight:700">${r.oportunidad > 0 ? '+' + r.oportunidad.toFixed(1) : '—'}</td>
-        <td style="padding:6px;border-bottom:1px solid var(--warm);text-align:center;color:var(--muted)">${r.diasAgotamiento}/${r.diasConVentas}</td>
-      </tr>`;
+        <td style="padding:6px;border-bottom:1px solid var(--warm);text-align:center;color:var(--muted)">${r.diasAgotamiento}</td>`;
+      html += `<tr>${rowCells}</tr>`;
     });
     html += `</tbody></table>
       <div style="font-size:11px;color:var(--muted);margin-top:8px">
-        <strong>Cálculo:</strong> Venta real = ventas últimos 30 días ÷ 30. Potencial = si la última venta del día fue ≥2h antes del cierre Y hubo ≥2 ventas, se proyecta usando la tasa de venta de las horas con stock × horas totales abierto.
+        <strong>Cálculo:</strong> Venta real = ventas últimos 30 días ÷ días con datos. Potencial = si la última venta del día fue ≥2h antes del cierre Y hubo ≥2 ventas, se proyecta usando la tasa de venta de las horas con stock × horas totales abierto. En vistas agregadas (Tamaño/Sabor/General) sumamos las oportunidades calculadas por cada (sabor,tamaño) específico.
       </div>
     </div>`;
   });
