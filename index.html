@@ -599,6 +599,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <button class="costos-tab active" onclick="setReporteTab('diario')">📅 Seguimiento diario</button>
         <button class="costos-tab" onclick="setReporteTab('periodo')">📈 Por período</button>
         <button class="costos-tab" onclick="setReporteTab('stockhora')">📦 Stock por hora</button>
+        <button class="costos-tab" onclick="setReporteTab('formulas')">📐 Cómo se calcula</button>
         <button class="costos-tab" onclick="setReporteTab('semanal')">📆 Semanal</button>
         <button class="costos-tab" onclick="setReporteTab('mensual')">🗓 Mensual</button>
       </div>
@@ -697,18 +698,134 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           </div>
           <div style="font-size:12px;color:var(--muted)">Stock inicial = stock actual + ventas del día. Cada celda muestra el stock al final de esa hora. <strong style="color:var(--danger)">Rojo = agotado</strong>.</div>
         </div>
+        <!-- OPORTUNIDAD DE VENTA (arriba) -->
+        <div class="card" style="padding:14px 16px;margin-bottom:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:6px">
+            <div class="card-title" style="margin-bottom:0">🎯 Oportunidad de venta (últimos 30 días)</div>
+            <button onclick="cargarOportunidad()" class="btn-outline" style="width:auto;font-size:12px;padding:6px 14px;margin-top:0">🔄 Recargar</button>
+          </div>
+          <div style="font-size:12px;color:var(--muted)">Compara las ventas promedio diarias (últimos 30 días) vs lo que se podría vender si el sabor no se agotara. La oportunidad es lo que estás dejando de facturar.</div>
+        </div>
+        <div id="oportunidad-content" style="margin-bottom:16px"></div>
+
+        <!-- STOCK POR HORA (abajo) -->
+        <div class="card" style="padding:14px 16px;margin-bottom:12px">
+          <div class="card-title" style="margin-bottom:0">📦 Stock por hora — hoy</div>
+        </div>
         <div id="stockhora-content"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
       </div>
 
-      <!-- SUB-PESTAÑA: SEMANAL -->
-      <div id="reporte-semanal" class="costos-section">
-        <div class="card"><div class="empty-state"><div class="empty-icon">📆</div><div>Reporte semanal — próxima sesión</div></div></div>
+      <!-- SUB-PESTAÑA: FÓRMULAS Y EJEMPLOS -->
+      <div id="reporte-formulas" class="costos-section">
+        <div class="card">
+          <div class="card-title">📐 Cómo se calculan las métricas</div>
+          <div class="card-sub">Documentación de las fórmulas y ejemplos usados en los reportes.</div>
+
+          <div style="margin-top:18px;border-left:4px solid var(--accent);padding-left:14px">
+            <div style="font-weight:700;font-size:15px;margin-bottom:8px">1. Venta promedio por día (últimos 30 días)</div>
+            <div style="font-size:13px;color:var(--ink);margin-bottom:6px"><strong>Fórmula:</strong> <code>suma de ventas en 30 días ÷ 30</code></div>
+            <div style="font-size:12px;color:var(--muted);background:var(--warm);padding:10px 12px;border-radius:8px">
+              <strong>Ejemplo:</strong> Lotus Individual en Polanco vendió 114 piezas en los últimos 30 días → <strong>promedio = 114 ÷ 30 = 3.8 piezas/día</strong>.
+            </div>
+          </div>
+
+          <div style="margin-top:18px;border-left:4px solid var(--success);padding-left:14px">
+            <div style="font-weight:700;font-size:15px;margin-bottom:8px">2. Venta potencial por día</div>
+            <div style="font-size:13px;color:var(--ink);margin-bottom:8px">Para cada día se decide:</div>
+            <div style="font-size:13px;color:var(--ink);margin-bottom:8px">¿Se agotó? Sí si: hubo ≥ 2 ventas <strong>Y</strong> la última venta fue ≥ 2 horas antes del cierre.</div>
+            <div style="font-size:13px;color:var(--ink);margin-bottom:6px"><strong>Si SÍ se agotó:</strong></div>
+            <ul style="font-size:13px;margin-left:18px;margin-bottom:8px;color:var(--ink)">
+              <li><code>tasa por hora = piezas vendidas ÷ horas con stock</code></li>
+              <li><code>horas con stock = última venta − apertura + 1</code></li>
+              <li><code>potencial del día = tasa × horas totales abierto</code></li>
+            </ul>
+            <div style="font-size:13px;color:var(--ink);margin-bottom:6px"><strong>Si NO se agotó:</strong> <code>potencial = venta real del día</code></div>
+            <div style="font-size:12px;color:var(--muted);background:var(--warm);padding:10px 12px;border-radius:8px;margin-top:8px">
+              <strong>Ejemplo (Polanco, abre 11h cierra 19h = 8 horas):</strong><br>
+              Martes: vendiste 5 Lotus Individual, última venta a las 14h.<br>
+              ¿Agotamiento? Sí (5 ventas y 14h está 5h antes del cierre).<br>
+              • Horas con stock = 14 − 11 + 1 = <strong>4 horas</strong><br>
+              • Tasa = 5 ÷ 4 = <strong>1.25 piezas/hora</strong><br>
+              • Potencial del día = 1.25 × 8 = <strong>10 piezas</strong><br>
+              → Ese día vendiste 5 pero hubieras vendido 10.
+            </div>
+            <div style="font-size:13px;color:var(--ink);margin-top:8px">El promedio potencial es el promedio de los 30 días considerando proyecciones donde aplican.</div>
+          </div>
+
+          <div style="margin-top:18px;border-left:4px solid var(--danger);padding-left:14px">
+            <div style="font-weight:700;font-size:15px;margin-bottom:8px">3. Oportunidad</div>
+            <div style="font-size:13px;color:var(--ink);margin-bottom:6px"><strong>Fórmula:</strong> <code>potencial/día − venta real/día</code></div>
+            <div style="font-size:12px;color:var(--muted);background:var(--warm);padding:10px 12px;border-radius:8px">
+              <strong>Ejemplo:</strong> Lotus Individual Polanco. Real 3.8/día, Potencial 6.2/día → <strong>Oportunidad = 2.4 piezas/día</strong> que estás dejando de vender por quedarte sin stock.
+            </div>
+          </div>
+
+          <div style="margin-top:18px;border-left:4px solid var(--warning);padding-left:14px">
+            <div style="font-weight:700;font-size:15px;margin-bottom:8px">4. Horarios de apertura usados</div>
+            <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:6px">
+              <tr><td style="padding:6px 8px;background:var(--warm);font-weight:600">Sucursal</td><td style="padding:6px 8px;background:var(--warm);font-weight:600">Apertura</td><td style="padding:6px 8px;background:var(--warm);font-weight:600">Cierre</td><td style="padding:6px 8px;background:var(--warm);font-weight:600">Horas</td></tr>
+              <tr><td style="padding:6px 8px;border-top:1px solid var(--warm)">Cuajimalpa</td><td style="padding:6px 8px;border-top:1px solid var(--warm)">9:00</td><td style="padding:6px 8px;border-top:1px solid var(--warm)">18:00</td><td style="padding:6px 8px;border-top:1px solid var(--warm)">9 hrs</td></tr>
+              <tr><td style="padding:6px 8px;border-top:1px solid var(--warm)">Polanco</td><td style="padding:6px 8px;border-top:1px solid var(--warm)">11:00</td><td style="padding:6px 8px;border-top:1px solid var(--warm)">19:00</td><td style="padding:6px 8px;border-top:1px solid var(--warm)">8 hrs</td></tr>
+            </table>
+          </div>
+
+          <div style="margin-top:18px;border-left:4px solid var(--muted);padding-left:14px">
+            <div style="font-weight:700;font-size:15px;margin-bottom:8px">5. Limitaciones</div>
+            <ul style="font-size:13px;margin-left:18px;color:var(--ink)">
+              <li><strong>Heurística 2h:</strong> puede dar falsos positivos si nadie pasó tarde (no necesariamente agotamiento).</li>
+              <li><strong>No considera producción:</strong> sólo mira patrones de venta.</li>
+              <li><strong>≥ 2 ventas mínimas:</strong> días con 1 venta no se proyectan.</li>
+              <li><strong>Horarios fijos:</strong> no se ajustan a domingos.</li>
+            </ul>
+          </div>
+
+          <div style="margin-top:24px;border-top:2px solid var(--border);padding-top:18px">
+            <div style="font-weight:700;font-size:16px;margin-bottom:12px;color:var(--accent)">Otras métricas</div>
+
+            <div style="margin-bottom:14px">
+              <div style="font-weight:700;font-size:14px;margin-bottom:4px">Ticket promedio</div>
+              <div style="font-size:13px"><code>total facturado ÷ número de tickets</code> (un ticket = una venta completa).</div>
+            </div>
+
+            <div style="margin-bottom:14px">
+              <div style="font-weight:700;font-size:14px;margin-bottom:4px">Promedio por pieza</div>
+              <div style="font-size:13px"><code>total facturado ÷ piezas vendidas</code></div>
+            </div>
+
+            <div style="margin-bottom:14px">
+              <div style="font-weight:700;font-size:14px;margin-bottom:4px">Comisiones por canal</div>
+              <ul style="font-size:13px;margin-left:18px">
+                <li>Tarjeta: 6%</li>
+                <li>Transferencia: 3%</li>
+                <li>Rappi / Uber Eats: 23%</li>
+                <li>Efectivo: 0%</li>
+              </ul>
+            </div>
+
+            <div style="margin-bottom:14px">
+              <div style="font-weight:700;font-size:14px;margin-bottom:4px">Precios por canal</div>
+              <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:6px">
+                <tr><td style="padding:6px 8px;background:var(--warm);font-weight:600">Tamaño</td><td style="padding:6px 8px;background:var(--warm);font-weight:600">Base</td><td style="padding:6px 8px;background:var(--warm);font-weight:600">Rappi</td></tr>
+                <tr><td style="padding:6px 8px;border-top:1px solid var(--warm)">Individual</td><td style="padding:6px 8px;border-top:1px solid var(--warm)">$210</td><td style="padding:6px 8px;border-top:1px solid var(--warm)">$230</td></tr>
+                <tr><td style="padding:6px 8px;border-top:1px solid var(--warm)">Mediana</td><td style="padding:6px 8px;border-top:1px solid var(--warm)">$390</td><td style="padding:6px 8px;border-top:1px solid var(--warm)">$420</td></tr>
+                <tr><td style="padding:6px 8px;border-top:1px solid var(--warm)">Grande</td><td style="padding:6px 8px;border-top:1px solid var(--warm)">$690</td><td style="padding:6px 8px;border-top:1px solid var(--warm)">$720</td></tr>
+                <tr><td style="padding:6px 8px;border-top:1px solid var(--warm)">Paquete 3</td><td style="padding:6px 8px;border-top:1px solid var(--warm)">$590</td><td style="padding:6px 8px;border-top:1px solid var(--warm)">$630</td></tr>
+                <tr><td style="padding:6px 8px;border-top:1px solid var(--warm)">Paquete 4</td><td style="padding:6px 8px;border-top:1px solid var(--warm)">$720</td><td style="padding:6px 8px;border-top:1px solid var(--warm)">$760</td></tr>
+              </table>
+            </div>
+
+            <div style="margin-bottom:14px">
+              <div style="font-weight:700;font-size:14px;margin-bottom:4px">Equivalencias en tablero</div>
+              <ul style="font-size:13px;margin-left:18px">
+                <li>Individual = 0.5</li>
+                <li>Mediana = 1.0</li>
+                <li>Grande = 2.0</li>
+              </ul>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <!-- SUB-PESTAÑA: MENSUAL -->
-      <div id="reporte-mensual" class="costos-section">
-        <div class="card"><div class="empty-state"><div class="empty-icon">🗓</div><div>Reporte mensual — próxima sesión</div></div></div>
-      </div>
     </div>
 
     <!-- MOVIMIENTOS — anular ventas, cargas, transferencias -->
@@ -4452,7 +4569,7 @@ function renderReporte() {
   const ventasHoy = _ventasFiltradas(_esHoy);
   const hoyStr = _hoyCDMXString();
   const ahora = new Date();
-  L("reporte-fecha").innerHTML = `📅 Hoy: <strong>${hoyStr}</strong> · Actualizado ${String(ahora.getHours()).padStart(2,'0')}:${String(ahora.getMinutes()).padStart(2,'0')} hrs`;
+  L("reporte-fecha").innerHTML = `📅 Hoy: <strong>${hoyStr.split('-').reverse().join('-')}</strong> · Actualizado ${String(ahora.getHours()).padStart(2,'0')}:${String(ahora.getMinutes()).padStart(2,'0')} hrs`;
   if (ventasHoy.length === 0) {
     L("reporte-content").innerHTML = `<div class="card"><div class="empty-state"><div class="empty-icon">📊</div><div>Sin ventas hoy${(S.reporteFiltros.sabores.length || S.reporteFiltros.tamanos.length || S.reporteFiltros.canales.length) ? ' (con los filtros aplicados)' : ''}</div></div></div>`;
     return;
@@ -4493,6 +4610,32 @@ const DIMENSIONES = {
 };
 
 const COLORES_PIE = ["#C8602A", "#2E5C4A", "#86BDAD", "#C9A84C", "#1976D2", "#9C27B0", "#FF9800", "#4CAF50", "#E91E63", "#607D8B", "#795548", "#3F51B5"];
+// Mapas de colores fijos por sabor / tamaño / canal
+const COLOR_POR_SABOR = {};
+const COLOR_POR_TAMANO = { "Individual": "#86BDAD", "Mediana": "#C8602A", "Grande": "#2E5C4A" };
+const COLOR_POR_CANAL = { "Tienda": "#C8602A", "Domicilio": "#1976D2", "Rappi": "#FF6F00", "Uber Eats": "#000000", "Mostrador": "#C8602A" };
+
+function _colorParaValor(dimension, valor) {
+  // dimension: "sabor" | "tamano" | "canal"
+  if (dimension === "tamano") {
+    return COLOR_POR_TAMANO[valor] || _hashColor(valor);
+  }
+  if (dimension === "canal") {
+    return COLOR_POR_CANAL[valor] || _hashColor(valor);
+  }
+  // sabor: asignar consistente
+  if (!COLOR_POR_SABOR[valor]) {
+    const idx = Object.keys(COLOR_POR_SABOR).length;
+    COLOR_POR_SABOR[valor] = COLORES_PIE[idx % COLORES_PIE.length];
+  }
+  return COLOR_POR_SABOR[valor];
+}
+
+function _hashColor(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) - h) + s.charCodeAt(i) | 0;
+  return COLORES_PIE[Math.abs(h) % COLORES_PIE.length];
+}
 
 // Estado del drill-down por sección
 if (!S.pieEstado) S.pieEstado = { total: [], cuaji: [], polanco: [] };
@@ -4501,7 +4644,7 @@ if (!S.pieEstado) S.pieEstado = { total: [], cuaji: [], polanco: [] };
 function setReporteTab(tab) {
   document.querySelectorAll("#tab-reporte > .costos-tabs > .costos-tab").forEach(t =>
     t.classList.toggle("active", t.getAttribute("onclick") === `setReporteTab('${tab}')`));
-  ["diario", "periodo", "stockhora", "semanal", "mensual"].forEach(s => {
+  ["diario", "periodo", "stockhora", "formulas"].forEach(s => {
     const el = L("reporte-" + s);
     if (el) el.classList.toggle("active", s === tab);
   });
@@ -4587,7 +4730,7 @@ function renderPiesSeccion(secId) {
     if (!ctx) return;
     const labels = grupos.map(g => g.key);
     const data = grupos.map(g => g.piezas);
-    const colores = labels.map((_, i) => COLORES_PIE[i % COLORES_PIE.length]);
+    const colores = labels.map(lbl => _colorParaValor(dimSel, lbl));
     const chart = new Chart(ctx, {
       type: "pie",
       plugins: [window.ChartDataLabels],
@@ -4604,14 +4747,15 @@ function renderPiesSeccion(secId) {
           }}},
           datalabels: {
             color: "#fff",
-            font: { weight: "bold", size: 13 },
+            font: { weight: "bold", size: 12 },
+            textAlign: "center",
             textShadowBlur: 4,
-            textShadowColor: "rgba(0,0,0,0.6)",
+            textShadowColor: "rgba(0,0,0,0.7)",
             formatter: (value, ctx) => {
               const total = ctx.chart.data.datasets[0].data.reduce((s, v) => s + v, 0);
               const pct = total > 0 ? value / total * 100 : 0;
               if (pct < 4) return "";  // ocultar etiquetas en rebanadas muy chicas
-              return value;
+              return value + "\n(" + pct.toFixed(1) + "%)";
             }
           }
         },
@@ -4654,6 +4798,11 @@ async function cargarStockHora() {
   S.stock = resStock.stock || [];
   S.ventasReporte = resVentas.ventas || [];
   renderStockHora();
+  renderOportunidad();
+}
+
+async function cargarOportunidad() {
+  await cargarStockHora();
 }
 
 function _extraerHora(fechaStr) {
@@ -4930,7 +5079,7 @@ function renderReportePeriodo() {
   const hasta = S.periodoActual.preset === "custom"
     ? (L("periodo-hasta")?.value || "—")
     : _fmtFecha(S.periodoActual.hasta);
-  L("periodo-rango-label").innerHTML = `📅 Rango: <strong>${desde}</strong> → <strong>${hasta}</strong> · ${ventas.length} ventas filtradas`;
+  L("periodo-rango-label").innerHTML = `📅 Rango: <strong>${desde.split('-').reverse().join('-')}</strong> → <strong>${hasta.split('-').reverse().join('-')}</strong> · ${ventas.length} ventas filtradas`;
 
   // Renderizar gráfica de líneas
   _renderGraficaLineaPeriodo(ventas);
@@ -5011,7 +5160,7 @@ function _renderGraficaLineaPeriodo(ventas) {
   _chartLineaPeriodo = new Chart(ctx, {
     type: "line",
     data: {
-      labels: dias.map(d => d.substring(5)),  // MM-DD
+      labels: dias.map(d => { const p = d.split('-'); return p[2] + '-' + p[1]; }),  // DD-MM
       datasets: [
         { label: "Total", data: totales, borderColor: "#C8602A", backgroundColor: "rgba(200,96,42,.1)", tension: 0.3, fill: false, borderWidth: 3 },
         { label: "Cuajimalpa", data: cuajis, borderColor: "#2E5C4A", backgroundColor: "rgba(46,92,74,.1)", tension: 0.3, fill: false, borderWidth: 2 },
@@ -5441,6 +5590,142 @@ async function archivarRutaUI(rutaId) {
 // /FEAT-RUTAS-ABIERTAS
 
 
+
+
+
+// ============================================================
+// FEAT-OPORTUNIDAD — Reporte de oportunidad de venta
+// ============================================================
+
+const HORAS_APERTURA = {
+  "Cuajimalpa": { abre: 9, cierra: 18 },   // Cuajimalpa 9-18 (9 horas)
+  "Polanco":    { abre: 11, cierra: 19 }   // Polanco 11-19 (8 horas)
+};
+
+function _ventasUltimosNDias(ventas, n) {
+  const hoy = new Date();
+  hoy.setHours(23, 59, 59, 999);
+  const desde = new Date(hoy);
+  desde.setDate(desde.getDate() - n + 1);
+  desde.setHours(0, 0, 0, 0);
+  return ventas.filter(v => {
+    if (!v.fecha) return false;
+    if (v.canal === "Merma" || v.canal === "Cortesía") return false;
+    const fv = new Date(v.fecha);
+    return fv >= desde && fv <= hoy;
+  });
+}
+
+function renderOportunidad() {
+  const el = L("oportunidad-content");
+  if (!el) return;
+  if (!S.ventasReporte || !S.catalogo) {
+    el.innerHTML = '<div class="card"><div class="empty-state"><div>Sin datos</div></div></div>';
+    return;
+  }
+  const ventas30d = _ventasUltimosNDias(S.ventasReporte, 30);
+  if (ventas30d.length === 0) {
+    el.innerHTML = '<div class="card"><div class="empty-state"><div class="empty-icon">📊</div><div>Sin ventas en los últimos 30 días</div></div></div>';
+    return;
+  }
+  // Agrupar por (sucursal, sabor, tamaño, día)
+  const agrupado = {};  // [`${suc}|${sab}|${tam}`]: { porDia: { 'yyyy-MM-dd': { qty, lastHour } } }
+  ventas30d.forEach(v => {
+    const key = `${v.sucursal}|${v.sabor}|${v.tamano}`;
+    const fechaStr = String(v.fecha).substring(0, 10);
+    const hora = parseInt(String(v.fecha).substring(11, 13)) || 0;
+    if (!agrupado[key]) agrupado[key] = { sucursal: v.sucursal, sabor: v.sabor, tamano: v.tamano, porDia: {} };
+    if (!agrupado[key].porDia[fechaStr]) agrupado[key].porDia[fechaStr] = { qty: 0, lastHour: 0 };
+    agrupado[key].porDia[fechaStr].qty += Number(v.cantidad) || 0;
+    if (hora > agrupado[key].porDia[fechaStr].lastHour) agrupado[key].porDia[fechaStr].lastHour = hora;
+  });
+
+  // Calcular promedio y potencial por (sucursal, sabor, tamaño)
+  const resultados = [];
+  for (const key in agrupado) {
+    const g = agrupado[key];
+    const horario = HORAS_APERTURA[g.sucursal] || { abre: 10, cierra: 19 };
+    const horasAbierto = horario.cierra - horario.abre;
+    const dias = Object.keys(g.porDia);
+    let totalReal = 0, totalPotencial = 0, diasAgotamiento = 0;
+    dias.forEach(d => {
+      const dato = g.porDia[d];
+      totalReal += dato.qty;
+      // Heurística: si la última venta fue >= 2 horas antes del cierre, probablemente se agotó
+      // Solo aplica si hubo al menos 2 ventas y horas con stock > 0
+      const horasConStock = Math.max(0.5, dato.lastHour - horario.abre + 1);  // +1 porque la hora cuenta como entera
+      const sePuedeProyectar = dato.lastHour > 0 && (horario.cierra - dato.lastHour) >= 2 && dato.qty >= 2;
+      if (sePuedeProyectar) {
+        diasAgotamiento++;
+        const tasa = dato.qty / horasConStock;
+        const proyectado = tasa * horasAbierto;
+        totalPotencial += proyectado;
+      } else {
+        totalPotencial += dato.qty;
+      }
+    });
+    const promReal = totalReal / 30;
+    const promPotencial = totalPotencial / 30;
+    const oportunidad = Math.max(0, promPotencial - promReal);
+    if (totalReal > 0) {
+      resultados.push({
+        sucursal: g.sucursal, sabor: g.sabor, tamano: g.tamano,
+        totalReal, promReal, promPotencial, oportunidad,
+        diasConVentas: dias.length, diasAgotamiento
+      });
+    }
+  }
+
+  if (resultados.length === 0) {
+    el.innerHTML = '<div class="card"><div class="empty-state"><div>Sin oportunidades detectadas</div></div></div>';
+    return;
+  }
+
+  // Renderizar por sucursal, ordenado por tamaño y dentro de cada tamaño por oportunidad desc
+  const ordenTam = { "Individual": 1, "Mediana": 2, "Grande": 3 };
+  let html = "";
+  ["Cuajimalpa", "Polanco"].forEach(suc => {
+    const datos = resultados.filter(r => r.sucursal === suc);
+    if (datos.length === 0) return;
+    datos.sort((a, b) => (ordenTam[a.tamano] || 9) - (ordenTam[b.tamano] || 9) || b.oportunidad - a.oportunidad);
+    const color = suc === "Cuajimalpa" ? "var(--green)" : "var(--accent)";
+    html += `<div class="card" style="margin-bottom:12px;border-left:4px solid ${color}">
+      <div style="font-weight:700;font-size:16px;color:${color};margin-bottom:10px">📍 ${suc}</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr>
+          <th style="text-align:left;padding:8px 6px;border-bottom:2px solid var(--border);background:var(--warm)">Sabor</th>
+          <th style="text-align:left;padding:8px 6px;border-bottom:2px solid var(--border);background:var(--warm)">Tamaño</th>
+          <th style="text-align:right;padding:8px 6px;border-bottom:2px solid var(--border);background:var(--warm)">Venta/día</th>
+          <th style="text-align:right;padding:8px 6px;border-bottom:2px solid var(--border);background:var(--warm)">Potencial/día</th>
+          <th style="text-align:right;padding:8px 6px;border-bottom:2px solid var(--border);background:var(--warm)">Oportunidad</th>
+          <th style="text-align:center;padding:8px 6px;border-bottom:2px solid var(--border);background:var(--warm)">Días agotó</th>
+        </tr></thead><tbody>`;
+    let tamActual = "";
+    datos.forEach(r => {
+      if (r.tamano !== tamActual) {
+        tamActual = r.tamano;
+        html += `<tr><td colspan="6" style="background:rgba(200,96,42,.08);padding:5px 8px;font-weight:700;font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:1px">${tamActual}</td></tr>`;
+      }
+      const oportColor = r.oportunidad > 0.5 ? "var(--danger)" : "var(--muted)";
+      html += `<tr>
+        <td style="padding:6px;border-bottom:1px solid var(--warm)">${r.sabor}</td>
+        <td style="padding:6px;border-bottom:1px solid var(--warm);color:var(--muted)">${r.tamano}</td>
+        <td style="padding:6px;border-bottom:1px solid var(--warm);text-align:right"><strong>${r.promReal.toFixed(1)}</strong></td>
+        <td style="padding:6px;border-bottom:1px solid var(--warm);text-align:right;color:var(--success)"><strong>${r.promPotencial.toFixed(1)}</strong></td>
+        <td style="padding:6px;border-bottom:1px solid var(--warm);text-align:right;color:${oportColor};font-weight:700">${r.oportunidad > 0 ? '+' + r.oportunidad.toFixed(1) : '—'}</td>
+        <td style="padding:6px;border-bottom:1px solid var(--warm);text-align:center;color:var(--muted)">${r.diasAgotamiento}/${r.diasConVentas}</td>
+      </tr>`;
+    });
+    html += `</tbody></table>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px">
+        <strong>Cálculo:</strong> Venta real = ventas últimos 30 días ÷ 30. Potencial = si la última venta del día fue ≥2h antes del cierre Y hubo ≥2 ventas, se proyecta usando la tasa de venta de las horas con stock × horas totales abierto.
+      </div>
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+
+// /FEAT-OPORTUNIDAD
 
 </script>
 </body>
