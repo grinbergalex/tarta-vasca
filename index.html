@@ -597,6 +597,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
       <!-- Sub-pestañas -->
       <div class="costos-tabs" style="margin-bottom:14px">
         <button class="costos-tab active" onclick="setReporteTab('diario')">📅 Seguimiento diario</button>
+        <button class="costos-tab" onclick="setReporteTab('periodo')">📈 Por período</button>
         <button class="costos-tab" onclick="setReporteTab('stockhora')">📦 Stock por hora</button>
         <button class="costos-tab" onclick="setReporteTab('semanal')">📆 Semanal</button>
         <button class="costos-tab" onclick="setReporteTab('mensual')">🗓 Mensual</button>
@@ -626,6 +627,65 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           </div>
         </div>
         <div id="reporte-content"><div class="loading"><div class="spinner"></div>Cargando reporte...</div></div>
+      </div>
+
+      <!-- SUB-PESTAÑA: POR PERÍODO -->
+      <div id="reporte-periodo" class="costos-section">
+        <div class="card" style="padding:14px 16px;margin-bottom:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px">
+            <div class="card-title" style="margin-bottom:0">📈 Reporte por período</div>
+            <button onclick="cargarReportePeriodo()" class="btn-outline" style="width:auto;font-size:12px;padding:6px 14px;margin-top:0">🔄 Recargar</button>
+          </div>
+          <!-- Selector de período -->
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px" id="periodo-presets">
+            <button class="chip active" data-preset="semana" onclick="setPeriodoPreset('semana')">Semana</button>
+            <button class="chip" data-preset="mes" onclick="setPeriodoPreset('mes')">Mes</button>
+            <button class="chip" data-preset="trimestre" onclick="setPeriodoPreset('trimestre')">Trimestre</button>
+            <button class="chip" data-preset="anio" onclick="setPeriodoPreset('anio')">Año</button>
+            <button class="chip" data-preset="custom" onclick="setPeriodoPreset('custom')">Personalizado</button>
+          </div>
+          <!-- Rango personalizado -->
+          <div id="periodo-custom-row" style="display:none;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+            <div>
+              <label class="form-label">Desde</label>
+              <input type="date" class="mini-input" id="periodo-desde" style="width:100%" onchange="renderReportePeriodo()">
+            </div>
+            <div>
+              <label class="form-label">Hasta</label>
+              <input type="date" class="mini-input" id="periodo-hasta" style="width:100%" onchange="renderReportePeriodo()">
+            </div>
+          </div>
+          <div id="periodo-rango-label" style="font-size:13px;color:var(--muted);margin-bottom:10px"></div>
+          <!-- Filtros (multi-select igual que diario) -->
+          <div style="display:grid;grid-template-columns:1fr;gap:10px">
+            <div>
+              <label class="form-label">Sabores (vacío = todos)</label>
+              <div id="periodo-filtros-sabor" class="filter-row" style="margin-bottom:0"></div>
+            </div>
+            <div>
+              <label class="form-label">Tamaños (vacío = todos)</label>
+              <div id="periodo-filtros-tamano" class="filter-row" style="margin-bottom:0"></div>
+            </div>
+            <div>
+              <label class="form-label">Canales (vacío = todos)</label>
+              <div id="periodo-filtros-canal" class="filter-row" style="margin-bottom:0"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gráfica de líneas en el tiempo -->
+        <div class="card" style="padding:14px 16px;margin-bottom:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px">
+            <div style="font-weight:700;font-size:15px">💵 Facturación en el tiempo</div>
+            <div style="display:flex;gap:6px">
+              <button class="chip active" id="modo-dia-btn" onclick="setModoLinea('dia')">Día a día</button>
+              <button class="chip" id="modo-acum-btn" onclick="setModoLinea('acumulado')">Acumulado</button>
+            </div>
+          </div>
+          <div style="position:relative;width:100%;height:320px"><canvas id="grafica-linea-periodo"></canvas></div>
+        </div>
+
+        <div id="periodo-content"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
       </div>
 
       <!-- SUB-PESTAÑA: STOCK POR HORA -->
@@ -1492,6 +1552,9 @@ let S = {
   // FEAT-REPORTE: filtros activos del reporte
   reporteFiltros: { sabores: [], tamanos: [], canales: [] },
   ventasReporte: [],
+  // FEAT-REPORTE-PERIODO
+  periodoActual: { preset: "semana", desde: null, hasta: null, modoLinea: "dia" },
+  periodoFiltros: { sabores: [], tamanos: [], canales: [] },
   // FEAT-MOV-MULTI: selección múltiple en Movimientos
   movSeleccionados: new Set(),
   // FEAT-RUTAS: ruta de entregas en construcción
@@ -4438,9 +4501,12 @@ if (!S.pieEstado) S.pieEstado = { total: [], cuaji: [], polanco: [] };
 function setReporteTab(tab) {
   document.querySelectorAll("#tab-reporte > .costos-tabs > .costos-tab").forEach(t =>
     t.classList.toggle("active", t.getAttribute("onclick") === `setReporteTab('${tab}')`));
-  ["diario", "stockhora", "semanal", "mensual"].forEach(s =>
-    L("reporte-" + s).classList.toggle("active", s === tab));
+  ["diario", "periodo", "stockhora", "semanal", "mensual"].forEach(s => {
+    const el = L("reporte-" + s);
+    if (el) el.classList.toggle("active", s === tab);
+  });
   if (tab === "stockhora") cargarStockHora();
+  if (tab === "periodo") cargarReportePeriodo();
 }
 
 function resetPieDrillDown(secId) {
@@ -4734,6 +4800,239 @@ function _renderTablaStockHora(loc, sabores, tamanos, horas, stockInicial, venta
 // /FEAT-STOCK-HORA
 
 
+
+
+// ============================================================
+// FEAT-REPORTE-PERIODO — Reporte dinámico por período
+// ============================================================
+
+function _hoyDate() {
+  // hoy a las 23:59:59 CDMX
+  const h = new Date();
+  return new Date(h.getFullYear(), h.getMonth(), h.getDate(), 23, 59, 59);
+}
+
+function _calcularRangoPreset(preset) {
+  const hoy = new Date();
+  const fin = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59);
+  let ini = new Date(fin);
+  if (preset === "semana") {
+    // Lunes de esta semana
+    const dow = hoy.getDay() || 7;  // 1=lunes, 7=domingo
+    ini.setDate(hoy.getDate() - (dow - 1));
+    ini.setHours(0, 0, 0, 0);
+  } else if (preset === "mes") {
+    ini = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+  } else if (preset === "trimestre") {
+    const q = Math.floor(hoy.getMonth() / 3);
+    ini = new Date(hoy.getFullYear(), q * 3, 1);
+  } else if (preset === "anio") {
+    ini = new Date(hoy.getFullYear(), 0, 1);
+  } else {
+    ini.setHours(0, 0, 0, 0);
+  }
+  return { ini, fin };
+}
+
+function _fmtFecha(d) {
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+}
+
+function setPeriodoPreset(preset) {
+  S.periodoActual.preset = preset;
+  document.querySelectorAll("#periodo-presets .chip").forEach(c =>
+    c.classList.toggle("active", c.dataset.preset === preset));
+  const customRow = L("periodo-custom-row");
+  if (customRow) customRow.style.display = preset === "custom" ? "grid" : "none";
+  if (preset !== "custom") {
+    const r = _calcularRangoPreset(preset);
+    S.periodoActual.desde = r.ini;
+    S.periodoActual.hasta = r.fin;
+    if (L("periodo-desde")) L("periodo-desde").value = _fmtFecha(r.ini);
+    if (L("periodo-hasta")) L("periodo-hasta").value = _fmtFecha(r.fin);
+  } else {
+    // Por default semana
+    const r = _calcularRangoPreset("semana");
+    if (L("periodo-desde") && !L("periodo-desde").value) L("periodo-desde").value = _fmtFecha(r.ini);
+    if (L("periodo-hasta") && !L("periodo-hasta").value) L("periodo-hasta").value = _fmtFecha(r.fin);
+  }
+  renderReportePeriodo();
+}
+
+function setModoLinea(modo) {
+  S.periodoActual.modoLinea = modo;
+  L("modo-dia-btn").classList.toggle("active", modo === "dia");
+  L("modo-acum-btn").classList.toggle("active", modo === "acumulado");
+  renderReportePeriodo();
+}
+
+async function cargarReportePeriodo() {
+  if (!S.catalogo) { const res = await api("getCatalogo"); if (res.ok) S.catalogo = res; }
+  L("periodo-content").innerHTML = '<div class="loading"><div class="spinner"></div>Cargando...</div>';
+  const res = await api("getVentas");
+  if (!res.ok) { L("periodo-content").innerHTML = '<div class="empty-state"><div>Error</div></div>'; return; }
+  S.ventasReporte = res.ventas || [];
+  // Inicializar preset si no
+  if (!S.periodoActual.desde) setPeriodoPreset(S.periodoActual.preset);
+  else { _renderFiltrosPeriodo(); renderReportePeriodo(); }
+}
+
+function _renderFiltrosPeriodo() {
+  const sabores = (S.catalogo?.sabores || []).filter(s => s.activo).map(s => s.nombre);
+  const tamanos = (S.catalogo?.tamanos || []).filter(t => t.activo).map(t => t.nombre);
+  const canales = ["Tienda", "Domicilio", "Rappi", "Uber Eats"];
+  const f = S.periodoFiltros;
+  if (L("periodo-filtros-sabor")) L("periodo-filtros-sabor").innerHTML = sabores.map(s =>
+    `<div class="chip ${f.sabores.includes(s) ? 'active' : ''}" onclick="toggleFiltroPeriodo('sabores','${s}')">${s}</div>`).join("");
+  if (L("periodo-filtros-tamano")) L("periodo-filtros-tamano").innerHTML = tamanos.map(t =>
+    `<div class="chip ${f.tamanos.includes(t) ? 'active' : ''}" onclick="toggleFiltroPeriodo('tamanos','${t}')">${t}</div>`).join("");
+  if (L("periodo-filtros-canal")) L("periodo-filtros-canal").innerHTML = canales.map(c =>
+    `<div class="chip ${f.canales.includes(c) ? 'active' : ''}" onclick="toggleFiltroPeriodo('canales','${c}')">${c}</div>`).join("");
+}
+
+function toggleFiltroPeriodo(tipo, valor) {
+  const arr = S.periodoFiltros[tipo];
+  const idx = arr.indexOf(valor);
+  if (idx >= 0) arr.splice(idx, 1); else arr.push(valor);
+  renderReportePeriodo();
+}
+
+function _ventasPeriodoFiltradas() {
+  let ini, fin;
+  if (S.periodoActual.preset === "custom") {
+    const d = L("periodo-desde").value, h = L("periodo-hasta").value;
+    ini = d ? new Date(d + "T00:00:00") : null;
+    fin = h ? new Date(h + "T23:59:59") : null;
+  } else {
+    ini = S.periodoActual.desde;
+    fin = S.periodoActual.hasta;
+  }
+  const f = S.periodoFiltros;
+  return (S.ventasReporte || []).filter(v => {
+    if (!v.fecha) return false;
+    if (v.canal === "Merma" || v.canal === "Cortesía") return false;
+    const fv = new Date(v.fecha);
+    if (ini && fv < ini) return false;
+    if (fin && fv > fin) return false;
+    if (f.sabores.length && !f.sabores.includes(v.sabor)) return false;
+    if (f.tamanos.length && !f.tamanos.includes(v.tamano)) return false;
+    if (f.canales.length && !f.canales.includes(v.canal)) return false;
+    return true;
+  });
+}
+
+function renderReportePeriodo() {
+  _renderFiltrosPeriodo();
+  const ventas = _ventasPeriodoFiltradas();
+  const desde = S.periodoActual.preset === "custom"
+    ? (L("periodo-desde")?.value || "—")
+    : _fmtFecha(S.periodoActual.desde);
+  const hasta = S.periodoActual.preset === "custom"
+    ? (L("periodo-hasta")?.value || "—")
+    : _fmtFecha(S.periodoActual.hasta);
+  L("periodo-rango-label").innerHTML = `📅 Rango: <strong>${desde}</strong> → <strong>${hasta}</strong> · ${ventas.length} ventas filtradas`;
+
+  // Renderizar gráfica de líneas
+  _renderGraficaLineaPeriodo(ventas);
+
+  if (ventas.length === 0) {
+    L("periodo-content").innerHTML = '<div class="card"><div class="empty-state"><div class="empty-icon">📊</div><div>Sin ventas en este período</div></div></div>';
+    return;
+  }
+
+  // Replicar las 6 mini-cards del diario (3 tarjetas + 3 pies)
+  const vCuaji = ventas.filter(v => v.sucursal === "Cuajimalpa");
+  const vPolanco = ventas.filter(v => v.sucursal === "Polanco");
+  const total = _resumenVentas(ventas);
+  const cuaji = _resumenVentas(vCuaji);
+  const polanco = _resumenVentas(vPolanco);
+  S.ventasPorSeccion = { total: ventas, cuaji: vCuaji, polanco: vPolanco };
+  // Reset pies estado al renderizar (para empezar limpio)
+  S.pieEstado = { total: [], cuaji: [], polanco: [] };
+  L("periodo-content").innerHTML =
+    _tarjetaResumen("🏢 Total empresa", total, "var(--accent)", "total") +
+    _tarjetaResumen("🍰 Cuajimalpa", cuaji, "var(--green)", "cuaji") +
+    _tarjetaResumen("🍰 Polanco", polanco, "var(--accent)", "polanco") +
+    `<div style="height:6px;background:linear-gradient(90deg,transparent,var(--border),transparent);border-radius:3px;margin:18px 0"></div>` +
+    `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.1em;margin-bottom:10px;text-transform:uppercase;text-align:center">Análisis gráfico (drill-down)</div>` +
+    _tarjetaPie("Total empresa", "var(--accent)", "total") +
+    _tarjetaPie("Cuajimalpa", "var(--green)", "cuaji") +
+    _tarjetaPie("Polanco", "var(--accent)", "polanco");
+  setTimeout(() => {
+    ["total", "cuaji", "polanco"].forEach(secId => renderPiesSeccion(secId));
+  }, 50);
+}
+
+let _chartLineaPeriodo = null;
+function _renderGraficaLineaPeriodo(ventas) {
+  const ctx = L("grafica-linea-periodo");
+  if (!ctx) return;
+  // Calcular rango de días
+  let ini, fin;
+  if (S.periodoActual.preset === "custom") {
+    const d = L("periodo-desde").value, h = L("periodo-hasta").value;
+    ini = d ? new Date(d + "T00:00:00") : null;
+    fin = h ? new Date(h + "T23:59:59") : null;
+  } else {
+    ini = new Date(S.periodoActual.desde);
+    fin = new Date(S.periodoActual.hasta);
+  }
+  if (!ini || !fin) return;
+  // Generar lista de días
+  const dias = [];
+  const cur = new Date(ini.getFullYear(), ini.getMonth(), ini.getDate());
+  while (cur <= fin) {
+    dias.push(_fmtFecha(cur));
+    cur.setDate(cur.getDate() + 1);
+  }
+  // Agrupar ventas por día y por sucursal
+  const acc = {};  // acc[fecha] = { total, cuaji, polanco }
+  dias.forEach(d => acc[d] = { total: 0, cuaji: 0, polanco: 0 });
+  ventas.forEach(v => {
+    const fechaStr = String(v.fecha).substring(0, 10);
+    if (!acc[fechaStr]) return;
+    const monto = Number(v.subtotal) || 0;
+    acc[fechaStr].total += monto;
+    if (v.sucursal === "Cuajimalpa") acc[fechaStr].cuaji += monto;
+    else if (v.sucursal === "Polanco") acc[fechaStr].polanco += monto;
+  });
+  let totales = dias.map(d => acc[d].total);
+  let cuajis = dias.map(d => acc[d].cuaji);
+  let polancos = dias.map(d => acc[d].polanco);
+  // Modo acumulado: prefix sum
+  if (S.periodoActual.modoLinea === "acumulado") {
+    let sT = 0, sC = 0, sP = 0;
+    totales = totales.map(x => sT += x);
+    cuajis = cuajis.map(x => sC += x);
+    polancos = polancos.map(x => sP += x);
+  }
+  // Destruir chart anterior si existe
+  if (_chartLineaPeriodo) { try { _chartLineaPeriodo.destroy(); } catch(e) {} }
+  _chartLineaPeriodo = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: dias.map(d => d.substring(5)),  // MM-DD
+      datasets: [
+        { label: "Total", data: totales, borderColor: "#C8602A", backgroundColor: "rgba(200,96,42,.1)", tension: 0.3, fill: false, borderWidth: 3 },
+        { label: "Cuajimalpa", data: cuajis, borderColor: "#2E5C4A", backgroundColor: "rgba(46,92,74,.1)", tension: 0.3, fill: false, borderWidth: 2 },
+        { label: "Polanco", data: polancos, borderColor: "#1976D2", backgroundColor: "rgba(25,118,210,.1)", tension: 0.3, fill: false, borderWidth: 2 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: "top", labels: { font: { size: 12 }, boxWidth: 14 } },
+        tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: $${ctx.parsed.y.toLocaleString('es-MX')}` } }
+      },
+      scales: {
+        x: { ticks: { font: { size: 10 }, maxRotation: 60 } },
+        y: { ticks: { callback: (v) => "$" + v.toLocaleString('es-MX'), font: { size: 11 } } }
+      }
+    }
+  });
+}
+
+// /FEAT-REPORTE-PERIODO
 
 // ============================================================
 // FEAT-RUTAS — Módulo de rutas de entregas
