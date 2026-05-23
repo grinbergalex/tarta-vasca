@@ -4965,14 +4965,26 @@ function renderStockHora() {
   // Render
   let html = "";
   ["Total", "Cuajimalpa", "Polanco"].forEach(loc => {
-    html += _renderTablaStockHora(loc, sabores, tamanos, horas, stockInicial, ventasPorHora);
+    html += _renderTablaStockHora(loc, sabores, tamanos, horas, stockInicial, ventasPorHora, ventasTotal);
   });
   if (!html) html = '<div class="card"><div class="empty-state"><div class="empty-icon">📦</div><div>Sin datos para mostrar</div></div></div>';
   L("stockhora-content").innerHTML = html;
 }
 
-function _renderTablaStockHora(loc, sabores, tamanos, horas, stockInicial, ventasPorHora) {
+function _renderTablaStockHora(loc, sabores, tamanos, horas, stockInicial, ventasPorHora, ventasTotal) {
   const sucursales = loc === "Total" ? ["Cuajimalpa", "Polanco"] : [loc];
+  ventasTotal = ventasTotal || {};
+  // Helper: ventas del día sumando sucursales aplicables
+  const _ventasDelDia = (sab, tam) => sucursales.reduce((s, suc) => s + (ventasTotal[`${suc}|${sab}|${tam}`] || 0), 0);
+  // Ordenar tamaños por ventas totales del día (desc); en caso de empate por stock inicial desc
+  const tamanosOrden = [...tamanos].sort((a, b) => {
+    const vA = sabores.reduce((s, sab) => s + _ventasDelDia(sab, a), 0);
+    const vB = sabores.reduce((s, sab) => s + _ventasDelDia(sab, b), 0);
+    if (vB !== vA) return vB - vA;
+    const sA = sabores.reduce((s, sab) => s + sucursales.reduce((t, suc) => t + (stockInicial[`${suc}|${sab}|${a}`] || 0), 0), 0);
+    const sB = sabores.reduce((s, sab) => s + sucursales.reduce((t, suc) => t + (stockInicial[`${suc}|${sab}|${b}`] || 0), 0), 0);
+    return sB - sA;
+  });
   // Verificar si hay datos para esta localidad
   let hayDatos = false;
   for (const suc of sucursales) {
@@ -4994,13 +5006,21 @@ function _renderTablaStockHora(loc, sabores, tamanos, horas, stockInicial, venta
   });
   h += `</tr></thead><tbody>`;
 
-  // Para cada tamaño, agrupar filas
-  tamanos.forEach(tam => {
+  // Para cada tamaño (en orden de ventas/día desc), agrupar filas
+  tamanosOrden.forEach(tam => {
     // Verificar si hay algún sabor con stock en este tamaño para esta localidad
-    const saboresConStock = sabores.filter(sab => {
+    let saboresConStock = sabores.filter(sab => {
       let total = 0;
       sucursales.forEach(suc => { total += stockInicial[`${suc}|${sab}|${tam}`] || 0; });
       return total > 0;
+    });
+    // Ordenar sabores por ventas del día desc (empate: stock inicial desc)
+    saboresConStock = saboresConStock.sort((a, b) => {
+      const vA = _ventasDelDia(a, tam), vB = _ventasDelDia(b, tam);
+      if (vB !== vA) return vB - vA;
+      const sA = sucursales.reduce((s, suc) => s + (stockInicial[`${suc}|${a}|${tam}`] || 0), 0);
+      const sB = sucursales.reduce((s, suc) => s + (stockInicial[`${suc}|${b}|${tam}`] || 0), 0);
+      return sB - sA;
     });
     if (saboresConStock.length === 0) return;
     // Fila separadora de tamaño
@@ -5827,12 +5847,8 @@ function renderOportunidad() {
   ["Cuajimalpa", "Polanco"].forEach(suc => {
     const datos = resultados.filter(r => r.sucursal === suc);
     if (datos.length === 0) return;
-    // Ordenar: por tamaño (si aplica) y oportunidad desc
-    datos.sort((a, b) => {
-      const oA = ordenTam[a.tamano] || 9, oB = ordenTam[b.tamano] || 9;
-      if (oA !== oB) return oA - oB;
-      return b.oportunidad - a.oportunidad;
-    });
+    // Ordenar SIEMPRE por venta/día desc (de más a menos vendido), sin agrupador por tamaño
+    datos.sort((a, b) => b.promReal - a.promReal);
     const color = suc === "Cuajimalpa" ? "var(--green)" : "var(--accent)";
     const showSabor = (modo === "sabor_tamano" || modo === "sabor");
     const showTamano = (modo === "sabor_tamano" || modo === "tamano");
@@ -5851,13 +5867,8 @@ function renderOportunidad() {
       <div style="font-weight:700;font-size:16px;color:${color};margin-bottom:10px">📍 ${suc}</div>
       <table style="width:100%;border-collapse:collapse;font-size:12px">
         <thead><tr>${theadCells}</tr></thead><tbody>`;
-    // Agrupador visual por tamaño (solo en modo sabor_tamano)
-    let tamActual = "";
+    // Sin agrupador visual: orden puro por venta/día desc
     datos.forEach(r => {
-      if (modo === "sabor_tamano" && r.tamano !== tamActual) {
-        tamActual = r.tamano;
-        html += `<tr><td colspan="${colCount+1}" style="background:rgba(200,96,42,.08);padding:5px 8px;font-weight:700;font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:1px">${tamActual}</td></tr>`;
-      }
       const oportColor = r.oportunidad > 0.5 ? "var(--danger)" : "var(--muted)";
       let rowCells = "";
       if (showSabor)  rowCells += `<td style="padding:6px;border-bottom:1px solid var(--warm)">${r.sabor}</td>`;
