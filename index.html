@@ -4855,10 +4855,12 @@ function _renderFiltrosOportunidad() {
   if (elA) {
     const ag = S.oportAgrupacion || "sabor_tamano";
     const opts = [
-      ["sabor_tamano", "Sabor + Tamaño"],
-      ["tamano",       "Solo Tamaño"],
-      ["sabor",        "Solo Sabor"],
-      ["general",      "General (total)"]
+      ["sabor_tamano",   "Sabor + Tamaño"],
+      ["tamano",         "Solo Tamaño"],
+      ["sabor",          "Solo Sabor"],
+      ["general",        "General (total)"],
+      ["facet_tamano",   "Tablas por Tamaño"],
+      ["facet_sabor",    "Tablas por Sabor"]
     ];
     elA.innerHTML = opts.map(([k,lbl]) =>
       `<div class="chip ${ag === k ? 'active' : ''}" onclick="setOportAgrupacion('${k}')">${lbl}</div>`).join("");
@@ -5816,6 +5818,14 @@ function renderOportunidad() {
   // Aplicar agrupación: re-sumar base[] según modo
   const modo = S.oportAgrupacion || "sabor_tamano";
   const ordenTam = { "Individual": 1, "Mediana": 2, "Grande": 3 };
+  const VIST_LABEL = {
+    sabor_tamano: "Sabor + Tamaño",
+    tamano: "Solo Tamaño",
+    sabor: "Solo Sabor",
+    general: "General",
+    facet_tamano: "Tablas por Tamaño",
+    facet_sabor: "Tablas por Sabor"
+  };
 
   function keyAgrup(r) {
     if (modo === "tamano")  return `${r.sucursal}||${r.tamano}`;
@@ -5840,19 +5850,93 @@ function renderOportunidad() {
   });
   const resultados = Object.values(agg);
 
-  const headerInfo = `<div style="background:rgba(46,92,74,.08);border-left:3px solid var(--green);padding:8px 12px;border-radius:6px;font-size:12px;color:var(--ink);margin-bottom:12px">📊 <strong>Promedios sobre ${diasEfectivos} día(s)</strong> · vista: <strong>${({sabor_tamano:"Sabor + Tamaño",tamano:"Solo Tamaño",sabor:"Solo Sabor",general:"General"})[modo]}</strong></div>`;
+  const headerInfo = `<div style="background:rgba(46,92,74,.08);border-left:3px solid var(--green);padding:8px 12px;border-radius:6px;font-size:12px;color:var(--ink);margin-bottom:12px">📊 <strong>Promedios sobre ${diasEfectivos} día(s)</strong> · vista: <strong>${VIST_LABEL[modo] || modo}</strong></div>`;
+
+  // Helper: tabla de una sola dimensión (filas = valores de dimKey: "sabor" o "tamano")
+  function _renderTablaSimple(filas, dimKey, dimLabel) {
+    filas.sort((a, b) => b.promReal - a.promReal);
+    let head = `
+      <thead><tr>
+        <th style="text-align:left;padding:8px 6px;border-bottom:2px solid var(--border);background:var(--warm)">${dimLabel}</th>
+        <th style="text-align:right;padding:8px 6px;border-bottom:2px solid var(--border);background:var(--warm)">Venta/día</th>
+        <th style="text-align:right;padding:8px 6px;border-bottom:2px solid var(--border);background:var(--warm)">Potencial/día</th>
+        <th style="text-align:right;padding:8px 6px;border-bottom:2px solid var(--border);background:var(--warm)">Oportunidad</th>
+        <th style="text-align:center;padding:8px 6px;border-bottom:2px solid var(--border);background:var(--warm)">Días agotó</th>
+      </tr></thead>`;
+    let body = "<tbody>";
+    filas.forEach(r => {
+      const oportColor = r.oportunidad > 0.5 ? "var(--danger)" : "var(--muted)";
+      body += `<tr>
+        <td style="padding:6px;border-bottom:1px solid var(--warm)">${r[dimKey]}</td>
+        <td style="padding:6px;border-bottom:1px solid var(--warm);text-align:right"><strong>${r.promReal.toFixed(1)}</strong></td>
+        <td style="padding:6px;border-bottom:1px solid var(--warm);text-align:right;color:var(--success)"><strong>${r.promPotencial.toFixed(1)}</strong></td>
+        <td style="padding:6px;border-bottom:1px solid var(--warm);text-align:right;color:${oportColor};font-weight:700">${r.oportunidad > 0 ? '+' + r.oportunidad.toFixed(1) : '—'}</td>
+        <td style="padding:6px;border-bottom:1px solid var(--warm);text-align:center;color:var(--muted)">${r.diasAgotamiento}</td>
+      </tr>`;
+    });
+    body += "</tbody>";
+    return `<table style="width:100%;border-collapse:collapse;font-size:12px">${head}${body}</table>`;
+  }
 
   // Render por sucursal
   let html = headerInfo;
   ["Cuajimalpa", "Polanco"].forEach(suc => {
+    const color = suc === "Cuajimalpa" ? "var(--green)" : "var(--accent)";
+
+    // ─── MODOS FACETADOS: una tabla por valor de la dimensión faceta ───
+    if (modo === "facet_tamano" || modo === "facet_sabor") {
+      // En modos faceta, los resultados base son por (sabor,tamano) — usamos `base` directamente
+      const datosSuc = base.filter(r => r.sucursal === suc);
+      if (datosSuc.length === 0) return;
+      const facetDim   = (modo === "facet_tamano") ? "tamano" : "sabor";
+      const innerDim   = (modo === "facet_tamano") ? "sabor"  : "tamano";
+      const innerLabel = (innerDim === "sabor") ? "Sabor" : "Tamaño";
+      // Lista de valores únicos en la dimensión faceta, ordenados por venta/día desc total
+      const totales = {};
+      datosSuc.forEach(r => {
+        const k = r[facetDim];
+        if (!totales[k]) totales[k] = { promReal: 0, oportunidad: 0 };
+        totales[k].promReal    += r.promReal;
+        totales[k].oportunidad += r.oportunidad;
+      });
+      const valoresFacet = Object.keys(totales).sort((a, b) => {
+        // Para tamaño, mantener orden Individual/Mediana/Grande si los promedios son comparables; de lo contrario por venta desc.
+        if (facetDim === "tamano") {
+          const oA = ordenTam[a] || 9, oB = ordenTam[b] || 9;
+          if (oA !== oB) return oA - oB;
+        }
+        return totales[b].promReal - totales[a].promReal;
+      });
+
+      // Card por sucursal con sub-cards por faceta
+      html += `<div class="card" style="margin-bottom:12px;border-left:4px solid ${color}">
+        <div style="font-weight:700;font-size:16px;color:${color};margin-bottom:10px">📍 ${suc}</div>`;
+      valoresFacet.forEach(val => {
+        const filas = datosSuc.filter(r => r[facetDim] === val);
+        if (filas.length === 0) return;
+        const subTotalReal = filas.reduce((s,r)=>s+r.promReal,0);
+        const subTotalOpor = filas.reduce((s,r)=>s+r.oportunidad,0);
+        html += `<div style="margin-bottom:14px;padding:10px 12px;background:var(--warm);border-radius:8px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+            <div style="font-weight:700;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:.06em">${(facetDim==="tamano"?"🍰 ":"🎂 ")}${val}</div>
+            <div style="font-size:11px;color:var(--muted)">Total ${val.toLowerCase()}: <strong>${subTotalReal.toFixed(1)}</strong> ventas/día · oportunidad <strong style="color:${subTotalOpor>0.5?'var(--danger)':'var(--muted)'}">${subTotalOpor>0?'+'+subTotalOpor.toFixed(1):'—'}</strong></div>
+          </div>
+          ${_renderTablaSimple(filas, innerDim, innerLabel)}
+        </div>`;
+      });
+      html += `<div style="font-size:11px;color:var(--muted);margin-top:8px">
+        <strong>Cálculo:</strong> Venta real = ventas últimos 30 días ÷ días con datos. Potencial = si la última venta del día fue ≥2h antes del cierre Y hubo ≥2 ventas, se proyecta. Cada tabla = un ${facetDim === "tamano" ? "tamaño" : "sabor"} con filas por ${innerDim === "sabor" ? "sabor" : "tamaño"}.
+      </div></div>`;
+      return; // siguiente sucursal
+    }
+
+    // ─── MODOS PLANOS (sabor_tamano / tamano / sabor / general) ───
     const datos = resultados.filter(r => r.sucursal === suc);
     if (datos.length === 0) return;
     // Ordenar SIEMPRE por venta/día desc (de más a menos vendido), sin agrupador por tamaño
     datos.sort((a, b) => b.promReal - a.promReal);
-    const color = suc === "Cuajimalpa" ? "var(--green)" : "var(--accent)";
     const showSabor = (modo === "sabor_tamano" || modo === "sabor");
     const showTamano = (modo === "sabor_tamano" || modo === "tamano");
-    const colCount = 2 + (showSabor?1:0) + (showTamano?1:0) + 1; // venta+pot+opor+(agot)
     // Header
     let theadCells = "";
     if (showSabor)  theadCells += `<th style="text-align:left;padding:8px 6px;border-bottom:2px solid var(--border);background:var(--warm)">Sabor</th>`;
