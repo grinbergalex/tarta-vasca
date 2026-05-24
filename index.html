@@ -331,16 +331,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <input class="stock-search" type="text" id="stock-search" placeholder="Buscar sabor...">
         <div class="filter-row" id="filtros-suc"></div>
         <div class="filter-row" id="filtros-tam"></div>
-        <div style="display:flex;align-items:center;gap:8px;margin-top:6px;margin-bottom:2px">
-          <span style="font-size:11px;color:var(--muted)">Ordenar por:</span>
-          <select id="stock-orden" onchange="renderStock()" style="font-size:12px;border:1px solid var(--border);border-radius:8px;padding:4px 8px;background:white;font-family:'DM Sans',sans-serif;color:var(--ink)">
-            <option value="sabor">Sabor</option>
-            <option value="sucursal">Sucursal</option>
-            <option value="tamano">Tamaño</option>
-            <option value="cantidad">Cantidad</option>
-            
-          </select>
-        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">Clic en una columna para ordenar (otra vez = invertir).</div>
         <div id="stock-content"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
       </div>
     </div>
@@ -1946,24 +1937,17 @@ async function cargarStock() {
 
 function renderStock(){
   const stock=S.stock||[];
-  const busqueda=L("stock-search").value.toLowerCase();
-  const orden=L("stock-orden")?.value||"sabor";
+  const busqueda=(L("stock-search").value||"").toLowerCase();
+  // Filtrar: vivos, con stock
   let f=stock.filter(s=>!s.vencido&&s.cantActual>0);
   if(S.filtroSuc) f=f.filter(s=>s.sucursal===S.filtroSuc);
   if(S.filtroTam) f=f.filter(s=>s.tamano===S.filtroTam);
-  if(busqueda) f=f.filter(s=>s.sabor.toLowerCase().includes(busqueda));
-
-  f.sort((a,b)=>{
-    if(orden==="sabor")     return a.sabor.localeCompare(b.sabor)||a.sucursal.localeCompare(b.sucursal);
-    if(orden==="sucursal")  return a.sucursal.localeCompare(b.sucursal)||a.sabor.localeCompare(b.sabor);
-    if(orden==="tamano")    return a.tamano.localeCompare(b.tamano)||a.sabor.localeCompare(b.sabor);
-    if(orden==="cantidad")  return b.cantActual-a.cantActual;
-    return 0;
-  });
+  if(busqueda)    f=f.filter(s=>s.sabor.toLowerCase().includes(busqueda));
 
   L("sum-total").textContent=f.reduce((s,i)=>s+i.cantActual,0);
   L("stock-summary").style.display="grid";
   L("stock-sub").textContent=S.filtroSuc||(!getPermisos().puedeVerAmbas?S.sucursal:"todas las sucursales");
+  // Chips de sucursal y tamaño (igual que antes)
   if(S.catalogo&&getPermisos().puedeVerAmbas){
     const sucs=(S.catalogo.sucursales||[]).filter(s=>s.activo).map(s=>s.nombre);
     L("filtros-suc").innerHTML=`<div class="chip ${!S.filtroSuc?'active':''}" data-suc="">Todas</div>`+sucs.map(s=>`<div class="chip ${S.filtroSuc===s?'active':''}" data-suc="${s}">${s}</div>`).join("");
@@ -1977,12 +1961,27 @@ function renderStock(){
     L("filtros-tam").querySelectorAll(".chip").forEach(c=>c.addEventListener("click",()=>{S.filtroTam=c.dataset.tam||null;renderStock();}));
   }
   if(f.length===0){L("stock-content").innerHTML=`<div class="empty-state"><div class="empty-icon">📦</div><div>Sin stock disponible</div></div>`;return;}
-  L("stock-content").innerHTML=`<table class="stock-table">
-    <thead><tr><th>Sabor</th><th>Tam.</th>${getPermisos().puedeVerAmbas?"<th>Suc.</th>":""}<th>Cant.</th></tr></thead>
-    <tbody>${f.map(s=>{
-      const qCls=s.cantActual<=2?"qty-low":"qty-ok";
-      return `<tr><td><strong>${s.sabor}</strong></td><td style="color:var(--muted);font-size:12px">${s.tamano}</td>${getPermisos().puedeVerAmbas?`<td><span class="suc-tag">${s.sucursal.substring(0,4)}</span></td>`:""}<td><span class="qty-badge ${qCls}">${s.cantActual}</span></td></tr>`;
-    }).join("")}</tbody></table>`;
+
+  // Render pivot: una tabla por sucursal (Cuaji, Polanco) o sólo la mía si no puedo ver ambas
+  const puedeAmbas = getPermisos().puedeVerAmbas;
+  const sucsRender = puedeAmbas
+    ? (S.filtroSuc ? [S.filtroSuc] : ["Cuajimalpa","Polanco"])
+    : [S.sucursal];
+
+  let html = "";
+  sucsRender.forEach(suc => {
+    const stockSuc = f.filter(s => s.sucursal === suc);
+    const totalSuc = stockSuc.reduce((t, s) => t + Number(s.cantActual||0), 0);
+    const color = suc === "Cuajimalpa" ? "var(--green)" : "var(--accent)";
+    html += `<div class="card" style="margin-bottom:12px;border-left:4px solid ${color};overflow-x:auto">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px">
+        <div style="font-weight:700;font-size:15px;color:${color}">📍 ${suc}</div>
+        <div style="font-size:12px;color:var(--muted)"><strong>${totalSuc}</strong> piezas</div>
+      </div>
+      ${_tablaPivotInventario(stockSuc, color, "inv_"+suc.toLowerCase())}
+    </div>`;
+  });
+  L("stock-content").innerHTML = html;
 }
 L("stock-search").addEventListener("input",renderStock);
 
@@ -4550,12 +4549,37 @@ function _resumenVentas(ventas) {
   return { total, piezas, transacciones: idVentas.size, porTamano, porCanal, porSabor };
 }
 
-// FEAT-PIVOT — Tabla sabor × tamaño (modo unidades / monto)
-function _tablaPivotSaborTamano(ventas, modo, color) {
+// FEAT-PIVOT — Tabla sabor × tamaño (modo unidades / monto, ordenable por columna)
+// sortKey en S.pivotSort[scope] = { col: "_sabor"|"<nombreTamano>", dir: "asc"|"desc" }
+function _sortKeyPivot(scope) {
+  if (!S.pivotSort) S.pivotSort = {};
+  return S.pivotSort[scope] || null;
+}
+function togglePivotSort(scope, col) {
+  if (!S.pivotSort) S.pivotSort = {};
+  const cur = S.pivotSort[scope];
+  if (cur && cur.col === col) {
+    S.pivotSort[scope] = { col, dir: cur.dir === "desc" ? "asc" : "desc" };
+  } else {
+    // Primer clic: descendente por defecto (de más a menos)
+    S.pivotSort[scope] = { col, dir: col === "_sabor" ? "asc" : "desc" };
+  }
+  // Re-render según el scope
+  if (scope.startsWith("rep_") || scope.startsWith("per_")) {
+    const subDia = L("reporte-diario");
+    const subPer = L("reporte-periodo");
+    if (subDia && subDia.classList.contains("active")) renderReporte();
+    if (subPer && subPer.classList.contains("active")) renderReportePeriodo();
+  } else if (scope.startsWith("inv_")) {
+    renderStock();
+  }
+}
+
+function _tablaPivotSaborTamano(ventas, modo, color, scope) {
+  scope = scope || "rep_total";
   const sabores = (S.catalogo?.sabores || []).filter(s => s.activo).map(s => s.nombre);
   const tamanos = (S.catalogo?.tamanos || []).filter(t => t.activo).map(t => t.nombre);
   if (sabores.length === 0 || tamanos.length === 0) return "";
-  // Construir matriz: [sabor][tamano] = { piezas, monto }
   const M = {};
   sabores.forEach(sab => { M[sab] = {}; tamanos.forEach(tam => M[sab][tam] = { piezas: 0, monto: 0 }); });
   (ventas || []).forEach(v => {
@@ -4563,46 +4587,85 @@ function _tablaPivotSaborTamano(ventas, modo, color) {
     M[v.sabor][v.tamano].piezas += Number(v.cantidad) || 0;
     M[v.sabor][v.tamano].monto  += Number(v.subtotal) || 0;
   });
-  // Totales fila / col
-  const totalSab = {}, totalTam = {};
-  let totalG = { piezas: 0, monto: 0 };
-  sabores.forEach(sab => { totalSab[sab] = { piezas: 0, monto: 0 }; });
-  tamanos.forEach(tam => { totalTam[tam] = { piezas: 0, monto: 0 }; });
-  sabores.forEach(sab => tamanos.forEach(tam => {
-    totalSab[sab].piezas += M[sab][tam].piezas; totalSab[sab].monto += M[sab][tam].monto;
-    totalTam[tam].piezas += M[sab][tam].piezas; totalTam[tam].monto += M[sab][tam].monto;
-    totalG.piezas        += M[sab][tam].piezas; totalG.monto        += M[sab][tam].monto;
-  }));
-  // Ordenar sabores por total piezas desc
-  const sabOrden = [...sabores].sort((a, b) => totalSab[b].piezas - totalSab[a].piezas);
+  return _renderPivotMatriz(M, sabores, tamanos, modo, color, scope, /*usaMonto*/ true);
+}
+
+// Render genérico de la matriz; usaMonto=false significa que la celda solo tiene .piezas
+function _renderPivotMatriz(M, sabores, tamanos, modo, color, scope, usaMonto) {
   const fmt = (cell) => {
-    if (modo === "monto") {
+    if (!cell) return '<span style="color:var(--border)">—</span>';
+    if (usaMonto && modo === "monto") {
       return cell.monto > 0 ? `$${cell.monto.toLocaleString('es-MX')}` : '<span style="color:var(--border)">—</span>';
     }
     return cell.piezas > 0 ? `<strong>${cell.piezas}</strong>` : '<span style="color:var(--border)">—</span>';
   };
+  // Filtrar sabores con al menos algo en la métrica activa
+  const tieneAlgo = (sab) => tamanos.some(tam => {
+    const c = M[sab][tam] || { piezas: 0, monto: 0 };
+    return ((usaMonto && modo === "monto") ? c.monto : c.piezas) > 0;
+  });
+  const saboresVisibles = sabores.filter(tieneAlgo);
+  if (saboresVisibles.length === 0) {
+    return `<div style="padding:14px;color:var(--muted);font-size:12px;text-align:center">Sin datos en esta vista.</div>`;
+  }
+  // Sort
+  const sk = _sortKeyPivot(scope);
+  let sabOrden = [...saboresVisibles];
+  if (sk && sk.col === "_sabor") {
+    sabOrden.sort((a, b) => sk.dir === "asc" ? a.localeCompare(b) : b.localeCompare(a));
+  } else if (sk && tamanos.includes(sk.col)) {
+    const valor = (sab) => {
+      const c = M[sab] && M[sab][sk.col];
+      if (!c) return 0;
+      return (usaMonto && modo === "monto") ? c.monto : c.piezas;
+    };
+    sabOrden.sort((a, b) => sk.dir === "asc" ? valor(a) - valor(b) : valor(b) - valor(a));
+  } else {
+    // Default: por suma de la fila desc (usando modo activo)
+    const tot = (sab) => tamanos.reduce((s, tam) => {
+      const c = M[sab][tam] || { piezas: 0, monto: 0 };
+      return s + ((usaMonto && modo === "monto") ? c.monto : c.piezas);
+    }, 0);
+    sabOrden.sort((a, b) => tot(b) - tot(a));
+  }
+  // Indicador de sort
+  const arrow = (col) => {
+    if (!sk || sk.col !== col) return '<span style="opacity:.25;font-size:9px">▲▼</span>';
+    return sk.dir === "asc" ? '<span style="font-size:10px">▲</span>' : '<span style="font-size:10px">▼</span>';
+  };
+  const thStyleBase = "padding:6px 8px;background:var(--warm);border-bottom:2px solid var(--border);cursor:pointer;user-select:none";
   let html = `<table style="width:100%;border-collapse:collapse;font-size:12px">
     <thead><tr>
-      <th style="text-align:left;padding:6px 8px;background:var(--warm);border-bottom:2px solid var(--border)">Sabor</th>`;
+      <th style="${thStyleBase};text-align:left" onclick="togglePivotSort('${scope}','_sabor')">Sabor ${arrow("_sabor")}</th>`;
   tamanos.forEach(tam => {
-    html += `<th style="text-align:right;padding:6px 8px;background:var(--warm);border-bottom:2px solid var(--border)">${tam}</th>`;
+    html += `<th style="${thStyleBase};text-align:right" onclick="togglePivotSort('${scope}','${tam.replace(/'/g,"\\'")}')">${tam} ${arrow(tam)}</th>`;
   });
-  html += `<th style="text-align:right;padding:6px 8px;background:var(--warm);border-bottom:2px solid var(--border);color:${color}">Total</th></tr></thead><tbody>`;
+  html += `</tr></thead><tbody>`;
   sabOrden.forEach(sab => {
     html += `<tr><td style="padding:6px 8px;border-bottom:1px solid var(--warm);font-weight:500">${sab}</td>`;
     tamanos.forEach(tam => {
       html += `<td style="padding:6px 8px;border-bottom:1px solid var(--warm);text-align:right">${fmt(M[sab][tam])}</td>`;
     });
-    html += `<td style="padding:6px 8px;border-bottom:1px solid var(--warm);text-align:right;color:${color};font-weight:700">${fmt(totalSab[sab])}</td></tr>`;
+    html += `</tr>`;
   });
-  // Fila de totales por tamaño
-  html += `<tr style="background:var(--warm)"><td style="padding:6px 8px;font-weight:700;color:${color}">Total</td>`;
-  tamanos.forEach(tam => {
-    html += `<td style="padding:6px 8px;text-align:right;color:${color};font-weight:700">${fmt(totalTam[tam])}</td>`;
-  });
-  html += `<td style="padding:6px 8px;text-align:right;color:${color};font-weight:700">${fmt(totalG)}</td></tr>`;
   html += `</tbody></table>`;
   return html;
+}
+
+// Pivot para INVENTARIO (M solo tiene .piezas; siempre modo unidades)
+function _tablaPivotInventario(stock, color, scope) {
+  scope = scope || "inv_total";
+  const sabores = (S.catalogo?.sabores || []).filter(s => s.activo).map(s => s.nombre);
+  const tamanos = (S.catalogo?.tamanos || []).filter(t => t.activo).map(t => t.nombre);
+  if (sabores.length === 0 || tamanos.length === 0) return "";
+  const M = {};
+  sabores.forEach(sab => { M[sab] = {}; tamanos.forEach(tam => M[sab][tam] = { piezas: 0 }); });
+  (stock || []).forEach(s => {
+    if (s.vencido || s.cantActual <= 0) return;
+    if (!M[s.sabor] || !M[s.sabor][s.tamano]) return;
+    M[s.sabor][s.tamano].piezas += Number(s.cantActual) || 0;
+  });
+  return _renderPivotMatriz(M, sabores, tamanos, "unidades", color, scope, /*usaMonto*/ false);
 }
 
 function setPivotModo(modo) {
@@ -4614,6 +4677,23 @@ function setPivotModo(modo) {
     if (subDia && subDia.classList.contains("active")) renderReporte();
     if (subPer && subPer.classList.contains("active")) renderReportePeriodo();
   }
+}
+
+// FEAT-PIVOT-BLOQUE — bloque con las 3 tablas pivot (Total + Cuaji + Polanco)
+function _bloquePivotsReporte(ventasTotal, vCuaji, vPolanco) {
+  const modo = S.pivotModo || "unidades";
+  const card = (titulo, color, secId, ventas) => `<div class="card" style="margin-bottom:12px;border-left:4px solid ${color}">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px">
+      <div style="font-weight:700;font-size:15px;color:${color}">${titulo}</div>
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">${modo === "monto" ? "monto ($)" : "unidades"}</div>
+    </div>
+    <div style="overflow-x:auto">${_tablaPivotSaborTamano(ventas, modo, color, "rep_"+secId)}</div>
+  </div>`;
+  return `<div style="height:6px;background:linear-gradient(90deg,transparent,var(--border),transparent);border-radius:3px;margin:18px 0"></div>
+    <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.1em;margin-bottom:10px;text-transform:uppercase;text-align:center">Tabla sabor × tamaño</div>
+    ${card("🏢 Total empresa", "var(--accent)", "total", ventasTotal)}
+    ${card("🍰 Cuajimalpa", "var(--green)", "cuaji", vCuaji)}
+    ${card("🍰 Polanco", "var(--accent)", "polanco", vPolanco)}`;
 }
 
 function _chipsPivotModo() {
@@ -4657,7 +4737,7 @@ function _tarjetaResumen(titulo, r, color, secId, ventas) {
     ${rowsT ? `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:6px;text-transform:uppercase">Por tamaño</div>${rowsT}` : ''}
     ${rowsC ? `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:6px;margin-top:12px;text-transform:uppercase">Por canal</div>${rowsC}` : ''}
     ${rowsS ? `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:6px;margin-top:12px;text-transform:uppercase">Por sabor</div>${rowsS}` : ''}
-    ${ventas ? `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:6px;margin-top:14px;text-transform:uppercase">Tabla sabor × tamaño (${(S.pivotModo||"unidades")==="monto"?"monto":"unidades"})</div>${_tablaPivotSaborTamano(ventas, S.pivotModo||"unidades", color)}` : ''}
+    
   </div>`;
 }
 
@@ -4688,10 +4768,11 @@ function renderReporte() {
   // Guardar ventas por sección para los pies drill-down
   S.ventasPorSeccion = { total: ventasHoy, cuaji: vCuaji, polanco: vPolanco };
   L("reporte-content").innerHTML =
-    _chipsPivotModo() +
     _tarjetaResumen("🏢 Total empresa", total, "var(--accent)", "total", ventasHoy) +
     _tarjetaResumen("🍰 Cuajimalpa", cuaji, "var(--green)", "cuaji", vCuaji) +
     _tarjetaResumen("🍰 Polanco", polanco, "var(--accent)", "polanco", vPolanco) +
+    _chipsPivotModo() +
+    _bloquePivotsReporte(ventasHoy, vCuaji, vPolanco) +
     `<div style="height:6px;background:linear-gradient(90deg,transparent,var(--border),transparent);border-radius:3px;margin:18px 0"></div>` +
     `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.1em;margin-bottom:10px;text-transform:uppercase;text-align:center">Análisis gráfico (drill-down)</div>` +
     _tarjetaPie("Total empresa", "var(--accent)", "total") +
@@ -5296,10 +5377,11 @@ function renderReportePeriodo() {
   // Reset pies estado al renderizar (para empezar limpio)
   S.pieEstado = { total: [], cuaji: [], polanco: [] };
   L("periodo-content").innerHTML =
-    _chipsPivotModo() +
     _tarjetaResumen("🏢 Total empresa", total, "var(--accent)", "total", ventas) +
     _tarjetaResumen("🍰 Cuajimalpa", cuaji, "var(--green)", "cuaji", vCuaji) +
     _tarjetaResumen("🍰 Polanco", polanco, "var(--accent)", "polanco", vPolanco) +
+    _chipsPivotModo() +
+    _bloquePivotsReporte(ventas, vCuaji, vPolanco) +
     `<div style="height:6px;background:linear-gradient(90deg,transparent,var(--border),transparent);border-radius:3px;margin:18px 0"></div>` +
     `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.1em;margin-bottom:10px;text-transform:uppercase;text-align:center">Análisis gráfico (drill-down)</div>` +
     _tarjetaPie("Total empresa", "var(--accent)", "total") +
