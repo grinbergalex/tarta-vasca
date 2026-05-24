@@ -1697,6 +1697,8 @@ let S = {
   // FEAT-OPORTUNIDAD: filtros y agrupación (compartidos con Stock por hora)
   oportFiltros: { sabores: [], tamanos: [], canales: [] },
   oportAgrupacion: "sabor_tamano", // "sabor_tamano" | "tamano" | "sabor" | "general"
+  // FEAT-PIVOT: modo de visualización en la tabla pivot sabor × tamaño
+  pivotModo: "unidades", // "unidades" | "monto"
   // FEAT-MOV-MULTI: selección múltiple en Movimientos
   movSeleccionados: new Set(),
   // FEAT-RUTAS: ruta de entregas en construcción
@@ -4548,7 +4550,81 @@ function _resumenVentas(ventas) {
   return { total, piezas, transacciones: idVentas.size, porTamano, porCanal, porSabor };
 }
 
-function _tarjetaResumen(titulo, r, color, secId) {
+// FEAT-PIVOT — Tabla sabor × tamaño (modo unidades / monto)
+function _tablaPivotSaborTamano(ventas, modo, color) {
+  const sabores = (S.catalogo?.sabores || []).filter(s => s.activo).map(s => s.nombre);
+  const tamanos = (S.catalogo?.tamanos || []).filter(t => t.activo).map(t => t.nombre);
+  if (sabores.length === 0 || tamanos.length === 0) return "";
+  // Construir matriz: [sabor][tamano] = { piezas, monto }
+  const M = {};
+  sabores.forEach(sab => { M[sab] = {}; tamanos.forEach(tam => M[sab][tam] = { piezas: 0, monto: 0 }); });
+  (ventas || []).forEach(v => {
+    if (!M[v.sabor] || !M[v.sabor][v.tamano]) return;
+    M[v.sabor][v.tamano].piezas += Number(v.cantidad) || 0;
+    M[v.sabor][v.tamano].monto  += Number(v.subtotal) || 0;
+  });
+  // Totales fila / col
+  const totalSab = {}, totalTam = {};
+  let totalG = { piezas: 0, monto: 0 };
+  sabores.forEach(sab => { totalSab[sab] = { piezas: 0, monto: 0 }; });
+  tamanos.forEach(tam => { totalTam[tam] = { piezas: 0, monto: 0 }; });
+  sabores.forEach(sab => tamanos.forEach(tam => {
+    totalSab[sab].piezas += M[sab][tam].piezas; totalSab[sab].monto += M[sab][tam].monto;
+    totalTam[tam].piezas += M[sab][tam].piezas; totalTam[tam].monto += M[sab][tam].monto;
+    totalG.piezas        += M[sab][tam].piezas; totalG.monto        += M[sab][tam].monto;
+  }));
+  // Ordenar sabores por total piezas desc
+  const sabOrden = [...sabores].sort((a, b) => totalSab[b].piezas - totalSab[a].piezas);
+  const fmt = (cell) => {
+    if (modo === "monto") {
+      return cell.monto > 0 ? `$${cell.monto.toLocaleString('es-MX')}` : '<span style="color:var(--border)">—</span>';
+    }
+    return cell.piezas > 0 ? `<strong>${cell.piezas}</strong>` : '<span style="color:var(--border)">—</span>';
+  };
+  let html = `<table style="width:100%;border-collapse:collapse;font-size:12px">
+    <thead><tr>
+      <th style="text-align:left;padding:6px 8px;background:var(--warm);border-bottom:2px solid var(--border)">Sabor</th>`;
+  tamanos.forEach(tam => {
+    html += `<th style="text-align:right;padding:6px 8px;background:var(--warm);border-bottom:2px solid var(--border)">${tam}</th>`;
+  });
+  html += `<th style="text-align:right;padding:6px 8px;background:var(--warm);border-bottom:2px solid var(--border);color:${color}">Total</th></tr></thead><tbody>`;
+  sabOrden.forEach(sab => {
+    html += `<tr><td style="padding:6px 8px;border-bottom:1px solid var(--warm);font-weight:500">${sab}</td>`;
+    tamanos.forEach(tam => {
+      html += `<td style="padding:6px 8px;border-bottom:1px solid var(--warm);text-align:right">${fmt(M[sab][tam])}</td>`;
+    });
+    html += `<td style="padding:6px 8px;border-bottom:1px solid var(--warm);text-align:right;color:${color};font-weight:700">${fmt(totalSab[sab])}</td></tr>`;
+  });
+  // Fila de totales por tamaño
+  html += `<tr style="background:var(--warm)"><td style="padding:6px 8px;font-weight:700;color:${color}">Total</td>`;
+  tamanos.forEach(tam => {
+    html += `<td style="padding:6px 8px;text-align:right;color:${color};font-weight:700">${fmt(totalTam[tam])}</td>`;
+  });
+  html += `<td style="padding:6px 8px;text-align:right;color:${color};font-weight:700">${fmt(totalG)}</td></tr>`;
+  html += `</tbody></table>`;
+  return html;
+}
+
+function setPivotModo(modo) {
+  S.pivotModo = modo;
+  // Re-renderizar el reporte activo
+  if (L("tab-reporte") && L("tab-reporte").style.display !== "none") {
+    const subDia = L("reporte-diario");
+    const subPer = L("reporte-periodo");
+    if (subDia && subDia.classList.contains("active")) renderReporte();
+    if (subPer && subPer.classList.contains("active")) renderReportePeriodo();
+  }
+}
+
+function _chipsPivotModo() {
+  const m = S.pivotModo || "unidades";
+  return `<div class="filter-row" style="margin-bottom:10px">
+    <div class="chip ${m==='unidades'?'active':''}" onclick="setPivotModo('unidades')">📦 Unidades</div>
+    <div class="chip ${m==='monto'?'active':''}" onclick="setPivotModo('monto')">💲 Monto</div>
+  </div>`;
+}
+
+function _tarjetaResumen(titulo, r, color, secId, ventas) {
   // Helper para renderizar filas en 2 columnas
   function rowsGrid(obj, ordenarPorPiezas) {
     let keys = Object.keys(obj || {});
@@ -4581,6 +4657,7 @@ function _tarjetaResumen(titulo, r, color, secId) {
     ${rowsT ? `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:6px;text-transform:uppercase">Por tamaño</div>${rowsT}` : ''}
     ${rowsC ? `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:6px;margin-top:12px;text-transform:uppercase">Por canal</div>${rowsC}` : ''}
     ${rowsS ? `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:6px;margin-top:12px;text-transform:uppercase">Por sabor</div>${rowsS}` : ''}
+    ${ventas ? `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:6px;margin-top:14px;text-transform:uppercase">Tabla sabor × tamaño (${(S.pivotModo||"unidades")==="monto"?"monto":"unidades"})</div>${_tablaPivotSaborTamano(ventas, S.pivotModo||"unidades", color)}` : ''}
   </div>`;
 }
 
@@ -4611,9 +4688,10 @@ function renderReporte() {
   // Guardar ventas por sección para los pies drill-down
   S.ventasPorSeccion = { total: ventasHoy, cuaji: vCuaji, polanco: vPolanco };
   L("reporte-content").innerHTML =
-    _tarjetaResumen("🏢 Total empresa", total, "var(--accent)", "total") +
-    _tarjetaResumen("🍰 Cuajimalpa", cuaji, "var(--green)", "cuaji") +
-    _tarjetaResumen("🍰 Polanco", polanco, "var(--accent)", "polanco") +
+    _chipsPivotModo() +
+    _tarjetaResumen("🏢 Total empresa", total, "var(--accent)", "total", ventasHoy) +
+    _tarjetaResumen("🍰 Cuajimalpa", cuaji, "var(--green)", "cuaji", vCuaji) +
+    _tarjetaResumen("🍰 Polanco", polanco, "var(--accent)", "polanco", vPolanco) +
     `<div style="height:6px;background:linear-gradient(90deg,transparent,var(--border),transparent);border-radius:3px;margin:18px 0"></div>` +
     `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.1em;margin-bottom:10px;text-transform:uppercase;text-align:center">Análisis gráfico (drill-down)</div>` +
     _tarjetaPie("Total empresa", "var(--accent)", "total") +
@@ -5218,9 +5296,10 @@ function renderReportePeriodo() {
   // Reset pies estado al renderizar (para empezar limpio)
   S.pieEstado = { total: [], cuaji: [], polanco: [] };
   L("periodo-content").innerHTML =
-    _tarjetaResumen("🏢 Total empresa", total, "var(--accent)", "total") +
-    _tarjetaResumen("🍰 Cuajimalpa", cuaji, "var(--green)", "cuaji") +
-    _tarjetaResumen("🍰 Polanco", polanco, "var(--accent)", "polanco") +
+    _chipsPivotModo() +
+    _tarjetaResumen("🏢 Total empresa", total, "var(--accent)", "total", ventas) +
+    _tarjetaResumen("🍰 Cuajimalpa", cuaji, "var(--green)", "cuaji", vCuaji) +
+    _tarjetaResumen("🍰 Polanco", polanco, "var(--accent)", "polanco", vPolanco) +
     `<div style="height:6px;background:linear-gradient(90deg,transparent,var(--border),transparent);border-radius:3px;margin:18px 0"></div>` +
     `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.1em;margin-bottom:10px;text-transform:uppercase;text-align:center">Análisis gráfico (drill-down)</div>` +
     _tarjetaPie("Total empresa", "var(--accent)", "total") +
