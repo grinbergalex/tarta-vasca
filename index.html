@@ -4591,7 +4591,7 @@ function _tablaPivotSaborTamano(ventas, modo, color, scope) {
 }
 
 // Render genérico de la matriz; usaMonto=false significa que la celda solo tiene .piezas
-function _renderPivotMatriz(M, sabores, tamanos, modo, color, scope, usaMonto) {
+function _renderPivotMatriz(M, sabores, tamanos, modo, color, scope, usaMonto, mostrarTotales) {
   const fmt = (cell) => {
     if (!cell) return '<span style="color:var(--border)">—</span>';
     if (usaMonto && modo === "monto") {
@@ -4640,14 +4640,40 @@ function _renderPivotMatriz(M, sabores, tamanos, modo, color, scope, usaMonto) {
   tamanos.forEach(tam => {
     html += `<th style="${thStyleBase};text-align:right" onclick="togglePivotSort('${scope}','${tam.replace(/'/g,"\\'")}')">${tam} ${arrow(tam)}</th>`;
   });
+  if (mostrarTotales) {
+    html += `<th style="${thStyleBase};text-align:right;color:${color}">Total</th>`;
+  }
   html += `</tr></thead><tbody>`;
+  // Totales fila / col / general (solo si mostrarTotales)
+  const totalSab = {}, totalTam = {};
+  let totalG = { piezas: 0, monto: 0 };
+  if (mostrarTotales) {
+    sabOrden.forEach(sab => { totalSab[sab] = { piezas: 0, monto: 0 }; });
+    tamanos.forEach(tam => { totalTam[tam] = { piezas: 0, monto: 0 }; });
+    sabOrden.forEach(sab => tamanos.forEach(tam => {
+      const c = M[sab][tam] || { piezas:0, monto:0 };
+      totalSab[sab].piezas += c.piezas; totalSab[sab].monto += c.monto;
+      totalTam[tam].piezas += c.piezas; totalTam[tam].monto += c.monto;
+      totalG.piezas       += c.piezas; totalG.monto       += c.monto;
+    }));
+  }
   sabOrden.forEach(sab => {
     html += `<tr><td style="padding:6px 8px;border-bottom:1px solid var(--warm);font-weight:500">${sab}</td>`;
     tamanos.forEach(tam => {
       html += `<td style="padding:6px 8px;border-bottom:1px solid var(--warm);text-align:right">${fmt(M[sab][tam])}</td>`;
     });
+    if (mostrarTotales) {
+      html += `<td style="padding:6px 8px;border-bottom:1px solid var(--warm);text-align:right;color:${color};font-weight:700">${fmt(totalSab[sab])}</td>`;
+    }
     html += `</tr>`;
   });
+  if (mostrarTotales) {
+    html += `<tr style="background:var(--warm)"><td style="padding:6px 8px;font-weight:700;color:${color}">Total</td>`;
+    tamanos.forEach(tam => {
+      html += `<td style="padding:6px 8px;text-align:right;color:${color};font-weight:700">${fmt(totalTam[tam])}</td>`;
+    });
+    html += `<td style="padding:6px 8px;text-align:right;color:${color};font-weight:700">${fmt(totalG)}</td></tr>`;
+  }
   html += `</tbody></table>`;
   return html;
 }
@@ -4665,7 +4691,7 @@ function _tablaPivotInventario(stock, color, scope) {
     if (!M[s.sabor] || !M[s.sabor][s.tamano]) return;
     M[s.sabor][s.tamano].piezas += Number(s.cantActual) || 0;
   });
-  return _renderPivotMatriz(M, sabores, tamanos, "unidades", color, scope, /*usaMonto*/ false);
+  return _renderPivotMatriz(M, sabores, tamanos, "unidades", color, scope, /*usaMonto*/ false, /*mostrarTotales*/ true);
 }
 
 function setPivotModo(modo) {
