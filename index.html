@@ -589,6 +589,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
       <div class="costos-tabs" style="margin-bottom:14px">
         <button class="costos-tab active" onclick="setReporteTab('diario')">📅 Seguimiento diario</button>
         <button class="costos-tab" onclick="setReporteTab('periodo')">📈 Por período</button>
+        <button class="costos-tab" onclick="setReporteTab('conciliacion')">💰 Conciliación</button>
         <button class="costos-tab" onclick="setReporteTab('stockhora')">📦 Stock por hora</button>
         <button class="costos-tab" onclick="setReporteTab('formulas')">📐 Cómo se calcula</button>
       </div>
@@ -676,6 +677,34 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         </div>
 
         <div id="periodo-content"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
+      </div>
+
+      <!-- SUB-PESTAÑA: CONCILIACIÓN -->
+      <div id="reporte-conciliacion" class="costos-section">
+        <div class="card" style="padding:14px 16px;margin-bottom:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px">
+            <div class="card-title" style="margin-bottom:0">💰 Conciliación por método de pago</div>
+            <button onclick="cargarConciliacion()" class="btn-outline" style="width:auto;font-size:12px;padding:6px 14px;margin-top:0">🔄 Recargar</button>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+            <div>
+              <label class="form-label">Desde</label>
+              <input type="date" class="mini-input" id="conci-desde" style="width:100%" onchange="renderConciliacion()">
+            </div>
+            <div>
+              <label class="form-label">Hasta</label>
+              <input type="date" class="mini-input" id="conci-hasta" style="width:100%" onchange="renderConciliacion()">
+            </div>
+          </div>
+          <div class="filter-row" style="margin-bottom:0">
+            <div class="chip active" id="conci-preset-hoy"  onclick="setConciPreset('hoy')">Hoy</div>
+            <div class="chip"        id="conci-preset-ayer" onclick="setConciPreset('ayer')">Ayer</div>
+            <div class="chip"        id="conci-preset-7d"   onclick="setConciPreset('7d')">Últimos 7 días</div>
+            <div class="chip"        id="conci-preset-mes"  onclick="setConciPreset('mes')">Este mes</div>
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-top:8px">Excluye mermas y cortesías. "Por definir" = ventas a domicilio donde el método se asignará después.</div>
+        </div>
+        <div id="conciliacion-content"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
       </div>
 
       <!-- SUB-PESTAÑA: STOCK POR HORA -->
@@ -4858,12 +4887,13 @@ if (!S.pieEstado) S.pieEstado = { total: [], cuaji: [], polanco: [] };
 function setReporteTab(tab) {
   document.querySelectorAll("#tab-reporte > .costos-tabs > .costos-tab").forEach(t =>
     t.classList.toggle("active", t.getAttribute("onclick") === `setReporteTab('${tab}')`));
-  ["diario", "periodo", "stockhora", "formulas"].forEach(s => {
+  ["diario", "periodo", "conciliacion", "stockhora", "formulas"].forEach(s => {
     const el = L("reporte-" + s);
     if (el) el.classList.toggle("active", s === tab);
   });
   if (tab === "stockhora") cargarStockHora();
   if (tab === "periodo") cargarReportePeriodo();
+  if (tab === "conciliacion") cargarConciliacion();
 }
 
 function resetPieDrillDown(secId) {
@@ -6162,6 +6192,147 @@ function renderOportunidad() {
 }
 
 // /FEAT-OPORTUNIDAD
+
+
+// ============================================================
+// FEAT-CONCILIACION — Reporte de conciliación por método de pago
+// ============================================================
+
+const METODOS_CONCI = ["Efectivo", "Tarjeta", "Transferencia", "Rappi", "Uber Eats", "Por definir"];
+const COLOR_METODO = {
+  "Efectivo":      "#2E7D32",
+  "Tarjeta":       "#1565C0",
+  "Transferencia": "#6A1B9A",
+  "Rappi":         "#E91E63",
+  "Uber Eats":     "#000000",
+  "Por definir":   "#C0392B"
+};
+
+async function cargarConciliacion() {
+  L("conciliacion-content").innerHTML = '<div class="loading"><div class="spinner"></div>Cargando...</div>';
+  if (!S.catalogo) { const c = await api("getCatalogo"); if (c.ok) S.catalogo = c; }
+  if (!S.ventasReporte || S.ventasReporte.length === 0) {
+    const res = await api("getVentas");
+    if (!res.ok) { L("conciliacion-content").innerHTML = '<div class="empty-state"><div>Error al cargar ventas</div></div>'; return; }
+    S.ventasReporte = res.ventas || [];
+  }
+  // Init fechas (default = hoy)
+  if (!L("conci-desde").value) {
+    const hoy = _hoyCDMXString();
+    L("conci-desde").value = hoy;
+    L("conci-hasta").value = hoy;
+  }
+  renderConciliacion();
+}
+
+function setConciPreset(preset) {
+  document.querySelectorAll('[id^="conci-preset-"]').forEach(c => c.classList.remove("active"));
+  L("conci-preset-" + preset).classList.add("active");
+  const hoy = new Date();
+  const fmt = (d) => {
+    const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), dd = String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${dd}`;
+  };
+  let desde, hasta;
+  if (preset === "hoy") { desde = fmt(hoy); hasta = fmt(hoy); }
+  else if (preset === "ayer") { const a = new Date(hoy); a.setDate(a.getDate()-1); desde = fmt(a); hasta = fmt(a); }
+  else if (preset === "7d") { const a = new Date(hoy); a.setDate(a.getDate()-6); desde = fmt(a); hasta = fmt(hoy); }
+  else if (preset === "mes") { const a = new Date(hoy.getFullYear(), hoy.getMonth(), 1); desde = fmt(a); hasta = fmt(hoy); }
+  L("conci-desde").value = desde;
+  L("conci-hasta").value = hasta;
+  renderConciliacion();
+}
+
+function _ventasEnRangoConci() {
+  const d = L("conci-desde").value, h = L("conci-hasta").value;
+  if (!d || !h) return [];
+  return (S.ventasReporte || []).filter(v => {
+    if (!v.fecha) return false;
+    if (v.canal === "Merma" || v.canal === "Cortesía") return false;
+    const fStr = String(v.fecha).substring(0, 10);
+    return fStr >= d && fStr <= h;
+  });
+}
+
+function renderConciliacion() {
+  const ventas = _ventasEnRangoConci();
+  const desde = L("conci-desde").value, hasta = L("conci-hasta").value;
+  const labelRango = desde === hasta
+    ? desde.split("-").reverse().join("-")
+    : `${desde.split("-").reverse().join("-")} → ${hasta.split("-").reverse().join("-")}`;
+  if (ventas.length === 0) {
+    L("conciliacion-content").innerHTML = `<div class="card"><div class="empty-state"><div class="empty-icon">💰</div><div>Sin ventas en el rango seleccionado (${labelRango})</div></div></div>`;
+    return;
+  }
+  // Agrupar por sucursal y método
+  const agg = {};  // agg[suc][metodo] = { monto, tickets:Set, piezas }
+  const sucs = ["Cuajimalpa", "Polanco"];
+  const initSuc = () => { const o = {}; METODOS_CONCI.forEach(m => o[m] = { monto:0, tickets:new Set(), piezas:0 }); return o; };
+  const total = initSuc();
+  sucs.forEach(suc => agg[suc] = initSuc());
+  ventas.forEach(v => {
+    const m = v.metodoPago || "Por definir";
+    const metodoNorm = METODOS_CONCI.includes(m) ? m : "Por definir";
+    const target = agg[v.sucursal];
+    if (target) {
+      target[metodoNorm].monto   += Number(v.subtotal) || 0;
+      target[metodoNorm].piezas  += Number(v.cantidad) || 0;
+      if (v.idVenta) target[metodoNorm].tickets.add(v.idVenta);
+      else target[metodoNorm].tickets.add(String(v.fecha) + "|" + (v.cliente||""));
+    }
+    total[metodoNorm].monto   += Number(v.subtotal) || 0;
+    total[metodoNorm].piezas  += Number(v.cantidad) || 0;
+    if (v.idVenta) total[metodoNorm].tickets.add(v.idVenta);
+    else total[metodoNorm].tickets.add(String(v.fecha) + "|" + (v.cliente||""));
+  });
+  // Render
+  let html = `<div style="background:rgba(46,92,74,.08);border-left:3px solid var(--green);padding:8px 12px;border-radius:6px;font-size:12px;color:var(--ink);margin-bottom:12px">📅 Período: <strong>${labelRango}</strong> · ${ventas.length} ventas</div>`;
+  const blocks = [
+    { titulo: "🏢 Total empresa", color: "var(--accent)", data: total },
+    { titulo: "🍰 Cuajimalpa",    color: "var(--green)",  data: agg["Cuajimalpa"] },
+    { titulo: "🍰 Polanco",       color: "var(--accent)", data: agg["Polanco"] }
+  ];
+  blocks.forEach(b => {
+    const sumaMonto = METODOS_CONCI.reduce((s, m) => s + b.data[m].monto, 0);
+    if (sumaMonto === 0) return;
+    html += `<div class="card" style="margin-bottom:12px;border-left:4px solid ${b.color}">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:6px">
+        <div style="font-weight:700;font-size:16px;color:${b.color}">${b.titulo}</div>
+        <div style="font-family:'Fraunces',serif;font-size:24px;font-weight:500;color:${b.color}">$${sumaMonto.toLocaleString('es-MX')}</div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead><tr>
+          <th style="text-align:left;padding:8px 6px;border-bottom:2px solid var(--border);background:var(--warm)">Método de pago</th>
+          <th style="text-align:right;padding:8px 6px;border-bottom:2px solid var(--border);background:var(--warm)">Monto</th>
+          <th style="text-align:center;padding:8px 6px;border-bottom:2px solid var(--border);background:var(--warm)">Tickets</th>
+          <th style="text-align:center;padding:8px 6px;border-bottom:2px solid var(--border);background:var(--warm)">Piezas</th>
+          <th style="text-align:right;padding:8px 6px;border-bottom:2px solid var(--border);background:var(--warm)">% del total</th>
+        </tr></thead><tbody>`;
+    // Ordenar métodos por monto desc
+    const ordenados = [...METODOS_CONCI].sort((a, c) => b.data[c].monto - b.data[a].monto);
+    ordenados.forEach(m => {
+      const d = b.data[m];
+      if (d.monto === 0 && d.tickets.size === 0) return;
+      const pct = sumaMonto > 0 ? (d.monto / sumaMonto * 100).toFixed(1) : "0.0";
+      const colorM = COLOR_METODO[m] || "var(--ink)";
+      html += `<tr>
+        <td style="padding:8px 6px;border-bottom:1px solid var(--warm)"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${colorM};margin-right:8px;vertical-align:middle"></span><strong>${m}</strong></td>
+        <td style="padding:8px 6px;border-bottom:1px solid var(--warm);text-align:right;font-weight:700">$${d.monto.toLocaleString('es-MX')}</td>
+        <td style="padding:8px 6px;border-bottom:1px solid var(--warm);text-align:center;color:var(--muted)">${d.tickets.size}</td>
+        <td style="padding:8px 6px;border-bottom:1px solid var(--warm);text-align:center;color:var(--muted)">${d.piezas}</td>
+        <td style="padding:8px 6px;border-bottom:1px solid var(--warm);text-align:right;color:var(--muted)">${pct}%</td>
+      </tr>`;
+    });
+    html += `</tbody></table>
+      <div style="margin-top:10px;padding:8px 10px;background:var(--warm);border-radius:6px;font-size:11px;color:var(--muted)">
+        <strong>Conciliación:</strong> Efectivo = lo que debe haber en caja física · Tarjeta + Transferencia = debe estar en cuenta bancaria · Rappi/Uber Eats = lo deposita la plataforma (mensual, menos comisión) · "Por definir" = ventas a domicilio sin método asignado todavía.
+      </div>
+    </div>`;
+  });
+  L("conciliacion-content").innerHTML = html;
+}
+
+// /FEAT-CONCILIACION
 
 </script>
 </body>
