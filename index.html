@@ -59,7 +59,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 .stock-search{width:100%;padding:11px 16px;border:1px solid var(--border);border-radius:12px;font-family:'DM Sans',sans-serif;font-size:14px;background:white;outline:none;margin-bottom:10px;color:var(--ink)}
 .filter-row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
 .filter-row:empty{display:none}
-/* Colapsar elementos vacíos que generan espacio fantasma arriba de pestañas */
 .summary-grid:empty,.summary-grid[style*="display:none"]+*{margin-top:0}
 .card-sub:empty{display:none}
 .tab-pane>.card:first-child{margin-top:0}
@@ -151,8 +150,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 .audit-accion{font-size:11px;font-weight:500;color:var(--accent);text-transform:uppercase;letter-spacing:.5px}
 .audit-detalle{font-size:13px;margin:3px 0}
 .audit-meta{font-size:11px;color:var(--muted)}
-
-/* ── COSTOS v4 ── */
 .costos-tabs{display:flex;gap:2px;margin-bottom:20px;border-bottom:2px solid var(--border)}
 .costos-tab{padding:10px 16px;border:none;background:transparent;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:400;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s}
 .costos-tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:700}
@@ -215,8 +212,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 .op-num-val{font-family:'Fraunces',serif;font-size:16px;font-weight:500}
 .op-num-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
 .op-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
-
-/* ── v3.2 ANULAR MOVIMIENTOS ── */
 .mov-row{display:grid;grid-template-columns:auto 1fr auto auto;gap:10px;align-items:center;padding:11px 12px;border-radius:10px;background:var(--warm);margin-bottom:6px}
 .mov-row.anulado{opacity:.55;text-decoration:line-through;background:#f5f0e8}
 .mov-fecha{font-size:11px;color:var(--muted);min-width:90px}
@@ -235,7 +230,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
 </head>
 <body>
-
 <!-- LOGIN -->
 <div id="login-screen">
   <div class="login-logo">Tarta Vasca</div>
@@ -249,7 +243,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <div class="login-error" id="login-error"></div>
   </div>
 </div>
-
 <!-- APP -->
 <div id="app">
   <header class="app-header">
@@ -262,7 +255,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
       <button class="btn-logout" id="btn-logout">Salir</button>
     </div>
   </header>
-
   <!-- BANDEJA DE MENSAJES -->
   <div id="bandeja-mensajes" style="display:none;position:fixed;top:56px;right:0;width:320px;max-height:80vh;overflow-y:auto;background:var(--card);border-left:1px solid var(--border);border-bottom:1px solid var(--border);border-radius:0 0 0 16px;box-shadow:-4px 4px 20px rgba(0,0,0,.15);z-index:200">
     <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--card)">
@@ -274,7 +266,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     </div>
     <div id="bandeja-lista" style="padding:8px 12px"></div>
   </div>
-
   <!-- MODAL NUEVO MENSAJE -->
   <div id="modal-nuevo-msg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;display:none;align-items:center;justify-content:center">
     <div style="background:var(--card);border-radius:16px;padding:20px;width:90%;max-width:340px">
@@ -297,7 +288,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
       </div>
     </div>
   </div>
-
   <nav class="app-nav">
     <div class="nav-tab active" data-tab="stock">Stock</div>
     <div class="nav-tab perm-producir" data-tab="produccion">Producción</div>
@@ -316,9 +306,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <div class="nav-tab owner-only" data-tab="usuarios">Usuarios</div>
     <div class="nav-tab owner-only" data-tab="auditoria">Auditoría</div>
   </nav>
-
   <main class="app-content">
-
     <!-- STOCK -->
     <div id="tab-stock" class="tab-pane">
       <div class="card">
@@ -326,7 +314,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <div class="card-sub" id="stock-sub">Cargando...</div>
         <div class="summary-grid" id="stock-summary" style="display:none">
           <div class="summary-card"><div class="summary-num" id="sum-total">0</div><div class="summary-label">Piezas disponibles</div></div>
-          
         </div>
         <input class="stock-search" type="text" id="stock-search" placeholder="Buscar sabor...">
         <div class="filter-row" id="filtros-suc"></div>
@@ -335,12 +322,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <div id="stock-content"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
       </div>
     </div>
-
     <!-- VENTA -->
     <div id="tab-venta" class="tab-pane" style="display:none">
       <div class="card">
         <div class="card-title">Nueva venta</div>
-
         <!-- TIPO DE OPERACIÓN -->
         <div style="display:flex;gap:8px;margin-bottom:14px">
           <button class="tipo-op-btn active" onclick="setTipoOp('venta',this)" id="op-venta">🛍 Venta</button>
@@ -348,7 +333,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           <button class="tipo-op-btn" onclick="setTipoOp('merma',this)" id="op-merma">🗑 Merma</button>
         </div>
         <div id="aviso-tipo-op" style="display:none;font-size:12px;padding:8px 12px;border-radius:8px;margin-bottom:12px"></div>
-
         <div id="venta-fields">
           <div class="venta-grid">
             <div class="form-group" style="margin-bottom:0">
@@ -372,13 +356,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
             <div id="envio-costo-aviso" style="display:none;font-size:12px;padding:6px 12px;border-radius:8px;margin-top:4px;background:rgba(200,96,42,.08);color:var(--accent)"></div>
           </div>
         </div>
-
         <div class="separador"></div>
         <div class="form-group owner-only" id="venta-suc-group">
           <label class="form-label">Sucursal</label>
           <select class="form-select" id="venta-sucursal"></select>
         </div>
-
         <!-- AGREGAR PRODUCTO -->
         <div class="add-item-box">
           <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:12px">Agregar producto</div>
@@ -429,13 +411,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           <button class="btn-outline" id="btn-agregar-item" style="margin-top:0">+ Agregar al carrito</button>
           </div><!-- /suelto-box -->
         </div>
-
         <!-- MOTIVO — solo merma/regalo -->
         <div id="motivo-row" style="display:none;margin-bottom:12px">
           <label class="form-label">Motivo *</label>
           <input class="form-input" id="op-motivo" placeholder="Ej: Producto dañado, Cortesía cliente VIP...">
         </div>
-
         <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Carrito</div>
         <div id="carrito-items"><div class="carrito-vacio">Sin productos — agrega uno arriba</div></div>
         <div id="carrito-total-bar" class="carrito-total-bar" style="display:none">
@@ -446,7 +426,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           </div>
           <span class="total-num" id="total-num">$0</span>
         </div>
-
         <div class="separador"></div>
         <div id="cliente-section">
           <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Cliente</div>
@@ -484,7 +463,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <button class="btn-outline" id="btn-limpiar-venta">Limpiar todo</button>
       </div>
     </div>
-
     <!-- RUTAS -->
     <div id="tab-rutas" class="tab-pane" style="display:none">
       <!-- Sub-pestañas Rutas -->
@@ -493,19 +471,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <button class="costos-tab" onclick="setRutaTab('abiertas')">📋 Rutas abiertas</button>
         <button class="costos-tab" onclick="setRutaTab('cerradas')">📦 Rutas cerradas (hoy)</button>
       </div>
-
       <!-- SUB: Nueva ruta -->
       <div id="ruta-tab-nueva" class="costos-section active">
       <div class="card">
         <div class="card-title">🚚 Nueva ruta</div>
         <div class="card-sub">Planea entregas a domicilio. Cada parada se registra como venta con la fecha de la ruta. Sucursal de salida: <strong>Cuajimalpa</strong>.</div>
-
         <div style="background:rgba(200,96,42,.06);border:1px dashed var(--accent);border-radius:10px;padding:14px;margin-bottom:14px">
           <label class="form-label">📅 Fecha en que se ejecuta esta ruta</label>
           <input class="form-input" type="date" id="ruta-fecha" style="max-width:200px">
           <div style="font-size:11px;color:var(--muted);margin-top:4px">Stock se descuenta hoy; las ventas se registran con esta fecha.</div>
         </div>
-
         <div class="add-item-box" id="ruta-parada-form">
           <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:12px">Datos del cliente</div>
           <div class="add-item-row" style="margin-bottom:10px">
@@ -525,19 +500,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           <div id="ruta-tartas-parada" style="margin-top:10px"></div>
           <button class="btn-main btn-green" onclick="rutaAgregarParada()" style="margin-top:12px">+ Agregar parada a la ruta</button>
         </div>
-
         <div class="separador"></div>
-
         <!-- LISTA DE PARADAS -->
         <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Paradas en la ruta</div>
         <div id="ruta-paradas-list"><div class="carrito-vacio">Sin paradas todavía — agrega arriba</div></div>
-
         <div class="separador"></div>
         <button class="btn-main" id="btn-ruta-confirmar" onclick="confirmarRuta()" style="background:var(--accent)">Confirmar ruta (0 paradas)</button>
         <button class="btn-outline" onclick="limpiarRuta()">Cancelar / Limpiar ruta</button>
       </div>
       </div><!-- /ruta-tab-nueva -->
-
       <!-- SUB: Rutas abiertas -->
       <div id="ruta-tab-abiertas" class="costos-section">
         <div class="card" style="padding:14px 16px;margin-bottom:12px">
@@ -549,7 +520,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         </div>
         <div id="rutas-abiertas-list"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
       </div>
-
       <!-- SUB: Rutas cerradas -->
       <div id="ruta-tab-cerradas" class="costos-section">
         <div class="card" style="padding:14px 16px;margin-bottom:12px">
@@ -562,7 +532,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <div id="rutas-cerradas-list"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
       </div>
     </div>
-
     <!-- PRODUCCIÓN -->
     <div id="tab-produccion" class="tab-pane" style="display:none">
       <div class="card">
@@ -574,7 +543,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <button class="btn-main btn-green" id="btn-cargar-prod">Cargar producción</button>
       </div>
     </div>
-
     <!-- VENTAS -->
     <div id="tab-ventas" class="tab-pane" style="display:none">
       <div class="card">
@@ -591,9 +559,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <button class="costos-tab" onclick="setReporteTab('periodo')">📈 Por período</button>
         <button class="costos-tab" onclick="setReporteTab('conciliacion')">💰 Conciliación</button>
         <button class="costos-tab" onclick="setReporteTab('stockhora')">📦 Stock por hora</button>
+        <button class="costos-tab" onclick="setReporteTab('utildiario')">💎 Utilidad diaria</button>
+        <button class="costos-tab" onclick="setReporteTab('utilperiodo')">💎 Utilidad por período</button>
         <button class="costos-tab" onclick="setReporteTab('formulas')">📐 Cómo se calcula</button>
       </div>
-
       <!-- SUB-PESTAÑA: DIARIO -->
       <div id="reporte-diario" class="costos-section active">
         <div class="card" style="padding:14px 16px;margin-bottom:12px">
@@ -619,7 +588,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         </div>
         <div id="reporte-content"><div class="loading"><div class="spinner"></div>Cargando reporte...</div></div>
       </div>
-
       <!-- SUB-PESTAÑA: POR PERÍODO -->
       <div id="reporte-periodo" class="costos-section">
         <div class="card" style="padding:14px 16px;margin-bottom:12px">
@@ -663,7 +631,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
             </div>
           </div>
         </div>
-
         <!-- Gráfica de líneas en el tiempo -->
         <div class="card" style="padding:14px 16px;margin-bottom:12px">
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px">
@@ -675,10 +642,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           </div>
           <div style="position:relative;width:100%;height:320px"><canvas id="grafica-linea-periodo"></canvas></div>
         </div>
-
         <div id="periodo-content"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
       </div>
-
       <!-- SUB-PESTAÑA: CONCILIACIÓN -->
       <div id="reporte-conciliacion" class="costos-section">
         <div class="card" style="padding:14px 16px;margin-bottom:12px">
@@ -706,7 +671,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         </div>
         <div id="conciliacion-content"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
       </div>
-
       <!-- SUB-PESTAÑA: STOCK POR HORA -->
       <div id="reporte-stockhora" class="costos-section">
         <div class="card" style="padding:14px 16px;margin-bottom:12px">
@@ -716,7 +680,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           </div>
           <div style="font-size:12px;color:var(--muted)">Filtros (vacío = todos). Aplican a las dos tablas. Tip: filtrar canal "Rappi"/"Uber Eats" sirve para ver preparaciones especiales (p.ej. refrigerados).</div>
         </div>
-
         <!-- FILTROS comunes a Oportunidad y Stock por hora -->
         <div class="card" style="padding:14px 16px;margin-bottom:12px">
           <div style="display:grid;grid-template-columns:1fr;gap:10px">
@@ -734,7 +697,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
             </div>
           </div>
         </div>
-
         <!-- OPORTUNIDAD DE VENTA (arriba) -->
         <div class="card" style="padding:14px 16px;margin-bottom:12px">
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:8px">
@@ -747,7 +709,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           </div>
         </div>
         <div id="oportunidad-content" style="margin-bottom:16px"></div>
-
         <!-- STOCK POR HORA (abajo) -->
         <div class="card" style="padding:14px 16px;margin-bottom:12px">
           <div class="card-title" style="margin-bottom:0">📦 Stock por hora — hoy</div>
@@ -755,13 +716,95 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         </div>
         <div id="stockhora-content"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
       </div>
-
+      <!-- SUB-PESTAÑA: UTILIDAD DIARIA (NUEVO v3.4.15) -->
+      <div id="reporte-utildiario" class="costos-section">
+        <div class="card" style="padding:14px 16px;margin-bottom:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px">
+            <div class="card-title" style="margin-bottom:0">💎 Utilidad diaria</div>
+            <button onclick="cargarUtilDiario()" class="btn-outline" style="width:auto;font-size:12px;padding:6px 14px;margin-top:0">🔄 Recargar</button>
+          </div>
+          <div id="utildiario-fecha" style="font-size:13px;color:var(--muted);margin-bottom:10px"></div>
+          <div style="background:rgba(46,92,74,.08);border-left:3px solid var(--green);padding:8px 12px;border-radius:6px;font-size:12px;color:var(--ink);margin-bottom:10px">
+            💡 Utilidad neta = (ingreso − comisión canal/método) − costo de receta. Ventas sin receta cargada se excluyen del cálculo.
+          </div>
+          <div style="display:grid;grid-template-columns:1fr;gap:10px">
+            <div>
+              <label class="form-label">Sabores (vacío = todos)</label>
+              <div id="utildiario-filtros-sabor" class="filter-row" style="margin-bottom:0"></div>
+            </div>
+            <div>
+              <label class="form-label">Tamaños (vacío = todos)</label>
+              <div id="utildiario-filtros-tamano" class="filter-row" style="margin-bottom:0"></div>
+            </div>
+            <div>
+              <label class="form-label">Canales (vacío = todos)</label>
+              <div id="utildiario-filtros-canal" class="filter-row" style="margin-bottom:0"></div>
+            </div>
+          </div>
+        </div>
+        <div id="utildiario-content"><div class="loading"><div class="spinner"></div>Cargando reporte...</div></div>
+      </div>
+      <!-- SUB-PESTAÑA: UTILIDAD POR PERÍODO (NUEVO v3.4.15) -->
+      <div id="reporte-utilperiodo" class="costos-section">
+        <div class="card" style="padding:14px 16px;margin-bottom:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px">
+            <div class="card-title" style="margin-bottom:0">💎 Utilidad por período</div>
+            <button onclick="cargarUtilPeriodo()" class="btn-outline" style="width:auto;font-size:12px;padding:6px 14px;margin-top:0">🔄 Recargar</button>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px" id="utilperiodo-presets">
+            <button class="chip active" data-preset="semana" onclick="setUtilPeriodoPreset('semana')">Semana</button>
+            <button class="chip" data-preset="mes" onclick="setUtilPeriodoPreset('mes')">Mes</button>
+            <button class="chip" data-preset="trimestre" onclick="setUtilPeriodoPreset('trimestre')">Trimestre</button>
+            <button class="chip" data-preset="anio" onclick="setUtilPeriodoPreset('anio')">Año</button>
+            <button class="chip" data-preset="custom" onclick="setUtilPeriodoPreset('custom')">Personalizado</button>
+          </div>
+          <div id="utilperiodo-custom-row" style="display:none;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+            <div>
+              <label class="form-label">Desde</label>
+              <input type="date" class="mini-input" id="utilperiodo-desde" style="width:100%" onchange="renderUtilPeriodo()">
+            </div>
+            <div>
+              <label class="form-label">Hasta</label>
+              <input type="date" class="mini-input" id="utilperiodo-hasta" style="width:100%" onchange="renderUtilPeriodo()">
+            </div>
+          </div>
+          <div id="utilperiodo-rango-label" style="font-size:13px;color:var(--muted);margin-bottom:10px"></div>
+          <div style="background:rgba(46,92,74,.08);border-left:3px solid var(--green);padding:8px 12px;border-radius:6px;font-size:12px;color:var(--ink);margin-bottom:10px">
+            💡 Utilidad neta = (ingreso − comisión canal/método) − costo de receta. Ventas sin receta cargada se excluyen.
+          </div>
+          <div style="display:grid;grid-template-columns:1fr;gap:10px">
+            <div>
+              <label class="form-label">Sabores (vacío = todos)</label>
+              <div id="utilperiodo-filtros-sabor" class="filter-row" style="margin-bottom:0"></div>
+            </div>
+            <div>
+              <label class="form-label">Tamaños (vacío = todos)</label>
+              <div id="utilperiodo-filtros-tamano" class="filter-row" style="margin-bottom:0"></div>
+            </div>
+            <div>
+              <label class="form-label">Canales (vacío = todos)</label>
+              <div id="utilperiodo-filtros-canal" class="filter-row" style="margin-bottom:0"></div>
+            </div>
+          </div>
+        </div>
+        <!-- Gráfica de líneas de utilidad -->
+        <div class="card" style="padding:14px 16px;margin-bottom:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px">
+            <div style="font-weight:700;font-size:15px">💎 Utilidad neta en el tiempo</div>
+            <div style="display:flex;gap:6px">
+              <button class="chip active" id="utilperiodo-modo-dia-btn" onclick="setUtilModoLinea('dia')">Día a día</button>
+              <button class="chip" id="utilperiodo-modo-acum-btn" onclick="setUtilModoLinea('acumulado')">Acumulado</button>
+            </div>
+          </div>
+          <div style="position:relative;width:100%;height:320px"><canvas id="grafica-linea-utilperiodo"></canvas></div>
+        </div>
+        <div id="utilperiodo-content"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
+      </div>
       <!-- SUB-PESTAÑA: FÓRMULAS Y EJEMPLOS -->
       <div id="reporte-formulas" class="costos-section">
         <div class="card">
           <div class="card-title">📐 Cómo se calculan las métricas</div>
           <div class="card-sub">Documentación de las fórmulas y ejemplos usados en los reportes.</div>
-
           <div style="margin-top:18px;border-left:4px solid var(--accent);padding-left:14px">
             <div style="font-weight:700;font-size:15px;margin-bottom:8px">1. Venta promedio por día</div>
             <div style="font-size:13px;color:var(--ink);margin-bottom:6px"><strong>Fórmula:</strong> <code>suma de ventas ÷ días efectivos con datos</code></div>
@@ -770,7 +813,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
               <strong>Ejemplo:</strong> Lotus Individual en Polanco vendió 114 piezas en los últimos 30 días → <strong>promedio = 114 ÷ 30 = 3.8 piezas/día</strong>.
             </div>
           </div>
-
           <div style="margin-top:18px;border-left:4px solid var(--success);padding-left:14px">
             <div style="font-weight:700;font-size:15px;margin-bottom:8px">2. Venta potencial por día</div>
             <div style="font-size:13px;color:var(--ink);margin-bottom:8px">Para cada día se decide:</div>
@@ -793,7 +835,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
             </div>
             <div style="font-size:13px;color:var(--ink);margin-top:8px">El promedio potencial es el promedio de los 30 días considerando proyecciones donde aplican.</div>
           </div>
-
           <div style="margin-top:18px;border-left:4px solid var(--danger);padding-left:14px">
             <div style="font-weight:700;font-size:15px;margin-bottom:8px">3. Oportunidad</div>
             <div style="font-size:13px;color:var(--ink);margin-bottom:6px"><strong>Fórmula:</strong> <code>potencial/día − venta real/día</code></div>
@@ -801,7 +842,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
               <strong>Ejemplo:</strong> Lotus Individual Polanco. Real 3.8/día, Potencial 6.2/día → <strong>Oportunidad = 2.4 piezas/día</strong> que estás dejando de vender por quedarte sin stock.
             </div>
           </div>
-
           <div style="margin-top:18px;border-left:4px solid var(--warning);padding-left:14px">
             <div style="font-weight:700;font-size:15px;margin-bottom:8px">4. Horarios de apertura usados</div>
             <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:6px">
@@ -810,7 +850,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
               <tr><td style="padding:6px 8px;border-top:1px solid var(--warm)">Polanco</td><td style="padding:6px 8px;border-top:1px solid var(--warm)">11:00</td><td style="padding:6px 8px;border-top:1px solid var(--warm)">19:00</td><td style="padding:6px 8px;border-top:1px solid var(--warm)">8 hrs</td></tr>
             </table>
           </div>
-
           <div style="margin-top:18px;border-left:4px solid var(--muted);padding-left:14px">
             <div style="font-weight:700;font-size:15px;margin-bottom:8px">5. Limitaciones</div>
             <ul style="font-size:13px;margin-left:18px;color:var(--ink)">
@@ -820,20 +859,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
               <li><strong>Horarios fijos:</strong> no se ajustan a domingos.</li>
             </ul>
           </div>
-
           <div style="margin-top:24px;border-top:2px solid var(--border);padding-top:18px">
             <div style="font-weight:700;font-size:16px;margin-bottom:12px;color:var(--accent)">Otras métricas</div>
-
             <div style="margin-bottom:14px">
               <div style="font-weight:700;font-size:14px;margin-bottom:4px">Ticket promedio</div>
               <div style="font-size:13px"><code>total facturado ÷ número de tickets</code> (un ticket = una venta completa).</div>
             </div>
-
             <div style="margin-bottom:14px">
               <div style="font-weight:700;font-size:14px;margin-bottom:4px">Promedio por pieza</div>
               <div style="font-size:13px"><code>total facturado ÷ piezas vendidas</code></div>
             </div>
-
             <div style="margin-bottom:14px">
               <div style="font-weight:700;font-size:14px;margin-bottom:4px">Comisiones por canal</div>
               <ul style="font-size:13px;margin-left:18px">
@@ -843,7 +878,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
                 <li>Efectivo: 0%</li>
               </ul>
             </div>
-
             <div style="margin-bottom:14px">
               <div style="font-weight:700;font-size:14px;margin-bottom:4px">Precios por canal</div>
               <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:6px">
@@ -855,7 +889,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
                 <tr><td style="padding:6px 8px;border-top:1px solid var(--warm)">Paquete 4</td><td style="padding:6px 8px;border-top:1px solid var(--warm)">$720</td><td style="padding:6px 8px;border-top:1px solid var(--warm)">$760</td></tr>
               </table>
             </div>
-
             <div style="margin-bottom:14px">
               <div style="font-weight:700;font-size:14px;margin-bottom:4px">Equivalencias en tablero</div>
               <ul style="font-size:13px;margin-left:18px">
@@ -867,9 +900,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           </div>
         </div>
       </div>
-
     </div>
-
     <!-- MOVIMIENTOS — anular ventas, cargas, transferencias -->
     <div id="tab-movimientos" class="tab-pane" style="display:none">
       <div class="card">
@@ -902,7 +933,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         </div>
       </div>
     </div>
-
     <!-- CATÁLOGO -->
     <div id="tab-catalogo" class="tab-pane" style="display:none">
       <div class="card">
@@ -920,7 +950,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <div id="cat-canales"><div class="loading"><div class="spinner"></div></div></div>
       </div>
     </div>
-
     <!-- PRECIOS -->
     <div id="tab-precios" class="tab-pane" style="display:none">
       <div class="card">
@@ -929,7 +958,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <div id="precios-content"><div class="loading"><div class="spinner"></div></div></div>
         <button class="btn-outline" onclick="repararPrecios()" style="margin-top:8px;font-size:12px">🔧 Crear precios para sabores sin precio</button>
       </div>
-
       <!-- PRECIO POR CANAL -->
       <div class="card" style="margin-top:10px">
         <div class="card-title">Precio especial por canal</div>
@@ -958,7 +986,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           <button class="btn-main btn-green" onclick="guardarCanalPrecio()">GUARDAR REGLA</button>
         </div>
       </div>
-
       <!-- ZONAS DE ENVÍO -->
       <div class="card" style="margin-top:10px">
         <div class="card-title">Zonas de envío</div>
@@ -984,13 +1011,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         </div>
       </div>
     </div>
-
     <!-- COSTOS v4 -->
     <div id="tab-costos" class="tab-pane" style="display:none">
       <div class="card">
         <div class="card-title">Costos</div>
         <div class="card-sub">Insumos, recetas por sabor y calculadora de costo por pastel &nbsp;<span id="costos-save-status" style="font-size:11px;font-weight:500"></span></div>
-
         <div class="costos-tabs">
           <button class="costos-tab active" onclick="setCostosTab('insumos')">📦 Insumos</button>
           <button class="costos-tab" onclick="setCostosTab('recetas')">📋 Recetas</button>
@@ -1000,12 +1025,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           <button class="costos-tab" onclick="setCostosTab('gastos')">💸 Gastos</button>
           <button class="costos-tab owner-only" onclick="setCostosTab('comisiones')">💳 Comisiones</button>
         </div>
-
         <!-- TAB INSUMOS -->
         <div id="costos-insumos" class="costos-section active">
           <div class="seccion-label">Catálogo de insumos</div>
           <div id="insumos-list"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
-
           <div class="add-box" style="margin-top:16px">
             <div class="add-box-title">+ Nuevo insumo</div>
             <div class="form-group" style="margin-bottom:10px">
@@ -1040,7 +1063,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
             <button onclick="guardarNuevoInsumo()" style="margin-top:10px;width:100%;background:#86BDAD;border:none;color:#EFEEE8;border-radius:8px;cursor:pointer;padding:11px 0;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase">AGREGAR INSUMO</button>
           </div>
         </div>
-
         <!-- TAB RECETAS -->
         <div id="costos-recetas" class="costos-section">
           <div class="seccion-label">Receta por sabor y tamaño</div>
@@ -1055,7 +1077,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
             </div>
           </div>
           <div id="receta-ingredientes-list"></div>
-
           <div class="add-box" style="margin-top:12px">
             <div class="add-box-title">+ Añadir ingrediente a esta receta</div>
             <div class="form-group" style="margin-bottom:6px">
@@ -1084,7 +1105,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           </div>
           <button onclick="guardarRecetaCompleta()" class="btn-main btn-green" style="margin-top:12px" id="btn-guardar-receta">Guardar receta</button>
         </div>
-
         <!-- TAB CALCULADORA -->
         <div id="costos-calculadora" class="costos-section">
           <div class="campo-grid2" style="margin-bottom:16px">
@@ -1101,13 +1121,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
             <div class="empty-state"><div class="empty-icon">🧮</div><div>Selecciona sabor y tamaño para calcular</div></div>
           </div>
         </div>
-
         <!-- TAB CARGA MASIVA -->
         <div id="costos-carga" class="costos-section">
           <div style="font-size:12px;color:var(--muted);padding:10px 14px;background:rgba(134,189,173,.1);border-radius:8px;margin-bottom:16px">
             💡 Puedes cargarme los datos de tus insumos o recetas en cualquier formato: texto, lista, imagen de un documento, audio — y yo los conviero al formato correcto para guardarlos.
           </div>
-
           <div class="seccion-label">Carga masiva de insumos</div>
           <div class="form-group" style="margin-bottom:8px">
             <label class="form-label">Pega tu lista de insumos</label>
@@ -1118,9 +1136,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 - Nata líquida: 1 litro a $52"></textarea>
           </div>
           <button onclick="procesarBulkInsumos()" class="btn-main" id="btn-bulk-insumos">Procesar y cargar insumos</button>
-
           <div class="separador"></div>
-
           <div class="seccion-label">Carga masiva de receta</div>
           <div class="campo-grid2" style="margin-bottom:10px">
             <div>
@@ -1143,18 +1159,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           </div>
           <button onclick="procesarBulkReceta()" class="btn-main btn-green" id="btn-bulk-receta">Procesar y guardar receta</button>
         </div>
-
         <!-- TAB UTILIDAD UNITARIA -->
         <div id="costos-tabla-util" class="costos-section">
           <div class="seccion-label">Utilidad unitaria por pastel con receta cargada</div>
           <div id="tabla-util-content"><div class="loading"><div class="spinner"></div>Calculando...</div></div>
         </div>
-
         <!-- TAB GASTOS -->
         <div id="costos-gastos" class="costos-section">
           <div class="seccion-label">Gastos fijos y variables de operación</div>
           <div id="gastos-list"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
-
           <div class="insumo-form" style="margin-top:16px">
             <div class="form-title" id="gasto-form-title">Nuevo gasto</div>
             <input type="hidden" id="gasto-id">
@@ -1215,7 +1228,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
             </div>
           </div>
         </div>
-
       <!-- TAB COMISIONES -->
       <div id="costos-comisiones" class="costos-section">
         <div class="seccion-label">Comisiones y cargos por método de pago / canal</div>
@@ -1248,14 +1260,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           <button onclick="guardarComision()" style="width:100%;background:#86BDAD;border:none;color:#EFEEE8;border-radius:8px;cursor:pointer;padding:11px 0;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase">GUARDAR COMISIÓN</button>
         </div>
       </div>
-
       </div>
     </div>
-
     <!-- UTILIDADES -->
     <!-- UTILIDAD POR VENTAS -->
     <div id="tab-utilidades" class="tab-pane" style="display:none">
-
       <!-- FILTROS -->
       <div class="card" style="padding:16px 20px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
@@ -1314,7 +1323,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           </div>
         </div>
       </div>
-
       <!-- RESUMEN DEL PERÍODO -->
       <div id="util-resumen-periodo" style="display:none">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
@@ -1340,17 +1348,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           <span id="up-sin-receta-aviso" style="display:none"> · <span style="color:var(--warning)">⚠️ <span id="up-sin-receta-num"></span> sin receta (excluidas del costo)</span></span>
         </div>
       </div>
-
       <!-- OPERACIONES -->
       <div class="card">
         <div id="util-ops-list"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
       </div>
     </div>
     </div>
-
     <!-- OBJETIVOS -->
     <div id="tab-objetivos" class="tab-pane" style="display:none">
-
       <!-- SELECTOR DE MES/AÑO -->
       <div class="card" style="padding:14px 16px;margin-bottom:12px">
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -1378,7 +1383,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           </select>
         </div>
       </div>
-
       <!-- OBJETIVOS CONFIG (colapsable) -->
       <div class="card" style="margin-bottom:12px">
         <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleObjetivosConfig()">
@@ -1399,20 +1403,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           <button onclick="guardarMetasTablero()" style="background:var(--accent);border:none;color:#fff;padding:10px 20px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;width:100%">GUARDAR METAS</button>
         </div>
       </div>
-
       <!-- TABLERO PRINCIPAL -->
       <div id="tbl-contenido">
         <div style="text-align:center;padding:40px;color:var(--muted)">Cargando...</div>
       </div>
-
     </div>
-
     <!-- TRANSFERENCIAS -->
     <div id="tab-transferencias" class="tab-pane" style="display:none">
       <div class="card">
         <div class="card-title">Transferencias a Polanco</div>
         <div class="card-sub">Lo que se produce siempre queda en Cuajimalpa. Registra aquí lo que sale hacia Polanco.</div>
-
         <div style="display:grid;grid-template-columns:1fr 1fr 80px;gap:8px;align-items:end;margin-bottom:8px">
           <div>
             <label class="form-label">Sabor</label>
@@ -1429,7 +1429,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
             </select>
           </div>
         </div>
-
         <div id="trf-stock-preview" style="display:none;margin-bottom:10px">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
             <div style="background:var(--warm);border-radius:10px;padding:10px 14px;text-align:center">
@@ -1442,18 +1441,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
             </div>
           </div>
         </div>
-
         <div style="margin-bottom:10px">
           <label class="form-label">Notas (opcional)</label>
           <input class="mini-input" id="trf-notas" placeholder="Ej: Para evento del sábado" style="width:100%">
         </div>
         <button class="btn-main btn-green" onclick="solicitarTransferencia()" id="btn-trf" style="margin-bottom:16px">MOVER A POLANCO →</button>
-
         <div style="font-weight:600;font-size:13px;margin-bottom:8px;color:var(--muted)">Historial</div>
         <div id="trf-lista"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
       </div>
     </div>
-
     <!-- ALERTAS Y MÍNIMOS/MÁXIMOS -->
     <div id="tab-alertas" class="tab-pane" style="display:none">
       <div id="alertas-panel" style="margin-bottom:12px"></div>
@@ -1461,7 +1457,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <div class="card-title">Mínimos y máximos de stock</div>
         <div class="card-sub">Por sucursal, sabor y tamaño</div>
         <div id="limites-lista" style="margin-bottom:14px"><div class="loading"><div class="spinner"></div></div></div>
-
         <div style="background:var(--warm);border-radius:12px;padding:14px">
           <div style="font-weight:600;font-size:13px;margin-bottom:10px">Definir límite</div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
@@ -1495,7 +1490,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         </div>
       </div>
     </div>
-
     <!-- USUARIOS -->
     <div id="tab-usuarios" class="tab-pane" style="display:none">
       <div class="card">
@@ -1516,7 +1510,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <div id="sesiones-list"><div class="loading"><div class="spinner"></div></div></div>
       </div>
     </div>
-
     <!-- AUDITORÍA -->
     <div id="tab-auditoria" class="tab-pane" style="display:none">
       <div class="card">
@@ -1533,10 +1526,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <div style="font-size:11px;color:var(--muted);margin-top:6px">Borra ventas, stock, clientes y auditoría. Conserva catálogo, precios, insumos, recetas y usuarios.</div>
       </div>
     </div>
-
   </main>
 </div>
-
 <!-- MODALES -->
 <div class="modal-overlay" id="modal-precio">
   <div class="modal">
@@ -1548,7 +1539,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <button class="btn-outline" onclick="document.getElementById('modal-precio').classList.remove('show')">Cancelar</button>
   </div>
 </div>
-
 <div class="modal-overlay" id="modal-nuevo-item">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -1558,7 +1548,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <button class="btn-outline" onclick="document.getElementById('modal-nuevo-item').classList.remove('show')">Cancelar</button>
   </div>
 </div>
-
 <div class="modal-overlay" id="modal-nuevo-usuario">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -1581,7 +1570,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <button class="btn-outline" onclick="document.getElementById('modal-nuevo-usuario').classList.remove('show')">Cancelar</button>
   </div>
 </div>
-
 <!-- v3.2 MODAL EDITAR USUARIO -->
 <div class="modal-overlay" id="modal-editar-usuario">
   <div class="modal">
@@ -1629,7 +1617,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <button class="btn-outline" onclick="document.getElementById('modal-editar-usuario').classList.remove('show')">Cancelar</button>
   </div>
 </div>
-
 <!-- v3.2.13 MODAL ANULAR MÚLTIPLE -->
 <div class="modal-overlay" id="modal-anular-multi">
   <div class="modal">
@@ -1647,7 +1634,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <button class="btn-outline" onclick="document.getElementById('modal-anular-multi').classList.remove('show')">Cancelar</button>
   </div>
 </div>
-
 <!-- v3.2 MODAL ANULAR MOVIMIENTO -->
 <div class="modal-overlay" id="modal-anular-mov">
   <div class="modal">
@@ -1666,7 +1652,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <button class="btn-outline" onclick="document.getElementById('modal-anular-mov').classList.remove('show')">Cancelar</button>
   </div>
 </div>
-
 <!-- Editar insumo -->
 <div class="modal-overlay" id="modal-editar-insumo">
   <div class="modal">
@@ -1689,43 +1674,34 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <button class="btn-outline" onclick="document.getElementById('modal-editar-insumo').classList.remove('show')">Cancelar</button>
   </div>
 </div>
-
 <div class="toast" id="toast"></div>
-
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbxJfDX3lwu5AE9GDA1WGZ3_MP3AAGPsCz54CdzS_cnE9zxQArN1zLmjnZixwc2A13eF/exec";
 const LECTURA = ["getCatalogo","getStock","getPrecios","getUsuarios","getAuditoria","buscarCliente","getHistorialCliente","getVentas","getInsumos","getRecetas","getCalculoCosto","listarMovimientosRecientes","getSesionesActivas"];
-
 let S = {
   token:null, usuario:null, rol:null, sucursal:null, permisos:null,
   catalogo:null, precios:null, stock:null,
   carrito:[], clienteSel:null, comisionesConfig:{},
   filtroSuc:null, filtroTam:null, precioEditar:null, itemTipo:null,
   insumos:[], recetas:[], recetaActual:[],
-  movimientos:[], anularPendiente:null,  // v3.2
-  // FEAT-PROD-MEMORIA: último sabor/tamaño usado en producción
+  movimientos:[], anularPendiente:null,
   lastProdSabor: localStorage.getItem("tv_lastProdSabor") || null,
   lastProdTamano: localStorage.getItem("tv_lastProdTamano") || null,
-  // FEAT-PAQUETE: modo de agregar items
   modoItem: "suelto",
-  // FEAT-REPORTE: filtros activos del reporte
   reporteFiltros: { sabores: [], tamanos: [], canales: [] },
   ventasReporte: [],
-  // FEAT-REPORTE-PERIODO
   periodoActual: { preset: "semana", desde: null, hasta: null, modoLinea: "dia" },
   periodoFiltros: { sabores: [], tamanos: [], canales: [] },
-  // FEAT-OPORTUNIDAD: filtros y agrupación (compartidos con Stock por hora)
   oportFiltros: { sabores: [], tamanos: [], canales: [] },
-  oportAgrupacion: "sabor_tamano", // "sabor_tamano" | "tamano" | "sabor" | "general"
-  // FEAT-PIVOT: modo de visualización en la tabla pivot sabor × tamaño
-  pivotModo: "unidades", // "unidades" | "monto"
-  // FEAT-MOV-MULTI: selección múltiple en Movimientos
+  oportAgrupacion: "sabor_tamano",
+  pivotModo: "unidades",
   movSeleccionados: new Set(),
-  // FEAT-RUTAS: ruta de entregas en construcción
-  ruta: { paradas: [], tartasActuales: [] }
+  ruta: { paradas: [], tartasActuales: [] },
+  // FEAT-UTILIDAD v3.4.15
+  utildiarioFiltros: { sabores: [], tamanos: [], canales: [] },
+  utilperiodoFiltros: { sabores: [], tamanos: [], canales: [] },
+  utilperiodoActual: { preset: "semana", desde: null, hasta: null, modoLinea: "dia" }
 };
-
-// Permisos por defecto si el backend no los devuelve
 const PERMISOS_FALLBACK = {
   "Owner":        { esAdmin:true,  puedeVender:true,  puedeProducir:true,  puedeTransferir:true,  puedeVerAmbas:true,  puedeAnular:true  },
   "Vendedor":     { esAdmin:false, puedeVender:true,  puedeProducir:false, puedeTransferir:false, puedeVerAmbas:false, puedeAnular:false },
@@ -1733,11 +1709,9 @@ const PERMISOS_FALLBACK = {
   "Mixto":        { esAdmin:false, puedeVender:true,  puedeProducir:true,  puedeTransferir:true,  puedeVerAmbas:false, puedeAnular:false },
   "Admin_Ventas": { esAdmin:false, puedeVender:true,  puedeProducir:false, puedeTransferir:true,  puedeVerAmbas:true,  puedeAnular:false }
 };
-
 function getPermisos() {
   return S.permisos || PERMISOS_FALLBACK[S.rol] || PERMISOS_FALLBACK["Vendedor"];
 }
-
 async function api(accion, body={}) {
   const payload = {accion, token:S.token, ...body};
   try {
@@ -1755,9 +1729,7 @@ async function api(accion, body={}) {
     }
   } catch(e) { return {ok:false,error:"Error de conexión."}; }
 }
-
 function L(id) { return document.getElementById(id); }
-
 function toast(msg, tipo="success") {
   const el = L("toast");
   el.textContent = msg;
@@ -1765,7 +1737,6 @@ function toast(msg, tipo="success") {
   el.classList.add("show");
   setTimeout(()=>el.classList.remove("show"), 3200);
 }
-
 function convertirUnidad(cantidad, unidadReceta, unidadInsumo) {
   const ur = (unidadReceta || "").toLowerCase().trim();
   const ui = (unidadInsumo  || "").toLowerCase().trim();
@@ -1786,28 +1757,22 @@ function convertirUnidad(cantidad, unidadReceta, unidadInsumo) {
   if ((ur === "l" || ur === "lt") && ui === "kg")   return cantidad;
   return cantidad;
 }
-
 function fmtMXN(n) {
   return '$'+Number(n||0).toLocaleString('es-MX',{minimumFractionDigits:0,maximumFractionDigits:0});
 }
-
-// LOGIN
 L("btn-login").addEventListener("click", doLogin);
 L("login-pass").addEventListener("keydown", e=>{ if(e.key==="Enter") doLogin(); });
-
 async function doLogin() {
   const usuario=L("login-user").value.trim(), password=L("login-pass").value;
   const err=L("login-error"), btn=L("btn-login");
   if(!usuario||!password){err.textContent="Ingresa usuario y contraseña.";err.style.display="block";return;}
   btn.disabled=true;btn.textContent="Entrando...";err.style.display="none";
-  // v3.2: enviar device_info para multi-sesión etiquetada
   const device_info = navigator.userAgent.substring(0,80);
   const res=await api("login",{usuario,password,device_info});
   if(res.ok){S.token=res.token;S.usuario=res.usuario;S.rol=res.rol;S.sucursal=res.sucursal;S.permisos=res.permisos||null;iniciarApp();}
   else{err.textContent=res.error||"Error al iniciar sesión.";err.style.display="block";}
   btn.disabled=false;btn.textContent="Entrar";
 }
-
 function iniciarApp() {
   L("login-screen").style.display="none";
   L("app").style.display="flex";
@@ -1822,7 +1787,6 @@ function iniciarApp() {
   setTimeout(cargarMensajesHeader, 1500);
   setInterval(cargarMensajesHeader, 120000);
 }
-
 function aplicarPermisosUI() {
   const p = getPermisos();
   document.querySelectorAll(".owner-only").forEach(el => { el.style.display = p.esAdmin ? "" : "none"; });
@@ -1833,7 +1797,6 @@ function aplicarPermisosUI() {
   const venta_suc = L("venta-suc-group");
   if (venta_suc) venta_suc.style.display = p.puedeVerAmbas ? "" : "none";
 }
-
 function setupNav() {
   document.querySelectorAll(".nav-tab").forEach(tab=>{
     tab.addEventListener("click",()=>{
@@ -1844,7 +1807,7 @@ function setupNav() {
       const t=tab.dataset.tab;
       if(t==="stock") cargarStock();
       else if(t==="usuarios") cargarUsuarios();
-      else if(t==="movimientos") cargarMovimientos();  // v3.2
+      else if(t==="movimientos") cargarMovimientos();
       else if(t==="auditoria") cargarAuditoria();
       else if(t==="catalogo") cargarCatalogoPantalla();
       else if(t==="ventas") cargarVentas();
@@ -1860,10 +1823,6 @@ function setupNav() {
     });
   });
 }
-
-// ============================================================
-// CATÁLOGO
-// ============================================================
 async function cargarCatalogo() {
   const res=await api("getCatalogo");
   if(!res.ok) return;
@@ -1871,13 +1830,11 @@ async function cargarCatalogo() {
   await cargarPrecios(true);
   poblarSelectsVenta();
 }
-
 function poblarSelectsVenta() {
   if(!S.catalogo) return;
   const suc=(S.catalogo.sucursales||[]).filter(s=>s.activo).map(s=>s.nombre);
   const can=(S.catalogo.canales||[]).filter(c=>c.activo).map(c=>c.nombre);
   const canFinal=can.length>0?can.filter(c=>c!=="Uber Eats"):["Tienda","Domicilio","Rappi"];
-
   const selSuc = L("venta-sucursal");
   const sucActual = selSuc?.value;
   llenar("venta-sucursal", suc);
@@ -1888,43 +1845,34 @@ function poblarSelectsVenta() {
       selSuc.value = S.sucursal;
     }
   }
-
   llenar("venta-canal",canFinal);
   actualizarMetodoPago(); actualizarUICanal();
   if(!getPermisos().puedeVerAmbas) L("venta-suc-group").style.display="none";
-
   const sabAll=(S.catalogo.sabores||[]).filter(s=>s.activo).map(s=>s.nombre);
   const tamAll=(S.catalogo.tamanos||[]).filter(t=>t.activo).map(t=>t.nombre);
-  // FIX BUG: preservar selección actual del usuario antes de repoblar
   const prodSaborActual = L("prod-sabor")?.value;
   const prodTamanoActual = L("prod-tamano")?.value;
   llenar("prod-sabor", sabAll);
   llenar("prod-tamano", tamAll);
-  // Restaurar selección: primero la actual, después memoria persistida
   if (prodSaborActual && sabAll.includes(prodSaborActual)) L("prod-sabor").value = prodSaborActual;
   else if (S.lastProdSabor && sabAll.includes(S.lastProdSabor)) L("prod-sabor").value = S.lastProdSabor;
   if (prodTamanoActual && tamAll.includes(prodTamanoActual)) L("prod-tamano").value = prodTamanoActual;
   else if (S.lastProdTamano && tamAll.includes(S.lastProdTamano)) L("prod-tamano").value = S.lastProdTamano;
-
   ["receta-sabor","calc-sabor","bulk-receta-sabor"].forEach(id=>llenar(id,sabAll));
   ["receta-tamano","calc-tamano","bulk-receta-tamano"].forEach(id=>llenar(id,tamAll));
-
   actualizarSelectoresCascada();
 }
-
 function stockConDisponibilidad(campo) {
   if(!S.stock) return [];
   const sucursal = getPermisos().puedeVerAmbas ? (L("venta-sucursal")?.value || null) : S.sucursal;
   const disponibles=S.stock.filter(s=>!s.vencido&&s.cantActual>0&&(!sucursal||s.sucursal===sucursal));
   return [...new Set(disponibles.map(s=>s[campo]))];
 }
-
 function llenar(id, opciones) {
   const sel=L(id);
   if(!sel) return;
   sel.innerHTML=opciones.map(o=>`<option value="${o}">${o}</option>`).join("");
 }
-
 const COMISIONES_DEFAULT = {"Rappi":-0.23,"Uber Eats":-0.23,"Tarjeta":-0.06,"Transferencia":-0.03,"Efectivo":0};
 function getComisionesActuales(){
   if(S.comisionesConfig && Object.keys(S.comisionesConfig).length>0) return S.comisionesConfig;
@@ -1934,7 +1882,6 @@ function getComision(canal,metodo){
   const C=getComisionesActuales();
   return canal==="Rappi"||canal==="Uber Eats"?C[canal]||-0.23:(C[metodo]||0);
 }
-
 function esPlataforma(canal){return canal==="Rappi"||canal==="Uber Eats";}
 function actualizarMetodoPago(){
   const canal=L("venta-canal")?.value;
@@ -1952,10 +1899,6 @@ function actualizarUICanal(){
   else{aviso.style.display="none";if(cli)cli.style.display="block";}
 }
 L("venta-canal")?.addEventListener("change",()=>{ onCanalChange(); });
-
-// ============================================================
-// STOCK
-// ============================================================
 async function cargarStock() {
   L("stock-content").innerHTML=`<div class="loading"><div class="spinner"></div>Cargando...</div>`;
   const res=await api("getStock");
@@ -1963,20 +1906,16 @@ async function cargarStock() {
   S.stock=res.stock;
   renderStock(); poblarSelectsVenta();
 }
-
 function renderStock(){
   const stock=S.stock||[];
   const busqueda=(L("stock-search").value||"").toLowerCase();
-  // Filtrar: vivos, con stock
   let f=stock.filter(s=>!s.vencido&&s.cantActual>0);
   if(S.filtroSuc) f=f.filter(s=>s.sucursal===S.filtroSuc);
   if(S.filtroTam) f=f.filter(s=>s.tamano===S.filtroTam);
   if(busqueda)    f=f.filter(s=>s.sabor.toLowerCase().includes(busqueda));
-
   L("sum-total").textContent=f.reduce((s,i)=>s+i.cantActual,0);
   L("stock-summary").style.display="grid";
   L("stock-sub").textContent=S.filtroSuc||(!getPermisos().puedeVerAmbas?S.sucursal:"todas las sucursales");
-  // Chips de sucursal y tamaño (igual que antes)
   if(S.catalogo&&getPermisos().puedeVerAmbas){
     const sucs=(S.catalogo.sucursales||[]).filter(s=>s.activo).map(s=>s.nombre);
     L("filtros-suc").innerHTML=`<div class="chip ${!S.filtroSuc?'active':''}" data-suc="">Todas</div>`+sucs.map(s=>`<div class="chip ${S.filtroSuc===s?'active':''}" data-suc="${s}">${s}</div>`).join("");
@@ -1990,13 +1929,10 @@ function renderStock(){
     L("filtros-tam").querySelectorAll(".chip").forEach(c=>c.addEventListener("click",()=>{S.filtroTam=c.dataset.tam||null;renderStock();}));
   }
   if(f.length===0){L("stock-content").innerHTML=`<div class="empty-state"><div class="empty-icon">📦</div><div>Sin stock disponible</div></div>`;return;}
-
-  // Render pivot: una tabla por sucursal (Cuaji, Polanco) o sólo la mía si no puedo ver ambas
   const puedeAmbas = getPermisos().puedeVerAmbas;
   const sucsRender = puedeAmbas
     ? (S.filtroSuc ? [S.filtroSuc] : ["Cuajimalpa","Polanco"])
     : [S.sucursal];
-
   let html = "";
   sucsRender.forEach(suc => {
     const stockSuc = f.filter(s => s.sucursal === suc);
@@ -2013,20 +1949,13 @@ function renderStock(){
   L("stock-content").innerHTML = html;
 }
 L("stock-search").addEventListener("input",renderStock);
-
-// ============================================================
-// VENTA
-// ============================================================
 async function iniciarVenta(){
-  // FIX-STOCK-FRESCO: siempre recarga stock al entrar a Nueva venta
   await cargarStock();
   if(S.catalogo) poblarSelectsVenta();
   actualizarUICanal();
   actualizarSelectoresCascada();
 }
-
 function getSucursalVenta(){return getPermisos().puedeVerAmbas?(L("venta-sucursal")?.value||S.sucursal):S.sucursal;}
-
 function calcDisp(sabor,tamano){
   if(!S.stock) return 0;
   const suc=getSucursalVenta();
@@ -2034,9 +1963,7 @@ function calcDisp(sabor,tamano){
   const enStock=S.stock.filter(s=>s.sabor===sabor&&s.tamano===tamano&&s.sucursal===suc&&!s.vencido&&s.cantActual>0).reduce((s,i)=>s+i.cantActual,0);
   return Math.max(0,enStock-enCarrito);
 }
-
 function getPrecio(tamano){if(!S.precios)return 0;const p=S.precios.find(p=>p.tamano===tamano);return p?p.precio:0;}
-
 function actualizarSelectoresCascada(){
   if(!S.stock||!S.catalogo) return;
   const suc = getSucursalVenta();
@@ -2073,7 +2000,6 @@ function actualizarSelectoresCascada(){
   actualizarSelectCantidad(sabFinal, tamFinal);
   actualizarPrecioPreview();
 }
-
 function actualizarSelectCantidad(sabor, tamano){
   const sel = L("item-cantidad");
   if(!sel) return;
@@ -2097,19 +2023,14 @@ function actualizarSelectCantidad(sabor, tamano){
   const cls = disp<=2?"disp-low":"disp-ok";
   L("item-disp").innerHTML=`<span class="disp-badge ${cls}">${disp} disponibles</span>`;
 }
-
 function onItemSaborChange(){ actualizarSelectoresCascada(); }
 function onItemTamanoChange(){
   actualizarSelectCantidad(L("item-sabor")?.value, L("item-tamano")?.value);
   actualizarPrecioPreview();
 }
-
 L("venta-sucursal")?.addEventListener("change",()=>{ actualizarSelectoresCascada(); });
-
 function actualizarDisp(){ actualizarSelectoresCascada(); }
-
 let tipoOp = "venta";
-
 function setTipoOp(tipo, btn){
   tipoOp = tipo;
   document.querySelectorAll(".tipo-op-btn").forEach(b=>b.classList.remove("active"));
@@ -2120,7 +2041,6 @@ function setTipoOp(tipo, btn){
   const motivoRow = L("motivo-row");
   const clienteSection = L("cliente-section");
   const btnConfirmar = L("btn-confirmar");
-
   if(tipo === "venta"){
     aviso.style.display = "none";
     ventaFields.style.display = "block";
@@ -2129,7 +2049,6 @@ function setTipoOp(tipo, btn){
     clienteSection.style.display = "block";
     btnConfirmar.textContent = "Confirmar venta ✓";
     btnConfirmar.style.background = "";
-    // FEAT-PAQUETE: toggle modo solo en venta
     L("modo-item-row").style.display = "flex";
   } else if(tipo === "regalo"){
     L("modo-item-row").style.display = "none";
@@ -2166,7 +2085,6 @@ function setTipoOp(tipo, btn){
   L("op-motivo").value = "";
   renderCarrito();
 }
-
 function actualizarPrecioPreview(){
   const sabor = L("item-sabor")?.value;
   const tamano = L("item-tamano")?.value;
@@ -2192,7 +2110,6 @@ function actualizarPrecioPreview(){
     : `<span style="color:var(--muted)">$${precioBase.toLocaleString('es-MX')}</span>`;
   L("item-precio-preview").innerHTML = preview + ` × ${cantidad}`;
 }
-
 function getPrecioActualLocal(sabor, tamano){
   if(!S.precios) return 0;
   const esp = S.precios.find(p=>p.sabor===sabor&&p.tamano===tamano);
@@ -2200,13 +2117,11 @@ function getPrecioActualLocal(sabor, tamano){
   const base = S.precios.find(p=>p.tamano===tamano&&p.precio>0);
   return base ? base.precio : 0;
 }
-
 L("item-descuento")?.addEventListener("input", actualizarPrecioPreview);
 L("item-desc-tipo")?.addEventListener("change", actualizarPrecioPreview);
 L("item-sabor")?.addEventListener("change", actualizarPrecioPreview);
 L("item-tamano")?.addEventListener("change", actualizarPrecioPreview);
 L("item-cantidad")?.addEventListener("input", actualizarPrecioPreview);
-
 L("btn-agregar-item")?.addEventListener("click",()=>{
   const sabor=L("item-sabor")?.value, tamano=L("item-tamano")?.value;
   const cantidad=parseInt(L("item-cantidad")?.value)||0;
@@ -2250,7 +2165,6 @@ L("btn-agregar-item")?.addEventListener("click",()=>{
   actualizarSelectCantidad(sabor,tamano);
   toast(`${sabor} ${tamano} × ${cantidad} agregado`);
 });
-
 function renderCarrito(){
   const items=L("carrito-items");
   if(S.carrito.length===0){items.innerHTML=`<div class="carrito-vacio">Sin productos — agrega uno arriba</div>`;L("carrito-total-bar").style.display="none";return;}
@@ -2306,9 +2220,7 @@ function renderCarrito(){
     comLabel.textContent=`${nombre} ${pct}%: -$${Math.abs(comMonto).toLocaleString('es-MX')} → Neto: $${ingresoNeto.toLocaleString('es-MX')}`;
   } else { comLabel.style.display="none"; }
 }
-
 function quitarItem(idx){S.carrito.splice(idx,1);renderCarrito();actualizarDisp();}
-
 let searchTO;
 L("cli-nombre")?.addEventListener("input",()=>{
   clearTimeout(searchTO);
@@ -2334,7 +2246,6 @@ function selCliente(c){
 }
 function limpiarCliente(){S.clienteSel=null;L("cli-nombre").value="";L("cli-encontrado").style.display="none";L("cli-nuevo").style.display="grid";}
 document.addEventListener("click",e=>{if(!e.target.closest("#cli-nombre")&&!e.target.closest("#sugerencias"))L("sugerencias").style.display="none";});
-
 L("btn-confirmar").addEventListener("click",async()=>{
   if(S.carrito.length===0){toast("Agrega al menos un producto","error");return;}
   const sucursal=getSucursalVenta();
@@ -2366,7 +2277,7 @@ L("btn-confirmar").addEventListener("click",async()=>{
       sabor:i.sabor, tamano:i.tamano, cantidad:i.cantidad,
       precioUnitario:i.precio, descuento:i.descuento||0, descTipo:i.descTipo||"",
       esPaquete: i.esPaquete === true,
-      paqueteId: i.paqueteId || ""  // FEAT-PAQUETE
+      paqueteId: i.paqueteId || ""
     }));
     const res=await api("registrarVenta",{items,canal,metodoPago:metodo,sucursal,cliente,tipoOp,motivo});
     if(res.ok){
@@ -2399,7 +2310,6 @@ L("btn-cargar-prod").addEventListener("click",async()=>{
   if(res.ok){
     toast(res.mensaje);
     L("prod-cantidad").value="1";
-    // FEAT-PROD-MEMORIA: persistir último sabor/tamaño usado
     S.lastProdSabor = sabor;
     S.lastProdTamano = tamano;
     try { localStorage.setItem("tv_lastProdSabor", sabor); localStorage.setItem("tv_lastProdTamano", tamano); } catch(e) {}
@@ -2407,16 +2317,10 @@ L("btn-cargar-prod").addEventListener("click",async()=>{
   } else toast(res.error,"error");
   btn.disabled=false;btn.textContent="Cargar producción";
 });
-
-// ============================================================
-// FEAT-PAQUETE — Paquetes 3 ($590) y 4 ($720) individuales
-// ============================================================
-
 const PAQUETE_CONFIG = {
   paquete3: { size: 3, totalBase: 590, totalRappi: 630, tituloBase: "🎁 Paquete 3 indiv — $590 (no Rappi)", tituloRappi: "🎁 Paquete 3 indiv — $630 (Rappi)" },
   paquete4: { size: 4, totalBase: 720, totalRappi: 760, tituloBase: "🎁 Paquete 4 indiv — $720 (no Rappi)", tituloRappi: "🎁 Paquete 4 indiv — $760 (Rappi)" }
 };
-
 function _esCanalRappi() {
   return (L("venta-canal")?.value || "") === "Rappi";
 }
@@ -2428,7 +2332,6 @@ function getPaqueteTitulo(modo) {
   const cfg = PAQUETE_CONFIG[modo];
   return _esCanalRappi() ? cfg.tituloRappi : cfg.tituloBase;
 }
-
 function setModoItem(modo) {
   S.modoItem = modo;
   document.querySelectorAll(".modo-item-btn").forEach(b => b.classList.remove("active"));
@@ -2440,7 +2343,6 @@ function setModoItem(modo) {
     const cfg = PAQUETE_CONFIG[modo];
     L("paq-titulo").textContent = getPaqueteTitulo(modo);
     L("btn-agregar-paquete").textContent = `+ Agregar paquete al carrito ($${getPaqueteTotal(modo)})`;
-    // Renderizar N selectores
     let h = "";
     for (let i = 1; i <= cfg.size; i++) {
       h += `<div class="form-group" style="margin-bottom:8px"><label class="form-label">Individual ${i}</label><select class="form-select paq-sabor" id="paq-sabor-${i}" onchange="actualizarPaqueteStocks()"></select></div>`;
@@ -2449,21 +2351,17 @@ function setModoItem(modo) {
     poblarSelectsPaquete();
   }
 }
-
 function _getStockIndividual() {
-  // Devuelve objeto {sabor: cantidadDisponible} considerando carrito
   if (!S.stock) return {};
   const sucursal = getSucursalVenta();
   const stockInd = (S.stock || []).filter(s => s.tamano === "Individual" && !s.vencido && s.cantActual > 0 && (!sucursal || s.sucursal === sucursal));
   const porSabor = {};
   stockInd.forEach(s => { porSabor[s.sabor] = (porSabor[s.sabor] || 0) + Number(s.cantActual); });
-  // Restar lo que ya está en el carrito
   S.carrito.forEach(it => {
     if (it.tamano === "Individual") porSabor[it.sabor] = (porSabor[it.sabor] || 0) - it.cantidad;
   });
   return porSabor;
 }
-
 function poblarSelectsPaquete() {
   if (!S.stock) return;
   const modo = S.modoItem;
@@ -2477,19 +2375,15 @@ function poblarSelectsPaquete() {
     return;
   }
   for (let i = 1; i <= size; i++) L("paq-sabor-" + i).innerHTML = '<option value="">— Selecciona —</option>';
-  // Pre-render: todas las opciones para todos
   actualizarPaqueteStocks();
 }
-
 function actualizarPaqueteStocks() {
   const modo = S.modoItem;
   if (modo === "suelto") return;
   const size = PAQUETE_CONFIG[modo].size;
   const porSabor = _getStockIndividual();
-  // Recolectar selecciones actuales por índice
   const seleccionados = [];
   for (let i = 1; i <= size; i++) seleccionados.push(L("paq-sabor-" + i).value || "");
-  // Para cada select i, calcular qué cantidad de cada sabor ya consumieron los OTROS selects
   for (let i = 1; i <= size; i++) {
     const sel = L("paq-sabor-" + i);
     const valActual = sel.value;
@@ -2497,9 +2391,7 @@ function actualizarPaqueteStocks() {
     seleccionados.forEach((s, j) => {
       if (j !== i - 1 && s) consumidoOtros[s] = (consumidoOtros[s] || 0) + 1;
     });
-    // Opciones permitidas: sabores con stock > consumidoOtros
     const sabores = Object.keys(porSabor).filter(s => porSabor[s] > (consumidoOtros[s] || 0)).sort();
-    // También incluir el valor actual aunque ya esté agotado (para no perderlo)
     if (valActual && !sabores.includes(valActual)) sabores.push(valActual);
     sabores.sort();
     let opts = '<option value="">— Selecciona —</option>';
@@ -2510,7 +2402,6 @@ function actualizarPaqueteStocks() {
     sel.innerHTML = opts;
     if (valActual) sel.value = valActual;
   }
-  // Validar: ¿se eligieron todos? ¿el conteo cabe en stock?
   const completos = seleccionados.every(s => s);
   const conteo = {};
   seleccionados.forEach(s => { if (s) conteo[s] = (conteo[s] || 0) + 1; });
@@ -2529,7 +2420,6 @@ function actualizarPaqueteStocks() {
     L("btn-agregar-paquete").disabled = false;
   }
 }
-
 L("btn-agregar-paquete").addEventListener("click", () => {
   const modo = S.modoItem;
   if (modo === "suelto") return;
@@ -2547,7 +2437,6 @@ L("btn-agregar-paquete").addEventListener("click", () => {
       return;
     }
   }
-  // Distribución de precios: cubrir total exacto
   const precios = new Array(cfg.size).fill(Math.floor(total / cfg.size));
   let resto = total - precios.reduce((s,p)=>s+p, 0);
   for (let i = 0; i < cfg.size && resto > 0; i++) { precios[i]++; resto--; }
@@ -2567,11 +2456,8 @@ L("btn-agregar-paquete").addEventListener("click", () => {
   actualizarDisp();
   poblarSelectsPaquete();
 });
-
-// FEAT-PAQUETE: cuando cambie el canal, recalcular precios de paquetes en el carrito
 function recalcularPreciosPaquetesEnCarrito() {
   if (!S.carrito || S.carrito.length === 0) return;
-  // Agrupar por paqueteId
   const grupos = {};
   S.carrito.forEach((it, idx) => {
     if (!it.esPaquete || !it.paqueteId) return;
@@ -2587,7 +2473,6 @@ function recalcularPreciosPaquetesEnCarrito() {
     const nuevoTotal = getPaqueteTotal(modo);
     const sumaActual = g.reduce((s,x)=>s+x.it.precio, 0);
     if (sumaActual === nuevoTotal) continue;
-    // Redistribuir
     const precios = new Array(size).fill(Math.floor(nuevoTotal / size));
     let resto = nuevoTotal - precios.reduce((s,p)=>s+p, 0);
     for (let i = 0; i < size && resto > 0; i++) { precios[i]++; resto--; }
@@ -2600,20 +2485,13 @@ function recalcularPreciosPaquetesEnCarrito() {
   }
   if (cambio) { toast("Precios de paquetes recalculados para nuevo canal"); renderCarrito(); }
 }
-// Listener: cuando cambie el canal de venta, recalcular paquetes
 document.addEventListener("DOMContentLoaded", () => {
   const sel = L("venta-canal");
   if (sel) sel.addEventListener("change", () => {
-    // actualizar título del paquete si está abierto
     if (S.modoItem !== "suelto") setModoItem(S.modoItem);
     recalcularPreciosPaquetesEnCarrito();
   });
 });
-
-// // ============================================================
-// ============================================================
-// VENTAS
-// ============================================================
 async function cargarVentas(){
   L("ventas-list").innerHTML=`<div class="loading"><div class="spinner"></div></div>`;
   const res=await api("getVentas");
@@ -2623,7 +2501,6 @@ async function cargarVentas(){
   res.ventas.forEach(v=>{
     if(!grupos[v.idVenta]) grupos[v.idVenta]={...v,items:[]};
     grupos[v.idVenta].items.push({sabor:v.sabor,tamano:v.tamano,cantidad:v.cantidad,subtotal:v.subtotal});
-    // FEAT-RUTAS: heredar rutaId del primer item si no está
     if (v.rutaId && !grupos[v.idVenta].rutaId) grupos[v.idVenta].rutaId = v.rutaId;
   });
   L("ventas-list").innerHTML=Object.values(grupos).map(g=>{
@@ -2642,10 +2519,6 @@ async function cargarVentas(){
     </div>`;
   }).join("");
 }
-
-// ============================================================
-// CATÁLOGO PANTALLA
-// ============================================================
 async function cargarCatalogoPantalla(){
   const res=await api("getCatalogo");if(!res.ok)return;S.catalogo=res;
   const renderList=(items,tipo,id)=>{
@@ -2671,10 +2544,6 @@ L("btn-guardar-item").addEventListener("click",async()=>{
   const res=await api(mapa[S.itemTipo],{nombre});
   if(res.ok){toast(res.mensaje);L("modal-nuevo-item").classList.remove("show");cargarCatalogoPantalla();cargarCatalogo();}else toast(res.error,"error");
 });
-
-// ============================================================
-// PRECIOS
-// ============================================================
 async function cargarPrecios(silencioso=false){
   if(!silencioso) L("precios-content").innerHTML=`<div class="loading"><div class="spinner"></div></div>`;
   const [resP,resC]=await Promise.all([api("getPrecios"),api("getCatalogo")]);
@@ -2695,7 +2564,6 @@ async function repararPrecios(){
   if(res.ok){toast(res.mensaje);cargarPrecios();}else toast(res.error,"error");
   btn.disabled=false;btn.textContent="🔧 Crear precios para sabores sin precio";
 }
-
 function abrirModalPrecio(tamano,precioActual){S.precioEditar=tamano;L("modal-precio-title").textContent=`Precio — ${tamano}`;L("modal-precio-input").value=precioActual;L("modal-precio").classList.add("show");setTimeout(()=>L("modal-precio-input").focus(),100);}
 L("btn-guardar-precio").addEventListener("click",async()=>{
   const precio=parseFloat(L("modal-precio-input").value);
@@ -2707,10 +2575,6 @@ L("btn-guardar-precio").addEventListener("click",async()=>{
   if(resultados.every(r=>r.ok)){toast(`✅ Precio ${tamano} = $${precio.toLocaleString('es-MX')}`);L("modal-precio").classList.remove("show");cargarPrecios();}
   else toast("Error al guardar precio","error");
 });
-
-// ============================================================
-// COSTOS v4
-// ============================================================
 function setCostosTab(tab){
   document.querySelectorAll(".costos-tab").forEach(t=>{t.classList.toggle("active",t.getAttribute("onclick")===`setCostosTab('${tab}')`)});
   document.querySelectorAll(".costos-section").forEach(s=>s.classList.remove("active"));
@@ -2721,7 +2585,6 @@ function setCostosTab(tab){
   if(tab==="gastos") cargarGastos();
   if(tab==="comisiones") cargarComisionesConfig();
 }
-
 async function cargarCostos(){
   L("insumos-list").innerHTML=`<div class="loading"><div class="spinner"></div>Cargando...</div>`;
   const [resI,resR]=await Promise.all([api("getInsumos"),api("getRecetas")]);
@@ -2729,13 +2592,11 @@ async function cargarCostos(){
   if(resR.ok) S.recetas=resR.recetas;
   renderCostos();
 }
-
 function renderCostos(){
   renderInsumos();
   renderRecetaActual();
   poblarRecetaInsumoSelect();
 }
-
 function renderInsumos(){
   const activos=S.insumos.filter(i=>i.activo);
   if(activos.length===0){
@@ -2758,14 +2619,12 @@ function renderInsumos(){
       </div>
     </div>`).join("");
 }
-
 function poblarRecetaInsumoSelect(){
   const activos=S.insumos.filter(i=>i.activo);
   const sel=L("receta-new-insumo");
   if(!sel) return;
   sel.innerHTML=activos.map(i=>`<option value="${i.id}">${i.nombre} (${fmtMXN(i.costoPorUnidad)}/${i.buyUnit})</option>`).join("");
 }
-
 ["new-ins-buyqty","new-ins-price"].forEach(id=>{
   L(id)?.addEventListener("input",()=>{
     const qty=parseFloat(L("new-ins-buyqty")?.value)||0;
@@ -2784,7 +2643,6 @@ function poblarRecetaInsumoSelect(){
     if(qty>0&&price>0){L("edit-ins-costo-val").textContent=fmtMXN(price/qty)+` / ${L("edit-ins-buyunit")?.value||"unidad"}`;}
   });
 });
-
 async function guardarNuevoInsumo(){
   const nombre=L("new-ins-nombre").value.trim();
   const buyQty=parseFloat(L("new-ins-buyqty").value)||0;
@@ -2801,7 +2659,6 @@ async function guardarNuevoInsumo(){
     renderInsumos();poblarRecetaInsumoSelect();
   } else toast(res.error,"error");
 }
-
 function abrirEditarInsumo(id){
   const ins=S.insumos.find(i=>i.id===id);
   if(!ins) return;
@@ -2828,7 +2685,6 @@ async function bajaInsumo(id){
   if(res.ok){toast("Insumo dado de baja");const resI=await api("getInsumos");if(resI.ok)S.insumos=resI.insumos;renderInsumos();poblarRecetaInsumoSelect();}
   else toast(res.error,"error");
 }
-
 function cargarRecetaActual(){renderRecetaActual();}
 function renderRecetaActual(){
   const sabor=L("receta-sabor")?.value;
@@ -2838,7 +2694,6 @@ function renderRecetaActual(){
   S.recetaActual=receta?JSON.parse(JSON.stringify(receta.ingredientes)):[];
   renderIngredientesReceta();
 }
-
 function renderIngredientesReceta(){
   const el=L("receta-ingredientes-list");
   if(!S.recetaActual||S.recetaActual.length===0){el.innerHTML=`<div style="color:var(--muted);font-size:13px;text-align:center;padding:16px">Sin ingredientes — agrega abajo</div>`;return;}
@@ -2857,14 +2712,12 @@ function renderIngredientesReceta(){
   const costoTotal=S.recetaActual.reduce((s,ing)=>{const ins=S.insumos.find(i=>i.id===ing.insumoId);const cant=ins?convertirUnidad(ing.cantidad,ing.unidad,ins.buyUnit):ing.cantidad;return s+(ins?ins.costoPorUnidad*cant:0);},0);
   el.innerHTML+=`<div class="calc-total-row"><span style="color:var(--muted)">Subtotal ingredientes:&nbsp;<strong style="color:var(--accent);font-size:16px">${fmtMXN(costoTotal)}</strong></span></div>`;
 }
-
 function syncInsumoNombre(){
   const insumoId = L("receta-new-insumo")?.value;
   if(!insumoId) return;
   const ins = S.insumos.find(i=>i.id===insumoId);
   if(ins) L("receta-new-nombre").value = ins.nombre;
 }
-
 function agregarIngredienteReceta(){
   const insumoId  = L("receta-new-insumo")?.value || "";
   const nombre    = L("receta-new-nombre")?.value.trim() || "";
@@ -2892,7 +2745,6 @@ async function guardarRecetaCompleta(){
   } else toast(res.error,"error");
   btn.disabled=false;btn.textContent="Guardar receta";
 }
-
 async function calcularCosto(){
   const sabor=L("calc-sabor")?.value;
   const tamano=L("calc-tamano")?.value;
@@ -2915,7 +2767,6 @@ async function calcularCosto(){
     </table>
     <div class="calc-total-row"><span style="color:var(--muted)">Total costo:&nbsp;<strong style="color:var(--accent);font-size:16px">${fmtMXN(res.costoTotal)}</strong></span></div>`;
 }
-
 async function procesarBulkInsumos(){
   const texto=L("bulk-insumos-text").value.trim();
   if(!texto){toast("Ingresa la lista de insumos","error");return;}
@@ -2940,7 +2791,6 @@ async function procesarBulkInsumos(){
   } catch(e){toast("Error al procesar: "+e.message,"error");}
   btn.disabled=false;btn.textContent="Procesar y cargar insumos";
 }
-
 async function procesarBulkReceta(){
   const texto=L("bulk-receta-text").value.trim();
   const sabor=L("bulk-receta-sabor")?.value;
@@ -2968,10 +2818,6 @@ async function procesarBulkReceta(){
   } catch(e){toast("Error al procesar: "+e.message,"error");}
   btn.disabled=false;btn.textContent="Procesar y guardar receta";
 }
-
-// ============================================================
-// USUARIOS
-// ============================================================
 const ROL_INFO = {
   "Owner":        { color:"#fff3cd", text:"#856404", desc:"Acceso total al sistema" },
   "Vendedor":     { color:"#d1ecf1", text:"#0c5460", desc:"Solo vende en su sucursal asignada" },
@@ -2979,7 +2825,6 @@ const ROL_INFO = {
   "Mixto":        { color:"#d4edda", text:"#155724", desc:"Vende en su sucursal + produce + transfiere" },
   "Admin_Ventas": { color:"#fef3c7", text:"#92400e", desc:"Vende en ambas sucursales + transfiere" }
 };
-
 function onCambioRol() {
   const rol = L("nu-rol").value;
   const info = ROL_INFO[rol] || {};
@@ -2990,10 +2835,9 @@ function onCambioRol() {
   const infoEl = L("nu-rol-info");
   if (infoEl) infoEl.textContent = info.desc || "";
 }
-
 async function cargarUsuarios(){
   const res=await api("getUsuarios");if(!res.ok)return;
-  S.usuariosLista = res.usuarios;  // v3.2: cachear para editar
+  S.usuariosLista = res.usuarios;
   L("usuarios-list").innerHTML=res.usuarios.map(u=>{
     const info = ROL_INFO[u.rol] || ROL_INFO["Vendedor"];
     const esYo = u.usuario===S.usuario;
@@ -3024,10 +2868,6 @@ L("btn-cambiar-pw").addEventListener("click",async()=>{
   const res=await api("cambiarPassword",{usuario:S.usuario,passwordActual:actual,passwordNuevo:nueva});
   if(res.ok){toast(res.mensaje);L("pw-actual").value="";L("pw-nueva").value="";}else toast(res.error,"error");
 });
-
-// ============================================================
-// v3.2 EDITAR USUARIO (Owner only) — backend api: editarUsuario
-// ============================================================
 function abrirEditarUsuario(usuario){
   const u = (S.usuariosLista||[]).find(x=>x.usuario===usuario);
   if(!u){ toast("Usuario no encontrado","error"); return; }
@@ -3037,12 +2877,10 @@ function abrirEditarUsuario(usuario){
   L("edu-rol").value = u.rol;
   L("edu-sucursal").value = u.sucursal;
   L("edu-activo").checked = !!u.activo;
-  // Permiso puedeAnular: viene en u.permisos o u.permisosExtra
   const puedeAnular = (u.permisos && u.permisos.puedeAnular) || (u.permisosExtra && u.permisosExtra.puedeAnular) || false;
   L("edu-puede-anular").checked = !!puedeAnular;
   L("modal-editar-usuario").classList.add("show");
 }
-
 L("btn-guardar-editar-usuario").addEventListener("click", async () => {
   const target = L("edu-target").value;
   if(!target){ toast("Sin usuario objetivo","error"); return; }
@@ -3068,10 +2906,6 @@ L("btn-guardar-editar-usuario").addEventListener("click", async () => {
     toast(res.error||"Error al guardar","error");
   }
 });
-
-// ============================================================
-// v3.2 MOVIMIENTOS — anular ventas/cargas/transferencias
-// ============================================================
 async function cargarMovimientos(){
   L("movimientos-list").innerHTML=`<div class="loading"><div class="spinner"></div>Cargando movimientos...</div>`;
   const tipo = L("mov-filtro-tipo").value || "";
@@ -3081,7 +2915,6 @@ async function cargarMovimientos(){
   S.movimientos = res.movimientos || [];
   renderMovimientos();
 }
-
 function renderMovimientos(){
   const movs = S.movimientos || [];
   if(movs.length === 0){
@@ -3123,7 +2956,6 @@ function renderMovimientos(){
   }).join("");
   actualizarBarraMovMulti();
 }
-
 function toggleMovSel(key, checked) {
   if (checked) S.movSeleccionados.add(key);
   else S.movSeleccionados.delete(key);
@@ -3134,7 +2966,6 @@ function toggleMovSel(key, checked) {
     sel.checked = S.movSeleccionados.size === total && total > 0;
   }
 }
-
 function toggleTodosMov(checked) {
   if (checked) {
     (S.movimientos||[]).forEach(m => {
@@ -3145,7 +2976,6 @@ function toggleTodosMov(checked) {
   }
   renderMovimientos();
 }
-
 function actualizarBarraMovMulti() {
   const bar = L("mov-multi-bar");
   if (!bar) return;
@@ -3156,7 +2986,6 @@ function actualizarBarraMovMulti() {
   const lbl = L("mov-count");
   if (lbl) lbl.textContent = `${count} seleccionado${count !== 1 ? 's' : ''}`;
 }
-
 async function anularSeleccionadosMov() {
   const motivo = L("mov-multi-motivo").value.trim();
   if (!motivo) { toast("El motivo es obligatorio", "error"); return; }
@@ -3180,21 +3009,18 @@ async function anularSeleccionadosMov() {
   cargarMovimientos();
   cargarStock();
 }
-
 function abrirModalAnularMulti() {
   if (S.movSeleccionados.size === 0) { toast("No hay seleccionados", "error"); return; }
   L("modal-anular-multi-count").textContent = S.movSeleccionados.size;
   L("mov-multi-motivo").value = "";
   L("modal-anular-multi").classList.add("show");
 }
-
 function abrirAnularMovimiento(hoja, id, detalle, monto, fecha){
   S.anularPendiente = { hoja, id };
   L("anular-detalle").textContent = `${hoja} · ${fecha}\n${detalle}\n${monto}`;
   L("anular-motivo").value = "";
   L("modal-anular-mov").classList.add("show");
 }
-
 L("btn-confirmar-anular").addEventListener("click", async () => {
   if(!S.anularPendiente){ toast("Sin movimiento seleccionado","error"); return; }
   const motivo = L("anular-motivo").value.trim();
@@ -3219,234 +3045,7 @@ L("btn-confirmar-anular").addEventListener("click", async () => {
     toast(res.error||"Error al anular","error");
   }
 });
-
-// ============================================================
-// OBJETIVOS
-// ============================================================
-let objLineas = [];
-
-function mostrarFormObjetivo(){
-  L("obj-form-card").style.display="block";
-  L("btn-nuevo-obj").style.display="none";
-  const hoy=new Date();
-  L("obj-mes").value=hoy.getMonth()+1;
-  L("obj-anio").value=hoy.getFullYear();
-}
-
-function actualizarAvisoMeta(){
-  const total   = Number(L("obj-meta-total").value)||0;
-  const sumaLineas = objLineas.reduce((s,l)=>s+l.meta,0);
-  const aviso = L("obj-aviso-meta");
-  if(!total||!sumaLineas){ aviso.style.display="none"; return; }
-  if(total===sumaLineas){
-    aviso.style.display="block";
-    aviso.style.background="rgba(46,92,74,.12)";
-    aviso.style.color="var(--success)";
-    aviso.textContent=`✅ La meta total coincide con la suma del desglose (${sumaLineas} uds)`;
-  } else {
-    aviso.style.display="block";
-    aviso.style.background="rgba(200,96,42,.1)";
-    aviso.style.color="var(--accent)";
-    aviso.textContent=`⚠️ La meta total (${total}) difiere de la suma del desglose (${sumaLineas}). Puedes dejarlos diferentes — se mostrarán como dos referencias distintas.`;
-  }
-}
-
-async function cargarObjetivos(){
-  L("obj-lista").innerHTML=`<div class="loading"><div class="spinner"></div>Cargando...</div>`;
-  if(!S.catalogo?.sabores){
-    const resC=await api("getCatalogo");
-    if(resC.ok){ S.catalogo=resC; }
-  }
-  if(S.catalogo?.sabores){
-    L("obj-lin-sabor").innerHTML  = S.catalogo.sabores.filter(s=>s.activo).map(s=>`<option>${s.nombre}</option>`).join("");
-    L("obj-lin-tamano").innerHTML = S.catalogo.tamanos.filter(t=>t.activo).map(t=>`<option>${t.nombre}</option>`).join("");
-  }
-  const hoy=new Date();
-  L("obj-mes").value=hoy.getMonth()+1;
-  L("obj-anio").value=hoy.getFullYear();
-  const [resO,resV]=await Promise.all([api("getObjetivos"),api("getVentas")]);
-  if(!resO.ok){ L("obj-lista").innerHTML=`<div class="empty-state">Error al cargar objetivos</div>`; return; }
-  S.objetivos=resO.objetivos||[];
-  const ventas=resV.ok?resV.ventas:[];
-  renderObjetivos(ventas);
-}
-
-function renderObjetivos(ventas){
-  const hoy=new Date();
-  const mesActual=hoy.getMonth()+1, anioActual=hoy.getFullYear();
-  const MESES=["","Enero","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-  const activos=(S.objetivos||[]).filter(o=>o.activo);
-  const objMes=activos.filter(o=>Number(o.mes)===mesActual&&Number(o.anio)===anioActual);
-  if(objMes.length>0){
-    const metaGlobal=objMes.reduce((s,o)=>s+(_metaTotalObjetivo(o)||0),0);
-    const ventasMes=ventas.filter(v=>{const d=new Date(v.fecha);return d.getMonth()+1===mesActual&&d.getFullYear()===anioActual;});
-    const realGlobal=_contarUnidades(ventasMes,null,null);
-    const pct=metaGlobal>0?Math.min(Math.round(realGlobal/metaGlobal*100),100):0;
-    const color=pct>=80?"var(--success)":pct>=50?"var(--warning)":"var(--danger)";
-    L("obj-total-meta").textContent=metaGlobal||"—";
-    L("obj-total-real").textContent=realGlobal;
-    L("obj-total-pct").textContent=pct+"%";
-    L("obj-total-pct").style.color=color;
-    L("obj-total-real").style.color=color;
-    L("obj-barra-global").style.width=pct+"%";
-    L("obj-barra-global").style.background=pct>=80?"#2E5C4A":pct>=50?"#C8602A":"#C0392B";
-    L("obj-resumen").style.display="block";
-  } else {
-    L("obj-resumen").style.display="none";
-  }
-  if(activos.length===0){
-    L("obj-lista").innerHTML=`<div class="empty-state"><div class="empty-icon">🎯</div><div>Sin objetivos — toca "+ Nuevo objetivo" para crear el primero</div></div>`;
-    return;
-  }
-  const sorted=[...activos].sort((a,b)=>{
-    const aM=Number(a.mes)===mesActual&&Number(a.anio)===anioActual?0:1;
-    const bM=Number(b.mes)===mesActual&&Number(b.anio)===anioActual?0:1;
-    if(aM!==bM) return aM-bM;
-    return (Number(b.anio)*100+Number(b.mes))-(Number(a.anio)*100+Number(a.mes));
-  });
-  L("obj-lista").innerHTML=sorted.map(obj=>{
-    const esMes=Number(obj.mes)===mesActual&&Number(obj.anio)===anioActual;
-    const metaT=Number(obj.metaTotal)||0;
-    const sumaL=obj.lineas?obj.lineas.reduce((s,l)=>s+Number(l.meta),0):0;
-    const hayDiscrepancia=metaT>0&&sumaL>0&&metaT!==sumaL;
-    const vFilt=ventas.filter(v=>{
-      const d=new Date(v.fecha);
-      if(d.getMonth()+1!==Number(obj.mes)||d.getFullYear()!==Number(obj.anio)) return false;
-      if(obj.sucursal!=="Ambas"&&v.sucursal!==obj.sucursal) return false;
-      return true;
-    });
-    const real=_contarUnidades(vFilt,null,null);
-    const metaRef=metaT||sumaL;
-    const pct=metaRef>0?Math.min(Math.round(real/metaRef*100),100):0;
-    const color=pct>=80?"var(--success)":pct>=50?"var(--warning)":"var(--danger)";
-    const bgBar=pct>=80?"#2E5C4A":pct>=50?"#C8602A":"#C0392B";
-    let desglose="";
-    if(obj.lineas&&obj.lineas.length>0){
-      desglose=`<div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">
-        <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.06em">DESGLOSE POR PRODUCTO</div>`+
-        obj.lineas.map(lin=>{
-          const realL=_contarUnidades(vFilt,lin.sabor,lin.tamano);
-          const pL=lin.meta>0?Math.min(Math.round(realL/lin.meta*100),100):0;
-          const cL=pL>=80?"var(--success)":pL>=50?"var(--warning)":"var(--danger)";
-          return `<div>
-            <div style="display:flex;justify-content:space-between;margin-bottom:3px;font-size:12px">
-              <span style="color:var(--ink)">${lin.sabor} <span style="color:var(--muted)">${lin.tamano}</span></span>
-              <span style="font-weight:600;color:${cL}">${realL}<span style="color:var(--muted);font-weight:400"> / ${lin.meta} uds · ${pL}%</span></span>
-            </div>
-            <div style="background:var(--border);border-radius:4px;height:5px">
-              <div style="background:${cL};width:${pL}%;height:5px;border-radius:4px;transition:.4s"></div>
-            </div>
-          </div>`;
-        }).join("")+`</div>`;
-    }
-    const avisoDisc=hayDiscrepancia?`
-      <div style="font-size:11px;padding:6px 10px;border-radius:8px;background:rgba(200,96,42,.1);color:var(--accent);margin-top:10px">
-        ⚠️ Meta total (${metaT}) difiere de la suma del desglose (${sumaL} uds) — ambas son referencias independientes
-      </div>`:"";
-    return `<div class="card" style="margin-bottom:10px">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
-        <div>
-          <div style="font-weight:700;font-size:15px">${obj.nombre}</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">${MESES[Number(obj.mes)]} ${obj.anio} · ${obj.sucursal}</div>
-        </div>
-        <div style="display:flex;gap:6px;align-items:center">
-          ${esMes?'<span style="background:var(--accent);color:white;font-size:10px;padding:3px 9px;border-radius:20px;font-weight:700">EN CURSO</span>':''}
-          <button class="btn-icon" onclick="bajaObjetivo('${obj.id}')">✕</button>
-        </div>
-      </div>
-      ${metaRef>0?`
-      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
-        <div style="font-size:13px;color:var(--muted)">
-          <span style="font-size:28px;font-weight:700;color:${color}">${real}</span>
-          ${metaT?` / ${metaT} uds`:''}
-        </div>
-        <div style="font-size:22px;font-weight:700;color:${color}">${pct}%</div>
-      </div>
-      <div style="background:var(--border);border-radius:8px;height:10px;overflow:hidden;margin-bottom:4px">
-        <div style="background:${bgBar};width:${pct}%;height:10px;border-radius:8px;transition:.5s ease"></div>
-      </div>`:`<div style="font-size:12px;color:var(--muted);margin-bottom:8px">Sin meta total definida — ver desglose</div>`}
-      ${avisoDisc}
-      ${desglose}
-    </div>`;
-  }).join("");
-}
-
-function _metaTotalObjetivo(obj){
-  if(obj.metaTotal&&Number(obj.metaTotal)>0) return Number(obj.metaTotal);
-  if(obj.lineas&&obj.lineas.length>0) return obj.lineas.reduce((s,l)=>s+Number(l.meta),0);
-  return 0;
-}
-function _contarUnidades(ventas,sabor,tamano){
-  return ventas.reduce((s,v)=>{
-    if(sabor&&v.sabor!==sabor) return s;
-    if(tamano&&v.tamano!==tamano) return s;
-    return s+(Number(v.cantidad)||0);
-  },0);
-}
-
-function agregarLineaObjetivo(){
-  const sabor=L("obj-lin-sabor").value;
-  const tamano=L("obj-lin-tamano").value;
-  const meta=parseInt(L("obj-lin-uds").value);
-  if(!sabor||!tamano||!meta||meta<=0){ toast("Completa sabor, tamaño y unidades","error"); return; }
-  if(objLineas.find(l=>l.sabor===sabor&&l.tamano===tamano)){ toast("Ya existe esa combinación","error"); return; }
-  objLineas.push({sabor,tamano,meta});
-  L("obj-lin-uds").value="";
-  renderLineasForm();
-  actualizarAvisoMeta();
-}
-function renderLineasForm(){
-  if(!objLineas.length){ L("obj-lineas-list").innerHTML=""; return; }
-  const suma=objLineas.reduce((s,l)=>s+l.meta,0);
-  L("obj-lineas-list").innerHTML=`
-    ${objLineas.map((l,i)=>`
-      <div class="insumo-item" style="padding:8px 12px">
-        <div style="flex:1;font-size:13px">${l.sabor} <span style="color:var(--muted)">${l.tamano}</span></div>
-        <div style="font-weight:600;margin:0 12px;font-size:13px">${l.meta} uds</div>
-        <button class="btn-icon" onclick="quitarLineaObj(${i})">✕</button>
-      </div>`).join("")}
-    <div style="text-align:right;font-size:12px;color:var(--muted);padding:4px 12px">Suma: <strong style="color:var(--ink)">${suma} uds</strong></div>`;
-}
-function quitarLineaObj(i){ objLineas.splice(i,1); renderLineasForm(); actualizarAvisoMeta(); }
-async function guardarObjetivo(){
-  const nombre=L("obj-nombre").value.trim();
-  if(!nombre){ toast("El nombre es obligatorio","error"); return; }
-  const mes=Number(L("obj-mes").value);
-  const anio=Number(L("obj-anio").value);
-  const metaTotal=Number(L("obj-meta-total").value)||0;
-  if(!objLineas.length&&!metaTotal){ toast("Agrega al menos una línea de producto o una meta total","error"); return; }
-  const btn=L("btn-guardar-obj"); btn.disabled=true; btn.textContent="Guardando...";
-  const res=await api("saveObjetivo",{
-    id: L("obj-id").value||undefined,
-    nombre, sucursal:L("obj-sucursal").value,
-    mes, anio, metaTotal, lineas:objLineas, activo:true
-  });
-  btn.disabled=false; btn.textContent="GUARDAR OBJETIVO";
-  if(res.ok){ toast(res.mensaje); cancelarObjetivo(); cargarObjetivos(); }
-  else toast(res.error,"error");
-}
-function cancelarObjetivo(){
-  L("obj-id").value=""; L("obj-nombre").value=""; L("obj-meta-total").value="";
-  const hoy=new Date(); L("obj-mes").value=hoy.getMonth()+1; L("obj-anio").value=hoy.getFullYear();
-  L("obj-sucursal").value="Ambas"; objLineas=[]; renderLineasForm();
-  L("obj-aviso-meta").style.display="none";
-  L("obj-form-title").textContent="Nuevo objetivo";
-  L("obj-form-card").style.display="none";
-  L("btn-nuevo-obj").style.display="block";
-}
-async function bajaObjetivo(id){
-  const o=(S.objetivos||[]).find(x=>x.id===id);
-  if(!o||!confirm(`¿Eliminar objetivo "${o.nombre}"?`)) return;
-  const res=await api("deleteObjetivo",{id});
-  if(res.ok){ toast(res.mensaje); cargarObjetivos(); }
-  else toast(res.error,"error");
-}
-
-// ============================================================
-// MENSAJES — BANDEJA
-// ============================================================
 let bandejaAbierta = false;
-
 async function cargarMensajesHeader(){
   if(!S.token) return;
   const [resMsgs, resAlertas] = await Promise.all([
@@ -3470,7 +3069,6 @@ async function cargarMensajesHeader(){
       S.usuarios.filter(u=>u.usuario!==S.usuario).map(u=>`<option value="${u.usuario}">${u.usuario} (${u.rol})</option>`).join("");
   }
 }
-
 function renderBandeja(){
   const msgs = S.mensajes || [];
   const alertas = S.alertasActivas || [];
@@ -3516,7 +3114,6 @@ function renderBandeja(){
   if(!html){ html = `<div style="text-align:center;padding:24px;color:var(--muted);font-size:13px">Sin mensajes ni alertas</div>`; }
   L("bandeja-lista").innerHTML = html;
 }
-
 async function leerMensaje(id){
   const m = (S.mensajes||[]).find(x=>x.id===id);
   if(!m) return;
@@ -3527,7 +3124,6 @@ async function leerMensaje(id){
   }
   alert(`${m.asunto}\n\nDe: ${m.de}\n${m.fecha?m.fecha.substring(0,16).replace("T"," "):""}\n\n${m.cuerpo}`);
 }
-
 function toggleBandeja(){
   bandejaAbierta = !bandejaAbierta;
   L("bandeja-mensajes").style.display = bandejaAbierta ? "block" : "none";
@@ -3542,10 +3138,6 @@ async function enviarMensajeUI(){
   if(res.ok){ toast("✅ Mensaje enviado"); cerrarModalMensaje(); cargarMensajesHeader(); }
   else toast(res.error,"error");
 }
-
-// ============================================================
-// ALERTAS Y LÍMITES DE STOCK
-// ============================================================
 async function cargarAlertas(){
   L("alertas-panel").innerHTML=`<div class="loading"><div class="spinner"></div>Calculando alertas...</div>`;
   L("limites-lista").innerHTML=`<div class="loading"><div class="spinner"></div></div>`;
@@ -3582,7 +3174,6 @@ async function cargarAlertas(){
   }
   if(resL.ok){ S.limites=resL.limites||[]; renderLimitesList(); }
 }
-
 function renderLimitesList(){
   const limites=(S.limites||[]).filter(l=>l.activo);
   if(!limites.length){ L("limites-lista").innerHTML=`<div style="padding:16px;text-align:center;color:var(--muted);font-size:13px">Sin límites definidos</div>`; return; }
@@ -3597,7 +3188,6 @@ function renderLimitesList(){
       </div>`).join("")}
     </div>`).join("");
 }
-
 async function guardarLimite(){
   const sucursal=L("lim-sucursal").value, sabor=L("lim-sabor").value, tamano=L("lim-tamano").value;
   const minimo=parseInt(L("lim-min").value)||0, maximo=parseInt(L("lim-max").value)||0;
@@ -3607,12 +3197,10 @@ async function guardarLimite(){
   if(res.ok){ toast(res.mensaje); L("lim-min").value=""; L("lim-max").value=""; cargarAlertas(); }
   else toast(res.error,"error");
 }
-
 function aplicarSugerenciaTransferencia(sabor,tamano,cantidad){
   document.querySelector('[data-tab="transferencias"]').click();
   setTimeout(()=>{ L("trf-sabor").value=sabor; L("trf-tamano").value=tamano; L("trf-cantidad").value=cantidad; },400);
 }
-
 function onCambioSaborTrf(){
   const stock = S.stock || [];
   const sabor = L("trf-sabor").value;
@@ -3624,7 +3212,6 @@ function onCambioSaborTrf(){
   if(tamanosValidos.includes(tamActual)) selTamano.value = tamActual;
   actualizarStockTrf();
 }
-
 function actualizarStockTrf(){
   const sabor  = L("trf-sabor")?.value;
   const tamano = L("trf-tamano")?.value;
@@ -3650,10 +3237,6 @@ function actualizarStockTrf(){
     }
   }
 }
-
-// ============================================================
-// TRANSFERENCIAS
-// ============================================================
 async function cargarTransferencias(){
   if(!S.catalogo?.sabores){ const resC=await api("getCatalogo"); if(resC.ok) S.catalogo=resC; }
   const resStock = await api("getStock");
@@ -3665,7 +3248,6 @@ async function cargarTransferencias(){
   S.transferencias=res.transferencias||[];
   renderTransferenciasList();
 }
-
 function poblarSelectoresTransferencia(){
   const stock = S.stock || [];
   const enCuaji = stock.filter(s => s.sucursal === "Cuajimalpa" && !s.vencido && s.cantActual > 0);
@@ -3689,7 +3271,6 @@ function poblarSelectoresTransferencia(){
   selTamano.innerHTML = tamanosParaSabor.map(t => `<option>${t}</option>`).join("");
   if(tamanosParaSabor.includes(tamActual)) selTamano.value = tamActual;
 }
-
 function renderTransferenciasList(){
   const lista=S.transferencias||[];
   if(!lista.length){ L("trf-lista").innerHTML=`<div class="empty-state"><div class="empty-icon">🔄</div><div>Sin transferencias registradas</div></div>`; return; }
@@ -3704,7 +3285,6 @@ function renderTransferenciasList(){
       <div style="font-size:12px;color:var(--muted)">${t.fechaSolicitud?t.fechaSolicitud.substring(0,16).replace("T"," "):""}${t.solicitadoPor?" · por "+t.solicitadoPor:""}${t.notas?" · "+t.notas:""}</div>
     </div>`).join("");
 }
-
 async function solicitarTransferencia(){
   const sabor=L("trf-sabor").value, tamano=L("trf-tamano").value;
   const cantidad=parseInt(L("trf-cantidad")?.value)||0, notas=L("trf-notas")?.value.trim()||"";
@@ -3715,23 +3295,17 @@ async function solicitarTransferencia(){
   if(res.ok){ toast(res.mensaje); L("trf-cantidad").value=""; L("trf-notas").value=""; await cargarStock(); cargarTransferencias(); cargarMensajesHeader(); }
   else toast(res.error,"error");
 }
-
 async function confirmarTrf(id){
   if(!confirm("¿Confirmar recepción en Polanco? Esto moverá el stock.")) return;
   const res=await api("confirmarTransferencia",{id});
   if(res.ok){ toast(res.mensaje); cargarTransferencias(); cargarMensajesHeader(); }
   else toast(res.error,"error");
 }
-
-// ============================================================
-// AUDITORÍA
-// ============================================================
 async function cargarAuditoria(){
   const res=await api("getAuditoria");if(!res.ok)return;
   L("auditoria-list").innerHTML=res.registros.length===0?`<div class="empty-state"><div>Sin registros</div></div>`
     :res.registros.map(r=>`<div class="audit-row"><div class="audit-accion">${r.accion}</div><div class="audit-detalle">${r.detalles}</div><div class="audit-meta">${r.usuario} · ${r.fecha?r.fecha.substring(0,16).replace('T',' '):''}</div></div>`).join("");
 }
-
 async function ejecutarLimpiarDatos(){
   if(!confirm("⚠️ ¿Seguro que quieres borrar todos los datos de prueba?\n\nEsto eliminará:\n• Ventas\n• Stock / Inventario\n• Clientes\n• Auditoría\n• Utilidades\n• Transferencias\n\nNO se borrarán: catálogo, precios, insumos, recetas ni usuarios.")) return;
   if(!confirm("Segunda confirmación: ¿ESTÁS SEGURO? Esta acción no se puede deshacer.")) return;
@@ -3741,10 +3315,6 @@ async function ejecutarLimpiarDatos(){
   if(res.ok){ toast(res.mensaje); cargarAuditoria(); cargarStock(); }
   else toast(res.error,"error");
 }
-
-// ============================================================
-// GASTOS
-// ============================================================
 async function cargarGastos(){
   L("gastos-list").innerHTML=`<div class="loading"><div class="spinner"></div>Cargando...</div>`;
   const res = await api("getGastos");
@@ -3752,7 +3322,6 @@ async function cargarGastos(){
   S.gastos = res.gastos || [];
   renderGastosList();
 }
-
 function montoMensual(g) {
   if (!g || !g.activo) return 0;
   if (g.montoMensual !== undefined) return g.montoMensual;
@@ -3760,7 +3329,6 @@ function montoMensual(g) {
   if (g.frecuencia === "Mensual") return g.monto;
   return 0;
 }
-
 function renderGastosList(){
   const gastos = (S.gastos||[]).filter(g=>g.activo);
   if(gastos.length === 0){
@@ -3819,14 +3387,12 @@ function renderGastosList(){
     </div>`;
   L("gastos-list").innerHTML = renderGrupo(fijos,"Gastos fijos") + renderGrupo(variables,"Gastos variables") + resumenHTML;
 }
-
 function toggleGastoCondicional(){
   const esCondicional = L("g-frecuencia").value === "Condicional";
   const fields = L("gasto-condicional-fields");
   fields.style.display = esCondicional ? "block" : "none";
   L("g-monto-label").textContent = esCondicional ? "Monto del bono/comisión ($)" : "Monto ($) *";
 }
-
 function editarGasto(id){
   const g = (S.gastos||[]).find(x=>x.id===id);
   if(!g) return;
@@ -3844,7 +3410,6 @@ function editarGasto(id){
   L("btn-cancelar-gasto").style.display = "inline-block";
   L("g-concepto").focus();
 }
-
 function cancelarEditarGasto(){
   ["gasto-id","g-concepto","g-descripcion","g-monto","g-condicion","g-aplica-a"].forEach(id=>L(id).value="");
   L("g-tipo").value="Fijo"; L("g-frecuencia").value="Mensual"; L("g-sucursal").value="Ambas";
@@ -3852,7 +3417,6 @@ function cancelarEditarGasto(){
   L("gasto-form-title").textContent="Nuevo gasto";
   L("btn-cancelar-gasto").style.display="none";
 }
-
 async function guardarGasto(){
   const concepto = L("g-concepto").value.trim();
   if(!concepto){ toast("El concepto es obligatorio","error"); return; }
@@ -3876,7 +3440,6 @@ async function guardarGasto(){
   if(res.ok){ toast(res.mensaje); cancelarEditarGasto(); cargarGastos(); }
   else toast(res.error,"error");
 }
-
 async function bajaGasto(id){
   const g = (S.gastos||[]).find(x=>x.id===id);
   if(!g||!confirm(`¿Dar de baja "${g.concepto}"?`)) return;
@@ -3884,10 +3447,6 @@ async function bajaGasto(id){
   if(res.ok){ toast(res.mensaje); cargarGastos(); }
   else toast(res.error,"error");
 }
-
-// ============================================================
-// ZONAS DE ENVÍO
-// ============================================================
 async function cargarZonasEnvio(){
   const res = await api("getZonasEnvio");
   if(res.ok) S.zonasEnvio = res.zonas || [];
@@ -3946,10 +3505,6 @@ function onZonaChange(){
   } else { aviso.style.display = "none"; }
   renderCarrito();
 }
-
-// ============================================================
-// PRECIO POR CANAL
-// ============================================================
 async function cargarCanalPrecios(){
   const [resCP, resCat] = await Promise.all([api("getCanalPrecios"), S.catalogo?Promise.resolve({ok:false}):api("getCatalogo")]);
   if(resCP.ok) S.canalPrecios = resCP.reglas || [];
@@ -3974,7 +3529,6 @@ function actualizarPreviewCP(){
 }
 L("cp-valor")?.addEventListener("input", actualizarPreviewCP);
 L("cp-canal")?.addEventListener("change", actualizarPreviewCP);
-
 function renderCanalPreciosList(){
   const reglas = (S.canalPrecios||[]).filter(r=>r.activo);
   if(!reglas.length){
@@ -4004,7 +3558,6 @@ async function eliminarCanalPrecio(id){
   if(res.ok){ toast("✅ Regla eliminada"); cargarCanalPrecios(); }
   else toast(res.error,"error");
 }
-
 function onCanalChange(){
   const canal = L("venta-canal")?.value;
   const esPlat = esPlataforma(canal);
@@ -4024,10 +3577,6 @@ function onCanalChange(){
   actualizarPrecioPreview();
   renderCarrito();
 }
-
-// ============================================================
-// TABLA UTILIDADES EN COSTOS
-// ============================================================
 async function renderTablaUtilidades(){
   L("tabla-util-content").innerHTML=`<div class="loading"><div class="spinner"></div>Calculando...</div>`;
   const [resR, resI, resP] = await Promise.all([api("getRecetas"), api("getInsumos"), api("getPrecios")]);
@@ -4084,12 +3633,7 @@ async function renderTablaUtilidades(){
   }).join('');
   L("tabla-util-content").innerHTML = header + rows;
 }
-
-// ============================================================
-// UTILIDAD POR VENTAS
-// ============================================================
 let utilState = { ventas: [], recetas: [], insumos: [], listo: false };
-
 async function cargarUtilidades(){
   L("util-ops-list").innerHTML=`<div class="loading"><div class="spinner"></div>Cargando...</div>`;
   L("util-resumen-periodo").style.display="none";
@@ -4108,9 +3652,7 @@ async function cargarUtilidades(){
   _poblarFiltrosUtil();
   renderUtilidades();
 }
-
 function _fmtDateInput(d){ return d.toISOString().substring(0,10); }
-
 function _poblarFiltrosUtil(){
   const ventas = utilState.ventas;
   const sucursales = [...new Set(ventas.map(v=>v.sucursal).filter(Boolean))];
@@ -4122,7 +3664,6 @@ function _poblarFiltrosUtil(){
   _llenarSelect("f-sabor",    sabores);
   _llenarSelect("f-tamano",   tamanos);
 }
-
 function _llenarSelect(id, opciones){
   const sel = L(id);
   if(!sel) return;
@@ -4130,9 +3671,7 @@ function _llenarSelect(id, opciones){
   sel.innerHTML = `<option value="">Todos</option>` + opciones.map(o=>`<option value="${o}">${o}</option>`).join("");
   if(actual) sel.value = actual;
 }
-
 function aplicarFiltrosUtil(){ renderUtilidades(); }
-
 function limpiarFiltrosUtil(){
   const hoy = new Date();
   const primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
@@ -4142,7 +3681,6 @@ function limpiarFiltrosUtil(){
   L("f-sabor").value = ""; L("f-tamano").value = "";
   renderUtilidades();
 }
-
 function renderUtilidades(){
   if(!utilState.listo){ L("util-ops-list").innerHTML=`<div class="loading"><div class="spinner"></div></div>`; return; }
   const desde   = L("f-desde").value;
@@ -4239,10 +3777,6 @@ function renderUtilidades(){
     </div>`;
   }).join('');
 }
-
-// ============================================================
-// COMISIONES POR MÉTODO/CANAL
-// ============================================================
 async function cargarComisionesConfig(){
   const res = await api("getComisionesConfig");
   if(res.ok && res.comisiones){ S.comisionesConfig = res.comisiones; }
@@ -4281,7 +3815,6 @@ function actualizarPreviewComision(){
   prev.textContent = `Ejemplo: venta de $${ejemplo} → cargo $${cargo} → ingreso neto $${ejemplo-cargo}`;
 }
 L("com-pct")?.addEventListener("input", actualizarPreviewComision);
-
 async function guardarComision(){
   const nombre = L("com-nombre")?.value;
   const pct = parseFloat(L("com-pct")?.value)||0;
@@ -4294,7 +3827,6 @@ async function guardarComision(){
     if(L("com-pct")) L("com-pct").value="";
   } else { toast(res.error||"Error al guardar comisión","error"); }
 }
-
 async function cargarCanalPreciosAlInicio(){
   const res = await api("getCanalPrecios");
   if(res.ok) S.canalPrecios = res.reglas || [];
@@ -4303,12 +3835,7 @@ async function cargarRecetasAlInicio(){
   const res = await api("getRecetas");
   if(res.ok) S.recetas = res.recetas || [];
 }
-
-// ============================================================
-// TABLERO DE CONTROL
-// ============================================================
 const EQUIV = { "Individual": 0.5, "Mediana": 1, "Mediano": 1, "Grande": 2 };
-
 function getMetas() {
   const mes  = parseInt(L("tbl-mes")?.value)  || new Date().getMonth()+1;
   const anio = parseInt(L("tbl-anio")?.value) || new Date().getFullYear();
@@ -4360,7 +3887,6 @@ async function iniciarTablero() {
   if (L("tbl-anio")) L("tbl-anio").value = String(hoy.getFullYear());
   await renderTablero();
 }
-
 async function renderTablero() {
   const contenido = L("tbl-contenido");
   if (!contenido) return;
@@ -4474,26 +4000,15 @@ async function renderTablero() {
     tarjetaSucursal("Cuajimalpa", resCuaji,   metasCuajiEfectiva,   "#86BDAD") +
     tarjetaSucursal("Polanco",    resPolanco, metasPolancoEfectiva, "#86BDAD");
 }
-
-// ============================================================
-// v3.2 LOGOUT — llama al backend para cerrar la sesión específica
-// ============================================================
 L("btn-logout").addEventListener("click",async()=>{
-  // Avisar al backend para cerrar esta sesión (best effort)
   if(S.token){
     try { await api("logout",{}); } catch(e){}
   }
   limpiarVenta();
-  S={token:null,usuario:null,rol:null,sucursal:null,permisos:null,catalogo:null,precios:null,stock:null,carrito:[],clienteSel:null,filtroSuc:null,filtroTam:null,insumos:[],recetas:[],recetaActual:[],costoEnvio:0,zonasEnvio:[],canalPrecios:[],comisionesConfig:{},movimientos:[],anularPendiente:null};
+  S={token:null,usuario:null,rol:null,sucursal:null,permisos:null,catalogo:null,precios:null,stock:null,carrito:[],clienteSel:null,filtroSuc:null,filtroTam:null,insumos:[],recetas:[],recetaActual:[],costoEnvio:0,zonasEnvio:[],canalPrecios:[],comisionesConfig:{},movimientos:[],anularPendiente:null,utildiarioFiltros:{sabores:[],tamanos:[],canales:[]},utilperiodoFiltros:{sabores:[],tamanos:[],canales:[]},utilperiodoActual:{preset:"semana",desde:null,hasta:null,modoLinea:"dia"}};
   L("app").style.display="none";L("login-screen").style.display="flex";L("login-user").value="";L("login-pass").value="";
 });
-
 document.querySelectorAll(".modal-overlay").forEach(o=>{o.addEventListener("click",e=>{if(e.target===o)o.classList.remove("show");});});
-
-// ============================================================
-// FEAT-REPORTE — Reporte de ventas (día acumulado, sub-tarea 1)
-// ============================================================
-
 async function cargarReporte() {
   if (!S.catalogo) { const res = await api("getCatalogo"); if (res.ok) S.catalogo = res; }
   L("reporte-content").innerHTML = '<div class="loading"><div class="spinner"></div>Cargando...</div>';
@@ -4503,7 +4018,6 @@ async function cargarReporte() {
   _renderFiltrosReporte();
   renderReporte();
 }
-
 function _renderFiltrosReporte() {
   const sabores = (S.catalogo?.sabores || []).filter(s => s.activo).map(s => s.nombre);
   const tamanos = (S.catalogo?.tamanos || []).filter(t => t.activo).map(t => t.nombre);
@@ -4516,7 +4030,6 @@ function _renderFiltrosReporte() {
   L("reporte-filtros-canal").innerHTML = canales.map(c =>
     `<div class="chip ${f.canales.includes(c) ? 'active' : ''}" onclick="toggleFiltroReporte('canales','${c}')">${c}</div>`).join("");
 }
-
 function toggleFiltroReporte(tipo, valor) {
   const arr = S.reporteFiltros[tipo];
   const idx = arr.indexOf(valor);
@@ -4524,22 +4037,19 @@ function toggleFiltroReporte(tipo, valor) {
   _renderFiltrosReporte();
   renderReporte();
 }
-
 function _hoyCDMXString() {
-  // Hora local del navegador (asumiendo equipo en CDMX)
   const hoy = new Date();
   const y = hoy.getFullYear();
   const m = String(hoy.getMonth() + 1).padStart(2, "0");
   const d = String(hoy.getDate()).padStart(2, "0");
   return y + "-" + m + "-" + d;
 }
-
 function _ventasFiltradas(rangoFn) {
   const hoyStr = _hoyCDMXString();
   const f = S.reporteFiltros;
   return (S.ventasReporte || []).filter(v => {
     if (!v.fecha) return false;
-    if (v.canal === "Merma" || v.canal === "Cortesía") return false; // excluir mermas y cortesías
+    if (v.canal === "Merma" || v.canal === "Cortesía") return false;
     if (!rangoFn(v.fecha, hoyStr)) return false;
     if (f.sabores.length && !f.sabores.includes(v.sabor)) return false;
     if (f.tamanos.length && !f.tamanos.includes(v.tamano)) return false;
@@ -4547,12 +4057,9 @@ function _ventasFiltradas(rangoFn) {
     return true;
   });
 }
-
 function _esHoy(fechaStr, hoyStr) {
-  // fecha viene como "yyyy-MM-ddTHH:mm:ss" en CDMX (después de FIX-TZ v4.4.1)
   return String(fechaStr).startsWith(hoyStr);
 }
-
 function _resumenVentas(ventas) {
   const idVentas = new Set(ventas.map(v => v.idVenta));
   const total = ventas.reduce((s, v) => s + (Number(v.subtotal) || 0), 0);
@@ -4577,9 +4084,6 @@ function _resumenVentas(ventas) {
   });
   return { total, piezas, transacciones: idVentas.size, porTamano, porCanal, porSabor };
 }
-
-// FEAT-PIVOT — Tabla sabor × tamaño (modo unidades / monto, ordenable por columna)
-// sortKey en S.pivotSort[scope] = { col: "_sabor"|"<nombreTamano>", dir: "asc"|"desc" }
 function _sortKeyPivot(scope) {
   if (!S.pivotSort) S.pivotSort = {};
   return S.pivotSort[scope] || null;
@@ -4590,10 +4094,8 @@ function togglePivotSort(scope, col) {
   if (cur && cur.col === col) {
     S.pivotSort[scope] = { col, dir: cur.dir === "desc" ? "asc" : "desc" };
   } else {
-    // Primer clic: descendente por defecto (de más a menos)
     S.pivotSort[scope] = { col, dir: col === "_sabor" ? "asc" : "desc" };
   }
-  // Re-render según el scope
   if (scope.startsWith("rep_") || scope.startsWith("per_")) {
     const subDia = L("reporte-diario");
     const subPer = L("reporte-periodo");
@@ -4603,7 +4105,6 @@ function togglePivotSort(scope, col) {
     renderStock();
   }
 }
-
 function _tablaPivotSaborTamano(ventas, modo, color, scope) {
   scope = scope || "rep_total";
   const sabores = (S.catalogo?.sabores || []).filter(s => s.activo).map(s => s.nombre);
@@ -4616,10 +4117,8 @@ function _tablaPivotSaborTamano(ventas, modo, color, scope) {
     M[v.sabor][v.tamano].piezas += Number(v.cantidad) || 0;
     M[v.sabor][v.tamano].monto  += Number(v.subtotal) || 0;
   });
-  return _renderPivotMatriz(M, sabores, tamanos, modo, color, scope, /*usaMonto*/ true);
+  return _renderPivotMatriz(M, sabores, tamanos, modo, color, scope, true);
 }
-
-// Render genérico de la matriz; usaMonto=false significa que la celda solo tiene .piezas
 function _renderPivotMatriz(M, sabores, tamanos, modo, color, scope, usaMonto, mostrarTotales) {
   const fmt = (cell) => {
     if (!cell) return '<span style="color:var(--border)">—</span>';
@@ -4628,7 +4127,6 @@ function _renderPivotMatriz(M, sabores, tamanos, modo, color, scope, usaMonto, m
     }
     return cell.piezas > 0 ? `<strong>${cell.piezas}</strong>` : '<span style="color:var(--border)">—</span>';
   };
-  // Filtrar sabores con al menos algo en la métrica activa
   const tieneAlgo = (sab) => tamanos.some(tam => {
     const c = M[sab][tam] || { piezas: 0, monto: 0 };
     return ((usaMonto && modo === "monto") ? c.monto : c.piezas) > 0;
@@ -4637,7 +4135,6 @@ function _renderPivotMatriz(M, sabores, tamanos, modo, color, scope, usaMonto, m
   if (saboresVisibles.length === 0) {
     return `<div style="padding:14px;color:var(--muted);font-size:12px;text-align:center">Sin datos en esta vista.</div>`;
   }
-  // Sort
   const sk = _sortKeyPivot(scope);
   let sabOrden = [...saboresVisibles];
   if (sk && sk.col === "_sabor") {
@@ -4650,14 +4147,12 @@ function _renderPivotMatriz(M, sabores, tamanos, modo, color, scope, usaMonto, m
     };
     sabOrden.sort((a, b) => sk.dir === "asc" ? valor(a) - valor(b) : valor(b) - valor(a));
   } else {
-    // Default: por suma de la fila desc (usando modo activo)
     const tot = (sab) => tamanos.reduce((s, tam) => {
       const c = M[sab][tam] || { piezas: 0, monto: 0 };
       return s + ((usaMonto && modo === "monto") ? c.monto : c.piezas);
     }, 0);
     sabOrden.sort((a, b) => tot(b) - tot(a));
   }
-  // Indicador de sort
   const arrow = (col) => {
     if (!sk || sk.col !== col) return '<span style="opacity:.25;font-size:9px">▲▼</span>';
     return sk.dir === "asc" ? '<span style="font-size:10px">▲</span>' : '<span style="font-size:10px">▼</span>';
@@ -4673,7 +4168,6 @@ function _renderPivotMatriz(M, sabores, tamanos, modo, color, scope, usaMonto, m
     html += `<th style="${thStyleBase};text-align:right;color:${color}">Total</th>`;
   }
   html += `</tr></thead><tbody>`;
-  // Totales fila / col / general (solo si mostrarTotales)
   const totalSab = {}, totalTam = {};
   let totalG = { piezas: 0, monto: 0 };
   if (mostrarTotales) {
@@ -4706,8 +4200,6 @@ function _renderPivotMatriz(M, sabores, tamanos, modo, color, scope, usaMonto, m
   html += `</tbody></table>`;
   return html;
 }
-
-// Pivot para INVENTARIO (M solo tiene .piezas; siempre modo unidades)
 function _tablaPivotInventario(stock, color, scope) {
   scope = scope || "inv_total";
   const sabores = (S.catalogo?.sabores || []).filter(s => s.activo).map(s => s.nombre);
@@ -4720,12 +4212,10 @@ function _tablaPivotInventario(stock, color, scope) {
     if (!M[s.sabor] || !M[s.sabor][s.tamano]) return;
     M[s.sabor][s.tamano].piezas += Number(s.cantActual) || 0;
   });
-  return _renderPivotMatriz(M, sabores, tamanos, "unidades", color, scope, /*usaMonto*/ false, /*mostrarTotales*/ true);
+  return _renderPivotMatriz(M, sabores, tamanos, "unidades", color, scope, false, true);
 }
-
 function setPivotModo(modo) {
   S.pivotModo = modo;
-  // Re-renderizar el reporte activo
   if (L("tab-reporte") && L("tab-reporte").style.display !== "none") {
     const subDia = L("reporte-diario");
     const subPer = L("reporte-periodo");
@@ -4733,8 +4223,6 @@ function setPivotModo(modo) {
     if (subPer && subPer.classList.contains("active")) renderReportePeriodo();
   }
 }
-
-// FEAT-PIVOT-BLOQUE — bloque con las 3 tablas pivot (Total + Cuaji + Polanco)
 function _bloquePivotsReporte(ventasTotal, vCuaji, vPolanco) {
   const modo = S.pivotModo || "unidades";
   const card = (titulo, color, secId, ventas) => `<div class="card" style="margin-bottom:12px;border-left:4px solid ${color}">
@@ -4750,7 +4238,6 @@ function _bloquePivotsReporte(ventasTotal, vCuaji, vPolanco) {
     ${card("🍰 Cuajimalpa", "var(--green)", "cuaji", vCuaji)}
     ${card("🍰 Polanco", "var(--accent)", "polanco", vPolanco)}`;
 }
-
 function _chipsPivotModo() {
   const m = S.pivotModo || "unidades";
   return `<div class="filter-row" style="margin-bottom:10px">
@@ -4758,9 +4245,7 @@ function _chipsPivotModo() {
     <div class="chip ${m==='monto'?'active':''}" onclick="setPivotModo('monto')">💲 Monto</div>
   </div>`;
 }
-
 function _tarjetaResumen(titulo, r, color, secId, ventas) {
-  // Helper para renderizar filas en 2 columnas
   function rowsGrid(obj, ordenarPorPiezas) {
     let keys = Object.keys(obj || {});
     if (ordenarPorPiezas) keys.sort((a,b) => (obj[b].piezas||0) - (obj[a].piezas||0));
@@ -4792,10 +4277,8 @@ function _tarjetaResumen(titulo, r, color, secId, ventas) {
     ${rowsT ? `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:6px;text-transform:uppercase">Por tamaño</div>${rowsT}` : ''}
     ${rowsC ? `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:6px;margin-top:12px;text-transform:uppercase">Por canal</div>${rowsC}` : ''}
     ${rowsS ? `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:6px;margin-top:12px;text-transform:uppercase">Por sabor</div>${rowsS}` : ''}
-    
   </div>`;
 }
-
 function _tarjetaPie(titulo, color, secId) {
   return `<div class="card" style="margin-bottom:12px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
@@ -4805,7 +4288,6 @@ function _tarjetaPie(titulo, color, secId) {
     <div id="pie-container-${secId}"></div>
   </div>`;
 }
-
 function renderReporte() {
   const ventasHoy = _ventasFiltradas(_esHoy);
   const hoyStr = _hoyCDMXString();
@@ -4820,7 +4302,6 @@ function renderReporte() {
   const total = _resumenVentas(ventasHoy);
   const cuaji = _resumenVentas(vCuaji);
   const polanco = _resumenVentas(vPolanco);
-  // Guardar ventas por sección para los pies drill-down
   S.ventasPorSeccion = { total: ventasHoy, cuaji: vCuaji, polanco: vPolanco };
   L("reporte-content").innerHTML =
     _tarjetaResumen("🏢 Total empresa", total, "var(--accent)", "total", ventasHoy) +
@@ -4833,74 +4314,55 @@ function renderReporte() {
     _tarjetaPie("Total empresa", "var(--accent)", "total") +
     _tarjetaPie("Cuajimalpa", "var(--green)", "cuaji") +
     _tarjetaPie("Polanco", "var(--accent)", "polanco");
-  // Renderizar pies de cada sección
   setTimeout(() => {
     ["total", "cuaji", "polanco"].forEach(secId => renderPiesSeccion(secId));
   }, 50);
 }
-
-// /FEAT-REPORTE
-
-
-// ============================================================
-// FEAT-REPORTE-PIES — Pies con drill-down jerárquico
-// ============================================================
-
 const DIMENSIONES = {
   sabor: { label: "Por sabor", campo: "sabor" },
   tamano: { label: "Por tamaño", campo: "tamano" },
   canal: { label: "Por canal", campo: "canal" }
 };
-
 const COLORES_PIE = ["#C8602A", "#2E5C4A", "#86BDAD", "#C9A84C", "#1976D2", "#9C27B0", "#FF9800", "#4CAF50", "#E91E63", "#607D8B", "#795548", "#3F51B5"];
-// Mapas de colores fijos por sabor / tamaño / canal
 const COLOR_POR_SABOR = {};
 const COLOR_POR_TAMANO = { "Individual": "#86BDAD", "Mediana": "#C8602A", "Grande": "#2E5C4A" };
 const COLOR_POR_CANAL = { "Tienda": "#C8602A", "Domicilio": "#1976D2", "Rappi": "#FF6F00", "Uber Eats": "#000000", "Mostrador": "#C8602A" };
-
 function _colorParaValor(dimension, valor) {
-  // dimension: "sabor" | "tamano" | "canal"
   if (dimension === "tamano") {
     return COLOR_POR_TAMANO[valor] || _hashColor(valor);
   }
   if (dimension === "canal") {
     return COLOR_POR_CANAL[valor] || _hashColor(valor);
   }
-  // sabor: asignar consistente
   if (!COLOR_POR_SABOR[valor]) {
     const idx = Object.keys(COLOR_POR_SABOR).length;
     COLOR_POR_SABOR[valor] = COLORES_PIE[idx % COLORES_PIE.length];
   }
   return COLOR_POR_SABOR[valor];
 }
-
 function _hashColor(s) {
   let h = 0;
   for (let i = 0; i < s.length; i++) h = ((h << 5) - h) + s.charCodeAt(i) | 0;
   return COLORES_PIE[Math.abs(h) % COLORES_PIE.length];
 }
-
-// Estado del drill-down por sección
 if (!S.pieEstado) S.pieEstado = { total: [], cuaji: [], polanco: [] };
-// Cada elemento del arreglo = { dimension, valorSeleccionado }
-
 function setReporteTab(tab) {
   document.querySelectorAll("#tab-reporte > .costos-tabs > .costos-tab").forEach(t =>
     t.classList.toggle("active", t.getAttribute("onclick") === `setReporteTab('${tab}')`));
-  ["diario", "periodo", "conciliacion", "stockhora", "formulas"].forEach(s => {
+  ["diario", "periodo", "conciliacion", "stockhora", "utildiario", "utilperiodo", "formulas"].forEach(s => {
     const el = L("reporte-" + s);
     if (el) el.classList.toggle("active", s === tab);
   });
   if (tab === "stockhora") cargarStockHora();
   if (tab === "periodo") cargarReportePeriodo();
   if (tab === "conciliacion") cargarConciliacion();
+  if (tab === "utildiario") cargarUtilDiario();
+  if (tab === "utilperiodo") cargarUtilPeriodo();
 }
-
 function resetPieDrillDown(secId) {
   S.pieEstado[secId] = [];
   renderPiesSeccion(secId);
 }
-
 function _ventasFiltradasPorEstado(ventas, estado) {
   let resultado = ventas;
   estado.forEach(nivel => {
@@ -4908,7 +4370,6 @@ function _ventasFiltradasPorEstado(ventas, estado) {
   });
   return resultado;
 }
-
 function _agruparPor(ventas, campo) {
   const grupos = {};
   ventas.forEach(v => {
@@ -4917,24 +4378,19 @@ function _agruparPor(ventas, campo) {
     grupos[k].piezas += Number(v.cantidad) || 0;
     grupos[k].monto += Number(v.subtotal) || 0;
   });
-  // Rankear por piezas descendente
   return Object.keys(grupos).sort((a, b) => grupos[b].piezas - grupos[a].piezas).map(k => ({ key: k, ...grupos[k] }));
 }
-
 function _dimensionesDisponibles(secId) {
   const usadas = S.pieEstado[secId].map(n => n.dimension);
   return Object.keys(DIMENSIONES).filter(d => !usadas.includes(d));
 }
-
 function renderPiesSeccion(secId) {
   const container = L("pie-container-" + secId);
   if (!container) return;
   const ventasSec = S.ventasPorSeccion?.[secId] || [];
   if (ventasSec.length === 0) { container.innerHTML = '<div style="font-size:12px;color:var(--muted)">Sin datos para mostrar</div>'; return; }
   const estado = S.pieEstado[secId];
-  const niveles = estado.length;  // niveles ya seleccionados (0, 1, 2)
-  // Niveles a mostrar = niveles seleccionados + 1 (el siguiente)
-  // Filtrar ventas según niveles ya seleccionados
+  const niveles = estado.length;
   const ventasFiltradas = _ventasFiltradasPorEstado(ventasSec, estado);
   const disponibles = _dimensionesDisponibles(secId);
   if (disponibles.length === 0) {
@@ -4943,13 +4399,9 @@ function renderPiesSeccion(secId) {
     </div>`;
     return;
   }
-  // Renderizar selector de dimensión + canvas
-  // El nivel actual (a elegir) es el siguiente
   const nivelActual = niveles + 1;
   const breadcrumb = estado.length === 0 ? "" :
     estado.map((n, i) => `<span style="font-size:11px;background:var(--warm);padding:3px 8px;border-radius:6px;margin-right:4px">${DIMENSIONES[n.dimension].label}: <strong>${n.valorSeleccionado}</strong></span>`).join("");
-  // Si no hay dimensión seleccionada para este nivel, pedir al usuario que elija
-  // Por simplicidad: por default, la primera disponible
   if (!S.pieDimensionPorNivel) S.pieDimensionPorNivel = {};
   const keyNivel = `${secId}-${nivelActual}`;
   if (!S.pieDimensionPorNivel[keyNivel] || !disponibles.includes(S.pieDimensionPorNivel[keyNivel])) {
@@ -4968,7 +4420,6 @@ function renderPiesSeccion(secId) {
     <div style="position:relative;width:100%;height:280px"><canvas id="${canvasId}"></canvas></div>
     <div style="font-size:11px;color:var(--muted);margin-top:6px;text-align:center">Click en una rebanada para ver el siguiente nivel</div>
   `;
-  // Renderizar Chart.js
   setTimeout(() => {
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
@@ -4998,7 +4449,7 @@ function renderPiesSeccion(secId) {
             formatter: (value, ctx) => {
               const total = ctx.chart.data.datasets[0].data.reduce((s, v) => s + v, 0);
               const pct = total > 0 ? value / total * 100 : 0;
-              if (pct < 4) return "";  // ocultar etiquetas en rebanadas muy chicas
+              if (pct < 4) return "";
               return value + "\n(" + pct.toFixed(1) + "%)";
             }
           }
@@ -5014,23 +4465,12 @@ function renderPiesSeccion(secId) {
     });
   }, 50);
 }
-
 function cambiarDimensionPie(secId, nivel, dim) {
   const key = `${secId}-${nivel}`;
   S.pieDimensionPorNivel[key] = dim;
   renderPiesSeccion(secId);
 }
-
-// /FEAT-REPORTE-PIES
-
-
-
-// ============================================================
-// FEAT-STOCK-HORA — Tabla de disponibilidad y ventas por hora
-// ============================================================
-
-const STOCK_HORA_RANGO = { inicio: 9, fin: 21 };  // 9am - 21pm
-
+const STOCK_HORA_RANGO = { inicio: 9, fin: 21 };
 async function cargarStockHora() {
   L("stockhora-content").innerHTML = '<div class="loading"><div class="spinner"></div>Cargando...</div>';
   if (!S.catalogo) { const c = await api("getCatalogo"); if (c.ok) S.catalogo = c; }
@@ -5045,12 +4485,9 @@ async function cargarStockHora() {
   renderStockHora();
   renderOportunidad();
 }
-
 async function cargarOportunidad() {
   await cargarStockHora();
 }
-
-// FEAT-OPORTUNIDAD-FILTROS — chips compartidos entre Oportunidad y Stock por hora
 function _renderFiltrosOportunidad() {
   const sabores = (S.catalogo?.sabores || []).filter(s => s.activo).map(s => s.nombre);
   const tamanos = (S.catalogo?.tamanos || []).filter(t => t.activo).map(t => t.nombre);
@@ -5065,7 +4502,6 @@ function _renderFiltrosOportunidad() {
     `<div class="chip ${f.tamanos.includes(t) ? 'active' : ''}" onclick="toggleFiltroOport('tamanos','${t}')">${t}</div>`).join("");
   if (elC) elC.innerHTML = canales.map(c =>
     `<div class="chip ${f.canales.includes(c) ? 'active' : ''}" onclick="toggleFiltroOport('canales','${c}')">${c}</div>`).join("");
-  // Selector de agrupación
   const elA = L("oport-agrup-chips");
   if (elA) {
     const ag = S.oportAgrupacion || "sabor_tamano";
@@ -5081,7 +4517,6 @@ function _renderFiltrosOportunidad() {
       `<div class="chip ${ag === k ? 'active' : ''}" onclick="setOportAgrupacion('${k}')">${lbl}</div>`).join("");
   }
 }
-
 function toggleFiltroOport(tipo, valor) {
   const arr = S.oportFiltros[tipo];
   const idx = arr.indexOf(valor);
@@ -5090,13 +4525,11 @@ function toggleFiltroOport(tipo, valor) {
   renderStockHora();
   renderOportunidad();
 }
-
 function setOportAgrupacion(modo) {
   S.oportAgrupacion = modo;
   _renderFiltrosOportunidad();
   renderOportunidad();
 }
-
 function _ventasOportFiltradas(ventas) {
   const f = S.oportFiltros || { sabores:[], tamanos:[], canales:[] };
   return (ventas || []).filter(v => {
@@ -5106,13 +4539,10 @@ function _ventasOportFiltradas(ventas) {
     return true;
   });
 }
-
 function _extraerHora(fechaStr) {
-  // fecha = "yyyy-MM-ddTHH:mm:ss" en CDMX
   if (!fechaStr || fechaStr.length < 13) return null;
   return parseInt(fechaStr.substring(11, 13));
 }
-
 function renderStockHora() {
   const hoyStr = _hoyCDMXString();
   const f = S.oportFiltros || { sabores:[], tamanos:[], canales:[] };
@@ -5124,19 +4554,13 @@ function renderStockHora() {
     if (f.canales.length && !f.canales.includes(v.canal)) return false;
     return true;
   });
-  // Hora actual
   const ahora = new Date();
   const horaActual = ahora.getHours();
-  // Catálogo (filtrado por chips activos)
   const tamanosAll = (S.catalogo?.tamanos || []).filter(t => t.activo).map(t => t.nombre);
   const saboresAll = (S.catalogo?.sabores || []).filter(s => s.activo).map(s => s.nombre);
   const tamanos = f.tamanos.length ? tamanosAll.filter(t => f.tamanos.includes(t)) : tamanosAll;
   const sabores = f.sabores.length ? saboresAll.filter(s => f.sabores.includes(s)) : saboresAll;
-  // Sucursales
   const sucursales = ["Cuajimalpa", "Polanco"];
-
-  // Construir índice: stock actual por (suc, sabor, tamano). El stock no tiene canal,
-  // así que el filtro de canal solo afecta a las ventas, no al stock disponible.
   const stockActual = {};
   (S.stock || []).forEach(s => {
     if (s.vencido || s.cantActual <= 0) return;
@@ -5145,9 +4569,6 @@ function renderStockHora() {
     const k = `${s.sucursal}|${s.sabor}|${s.tamano}`;
     stockActual[k] = (stockActual[k] || 0) + Number(s.cantActual);
   });
-  // Sumar también producción del día (vendrá del backend en getStock, ya considerada en stockActual)
-
-  // Construir índice: ventas por (suc, sabor, tamano, hora)
   const ventasPorHora = {};
   ventasHoy.forEach(v => {
     const h = _extraerHora(v.fecha);
@@ -5155,14 +4576,11 @@ function renderStockHora() {
     const k = `${v.sucursal}|${v.sabor}|${v.tamano}|${h}`;
     ventasPorHora[k] = (ventasPorHora[k] || 0) + (Number(v.cantidad) || 0);
   });
-  // Total ventas del día por (suc, sabor, tamano) para calcular stock inicial
   const ventasTotal = {};
   ventasHoy.forEach(v => {
     const k = `${v.sucursal}|${v.sabor}|${v.tamano}`;
     ventasTotal[k] = (ventasTotal[k] || 0) + (Number(v.cantidad) || 0);
   });
-
-  // Stock inicial = stock actual + ventas totales del día
   const stockInicial = {};
   sucursales.forEach(suc => {
     sabores.forEach(sab => {
@@ -5173,13 +4591,9 @@ function renderStockHora() {
       });
     });
   });
-
-  // Generar rango de horas (desde inicio del día hasta hora actual, mínimo hasta INICIO)
   const horaFinMostrar = Math.max(STOCK_HORA_RANGO.inicio, Math.min(STOCK_HORA_RANGO.fin, horaActual));
   const horas = [];
   for (let h = STOCK_HORA_RANGO.inicio; h <= horaFinMostrar; h++) horas.push(h);
-
-  // Render
   let html = "";
   ["Total", "Cuajimalpa", "Polanco"].forEach(loc => {
     html += _renderTablaStockHora(loc, sabores, tamanos, horas, stockInicial, ventasPorHora, ventasTotal);
@@ -5187,13 +4601,10 @@ function renderStockHora() {
   if (!html) html = '<div class="card"><div class="empty-state"><div class="empty-icon">📦</div><div>Sin datos para mostrar</div></div></div>';
   L("stockhora-content").innerHTML = html;
 }
-
 function _renderTablaStockHora(loc, sabores, tamanos, horas, stockInicial, ventasPorHora, ventasTotal) {
   const sucursales = loc === "Total" ? ["Cuajimalpa", "Polanco"] : [loc];
   ventasTotal = ventasTotal || {};
-  // Helper: ventas del día sumando sucursales aplicables
   const _ventasDelDia = (sab, tam) => sucursales.reduce((s, suc) => s + (ventasTotal[`${suc}|${sab}|${tam}`] || 0), 0);
-  // Ordenar tamaños por ventas totales del día (desc); en caso de empate por stock inicial desc
   const tamanosOrden = [...tamanos].sort((a, b) => {
     const vA = sabores.reduce((s, sab) => s + _ventasDelDia(sab, a), 0);
     const vB = sabores.reduce((s, sab) => s + _ventasDelDia(sab, b), 0);
@@ -5202,7 +4613,6 @@ function _renderTablaStockHora(loc, sabores, tamanos, horas, stockInicial, venta
     const sB = sabores.reduce((s, sab) => s + sucursales.reduce((t, suc) => t + (stockInicial[`${suc}|${sab}|${b}`] || 0), 0), 0);
     return sB - sA;
   });
-  // Verificar si hay datos para esta localidad
   let hayDatos = false;
   for (const suc of sucursales) {
     for (const sab of sabores) for (const tam of tamanos) {
@@ -5211,7 +4621,6 @@ function _renderTablaStockHora(loc, sabores, tamanos, horas, stockInicial, venta
     if (hayDatos) break;
   }
   if (!hayDatos) return "";
-
   const color = loc === "Total" ? "var(--accent)" : (loc === "Cuajimalpa" ? "var(--green)" : "var(--accent)");
   let h = `<div class="card" style="margin-bottom:14px;overflow-x:auto">
     <div style="font-weight:700;font-size:16px;color:${color};margin-bottom:10px">📦 ${loc}</div>
@@ -5222,16 +4631,12 @@ function _renderTablaStockHora(loc, sabores, tamanos, horas, stockInicial, venta
     h += `<th style="text-align:right;padding:6px 6px;border-bottom:2px solid var(--border);background:var(--warm);min-width:36px">${String(hr).padStart(2,'0')}h</th>`;
   });
   h += `</tr></thead><tbody>`;
-
-  // Para cada tamaño (en orden de ventas/día desc), agrupar filas
   tamanosOrden.forEach(tam => {
-    // Verificar si hay algún sabor con stock en este tamaño para esta localidad
     let saboresConStock = sabores.filter(sab => {
       let total = 0;
       sucursales.forEach(suc => { total += stockInicial[`${suc}|${sab}|${tam}`] || 0; });
       return total > 0;
     });
-    // Ordenar sabores por ventas del día desc (empate: stock inicial desc)
     saboresConStock = saboresConStock.sort((a, b) => {
       const vA = _ventasDelDia(a, tam), vB = _ventasDelDia(b, tam);
       if (vB !== vA) return vB - vA;
@@ -5240,20 +4645,16 @@ function _renderTablaStockHora(loc, sabores, tamanos, horas, stockInicial, venta
       return sB - sA;
     });
     if (saboresConStock.length === 0) return;
-    // Fila separadora de tamaño
     h += `<tr><td colspan="${horas.length + 1}" style="background:rgba(200,96,42,0.08);padding:5px 8px;font-weight:700;font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:1px;border-top:1px solid var(--border)">${tam}</td></tr>`;
     saboresConStock.forEach(sab => {
-      // Calcular stock por hora para esta combinación, agregando sucursales si Total
       const inicial = sucursales.reduce((s, suc) => s + (stockInicial[`${suc}|${sab}|${tam}`] || 0), 0);
       let stockH = inicial;
       let agotadoEn = null;
       h += `<tr><td style="padding:5px 8px;border-bottom:1px solid var(--warm);position:sticky;left:0;background:white;font-weight:500">${sab}</td>`;
       horas.forEach((hr, idx) => {
-        // Ventas durante esta hora (hr)
         let ventasH = 0;
         sucursales.forEach(suc => { ventasH += ventasPorHora[`${suc}|${sab}|${tam}|${hr}`] || 0; });
         if (idx === 0) {
-          // Primera hora: muestra el stock inicial (antes de ventas de esta hora)
           stockH = inicial - ventasH;
         } else {
           stockH = stockH - ventasH;
@@ -5269,7 +4670,6 @@ function _renderTablaStockHora(loc, sabores, tamanos, horas, stockInicial, venta
       h += `</tr>`;
     });
   });
-
   h += `</tbody></table>
     <div style="font-size:11px;color:var(--muted);margin-top:8px">
       Cada celda muestra <strong>stock al final de esa hora</strong>.
@@ -5279,29 +4679,16 @@ function _renderTablaStockHora(loc, sabores, tamanos, horas, stockInicial, venta
   </div>`;
   return h;
 }
-
-// /FEAT-STOCK-HORA
-
-
-
-
-// ============================================================
-// FEAT-REPORTE-PERIODO — Reporte dinámico por período
-// ============================================================
-
 function _hoyDate() {
-  // hoy a las 23:59:59 CDMX
   const h = new Date();
   return new Date(h.getFullYear(), h.getMonth(), h.getDate(), 23, 59, 59);
 }
-
 function _calcularRangoPreset(preset) {
   const hoy = new Date();
   const fin = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59);
   let ini = new Date(fin);
   if (preset === "semana") {
-    // Lunes de esta semana
-    const dow = hoy.getDay() || 7;  // 1=lunes, 7=domingo
+    const dow = hoy.getDay() || 7;
     ini.setDate(hoy.getDate() - (dow - 1));
     ini.setHours(0, 0, 0, 0);
   } else if (preset === "mes") {
@@ -5316,11 +4703,9 @@ function _calcularRangoPreset(preset) {
   }
   return { ini, fin };
 }
-
 function _fmtFecha(d) {
   return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
 }
-
 function setPeriodoPreset(preset) {
   S.periodoActual.preset = preset;
   document.querySelectorAll("#periodo-presets .chip").forEach(c =>
@@ -5334,32 +4719,27 @@ function setPeriodoPreset(preset) {
     if (L("periodo-desde")) L("periodo-desde").value = _fmtFecha(r.ini);
     if (L("periodo-hasta")) L("periodo-hasta").value = _fmtFecha(r.fin);
   } else {
-    // Por default semana
     const r = _calcularRangoPreset("semana");
     if (L("periodo-desde") && !L("periodo-desde").value) L("periodo-desde").value = _fmtFecha(r.ini);
     if (L("periodo-hasta") && !L("periodo-hasta").value) L("periodo-hasta").value = _fmtFecha(r.fin);
   }
   renderReportePeriodo();
 }
-
 function setModoLinea(modo) {
   S.periodoActual.modoLinea = modo;
   L("modo-dia-btn").classList.toggle("active", modo === "dia");
   L("modo-acum-btn").classList.toggle("active", modo === "acumulado");
   renderReportePeriodo();
 }
-
 async function cargarReportePeriodo() {
   if (!S.catalogo) { const res = await api("getCatalogo"); if (res.ok) S.catalogo = res; }
   L("periodo-content").innerHTML = '<div class="loading"><div class="spinner"></div>Cargando...</div>';
   const res = await api("getVentas");
   if (!res.ok) { L("periodo-content").innerHTML = '<div class="empty-state"><div>Error</div></div>'; return; }
   S.ventasReporte = res.ventas || [];
-  // Inicializar preset si no
   if (!S.periodoActual.desde) setPeriodoPreset(S.periodoActual.preset);
   else { _renderFiltrosPeriodo(); renderReportePeriodo(); }
 }
-
 function _renderFiltrosPeriodo() {
   const sabores = (S.catalogo?.sabores || []).filter(s => s.activo).map(s => s.nombre);
   const tamanos = (S.catalogo?.tamanos || []).filter(t => t.activo).map(t => t.nombre);
@@ -5372,14 +4752,12 @@ function _renderFiltrosPeriodo() {
   if (L("periodo-filtros-canal")) L("periodo-filtros-canal").innerHTML = canales.map(c =>
     `<div class="chip ${f.canales.includes(c) ? 'active' : ''}" onclick="toggleFiltroPeriodo('canales','${c}')">${c}</div>`).join("");
 }
-
 function toggleFiltroPeriodo(tipo, valor) {
   const arr = S.periodoFiltros[tipo];
   const idx = arr.indexOf(valor);
   if (idx >= 0) arr.splice(idx, 1); else arr.push(valor);
   renderReportePeriodo();
 }
-
 function _ventasPeriodoFiltradas() {
   let ini, fin;
   if (S.periodoActual.preset === "custom") {
@@ -5403,7 +4781,6 @@ function _ventasPeriodoFiltradas() {
     return true;
   });
 }
-
 function renderReportePeriodo() {
   _renderFiltrosPeriodo();
   const ventas = _ventasPeriodoFiltradas();
@@ -5414,23 +4791,17 @@ function renderReportePeriodo() {
     ? (L("periodo-hasta")?.value || "—")
     : _fmtFecha(S.periodoActual.hasta);
   L("periodo-rango-label").innerHTML = `📅 Rango: <strong>${desde.split('-').reverse().join('-')}</strong> → <strong>${hasta.split('-').reverse().join('-')}</strong> · ${ventas.length} ventas filtradas`;
-
-  // Renderizar gráfica de líneas
   _renderGraficaLineaPeriodo(ventas);
-
   if (ventas.length === 0) {
     L("periodo-content").innerHTML = '<div class="card"><div class="empty-state"><div class="empty-icon">📊</div><div>Sin ventas en este período</div></div></div>';
     return;
   }
-
-  // Replicar las 6 mini-cards del diario (3 tarjetas + 3 pies)
   const vCuaji = ventas.filter(v => v.sucursal === "Cuajimalpa");
   const vPolanco = ventas.filter(v => v.sucursal === "Polanco");
   const total = _resumenVentas(ventas);
   const cuaji = _resumenVentas(vCuaji);
   const polanco = _resumenVentas(vPolanco);
   S.ventasPorSeccion = { total: ventas, cuaji: vCuaji, polanco: vPolanco };
-  // Reset pies estado al renderizar (para empezar limpio)
   S.pieEstado = { total: [], cuaji: [], polanco: [] };
   L("periodo-content").innerHTML =
     _tarjetaResumen("🏢 Total empresa", total, "var(--accent)", "total", ventas) +
@@ -5447,7 +4818,6 @@ function renderReportePeriodo() {
     ["total", "cuaji", "polanco"].forEach(secId => renderPiesSeccion(secId));
   }, 50);
 }
-
 let _chartLineaPeriodo = null;
 function _renderGraficaLineaPeriodo(ventas) {
   const ctx = L("grafica-linea-periodo");
@@ -5468,7 +4838,6 @@ function _renderGraficaLineaPeriodo(ventas) {
     dias.push(_fmtFecha(cur));
     cur.setDate(cur.getDate() + 1);
   }
-  // Agrupar ventas y unidades por día y por sucursal
   const acc = {};
   dias.forEach(d => acc[d] = { total: 0, cuaji: 0, polanco: 0, totalU: 0, cuajiU: 0, polancoU: 0 });
   ventas.forEach(v => {
@@ -5496,7 +4865,6 @@ function _renderGraficaLineaPeriodo(ventas) {
     cuajisU = cuajisU.map(x => sCu += x);
     polancosU = polancosU.map(x => sPu += x);
   }
-  // Guardar unidades para tooltip
   const unidadesPorLabel = { "Total": totalesU, "Cuajimalpa": cuajisU, "Polanco": polancosU };
   if (_chartLineaPeriodo) { try { _chartLineaPeriodo.destroy(); } catch(e) {} }
   _chartLineaPeriodo = new Chart(ctx, {
@@ -5525,13 +4893,6 @@ function _renderGraficaLineaPeriodo(ventas) {
     }
   });
 }
-
-// /FEAT-REPORTE-PERIODO
-
-// ============================================================
-// FEAT-RUTAS — Módulo de rutas de entregas
-// ============================================================
-
 async function iniciarRuta() {
   if (!S.catalogo) await cargarCatalogo();
   await cargarStock();
@@ -5545,10 +4906,8 @@ async function iniciarRuta() {
   renderTartasParada();
   renderParadasRuta();
 }
-
 function poblarSelectoresRuta() {
   if (!S.stock || !S.catalogo) return;
-  // Sabores con stock en Cuajimalpa
   const stockCuaji = (S.stock || []).filter(s => s.sucursal === "Cuajimalpa" && s.cantActual > 0);
   const sabores = [...new Set(stockCuaji.map(s => s.sabor))].sort();
   const selS = L("ruta-tarta-sabor");
@@ -5565,7 +4924,6 @@ function poblarSelectoresRuta() {
   if (sabores.includes(sabActual)) selS.value = sabActual;
   onRutaSaborChange();
 }
-
 function onRutaSaborChange() {
   if (!S.stock) return;
   const sabor = L("ruta-tarta-sabor")?.value;
@@ -5582,7 +4940,6 @@ function onRutaSaborChange() {
   }
   onRutaTamanoChange();
 }
-
 function onRutaTamanoChange() {
   const sabor = L("ruta-tarta-sabor")?.value;
   const tamano = L("ruta-tarta-tamano")?.value;
@@ -5593,7 +4950,6 @@ function onRutaTamanoChange() {
     L("ruta-tarta-disp").innerHTML = "";
     return;
   }
-  // Stock disponible = stock en Cuaji - tartas YA reservadas en parada en construcción + paradas confirmadas de la ruta
   const enStock = (S.stock || []).filter(s => s.sucursal === "Cuajimalpa" && s.sabor === sabor && s.tamano === tamano && s.cantActual > 0).reduce((a, s) => a + s.cantActual, 0);
   const enParadasYaAgregadas = (S.ruta.paradas || []).reduce((a, p) => a + (p.items || []).filter(i => i.sabor === sabor && i.tamano === tamano).reduce((b, i) => b + i.cantidad, 0), 0);
   const enParadaActual = (S.ruta.tartasActuales || []).filter(t => t.sabor === sabor && t.tamano === tamano).reduce((a, t) => a + t.cantidad, 0);
@@ -5608,7 +4964,6 @@ function onRutaTamanoChange() {
   selC.disabled = false;
   L("ruta-tarta-disp").innerHTML = `<span class="disp-badge ${disp <= 2 ? 'disp-low' : 'disp-ok'}">${disp} disponibles</span>`;
 }
-
 function rutaAgregarTarta() {
   const sabor = L("ruta-tarta-sabor")?.value;
   const tamano = L("ruta-tarta-tamano")?.value;
@@ -5616,9 +4971,8 @@ function rutaAgregarTarta() {
   if (!sabor || !tamano || cantidad <= 0) { toast("Completa los datos de la tarta", "error"); return; }
   S.ruta.tartasActuales.push({ sabor, tamano, cantidad });
   renderTartasParada();
-  onRutaTamanoChange();  // refrescar disponibilidad
+  onRutaTamanoChange();
 }
-
 function renderTartasParada() {
   const tartas = S.ruta.tartasActuales || [];
   const el = L("ruta-tartas-parada");
@@ -5629,13 +4983,11 @@ function renderTartasParada() {
       <button onclick="rutaQuitarTarta(${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:16px">×</button>
     </div>`).join("");
 }
-
 function rutaQuitarTarta(idx) {
   S.ruta.tartasActuales.splice(idx, 1);
   renderTartasParada();
   onRutaTamanoChange();
 }
-
 function rutaAgregarParada() {
   const nombre = L("ruta-cli-nombre").value.trim();
   const telefono = L("ruta-cli-tel").value.trim();
@@ -5647,7 +4999,6 @@ function rutaAgregarParada() {
     nombre, telefono,
     items: tartas.slice()
   });
-  // Limpiar form de parada
   L("ruta-cli-nombre").value = "";
   L("ruta-cli-tel").value = "";
   S.ruta.tartasActuales = [];
@@ -5656,7 +5007,6 @@ function rutaAgregarParada() {
   poblarSelectoresRuta();
   toast(`✅ Parada ${S.ruta.paradas.length} agregada: ${nombre}`);
 }
-
 function renderParadasRuta() {
   const paradas = S.ruta.paradas || [];
   const el = L("ruta-paradas-list");
@@ -5685,20 +5035,17 @@ function renderParadasRuta() {
       <strong>${paradas.length}</strong> parada${paradas.length !== 1 ? 's' : ''} · <strong>${totalTartas}</strong> tarta${totalTartas !== 1 ? 's' : ''} totales
     </div>`;
 }
-
 function rutaQuitarParada(idx) {
   if (!confirm("¿Quitar esta parada de la ruta?")) return;
   S.ruta.paradas.splice(idx, 1);
   renderParadasRuta();
   poblarSelectoresRuta();
 }
-
 async function confirmarRuta() {
   const paradas = S.ruta.paradas || [];
   if (paradas.length === 0) { toast("Sin paradas en la ruta", "error"); return; }
   const fechaInput = L("ruta-fecha").value;
   if (!fechaInput) { toast("Selecciona la fecha de la ruta", "error"); return; }
-  // FIX v3.3.3: NO pedir confirmación; el usuario ya hizo click en el botón
   const btn = L("btn-ruta-confirmar");
   btn.disabled = true; btn.textContent = "Registrando ruta...";
   const rutaId = "RUTA-" + Date.now();
@@ -5709,7 +5056,6 @@ async function confirmarRuta() {
     btn.textContent = `Registrando parada ${i+1}/${paradas.length}...`;
     const items = p.items.map(it => ({ sabor: it.sabor, tamano: it.tamano, cantidad: it.cantidad, precioUnitario: 0, descuento: 0, descTipo: "" }));
     const cliente = { nombre: p.nombre, telefono: p.telefono || "", email: "" };
-    // Hora actual + fecha indicada
     const ahoraT = new Date();
     const fechaPersonalizada = `${fechaInput}T${String(ahoraT.getHours()).padStart(2,'0')}:${String(ahoraT.getMinutes()).padStart(2,'0')}:${String(ahoraT.getSeconds()).padStart(2,'0')}`;
     try {
@@ -5728,14 +5074,13 @@ async function confirmarRuta() {
     toast(`✅ Ruta ${rutaId} registrada: ${exitosos} paradas`);
     _resetRutaSinConfirmar();
     await cargarStock();
-    setRutaTab("abiertas");  // llevarlo automático a Rutas abiertas
+    setRutaTab("abiertas");
   } else {
     toast(`⚠ ${exitosos} OK, ${fallidos} con error. Ver detalles.`, "error");
     console.error("Errores ruta:", errores);
     alert("Errores en la ruta:\n" + errores.join("\n"));
   }
 }
-
 function _resetRutaSinConfirmar() {
   S.ruta = { paradas: [], tartasActuales: [] };
   if (L("ruta-cli-nombre")) L("ruta-cli-nombre").value = "";
@@ -5744,7 +5089,6 @@ function _resetRutaSinConfirmar() {
   renderParadasRuta();
   poblarSelectoresRuta();
 }
-
 function limpiarRuta() {
   if (S.ruta.paradas.length > 0 && !confirm("¿Descartar TODA la ruta? Se perderán las paradas no registradas.")) return;
   S.ruta = { paradas: [], tartasActuales: [] };
@@ -5754,13 +5098,6 @@ function limpiarRuta() {
   renderParadasRuta();
   poblarSelectoresRuta();
 }
-
-// /FEAT-RUTAS
-
-// ============================================================
-// FEAT-RUTAS-ABIERTAS — gestión de pagos pendientes
-// ============================================================
-
 function setRutaTab(tab) {
   document.querySelectorAll("#tab-rutas > .costos-tabs > .costos-tab").forEach(t =>
     t.classList.toggle("active", t.getAttribute("onclick") === `setRutaTab('${tab}')`));
@@ -5769,7 +5106,6 @@ function setRutaTab(tab) {
   if (tab === "abiertas") cargarRutasAbiertas();
   if (tab === "cerradas") cargarRutasCerradas();
 }
-
 async function cargarRutasAbiertas() {
   const el = L("rutas-abiertas-list");
   if (!el) return;
@@ -5779,7 +5115,6 @@ async function cargarRutasAbiertas() {
   S.rutasAbiertas = res.rutas || [];
   renderRutasAbiertas();
 }
-
 function renderRutasAbiertas() {
   const rutas = S.rutasAbiertas || [];
   const el = L("rutas-abiertas-list");
@@ -5832,9 +5167,7 @@ function renderRutasAbiertas() {
     </div>`;
   }).join("");
 }
-
 async function confirmarPagosRutaBatch(rutaId) {
-  // Recolectar todos los selects de esta ruta cuyo valor cambió
   const card = document.querySelector(`[data-card-ruta="${rutaId}"]`);
   if (!card) return;
   const selects = card.querySelectorAll(".metodo-pago-select");
@@ -5842,9 +5175,9 @@ async function confirmarPagosRutaBatch(rutaId) {
   let sinCambios = 0;
   selects.forEach(sel => {
     const valor = sel.value;
-    if (!valor || valor === "Por definir") return;  // sin elegir, ignorar
+    if (!valor || valor === "Por definir") return;
     const original = sel.dataset.original || "";
-    if (valor === original) { sinCambios++; return; }  // sin cambio
+    if (valor === original) { sinCambios++; return; }
     items.push({ idVenta: sel.dataset.ventaId, nuevoMetodo: valor });
   });
   if (items.length === 0) {
@@ -5855,7 +5188,6 @@ async function confirmarPagosRutaBatch(rutaId) {
   if (!res.ok) { toast(res.error || "Error al actualizar", "error"); return; }
   toast(`✅ ${res.exitosos} pago(s) confirmado(s)${res.fallidos > 0 ? ` · ${res.fallidos} con error` : ''}`);
   await cargarRutasAbiertas();
-  // Si quedó completa tras este batch, ofrecer archivar
   const ruta = (S.rutasAbiertas || []).find(r => r.rutaId === rutaId);
   if (ruta && ruta.completa) {
     setTimeout(() => {
@@ -5865,7 +5197,6 @@ async function confirmarPagosRutaBatch(rutaId) {
     }, 300);
   }
 }
-
 async function cargarRutasCerradas() {
   const el = L("rutas-cerradas-list");
   if (!el) return;
@@ -5901,7 +5232,6 @@ async function cargarRutasCerradas() {
     </div>`;
   }).join("");
 }
-
 async function confirmarPagoRuta(rutaId, idVenta) {
   const sel = L("metodo-" + idVenta);
   if (!sel) return;
@@ -5914,7 +5244,6 @@ async function confirmarPagoRuta(rutaId, idVenta) {
   if (!res.ok) { toast(res.error || "Error al actualizar", "error"); return; }
   toast(`✅ ${nuevoMetodo} confirmado`);
   await cargarRutasAbiertas();
-  // Si la ruta quedó completa, preguntar si archivar
   const ruta = (S.rutasAbiertas || []).find(r => r.rutaId === rutaId);
   if (ruta && ruta.completa) {
     setTimeout(() => {
@@ -5924,29 +5253,16 @@ async function confirmarPagoRuta(rutaId, idVenta) {
     }, 300);
   }
 }
-
 async function archivarRutaUI(rutaId) {
   const res = await api("archivarRuta", { rutaId });
   if (!res.ok) { toast(res.error || "Error al archivar", "error"); return; }
   toast(`✅ Ruta ${rutaId} archivada`);
   await cargarRutasAbiertas();
 }
-
-// /FEAT-RUTAS-ABIERTAS
-
-
-
-
-
-// ============================================================
-// FEAT-OPORTUNIDAD — Reporte de oportunidad de venta
-// ============================================================
-
 const HORAS_APERTURA = {
-  "Cuajimalpa": { abre: 9, cierra: 18 },   // Cuajimalpa 9-18 (9 horas)
-  "Polanco":    { abre: 11, cierra: 19 }   // Polanco 11-19 (8 horas)
+  "Cuajimalpa": { abre: 9, cierra: 18 },
+  "Polanco":    { abre: 11, cierra: 19 }
 };
-
 function _ventasUltimosNDias(ventas, n) {
   const hoy = new Date();
   hoy.setHours(23, 59, 59, 999);
@@ -5960,7 +5276,6 @@ function _ventasUltimosNDias(ventas, n) {
     return fv >= desde && fv <= hoy;
   });
 }
-
 function renderOportunidad() {
   const el = L("oportunidad-content");
   if (!el) return;
@@ -5968,20 +5283,16 @@ function renderOportunidad() {
     el.innerHTML = '<div class="card"><div class="empty-state"><div>Sin datos</div></div></div>';
     return;
   }
-  // Filtrar ventas (filtros chips arriba) ANTES de la ventana de 30 días
   let ventasBase = _ventasOportFiltradas(S.ventasReporte);
   const ventas30d = _ventasUltimosNDias(ventasBase, 30);
   if (ventas30d.length === 0) {
     el.innerHTML = '<div class="card"><div class="empty-state"><div class="empty-icon">📊</div><div>Sin ventas en los últimos 30 días (con los filtros aplicados)</div></div></div>';
     return;
   }
-  // Días efectivos del sistema (desde 1a venta dentro del rango hasta hoy)
   const fechasMs = ventas30d.map(v => new Date(v.fecha).getTime());
   const fechaMin = Math.min(...fechasMs);
   const hoyMs = new Date().setHours(23, 59, 59, 999);
   const diasEfectivos = Math.max(1, Math.min(30, Math.ceil((hoyMs - fechaMin) / (24 * 3600 * 1000)) + 1));
-
-  // Agrupar SIEMPRE por (sucursal, sabor, tamaño, día) para calcular bien la heurística de agotamiento
   const agrupado = {};
   ventas30d.forEach(v => {
     const key = `${v.sucursal}|${v.sabor}|${v.tamano}`;
@@ -5992,8 +5303,6 @@ function renderOportunidad() {
     agrupado[key].porDia[fechaStr].qty += Number(v.cantidad) || 0;
     if (hora > agrupado[key].porDia[fechaStr].lastHour) agrupado[key].porDia[fechaStr].lastHour = hora;
   });
-
-  // Calcular promedio y potencial por cada (sucursal, sabor, tamaño)
   const base = [];
   for (const key in agrupado) {
     const g = agrupado[key];
@@ -6026,13 +5335,10 @@ function renderOportunidad() {
       });
     }
   }
-
   if (base.length === 0) {
     el.innerHTML = '<div class="card"><div class="empty-state"><div>Sin oportunidades detectadas</div></div></div>';
     return;
   }
-
-  // Aplicar agrupación: re-sumar base[] según modo
   const modo = S.oportAgrupacion || "sabor_tamano";
   const ordenTam = { "Individual": 1, "Mediana": 2, "Grande": 3 };
   const VIST_LABEL = {
@@ -6043,7 +5349,6 @@ function renderOportunidad() {
     facet_tamano: "Tablas por Tamaño",
     facet_sabor: "Tablas por Sabor"
   };
-
   function keyAgrup(r) {
     if (modo === "tamano")  return `${r.sucursal}||${r.tamano}`;
     if (modo === "sabor")   return `${r.sucursal}|${r.sabor}|`;
@@ -6066,10 +5371,7 @@ function renderOportunidad() {
     agg[k]._filas++;
   });
   const resultados = Object.values(agg);
-
   const headerInfo = `<div style="background:rgba(46,92,74,.08);border-left:3px solid var(--green);padding:8px 12px;border-radius:6px;font-size:12px;color:var(--ink);margin-bottom:12px">📊 <strong>Promedios sobre ${diasEfectivos} día(s)</strong> · vista: <strong>${VIST_LABEL[modo] || modo}</strong></div>`;
-
-  // Helper: tabla de una sola dimensión (filas = valores de dimKey: "sabor" o "tamano")
   function _renderTablaSimple(filas, dimKey, dimLabel) {
     filas.sort((a, b) => b.promReal - a.promReal);
     let head = `
@@ -6094,21 +5396,15 @@ function renderOportunidad() {
     body += "</tbody>";
     return `<table style="width:100%;border-collapse:collapse;font-size:12px">${head}${body}</table>`;
   }
-
-  // Render por sucursal
   let html = headerInfo;
   ["Cuajimalpa", "Polanco"].forEach(suc => {
     const color = suc === "Cuajimalpa" ? "var(--green)" : "var(--accent)";
-
-    // ─── MODOS FACETADOS: una tabla por valor de la dimensión faceta ───
     if (modo === "facet_tamano" || modo === "facet_sabor") {
-      // En modos faceta, los resultados base son por (sabor,tamano) — usamos `base` directamente
       const datosSuc = base.filter(r => r.sucursal === suc);
       if (datosSuc.length === 0) return;
       const facetDim   = (modo === "facet_tamano") ? "tamano" : "sabor";
       const innerDim   = (modo === "facet_tamano") ? "sabor"  : "tamano";
       const innerLabel = (innerDim === "sabor") ? "Sabor" : "Tamaño";
-      // Lista de valores únicos en la dimensión faceta, ordenados por venta/día desc total
       const totales = {};
       datosSuc.forEach(r => {
         const k = r[facetDim];
@@ -6117,15 +5413,12 @@ function renderOportunidad() {
         totales[k].oportunidad += r.oportunidad;
       });
       const valoresFacet = Object.keys(totales).sort((a, b) => {
-        // Para tamaño, mantener orden Individual/Mediana/Grande si los promedios son comparables; de lo contrario por venta desc.
         if (facetDim === "tamano") {
           const oA = ordenTam[a] || 9, oB = ordenTam[b] || 9;
           if (oA !== oB) return oA - oB;
         }
         return totales[b].promReal - totales[a].promReal;
       });
-
-      // Card por sucursal con sub-cards por faceta
       html += `<div class="card" style="margin-bottom:12px;border-left:4px solid ${color}">
         <div style="font-weight:700;font-size:16px;color:${color};margin-bottom:10px">📍 ${suc}</div>`;
       valoresFacet.forEach(val => {
@@ -6144,17 +5437,13 @@ function renderOportunidad() {
       html += `<div style="font-size:11px;color:var(--muted);margin-top:8px">
         <strong>Cálculo:</strong> Venta real = ventas últimos 30 días ÷ días con datos. Potencial = si la última venta del día fue ≥2h antes del cierre Y hubo ≥2 ventas, se proyecta. Cada tabla = un ${facetDim === "tamano" ? "tamaño" : "sabor"} con filas por ${innerDim === "sabor" ? "sabor" : "tamaño"}.
       </div></div>`;
-      return; // siguiente sucursal
+      return;
     }
-
-    // ─── MODOS PLANOS (sabor_tamano / tamano / sabor / general) ───
     const datos = resultados.filter(r => r.sucursal === suc);
     if (datos.length === 0) return;
-    // Ordenar SIEMPRE por venta/día desc (de más a menos vendido), sin agrupador por tamaño
     datos.sort((a, b) => b.promReal - a.promReal);
     const showSabor = (modo === "sabor_tamano" || modo === "sabor");
     const showTamano = (modo === "sabor_tamano" || modo === "tamano");
-    // Header
     let theadCells = "";
     if (showSabor)  theadCells += `<th style="text-align:left;padding:8px 6px;border-bottom:2px solid var(--border);background:var(--warm)">Sabor</th>`;
     if (showTamano) theadCells += `<th style="text-align:left;padding:8px 6px;border-bottom:2px solid var(--border);background:var(--warm)">Tamaño</th>`;
@@ -6168,7 +5457,6 @@ function renderOportunidad() {
       <div style="font-weight:700;font-size:16px;color:${color};margin-bottom:10px">📍 ${suc}</div>
       <table style="width:100%;border-collapse:collapse;font-size:12px">
         <thead><tr>${theadCells}</tr></thead><tbody>`;
-    // Sin agrupador visual: orden puro por venta/día desc
     datos.forEach(r => {
       const oportColor = r.oportunidad > 0.5 ? "var(--danger)" : "var(--muted)";
       let rowCells = "";
@@ -6184,20 +5472,12 @@ function renderOportunidad() {
     });
     html += `</tbody></table>
       <div style="font-size:11px;color:var(--muted);margin-top:8px">
-        <strong>Cálculo:</strong> Venta real = ventas últimos 30 días ÷ días con datos. Potencial = si la última venta del día fue ≥2h antes del cierre Y hubo ≥2 ventas, se proyecta usando la tasa de venta de las horas con stock × horas totales abierto. En vistas agregadas (Tamaño/Sabor/General) sumamos las oportunidades calculadas por cada (sabor,tamaño) específico.
+        <strong>Cálculo:</strong> Venta real = ventas últimos 30 días ÷ días con datos. Potencial = si la última venta del día fue ≥2h antes del cierre Y hubo ≥2 ventas, se proyecta usando la tasa de venta de las horas con stock × horas totales abierto.
       </div>
     </div>`;
   });
   el.innerHTML = html;
 }
-
-// /FEAT-OPORTUNIDAD
-
-
-// ============================================================
-// FEAT-CONCILIACION — Reporte de conciliación por método de pago
-// ============================================================
-
 const METODOS_CONCI = ["Efectivo", "Tarjeta", "Transferencia", "Rappi", "Uber Eats", "Por definir"];
 const COLOR_METODO = {
   "Efectivo":      "#2E7D32",
@@ -6207,7 +5487,6 @@ const COLOR_METODO = {
   "Uber Eats":     "#000000",
   "Por definir":   "#C0392B"
 };
-
 async function cargarConciliacion() {
   L("conciliacion-content").innerHTML = '<div class="loading"><div class="spinner"></div>Cargando...</div>';
   if (!S.catalogo) { const c = await api("getCatalogo"); if (c.ok) S.catalogo = c; }
@@ -6216,7 +5495,6 @@ async function cargarConciliacion() {
     if (!res.ok) { L("conciliacion-content").innerHTML = '<div class="empty-state"><div>Error al cargar ventas</div></div>'; return; }
     S.ventasReporte = res.ventas || [];
   }
-  // Init fechas (default = hoy)
   if (!L("conci-desde").value) {
     const hoy = _hoyCDMXString();
     L("conci-desde").value = hoy;
@@ -6224,7 +5502,6 @@ async function cargarConciliacion() {
   }
   renderConciliacion();
 }
-
 function setConciPreset(preset) {
   document.querySelectorAll('[id^="conci-preset-"]').forEach(c => c.classList.remove("active"));
   L("conci-preset-" + preset).classList.add("active");
@@ -6242,7 +5519,6 @@ function setConciPreset(preset) {
   L("conci-hasta").value = hasta;
   renderConciliacion();
 }
-
 function _ventasEnRangoConci() {
   const d = L("conci-desde").value, h = L("conci-hasta").value;
   if (!d || !h) return [];
@@ -6253,7 +5529,6 @@ function _ventasEnRangoConci() {
     return fStr >= d && fStr <= h;
   });
 }
-
 function renderConciliacion() {
   const ventas = _ventasEnRangoConci();
   const desde = L("conci-desde").value, hasta = L("conci-hasta").value;
@@ -6264,8 +5539,7 @@ function renderConciliacion() {
     L("conciliacion-content").innerHTML = `<div class="card"><div class="empty-state"><div class="empty-icon">💰</div><div>Sin ventas en el rango seleccionado (${labelRango})</div></div></div>`;
     return;
   }
-  // Agrupar por sucursal y método
-  const agg = {};  // agg[suc][metodo] = { monto, tickets:Set, piezas }
+  const agg = {};
   const sucs = ["Cuajimalpa", "Polanco"];
   const initSuc = () => { const o = {}; METODOS_CONCI.forEach(m => o[m] = { monto:0, tickets:new Set(), piezas:0 }); return o; };
   const total = initSuc();
@@ -6285,7 +5559,6 @@ function renderConciliacion() {
     if (v.idVenta) total[metodoNorm].tickets.add(v.idVenta);
     else total[metodoNorm].tickets.add(String(v.fecha) + "|" + (v.cliente||""));
   });
-  // Render
   let html = `<div style="background:rgba(46,92,74,.08);border-left:3px solid var(--green);padding:8px 12px;border-radius:6px;font-size:12px;color:var(--ink);margin-bottom:12px">📅 Período: <strong>${labelRango}</strong> · ${ventas.length} ventas</div>`;
   const blocks = [
     { titulo: "🏢 Total empresa", color: "var(--accent)", data: total },
@@ -6308,7 +5581,6 @@ function renderConciliacion() {
           <th style="text-align:center;padding:8px 6px;border-bottom:2px solid var(--border);background:var(--warm)">Piezas</th>
           <th style="text-align:right;padding:8px 6px;border-bottom:2px solid var(--border);background:var(--warm)">% del total</th>
         </tr></thead><tbody>`;
-    // Ordenar métodos por monto desc
     const ordenados = [...METODOS_CONCI].sort((a, c) => b.data[c].monto - b.data[a].monto);
     ordenados.forEach(m => {
       const d = b.data[m];
@@ -6331,9 +5603,311 @@ function renderConciliacion() {
   });
   L("conciliacion-content").innerHTML = html;
 }
-
-// /FEAT-CONCILIACION
-
+// ============================================================
+// FEAT-UTILIDAD v3.4.15 — Reportes de utilidad (diaria + período)
+// ============================================================
+async function cargarUtilDiario() {
+  L("utildiario-content").innerHTML = '<div class="loading"><div class="spinner"></div>Cargando...</div>';
+  if (!S.catalogo) { const c = await api("getCatalogo"); if (c.ok) S.catalogo = c; }
+  if (!S.recetas || S.recetas.length === 0) { const r = await api("getRecetas"); if (r.ok) S.recetas = r.recetas; }
+  if (!S.insumos || S.insumos.length === 0) { const i = await api("getInsumos"); if (i.ok) S.insumos = i.insumos; }
+  const v = await api("getVentas"); if (v.ok) S.ventasReporte = v.ventas || [];
+  _renderFiltrosUtilDiario();
+  renderUtilDiario();
+}
+async function cargarUtilPeriodo() {
+  if (!S.catalogo) { const c = await api("getCatalogo"); if (c.ok) S.catalogo = c; }
+  if (!S.recetas || S.recetas.length === 0) { const r = await api("getRecetas"); if (r.ok) S.recetas = r.recetas; }
+  if (!S.insumos || S.insumos.length === 0) { const i = await api("getInsumos"); if (i.ok) S.insumos = i.insumos; }
+  L("utilperiodo-content").innerHTML = '<div class="loading"><div class="spinner"></div>Cargando...</div>';
+  const v = await api("getVentas");
+  if (!v.ok) { L("utilperiodo-content").innerHTML = '<div class="empty-state"><div>Error al cargar ventas</div></div>'; return; }
+  S.ventasReporte = v.ventas || [];
+  if (!S.utilperiodoActual.desde) setUtilPeriodoPreset(S.utilperiodoActual.preset);
+  else { _renderFiltrosUtilPeriodo(); renderUtilPeriodo(); }
+}
+function _enriquecerUtilidad(ventas) {
+  if (!S.recetas || !S.insumos) return { ventasEnriquecidas: [], sinReceta: 0 };
+  const insumosIdx = {};
+  S.insumos.forEach(i => insumosIdx[i.id] = i);
+  function costoReceta(sabor, tamano) {
+    const rec = S.recetas.find(r => r.sabor === sabor && r.tamano === tamano);
+    if (!rec || !rec.ingredientes || rec.ingredientes.length === 0) return null;
+    return rec.ingredientes.reduce((s, ing) => {
+      const ins = insumosIdx[ing.insumoId];
+      const cant = ins ? convertirUnidad(ing.cantidad, ing.unidad || ins.buyUnit, ins.buyUnit) : ing.cantidad;
+      return s + (ins ? ins.costoPorUnidad * cant : 0);
+    }, 0);
+  }
+  let sinReceta = 0;
+  const ventasEnriquecidas = [];
+  ventas.forEach(v => {
+    const c = costoReceta(v.sabor, v.tamano);
+    if (c === null) { sinReceta++; return; }
+    const subtotal = Number(v.subtotal) || 0;
+    const cantidad = Number(v.cantidad) || 0;
+    const comPct = getComision(v.canal || "", v.metodoPago || "");
+    const comMonto = Math.round(subtotal * comPct);
+    const ingresoNeto = subtotal + comMonto;
+    const costo = c * cantidad;
+    const utilidad = ingresoNeto - costo;
+    const margen = ingresoNeto > 0 ? (utilidad / ingresoNeto * 100) : 0;
+    ventasEnriquecidas.push(Object.assign({}, v, { ingresoNeto, costo, utilidad, margen, comMonto }));
+  });
+  return { ventasEnriquecidas, sinReceta };
+}
+function _resumenUtilidad(ventas) {
+  const tickets = new Set(ventas.map(v => v.idVenta));
+  const piezas = ventas.reduce((s, v) => s + (Number(v.cantidad) || 0), 0);
+  const ingreso = ventas.reduce((s, v) => s + v.ingresoNeto, 0);
+  const costo = ventas.reduce((s, v) => s + v.costo, 0);
+  const utilidad = ingreso - costo;
+  const margen = ingreso > 0 ? (utilidad / ingreso * 100) : 0;
+  function dim(campo) {
+    const o = {};
+    ventas.forEach(v => {
+      const k = v[campo] || "(sin)";
+      if (!o[k]) o[k] = { piezas: 0, ingreso: 0, costo: 0, utilidad: 0 };
+      o[k].piezas += Number(v.cantidad) || 0;
+      o[k].ingreso += v.ingresoNeto;
+      o[k].costo += v.costo;
+      o[k].utilidad += v.utilidad;
+    });
+    return o;
+  }
+  return {
+    tickets: tickets.size, piezas, ingreso, costo, utilidad, margen,
+    porTamano: dim("tamano"), porCanal: dim("canal"), porSabor: dim("sabor")
+  };
+}
+function _tarjetaResumenUtilidad(titulo, r, color) {
+  function dimRow(obj, ordenarPorUtilidad) {
+    let keys = Object.keys(obj || {});
+    if (keys.length === 0) return "";
+    if (ordenarPorUtilidad) keys.sort((a, b) => obj[b].utilidad - obj[a].utilidad);
+    else keys.sort();
+    return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px">` + keys.map(k => {
+      const d = obj[k];
+      const margen = d.ingreso > 0 ? (d.utilidad / d.ingreso * 100) : 0;
+      const colU = d.utilidad >= 0 ? "var(--success)" : "var(--danger)";
+      return `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--warm);font-size:12px">
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:6px">${k} <span style="color:var(--muted);font-size:11px">(${d.piezas} pz)</span></span>
+        <span style="white-space:nowrap"><strong style="color:${colU}">$${Math.round(d.utilidad).toLocaleString('es-MX')}</strong> · ${margen.toFixed(1)}%</span>
+      </div>`;
+    }).join("") + `</div>`;
+  }
+  const colorU = r.utilidad >= 0 ? color : "var(--danger)";
+  const colorMargen = r.margen >= 50 ? "var(--success)" : r.margen >= 30 ? "var(--warning)" : "var(--danger)";
+  return `<div class="card" style="margin-bottom:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div style="font-weight:700;font-size:16px">${titulo}</div>
+      <div style="font-family:'Fraunces',serif;font-size:32px;font-weight:500;color:${colorU}">$${Math.round(r.utilidad).toLocaleString('es-MX')}</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+      <div class="summary-card" style="padding:10px"><div class="summary-num" style="font-size:18px;color:var(--green)">$${Math.round(r.ingreso).toLocaleString('es-MX')}</div><div class="summary-label">Ingreso neto</div></div>
+      <div class="summary-card" style="padding:10px"><div class="summary-num" style="font-size:18px;color:var(--muted)">$${Math.round(r.costo).toLocaleString('es-MX')}</div><div class="summary-label">Costo recetas</div></div>
+      <div class="summary-card" style="padding:10px"><div class="summary-num" style="font-size:22px;color:${colorMargen}">${r.margen.toFixed(1)}%</div><div class="summary-label">Margen</div></div>
+      <div class="summary-card" style="padding:10px"><div class="summary-num" style="font-size:22px">${r.tickets}</div><div class="summary-label">Tickets</div></div>
+    </div>
+    ${Object.keys(r.porTamano).length ? `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:6px;text-transform:uppercase">Por tamaño</div>${dimRow(r.porTamano, false)}` : ""}
+    ${Object.keys(r.porCanal).length ? `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:6px;margin-top:12px;text-transform:uppercase">Por canal</div>${dimRow(r.porCanal, false)}` : ""}
+    ${Object.keys(r.porSabor).length ? `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:6px;margin-top:12px;text-transform:uppercase">Por sabor</div>${dimRow(r.porSabor, true)}` : ""}
+  </div>`;
+}
+function _renderFiltrosUtilDiario() {
+  const sabores = (S.catalogo?.sabores || []).filter(s => s.activo).map(s => s.nombre);
+  const tamanos = (S.catalogo?.tamanos || []).filter(t => t.activo).map(t => t.nombre);
+  const canales = ["Tienda", "Domicilio", "Rappi", "Uber Eats"];
+  const f = S.utildiarioFiltros;
+  L("utildiario-filtros-sabor").innerHTML  = sabores.map(s => `<div class="chip ${f.sabores.includes(s) ? 'active' : ''}" onclick="toggleFiltroUtilDiario('sabores','${s}')">${s}</div>`).join("");
+  L("utildiario-filtros-tamano").innerHTML = tamanos.map(t => `<div class="chip ${f.tamanos.includes(t) ? 'active' : ''}" onclick="toggleFiltroUtilDiario('tamanos','${t}')">${t}</div>`).join("");
+  L("utildiario-filtros-canal").innerHTML  = canales.map(c => `<div class="chip ${f.canales.includes(c) ? 'active' : ''}" onclick="toggleFiltroUtilDiario('canales','${c}')">${c}</div>`).join("");
+}
+function toggleFiltroUtilDiario(tipo, valor) {
+  const arr = S.utildiarioFiltros[tipo];
+  const idx = arr.indexOf(valor);
+  if (idx >= 0) arr.splice(idx, 1); else arr.push(valor);
+  _renderFiltrosUtilDiario();
+  renderUtilDiario();
+}
+function renderUtilDiario() {
+  const hoyStr = _hoyCDMXString();
+  const f = S.utildiarioFiltros;
+  const ventasHoyBruto = (S.ventasReporte || []).filter(v => {
+    if (!v.fecha) return false;
+    if (v.canal === "Merma" || v.canal === "Cortesía") return false;
+    if (!String(v.fecha).startsWith(hoyStr)) return false;
+    if (f.sabores.length && !f.sabores.includes(v.sabor)) return false;
+    if (f.tamanos.length && !f.tamanos.includes(v.tamano)) return false;
+    if (f.canales.length && !f.canales.includes(v.canal)) return false;
+    return true;
+  });
+  const ahora = new Date();
+  L("utildiario-fecha").innerHTML = `📅 Hoy: <strong>${hoyStr.split('-').reverse().join('-')}</strong> · Actualizado ${String(ahora.getHours()).padStart(2,'0')}:${String(ahora.getMinutes()).padStart(2,'0')} hrs`;
+  if (ventasHoyBruto.length === 0) {
+    L("utildiario-content").innerHTML = `<div class="card"><div class="empty-state"><div class="empty-icon">💎</div><div>Sin ventas hoy${(f.sabores.length || f.tamanos.length || f.canales.length) ? ' (con los filtros aplicados)' : ''}</div></div></div>`;
+    return;
+  }
+  const enrTotal   = _enriquecerUtilidad(ventasHoyBruto);
+  const enrCuaji   = _enriquecerUtilidad(ventasHoyBruto.filter(v => v.sucursal === "Cuajimalpa"));
+  const enrPolanco = _enriquecerUtilidad(ventasHoyBruto.filter(v => v.sucursal === "Polanco"));
+  const aviso = enrTotal.sinReceta > 0
+    ? `<div style="background:rgba(231,126,34,.1);border-left:3px solid var(--warning);padding:8px 12px;border-radius:6px;font-size:12px;color:var(--ink);margin-bottom:12px">⚠️ <strong>${enrTotal.sinReceta}</strong> línea(s) de venta sin receta cargada — excluidas del cálculo. Cárgalas en Costos › Recetas para que cuenten.</div>`
+    : "";
+  L("utildiario-content").innerHTML = aviso +
+    _tarjetaResumenUtilidad("🏢 Total empresa", _resumenUtilidad(enrTotal.ventasEnriquecidas),   "var(--accent)") +
+    _tarjetaResumenUtilidad("🍰 Cuajimalpa",    _resumenUtilidad(enrCuaji.ventasEnriquecidas),   "var(--green)") +
+    _tarjetaResumenUtilidad("🍰 Polanco",       _resumenUtilidad(enrPolanco.ventasEnriquecidas), "var(--accent)");
+}
+function _renderFiltrosUtilPeriodo() {
+  const sabores = (S.catalogo?.sabores || []).filter(s => s.activo).map(s => s.nombre);
+  const tamanos = (S.catalogo?.tamanos || []).filter(t => t.activo).map(t => t.nombre);
+  const canales = ["Tienda", "Domicilio", "Rappi", "Uber Eats"];
+  const f = S.utilperiodoFiltros;
+  if (L("utilperiodo-filtros-sabor"))  L("utilperiodo-filtros-sabor").innerHTML  = sabores.map(s => `<div class="chip ${f.sabores.includes(s) ? 'active' : ''}" onclick="toggleFiltroUtilPeriodo('sabores','${s}')">${s}</div>`).join("");
+  if (L("utilperiodo-filtros-tamano")) L("utilperiodo-filtros-tamano").innerHTML = tamanos.map(t => `<div class="chip ${f.tamanos.includes(t) ? 'active' : ''}" onclick="toggleFiltroUtilPeriodo('tamanos','${t}')">${t}</div>`).join("");
+  if (L("utilperiodo-filtros-canal"))  L("utilperiodo-filtros-canal").innerHTML  = canales.map(c => `<div class="chip ${f.canales.includes(c) ? 'active' : ''}" onclick="toggleFiltroUtilPeriodo('canales','${c}')">${c}</div>`).join("");
+}
+function toggleFiltroUtilPeriodo(tipo, valor) {
+  const arr = S.utilperiodoFiltros[tipo];
+  const idx = arr.indexOf(valor);
+  if (idx >= 0) arr.splice(idx, 1); else arr.push(valor);
+  renderUtilPeriodo();
+}
+function setUtilPeriodoPreset(preset) {
+  S.utilperiodoActual.preset = preset;
+  document.querySelectorAll("#utilperiodo-presets .chip").forEach(c =>
+    c.classList.toggle("active", c.dataset.preset === preset));
+  const customRow = L("utilperiodo-custom-row");
+  if (customRow) customRow.style.display = preset === "custom" ? "grid" : "none";
+  if (preset !== "custom") {
+    const r = _calcularRangoPreset(preset);
+    S.utilperiodoActual.desde = r.ini;
+    S.utilperiodoActual.hasta = r.fin;
+    if (L("utilperiodo-desde")) L("utilperiodo-desde").value = _fmtFecha(r.ini);
+    if (L("utilperiodo-hasta")) L("utilperiodo-hasta").value = _fmtFecha(r.fin);
+  } else {
+    const r = _calcularRangoPreset("semana");
+    if (L("utilperiodo-desde") && !L("utilperiodo-desde").value) L("utilperiodo-desde").value = _fmtFecha(r.ini);
+    if (L("utilperiodo-hasta") && !L("utilperiodo-hasta").value) L("utilperiodo-hasta").value = _fmtFecha(r.fin);
+  }
+  renderUtilPeriodo();
+}
+function setUtilModoLinea(modo) {
+  S.utilperiodoActual.modoLinea = modo;
+  L("utilperiodo-modo-dia-btn").classList.toggle("active", modo === "dia");
+  L("utilperiodo-modo-acum-btn").classList.toggle("active", modo === "acumulado");
+  renderUtilPeriodo();
+}
+function _ventasUtilPeriodoFiltradas() {
+  let ini, fin;
+  if (S.utilperiodoActual.preset === "custom") {
+    const d = L("utilperiodo-desde").value, h = L("utilperiodo-hasta").value;
+    ini = d ? new Date(d + "T00:00:00") : null;
+    fin = h ? new Date(h + "T23:59:59") : null;
+  } else {
+    ini = S.utilperiodoActual.desde;
+    fin = S.utilperiodoActual.hasta;
+  }
+  const f = S.utilperiodoFiltros;
+  return (S.ventasReporte || []).filter(v => {
+    if (!v.fecha) return false;
+    if (v.canal === "Merma" || v.canal === "Cortesía") return false;
+    const fv = new Date(v.fecha);
+    if (ini && fv < ini) return false;
+    if (fin && fv > fin) return false;
+    if (f.sabores.length && !f.sabores.includes(v.sabor)) return false;
+    if (f.tamanos.length && !f.tamanos.includes(v.tamano)) return false;
+    if (f.canales.length && !f.canales.includes(v.canal)) return false;
+    return true;
+  });
+}
+function renderUtilPeriodo() {
+  _renderFiltrosUtilPeriodo();
+  const ventasBruto = _ventasUtilPeriodoFiltradas();
+  const desde = S.utilperiodoActual.preset === "custom"
+    ? (L("utilperiodo-desde")?.value || "—")
+    : _fmtFecha(S.utilperiodoActual.desde);
+  const hasta = S.utilperiodoActual.preset === "custom"
+    ? (L("utilperiodo-hasta")?.value || "—")
+    : _fmtFecha(S.utilperiodoActual.hasta);
+  L("utilperiodo-rango-label").innerHTML = `📅 Rango: <strong>${desde.split('-').reverse().join('-')}</strong> → <strong>${hasta.split('-').reverse().join('-')}</strong> · ${ventasBruto.length} ventas filtradas`;
+  _renderGraficaLineaUtilPeriodo(ventasBruto);
+  if (ventasBruto.length === 0) {
+    L("utilperiodo-content").innerHTML = '<div class="card"><div class="empty-state"><div class="empty-icon">💎</div><div>Sin ventas en este período</div></div></div>';
+    return;
+  }
+  const enrTotal   = _enriquecerUtilidad(ventasBruto);
+  const enrCuaji   = _enriquecerUtilidad(ventasBruto.filter(v => v.sucursal === "Cuajimalpa"));
+  const enrPolanco = _enriquecerUtilidad(ventasBruto.filter(v => v.sucursal === "Polanco"));
+  const aviso = enrTotal.sinReceta > 0
+    ? `<div style="background:rgba(231,126,34,.1);border-left:3px solid var(--warning);padding:8px 12px;border-radius:6px;font-size:12px;color:var(--ink);margin-bottom:12px">⚠️ <strong>${enrTotal.sinReceta}</strong> línea(s) de venta sin receta cargada — excluidas del cálculo.</div>`
+    : "";
+  L("utilperiodo-content").innerHTML = aviso +
+    _tarjetaResumenUtilidad("🏢 Total empresa", _resumenUtilidad(enrTotal.ventasEnriquecidas),   "var(--accent)") +
+    _tarjetaResumenUtilidad("🍰 Cuajimalpa",    _resumenUtilidad(enrCuaji.ventasEnriquecidas),   "var(--green)") +
+    _tarjetaResumenUtilidad("🍰 Polanco",       _resumenUtilidad(enrPolanco.ventasEnriquecidas), "var(--accent)");
+}
+let _chartLineaUtilPeriodo = null;
+function _renderGraficaLineaUtilPeriodo(ventasBruto) {
+  const ctx = L("grafica-linea-utilperiodo");
+  if (!ctx) return;
+  let ini, fin;
+  if (S.utilperiodoActual.preset === "custom") {
+    const d = L("utilperiodo-desde").value, h = L("utilperiodo-hasta").value;
+    ini = d ? new Date(d + "T00:00:00") : null;
+    fin = h ? new Date(h + "T23:59:59") : null;
+  } else {
+    ini = new Date(S.utilperiodoActual.desde);
+    fin = new Date(S.utilperiodoActual.hasta);
+  }
+  if (!ini || !fin) return;
+  const dias = [];
+  const cur = new Date(ini.getFullYear(), ini.getMonth(), ini.getDate());
+  while (cur <= fin) { dias.push(_fmtFecha(cur)); cur.setDate(cur.getDate() + 1); }
+  const enr = _enriquecerUtilidad(ventasBruto);
+  const acc = {};
+  dias.forEach(d => acc[d] = { total: 0, cuaji: 0, polanco: 0 });
+  enr.ventasEnriquecidas.forEach(v => {
+    const fechaStr = String(v.fecha).substring(0, 10);
+    if (!acc[fechaStr]) return;
+    acc[fechaStr].total += v.utilidad;
+    if (v.sucursal === "Cuajimalpa")   acc[fechaStr].cuaji   += v.utilidad;
+    else if (v.sucursal === "Polanco") acc[fechaStr].polanco += v.utilidad;
+  });
+  let totales  = dias.map(d => acc[d].total);
+  let cuajis   = dias.map(d => acc[d].cuaji);
+  let polancos = dias.map(d => acc[d].polanco);
+  if (S.utilperiodoActual.modoLinea === "acumulado") {
+    let sT = 0, sC = 0, sP = 0;
+    totales  = totales.map(x  => sT += x);
+    cuajis   = cuajis.map(x   => sC += x);
+    polancos = polancos.map(x => sP += x);
+  }
+  if (_chartLineaUtilPeriodo) { try { _chartLineaUtilPeriodo.destroy(); } catch(e) {} }
+  _chartLineaUtilPeriodo = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: dias.map(d => { const p = d.split('-'); return p[2] + '-' + p[1]; }),
+      datasets: [
+        { label: "Total",      data: totales,  borderColor: "#C8602A", backgroundColor: "rgba(200,96,42,.1)", tension: 0.3, fill: false, borderWidth: 3 },
+        { label: "Cuajimalpa", data: cuajis,   borderColor: "#2E5C4A", backgroundColor: "rgba(46,92,74,.1)",  tension: 0.3, fill: false, borderWidth: 2 },
+        { label: "Polanco",    data: polancos, borderColor: "#1976D2", backgroundColor: "rgba(25,118,210,.1)", tension: 0.3, fill: false, borderWidth: 2 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: "top", labels: { font: { size: 12 }, boxWidth: 14 } },
+        tooltip: { callbacks: { label: (c) => `${c.dataset.label}: $${Math.round(c.parsed.y).toLocaleString('es-MX')}` } }
+      },
+      scales: {
+        x: { ticks: { font: { size: 10 }, maxRotation: 60 } },
+        y: { ticks: { callback: (v) => "$" + v.toLocaleString('es-MX'), font: { size: 11 } } }
+      }
+    }
+  });
+}
 </script>
 </body>
 </html>
