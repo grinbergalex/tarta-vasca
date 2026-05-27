@@ -1894,8 +1894,21 @@ function poblarSelectsVenta() {
       selSuc.value = S.sucursal;
     }
   }
+  // v3.4.17-fix: preservar canal y método al repoblar — evita que post-confirmar venta
+  // se resetee la selección del usuario (bug reportado por Yesenia/Dulce).
+  const selCanal = L("venta-canal");
+  const canalActual = selCanal?.value;
+  const selMetodo = L("venta-metodo");
+  const metodoActual = selMetodo?.value;
   llenar("venta-canal",canFinal);
+  if(selCanal && canalActual && canFinal.includes(canalActual)){
+    selCanal.value = canalActual;
+  }
   actualizarMetodoPago(); actualizarUICanal();
+  if(selMetodo && metodoActual){
+    const optsMet = Array.from(selMetodo.options).map(o=>o.value);
+    if(optsMet.includes(metodoActual)) selMetodo.value = metodoActual;
+  }
   if(!getPermisos().puedeVerAmbas) L("venta-suc-group").style.display="none";
   const sabAll=(S.catalogo.sabores||[]).filter(s=>s.activo).map(s=>s.nombre);
   const tamAll=(S.catalogo.tamanos||[]).filter(t=>t.activo).map(t=>t.nombre);
