@@ -3625,7 +3625,15 @@ function onCanalChange(){
   const esPlat = esPlataforma(canal);
   const metodoGroup = L("venta-metodo")?.parentElement;
   if(metodoGroup) metodoGroup.style.display = esPlat ? "none" : "block";
+  // v3.4.18-fix: preservar el metodo de pago seleccionado al reconstruir la lista
+  // (bug: a algunos usuarios se les cambiaba la forma de pago sola al cambiar de canal)
+  const _selMet = L("venta-metodo");
+  const _metAnt = _selMet ? _selMet.value : "";
   llenar("venta-metodo", esPlat ? [canal] : ["Efectivo","Tarjeta","Transferencia"]);
+  if(_selMet && _metAnt){
+    const _opts = Array.from(_selMet.options).map(o=>o.value);
+    if(_opts.includes(_metAnt)) _selMet.value = _metAnt;
+  }
   const cli = L("cliente-section");
   if(cli) cli.style.display = esPlat ? "none" : "block";
   L("canal-aviso").style.display = esPlat ? "flex" : "none";
