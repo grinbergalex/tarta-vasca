@@ -855,7 +855,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         </div>
         <div id="estado-content"><div class="card"><div class="empty-state"><div class="empty-icon">🧾</div><div>Selecciona un mes y pulsa Actualizar</div></div></div></div>
       </div>
-      <!-- SUB-PESTAÑA: PEDIDO SUGERIDO (NUEVO v3.4.22) -->
+      <!-- SUB-PESTAÑA: PEDIDO SUGERIDO (NUEVO v3.4.23 · ponderado) -->
       <div id="reporte-pedido" class="costos-section">
         <div class="card" style="padding:14px 16px;margin-bottom:12px">
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:6px">
@@ -866,7 +866,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
               <button onclick="cargarPedidoSugerido()" class="btn-outline" style="width:auto;font-size:12px;padding:6px 14px;margin-top:0">🔄 Calcular</button>
             </div>
           </div>
-          <div style="font-size:12px;color:var(--muted)">Promedio del potencial de los últimos 4 días del mismo día de semana (o últimos 4 con ventas) + 15%, por localidad. Excluye ventas de ruta.</div>
+          <div style="font-size:12px;color:var(--muted)">Promedio ponderado del potencial de los últimos 4 días del mismo día de semana (o últimos 4 con ventas) + 15%, por localidad. El día inmediato anterior pesa 50%; los otros 3 reparten el resto. Excluye ventas de ruta.</div>
         </div>
         <div id="pedido-content"><div class="card"><div class="empty-state"><div class="empty-icon">🍰</div><div>Elige el día y pulsa Calcular</div></div></div></div>
       </div>
@@ -4664,19 +4664,19 @@ async function cargarPedidoSugerido(){
       <tbody>${arr.map(r=>`<tr><td style="padding:3px 0">${r.sabor}</td><td>${r.tamano}</td><td style="text-align:right;color:var(--muted)">${r.promPotencial}</td><td style="text-align:right;font-weight:700;color:var(--accent)">${r.sugerido}</td></tr>`).join("")}</tbody></table>`;
   };
   const dia=res.diaSemana.toLowerCase();
-  const modoTxt = res.modo==="mismo-dia" ? `promedio de los últimos ${res.muestras} ${dia}s` : `promedio de los últimos ${res.muestras} días con ventas (aún no hay ${res.n} ${dia}s de historia)`;
+  const modoTxt = res.modo==="mismo-dia" ? `promedio ponderado de los últimos ${res.muestras} ${dia}s` : `promedio ponderado de los últimos ${res.muestras} días con ventas (aún no hay ${res.n} ${dia}s de historia)`;
   const cols=[["Polanco",res.sucursales.Polanco],["Cuajimalpa",res.sucursales.Cuajimalpa]];
   const html=`
     <div class="card">
       <div style="font-size:14px;margin-bottom:4px"><strong>${res.diaSemana} ${res.fecha}</strong> · cocinada sugerida</div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Base: ${modoTxt} · +${res.bufferPct}% · días usados: ${res.diasUsados.join(", ")||"—"}</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Base: ${modoTxt} · +${res.bufferPct}% · ${(res.diasUsados||[]).map((d,i)=>`${d} (${Math.round((res.pesos&&res.pesos[i]!=null?res.pesos[i]:0)*100)}%)`).join(" · ")||"—"}</div>
       <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px">
         ${cols.map(([loc,arr])=>`<div style="background:var(--warm);border-radius:10px;padding:12px">
           <div style="font-weight:700;color:var(--accent);margin-bottom:8px">${loc} · total ${res.totalSugerido[loc]} pzas</div>
           ${tabla(loc,arr)}
         </div>`).join("")}
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:12px;line-height:1.5">Potencial/día = lo vendido ese día, proyectado a día completo si se agotó temprano (mismo cálculo que el reporte de Oportunidad). Se promedian los días muestra y se aplica +${res.bufferPct}%, redondeando hacia arriba. No incluye ventas de ruta (esas se planean según lo que pidan los clientes).</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:12px;line-height:1.5">Potencial/día = lo vendido ese día, proyectado a día completo si se agotó temprano (mismo cálculo que el reporte de Oportunidad). Se hace un promedio ponderado de los días muestra (el inmediato anterior pesa 50%, los demás reparten el otro 50%) y se aplica +${res.bufferPct}%, redondeando hacia arriba. No incluye ventas de ruta (esas se planean según lo que pidan los clientes).</div>
     </div>`;
   L("pedido-content").innerHTML=html;
 }
