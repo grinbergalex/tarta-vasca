@@ -546,8 +546,19 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <!-- VENTAS -->
     <div id="tab-ventas" class="tab-pane" style="display:none">
       <div class="card">
-        <div class="card-title">Historial de ventas</div>
-        <div class="card-sub">Últimas operaciones</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <div><div class="card-title" style="margin-bottom:0">Historial de ventas</div><div class="card-sub" id="ventas-count">Últimas operaciones</div></div>
+          <button onclick="cargarVentas()" class="btn-outline" style="width:auto;font-size:12px;padding:6px 14px;margin-top:0">🔄 Recargar</button>
+        </div>
+        <div id="ventas-filtros" style="display:flex;flex-wrap:wrap;gap:8px;margin:12px 0">
+          <select id="fv-sucursal" onchange="renderVentasHist()" style="font-family:'DM Sans',sans-serif;font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)"></select>
+          <select id="fv-canal" onchange="renderVentasHist()" style="font-family:'DM Sans',sans-serif;font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)"></select>
+          <select id="fv-metodo" onchange="renderVentasHist()" style="font-family:'DM Sans',sans-serif;font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)"></select>
+          <select id="fv-sabor" onchange="renderVentasHist()" style="font-family:'DM Sans',sans-serif;font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)"></select>
+          <select id="fv-tamano" onchange="renderVentasHist()" style="font-family:'DM Sans',sans-serif;font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)"></select>
+          <select id="fv-tipo" onchange="renderVentasHist()" style="font-family:'DM Sans',sans-serif;font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)"></select>
+          <button onclick="limpiarFiltrosVentas()" class="btn-outline" style="width:auto;font-size:12px;padding:6px 12px;margin-top:0">Limpiar</button>
+        </div>
         <div id="ventas-list"><div class="loading"><div class="spinner"></div></div></div>
       </div>
     </div>
@@ -831,7 +842,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:6px">
             <div class="card-title" style="margin-bottom:0">🧾 Estado de resultados</div>
             <div style="display:flex;gap:8px;align-items:center">
-              <input type="month" id="estado-periodo" style="font-family:'DM Sans',sans-serif;font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)">
+              <label style="font-size:11px;color:var(--muted)">Desde</label><input type="month" id="estado-desde" style="font-family:'DM Sans',sans-serif;font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)"><label style="font-size:11px;color:var(--muted)">Hasta</label><input type="month" id="estado-hasta" style="font-family:'DM Sans',sans-serif;font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)">
               <button onclick="cargarEstadoResultados()" class="btn-outline" style="width:auto;font-size:12px;padding:6px 14px;margin-top:0">🔄 Actualizar</button>
             </div>
           </div>
@@ -2569,18 +2580,51 @@ document.addEventListener("DOMContentLoaded", () => {
     recalcularPreciosPaquetesEnCarrito();
   });
 });
+let _ventasHist = [];
 async function cargarVentas(){
   L("ventas-list").innerHTML=`<div class="loading"><div class="spinner"></div></div>`;
   const res=await api("getVentas");
   if(!res.ok) return;
-  if(res.ventas.length===0){L("ventas-list").innerHTML=`<div class="empty-state"><div>Sin ventas registradas</div></div>`;return;}
+  _ventasHist = res.ventas || [];
+  poblarFiltrosVentas();
+  renderVentasHist();
+}
+function _optsVent(sel, valores, label){
+  const el=L(sel); if(!el) return;
+  const actual=el.value;
+  el.innerHTML = `<option value="">${label}</option>` + valores.map(v=>`<option value="${v}">${v}</option>`).join("");
+  if(valores.includes(actual)) el.value=actual;
+}
+function poblarFiltrosVentas(){
+  const uniq=(f)=>Array.from(new Set(_ventasHist.map(f).filter(Boolean))).sort();
+  _optsVent("fv-sucursal", uniq(v=>v.sucursal), "Todas las sucursales");
+  _optsVent("fv-canal",    uniq(v=>v.canal),    "Todos los canales");
+  _optsVent("fv-metodo",   uniq(v=>v.metodoPago),"Todos los métodos");
+  _optsVent("fv-sabor",    uniq(v=>v.sabor),     "Todos los sabores");
+  _optsVent("fv-tamano",   uniq(v=>v.tamano),    "Todos los tamaños");
+  _optsVent("fv-tipo",     uniq(v=>v.tipoOp),    "Todos los tipos");
+}
+function limpiarFiltrosVentas(){
+  ["fv-sucursal","fv-canal","fv-metodo","fv-sabor","fv-tamano","fv-tipo"].forEach(id=>{const e=L(id);if(e)e.value="";});
+  renderVentasHist();
+}
+function renderVentasHist(){
+  const fS=L("fv-sucursal")?.value||"", fC=L("fv-canal")?.value||"", fM=L("fv-metodo")?.value||"",
+        fSa=L("fv-sabor")?.value||"", fT=L("fv-tamano")?.value||"", fTp=L("fv-tipo")?.value||"";
+  const rows=_ventasHist.filter(v=>
+    (!fS||v.sucursal===fS)&&(!fC||v.canal===fC)&&(!fM||v.metodoPago===fM)&&
+    (!fSa||v.sabor===fSa)&&(!fT||v.tamano===fT)&&(!fTp||(v.tipoOp||"Venta")===fTp));
+  if(rows.length===0){ L("ventas-list").innerHTML=`<div class="empty-state"><div>Sin ventas con esos filtros</div></div>`; if(L("ventas-count"))L("ventas-count").textContent="0 operaciones"; return; }
   const grupos={};
-  res.ventas.forEach(v=>{
+  rows.forEach(v=>{
     if(!grupos[v.idVenta]) grupos[v.idVenta]={...v,items:[]};
     grupos[v.idVenta].items.push({sabor:v.sabor,tamano:v.tamano,cantidad:v.cantidad,subtotal:v.subtotal});
     if (v.rutaId && !grupos[v.idVenta].rutaId) grupos[v.idVenta].rutaId = v.rutaId;
   });
-  L("ventas-list").innerHTML=Object.values(grupos).map(g=>{
+  const lista=Object.values(grupos);
+  const totMonto=rows.reduce((s,v)=>s+(Number(v.subtotal)||0),0);
+  if(L("ventas-count")) L("ventas-count").textContent = `${lista.length} operación${lista.length!==1?"es":""} · ${rows.length} líneas · $${totMonto.toLocaleString('es-MX')}`;
+  L("ventas-list").innerHTML=lista.map(g=>{
     const rutaTag = g.rutaId ? `<span class="tag" style="background:rgba(200,96,42,.15);color:var(--accent);font-weight:700">🚚 ${g.rutaId}</span>` : "";
     const metodoColor = (!g.metodoPago || g.metodoPago === "Por definir") ? 'style="background:#FFEBEE;color:#C0392B;font-weight:700"' : "";
     return `
@@ -2596,6 +2640,7 @@ async function cargarVentas(){
     </div>`;
   }).join("");
 }
+
 async function cargarCatalogoPantalla(){
   const res=await api("getCatalogo");if(!res.ok)return;S.catalogo=res;
   const renderList=(items,tipo,id)=>{
@@ -4447,34 +4492,54 @@ function setReporteTab(tab) {
   if (tab === "estado") cargarEstadoResultados();
 }
 
-// === ESTADO DE RESULTADOS (P&L vivo) — v3.4.19 (29-may-2026) ===
+// === ESTADO DE RESULTADOS (P&L vivo) — v3.4.20 (29-may-2026) ===
+let _estadoData = null, _estadoDim = "sabor";
 async function cargarEstadoResultados(){
-  const sel = L("estado-periodo");
-  if(sel && !sel.value){ const d=new Date(); sel.value = d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"); }
-  const periodo = sel ? sel.value : "";
-  L("estado-content").innerHTML = '<div class="card"><div class="empty-state"><div class="empty-icon">⏳</div><div>Calculando…</div></div></div>';
-  const res = await api("getEstadoResultados", periodo ? {periodo} : {});
-  if(!res || !res.ok){ L("estado-content").innerHTML = '<div class="card"><div class="empty-state"><div class="empty-icon">⚠️</div><div>'+((res&&res.error)||"Error al cargar")+'</div></div></div>'; return; }
-  const cols = [["Consolidado",res.consolidado],["Polanco",res.sucursales.Polanco],["Cuajimalpa",res.sucursales.Cuajimalpa]];
-  const pct = v => (v==null||isNaN(v)) ? "—" : (v.toFixed(1)+"%");
-  const row = (label, key, opts={}) => {
-    const tds = cols.map(([n,d])=>{
-      const val = d[key];
-      const txt = opts.pct ? pct(val) : fmtMXN(val);
-      let style = "text-align:right";
-      if(opts.neg && val<0) style += ";color:var(--danger)";
-      if(opts.good) style += (val>=0?";color:var(--success)":";color:var(--danger)");
-      if(opts.strong) style += ";font-weight:700";
+  const d=new Date(), mesAct=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+  const sd=L("estado-desde"), sh=L("estado-hasta");
+  if(sd && !sd.value) sd.value=mesAct;
+  if(sh && !sh.value) sh.value=mesAct;
+  const desde=sd?sd.value:mesAct, hasta=sh?sh.value:mesAct;
+  L("estado-content").innerHTML='<div class="card"><div class="empty-state"><div class="empty-icon">⏳</div><div>Calculando…</div></div></div>';
+  const res=await api("getEstadoResultados",{desde,hasta});
+  if(!res||!res.ok){ L("estado-content").innerHTML='<div class="card"><div class="empty-state"><div class="empty-icon">⚠️</div><div>'+((res&&res.error)||"Error al cargar")+'</div></div></div>'; return; }
+  _estadoData=res; renderEstadoResultados();
+}
+function setEstadoDim(dim){ _estadoDim=dim; renderEstadoResultados(); }
+function renderEstadoResultados(){
+  const res=_estadoData; if(!res) return;
+  const cols=[["Consolidado",res.consolidado],["Polanco",res.sucursales.Polanco],["Cuajimalpa",res.sucursales.Cuajimalpa]];
+  const pct=v=>(v==null||isNaN(v))?"—":(v.toFixed(1)+"%");
+  const row=(label,key,opts={})=>{
+    const tds=cols.map(([n,d])=>{
+      const val=d[key]; const txt=opts.pct?pct(val):fmtMXN(val);
+      let style="text-align:right";
+      if(opts.neg&&val<0) style+=";color:var(--danger)";
+      if(opts.good) style+=(val>=0?";color:var(--success)":";color:var(--danger)");
+      if(opts.strong) style+=";font-weight:700";
       return `<td style="${style}">${txt}</td>`;
     }).join("");
-    const lbl = opts.strong ? "font-weight:700" : (opts.pct ? "color:var(--muted);font-size:12px" : "");
-    const tr = opts.border ? "border-top:2px solid var(--border)" : "";
+    const lbl=opts.strong?"font-weight:700":(opts.pct?"color:var(--muted);font-size:12px":"");
+    const tr=opts.border?"border-top:2px solid var(--border)":"";
     return `<tr style="${tr}"><td style="${lbl}">${label}</td>${tds}</tr>`;
   };
-  const proRot = res.esMesEnCurso ? ` (prorrateado a día ${res.diaHoy}/${res.diasMes})` : " (mes completo)";
-  const html = `
+  const rangoTxt = res.desde===res.hasta ? res.desde : `${res.desde} → ${res.hasta} (${res.nMeses} meses)`;
+  const fijoLabel = res.nMeses>1 ? `(−) Costos fijos (×${res.nMeses} meses)` : "(−) Costos fijos";
+  const dimKey = _estadoDim==="tamano" ? "porTamano" : "porSabor";
+  const dimName = _estadoDim==="tamano" ? "Tamaño" : "Sabor";
+  const breakTable = (col)=>{
+    const arr=col[dimKey]||[];
+    if(arr.length===0) return '<div style="font-size:12px;color:var(--muted)">Sin datos</div>';
+    return `<table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr><th style="text-align:left;padding:3px 0">${dimName}</th><th style="text-align:right">Ing. neto</th><th style="text-align:right">Costo</th><th style="text-align:right">Utilidad</th><th style="text-align:right">Margen</th><th style="text-align:right">U.</th></tr></thead>
+      <tbody>${arr.map(b=>{
+        const uCls=b.utilidad>=0?"color:var(--success)":"color:var(--danger)";
+        return `<tr><td style="padding:2px 0">${b.key}</td><td style="text-align:right">${fmtMXN(b.ingreso)}</td><td style="text-align:right">${fmtMXN(b.costo)}</td><td style="text-align:right;${uCls}">${fmtMXN(b.utilidad)}</td><td style="text-align:right">${pct(b.margen)}</td><td style="text-align:right">${b.unidades}</td></tr>`;
+      }).join("")}</tbody></table>`;
+  };
+  const html=`
     <div class="card" style="overflow-x:auto">
-      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Periodo <strong>${res.periodo}</strong> · ${res.esMesEnCurso?"mes en curso":"mes cerrado"} · generado ${res.generado}</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Periodo <strong>${rangoTxt}</strong> · generado ${res.generado}</div>
       <table style="width:100%;border-collapse:collapse;font-size:13px">
         <thead><tr><th style="text-align:left;padding:4px 0"></th>${cols.map(([n])=>`<th style="text-align:right;padding:4px 0;color:var(--accent)">${n}</th>`).join("")}</tr></thead>
         <tbody>
@@ -4485,7 +4550,7 @@ async function cargarEstadoResultados(){
           ${row("= Utilidad bruta","utilidadBruta",{strong:true,good:true,border:true})}
           ${row("Margen bruto","margenBruto",{pct:true})}
           ${row("(−) Mermas y regalos (costo)","mermaRegaloCosto")}
-          ${row("(−) Costos fijos"+proRot,"fijoProrrateado")}
+          ${row(fijoLabel,"fijoTotal")}
           ${row("= Utilidad neta","utilidadNeta",{strong:true,good:true,border:true})}
           ${row("Margen neto","margenNeto",{pct:true})}
         </tbody>
@@ -4499,15 +4564,28 @@ async function cargarEstadoResultados(){
           <div style="font-size:12px">Venta de equilibrio/mes: <strong>${d.ventaEquilibrio==null?"—":fmtMXN(d.ventaEquilibrio)}</strong></div>
         </div>`).join("")}
       </div>
+      <div style="margin-top:18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div style="font-weight:700;font-size:14px">Contribución por ${dimName.toLowerCase()} y localidad</div>
+        <div style="display:flex;gap:2px">
+          <button onclick="setEstadoDim('sabor')" class="costos-tab ${_estadoDim==='sabor'?'active':''}" style="padding:5px 12px;font-size:11px">Por sabor</button>
+          <button onclick="setEstadoDim('tamano')" class="costos-tab ${_estadoDim==='tamano'?'active':''}" style="padding:5px 12px;font-size:11px">Por tamaño</button>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:10px">
+        ${cols.map(([n,d])=>`<div style="background:var(--warm);border-radius:10px;padding:10px">
+          <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:6px">${n}</div>
+          ${breakTable(d)}
+        </div>`).join("")}
+      </div>
       <div style="font-size:11px;color:var(--muted);margin-top:12px;line-height:1.5">
-        Ingresos netos = ventas − comisión de canal/método. Utilidad bruta = ingresos netos − costo de receta de lo vendido.
-        Mermas y regalos se restan como fuga (cuestan, no generan ingreso). Costos fijos vienen de la hoja <strong>Gastos</strong>;
-        los que no traen sucursal se reparten 50/50. En el mes en curso se prorratean por días transcurridos.
-        Venta de equilibrio = costos fijos del mes ÷ margen bruto.
+        Ingresos netos = ventas − comisión de canal/método. Utilidad bruta = ingresos netos − costo de receta.
+        Mermas y regalos se restan como fuga. Costos fijos: hoja <strong>Gastos</strong> al 100% por mes (× nº de meses del rango);
+        los sin sucursal se reparten 50/50. La contribución prorratea la comisión del ticket entre sus líneas.
       </div>
     </div>`;
-  L("estado-content").innerHTML = html;
+  L("estado-content").innerHTML=html;
 }
+
 function resetPieDrillDown(secId) {
   S.pieEstado[secId] = [];
   renderPiesSeccion(secId);
