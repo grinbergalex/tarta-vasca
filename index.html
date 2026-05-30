@@ -39,6 +39,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 .app-nav::-webkit-scrollbar{display:none}
 .nav-tab{flex-shrink:0;padding:14px 18px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap}
 .nav-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.app-subnav{background:var(--bg);border-bottom:1px solid var(--border);display:flex;overflow-x:auto;scrollbar-width:none;padding:0 4px;position:sticky;top:96px;z-index:98;gap:2px}
+.app-subnav::-webkit-scrollbar{display:none}
+.subnav-item{flex-shrink:0;padding:10px 14px;font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .2s}
+.subnav-item.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:700}
+.nav-managed{display:none}
 .app-content{flex:1;padding:10px 16px 100px}
 .card{background:var(--card);border-radius:16px;padding:20px;margin-bottom:12px;box-shadow:var(--shadow);border:1px solid var(--border)}
 .card-title{font-family:'Fraunces',serif;font-size:18px;font-weight:500;margin-bottom:4px}
@@ -288,24 +293,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
       </div>
     </div>
   </div>
-  <nav class="app-nav">
-    <div class="nav-tab active" data-tab="stock">Stock</div>
-    <div class="nav-tab perm-producir" data-tab="produccion">Producción</div>
-    <div class="nav-tab perm-transferir" data-tab="transferencias">Transferencias</div>
-    <div class="nav-tab perm-vender" data-tab="venta">Nueva venta</div>
-    <div class="nav-tab owner-only" data-tab="rutas">🚚 Rutas</div>
-    <div class="nav-tab owner-only" data-tab="ventas">Ventas</div>
-    <div class="nav-tab owner-only" data-tab="reporte">📊 Reportes</div>
-    <div class="nav-tab owner-only" data-tab="movimientos">Movimientos</div>
-    <div class="nav-tab owner-only" data-tab="catalogo">Catálogo</div>
-    <div class="nav-tab owner-only" data-tab="precios">Precios</div>
-    <div class="nav-tab owner-only" data-tab="costos">Costos</div>
-    <div class="nav-tab owner-only" data-tab="utilidades">Utilidad por ventas</div>
-    <div class="nav-tab owner-only" data-tab="objetivos">Tablero</div>
-    <div class="nav-tab owner-only" data-tab="alertas">Alertas</div>
-    <div class="nav-tab owner-only" data-tab="usuarios">Usuarios</div>
-    <div class="nav-tab owner-only" data-tab="auditoria">Auditoría</div>
-  </nav>
+  <nav class="app-nav" id="nav-groups"></nav>
+  <div class="app-subnav" id="nav-items"></div>
   <main class="app-content">
     <!-- STOCK -->
     <div id="tab-stock" class="tab-pane">
@@ -569,7 +558,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <!-- REPORTES -->
     <div id="tab-reporte" class="tab-pane" style="display:none">
       <!-- Sub-pestañas -->
-      <div class="costos-tabs" style="margin-bottom:14px">
+      <div class="costos-tabs nav-managed" style="margin-bottom:14px">
         <button class="costos-tab active" onclick="setReporteTab('diario')">📅 Seguimiento diario</button>
         <button class="costos-tab" onclick="setReporteTab('periodo')">📈 Por período</button>
         <button class="costos-tab" onclick="setReporteTab('conciliacion')">💰 Conciliación</button>
@@ -1086,7 +1075,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
       <div class="card">
         <div class="card-title">Costos</div>
         <div class="card-sub">Insumos, recetas por sabor y calculadora de costo por pastel &nbsp;<span id="costos-save-status" style="font-size:11px;font-weight:500"></span></div>
-        <div class="costos-tabs">
+        <div class="costos-tabs nav-managed">
           <button class="costos-tab active" onclick="setCostosTab('insumos')">📦 Insumos</button>
           <button class="costos-tab" onclick="setCostosTab('recetas')">📋 Recetas</button>
           <button class="costos-tab" onclick="setCostosTab('calculadora')">🧮 Calculadora</button>
@@ -1904,32 +1893,112 @@ function aplicarPermisosUI() {
   const venta_suc = L("venta-suc-group");
   if (venta_suc) venta_suc.style.display = p.puedeVerAmbas ? "" : "none";
 }
-function setupNav() {
-  document.querySelectorAll(".nav-tab").forEach(tab=>{
-    tab.addEventListener("click",()=>{
-      document.querySelectorAll(".nav-tab").forEach(t=>t.classList.remove("active"));
-      tab.classList.add("active");
-      document.querySelectorAll(".tab-pane").forEach(p=>p.style.display="none");
-      L("tab-"+tab.dataset.tab).style.display="block";
-      const t=tab.dataset.tab;
-      if(t==="stock") cargarStock();
-      else if(t==="usuarios") cargarUsuarios();
-      else if(t==="movimientos") cargarMovimientos();
-      else if(t==="auditoria") cargarAuditoria();
-      else if(t==="catalogo") cargarCatalogoPantalla();
-      else if(t==="ventas") cargarVentas();
-      else if(t==="reporte") cargarReporte();
-      else if(t==="venta") iniciarVenta();
-      else if(t==="rutas") { iniciarRuta(); cargarRutasAbiertas(); }
-      else if(t==="costos") { if(!S.insumos.length) cargarCostos(); else renderCostos(); }
-      else if(t==="utilidades") cargarUtilidades();
-      else if(t==="precios") { cargarPrecios(); cargarZonasEnvio(); cargarCanalPrecios(); }
-      else if(t==="objetivos") iniciarTablero();
-      else if(t==="transferencias") cargarTransferencias();
-      else if(t==="alertas") cargarAlertas();
-    });
-  });
+// ===== MENÚ AGRUPADO (2 niveles) — v3.4.27 =====
+const MENU = [
+  { id:"inv", label:"🎂 Inventario", items:[
+    { label:"Stock",            pane:"stock",          perm:"all" },
+    { label:"Producción",       pane:"produccion",     perm:"producir" },
+    { label:"Transferencias",   pane:"transferencias", perm:"transferir" },
+    { label:"Pedido sugerido",  pane:"reporte", sub:["setReporteTab","pedido"], perm:"owner" },
+  ]},
+  { id:"ven", label:"🛒 Ventas", items:[
+    { label:"Nueva venta",      pane:"venta",  perm:"vender" },
+    { label:"Rutas",            pane:"rutas",  perm:"owner" },
+    { label:"Historial",        pane:"ventas", perm:"owner" },
+  ]},
+  { id:"mp", label:"🥫 Materia prima", items:[
+    { label:"Insumos",          pane:"costos", sub:["setCostosTab","insumos"],     perm:"owner" },
+    { label:"Recetas",          pane:"costos", sub:["setCostosTab","recetas"],     perm:"owner" },
+    { label:"Calculadora",      pane:"costos", sub:["setCostosTab","calculadora"], perm:"owner" },
+    { label:"Carga masiva",     pane:"costos", sub:["setCostosTab","carga"],       perm:"owner" },
+    { label:"Utilidad unitaria",pane:"costos", sub:["setCostosTab","tabla-util"],  perm:"owner" },
+  ]},
+  { id:"prod", label:"🏷️ Producto", items:[
+    { label:"Catálogo",         pane:"catalogo", perm:"owner" },
+    { label:"Precios",          pane:"precios",  perm:"owner" },
+  ]},
+  { id:"op", label:"📊 Operación", items:[
+    { label:"Seguimiento diario",pane:"reporte", sub:["setReporteTab","diario"],       perm:"owner" },
+    { label:"Por período",       pane:"reporte", sub:["setReporteTab","periodo"],      perm:"owner" },
+    { label:"Conciliación",      pane:"reporte", sub:["setReporteTab","conciliacion"], perm:"owner" },
+    { label:"Stock por hora",    pane:"reporte", sub:["setReporteTab","stockhora"],    perm:"owner" },
+    { label:"Objetivos",         pane:"objetivos", perm:"owner" },
+    { label:"Cómo se calcula",   pane:"reporte", sub:["setReporteTab","formulas"],     perm:"owner" },
+  ]},
+  { id:"fin", label:"💰 Finanzas", items:[
+    { label:"Gastos",              pane:"costos",  sub:["setCostosTab","gastos"],        perm:"owner" },
+    { label:"Comisiones",          pane:"costos",  sub:["setCostosTab","comisiones"],    perm:"owner" },
+    { label:"Utilidad por ventas", pane:"utilidades", perm:"owner" },
+    { label:"Utilidad diaria",     pane:"reporte", sub:["setReporteTab","utildiario"],  perm:"owner" },
+    { label:"Utilidad por período",pane:"reporte", sub:["setReporteTab","utilperiodo"], perm:"owner" },
+    { label:"Estado de resultados",pane:"reporte", sub:["setReporteTab","estado"],      perm:"owner" },
+  ]},
+  { id:"adm", label:"⚙️ Admin", items:[
+    { label:"Movimientos", pane:"movimientos", perm:"owner" },
+    { label:"Alertas",     pane:"alertas",     perm:"owner" },
+    { label:"Usuarios",    pane:"usuarios",    perm:"owner" },
+    { label:"Auditoría",   pane:"auditoria",   perm:"owner" },
+  ]},
+];
+function _permOK(perm){
+  const p = getPermisos() || {};
+  if(perm==="all") return true;
+  if(perm==="owner") return !!p.esAdmin;
+  if(perm==="vender") return !!p.puedeVender || !!p.esAdmin;
+  if(perm==="producir") return !!p.puedeProducir || !!p.esAdmin;
+  if(perm==="transferir") return !!p.puedeTransferir || !!p.esAdmin;
+  return false;
 }
+function _loadPane(t){
+  if(t==="stock") cargarStock();
+  else if(t==="usuarios") cargarUsuarios();
+  else if(t==="movimientos") cargarMovimientos();
+  else if(t==="auditoria") cargarAuditoria();
+  else if(t==="catalogo") cargarCatalogoPantalla();
+  else if(t==="ventas") cargarVentas();
+  else if(t==="reporte") cargarReporte();
+  else if(t==="venta") iniciarVenta();
+  else if(t==="rutas") { iniciarRuta(); cargarRutasAbiertas(); }
+  else if(t==="costos") { if(!S.insumos.length) cargarCostos(); else renderCostos(); }
+  else if(t==="utilidades") cargarUtilidades();
+  else if(t==="precios") { cargarPrecios(); cargarZonasEnvio(); cargarCanalPrecios(); }
+  else if(t==="objetivos") iniciarTablero();
+  else if(t==="transferencias") cargarTransferencias();
+  else if(t==="alertas") cargarAlertas();
+}
+function irAPane(pane, subFn, subKey){
+  document.querySelectorAll(".tab-pane").forEach(p=>p.style.display="none");
+  const el = L("tab-"+pane); if(el) el.style.display="block";
+  _loadPane(pane);
+  if(subFn && typeof window[subFn]==="function") window[subFn](subKey);
+}
+function _renderItems(grupo){
+  const cont = L("nav-items"); if(!cont) return;
+  const items = grupo.items.filter(it=>_permOK(it.perm));
+  cont.innerHTML = "";
+  items.forEach((it,idx)=>{
+    const b = document.createElement("div");
+    b.className = "subnav-item" + (idx===0?" active":"");
+    b.textContent = it.label;
+    b.onclick = ()=>{ cont.querySelectorAll(".subnav-item").forEach(x=>x.classList.remove("active")); b.classList.add("active"); irAPane(it.pane, it.sub?it.sub[0]:null, it.sub?it.sub[1]:null); };
+    cont.appendChild(b);
+  });
+  if(items[0]) irAPane(items[0].pane, items[0].sub?items[0].sub[0]:null, items[0].sub?items[0].sub[1]:null);
+}
+function renderMenu(){
+  const cont = L("nav-groups"); if(!cont) return;
+  const grupos = MENU.filter(g=>g.items.some(it=>_permOK(it.perm)));
+  cont.innerHTML = "";
+  grupos.forEach((g,idx)=>{
+    const b = document.createElement("div");
+    b.className = "nav-tab nav-group" + (idx===0?" active":"");
+    b.textContent = g.label;
+    b.onclick = ()=>{ cont.querySelectorAll(".nav-group").forEach(x=>x.classList.remove("active")); b.classList.add("active"); _renderItems(g); };
+    cont.appendChild(b);
+  });
+  if(grupos[0]) _renderItems(grupos[0]);
+}
+function setupNav(){ renderMenu(); }
 async function cargarCatalogo() {
   const res=await api("getCatalogo");
   if(!res.ok) return;
@@ -3354,7 +3423,7 @@ async function guardarLimite(){
   else toast(res.error,"error");
 }
 function aplicarSugerenciaTransferencia(sabor,tamano,cantidad){
-  document.querySelector('[data-tab="transferencias"]').click();
+  irAPane("transferencias");
   setTimeout(()=>{ L("trf-sabor").value=sabor; L("trf-tamano").value=tamano; L("trf-cantidad").value=cantidad; },400);
 }
 function onCambioSaborTrf(){
