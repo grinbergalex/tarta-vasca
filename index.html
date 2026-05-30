@@ -43,7 +43,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 .app-subnav::-webkit-scrollbar{display:none}
 .subnav-item{flex-shrink:0;padding:10px 14px;font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .2s}
 .subnav-item.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:700}
-.nav-managed{display:none}
+.nav-managed{display:none !important}
 .app-content{flex:1;padding:10px 16px 100px}
 .card{background:var(--card);border-radius:16px;padding:20px;margin-bottom:12px;box-shadow:var(--shadow);border:1px solid var(--border)}
 .card-title{font-family:'Fraunces',serif;font-size:18px;font-weight:500;margin-bottom:4px}
@@ -1900,7 +1900,6 @@ const MENU = [
     { label:"Recetas",          pane:"costos", sub:["setCostosTab","recetas"],     perm:"owner" },
     { label:"Calculadora",      pane:"costos", sub:["setCostosTab","calculadora"], perm:"owner" },
     { label:"Carga masiva",     pane:"costos", sub:["setCostosTab","carga"],       perm:"owner" },
-    { label:"Utilidad unitaria",pane:"costos", sub:["setCostosTab","tabla-util"],  perm:"owner" },
   ]},
   { id:"inv", label:"🎂 Inventario", items:[
     { label:"Stock",            pane:"stock",          perm:"all" },
@@ -1925,6 +1924,7 @@ const MENU = [
     { label:"Comisiones",          pane:"costos",  sub:["setCostosTab","comisiones"],     perm:"owner" },
     { label:"Conciliación",        pane:"reporte", sub:["setReporteTab","conciliacion"],  perm:"owner" },
     { label:"Utilidad por ventas", pane:"utilidades", perm:"owner" },
+    { label:"Utilidad unitaria",   pane:"costos",  sub:["setCostosTab","tabla-util"],    perm:"owner" },
     { label:"Utilidad diaria",     pane:"reporte", sub:["setReporteTab","utildiario"],   perm:"owner" },
     { label:"Utilidad por período",pane:"reporte", sub:["setReporteTab","utilperiodo"],  perm:"owner" },
     { label:"Estado de resultados",pane:"reporte", sub:["setReporteTab","estado"],       perm:"owner" },
