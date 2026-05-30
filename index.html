@@ -855,7 +855,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         </div>
         <div id="estado-content"><div class="card"><div class="empty-state"><div class="empty-icon">🧾</div><div>Selecciona un mes y pulsa Actualizar</div></div></div></div>
       </div>
-      <!-- SUB-PESTAÑA: PEDIDO SUGERIDO (NUEVO v3.4.23 · ponderado) -->
+      <!-- SUB-PESTAÑA: PEDIDO SUGERIDO (NUEVO v3.4.24 · ventana 7d ponderada) -->
       <div id="reporte-pedido" class="costos-section">
         <div class="card" style="padding:14px 16px;margin-bottom:12px">
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:6px">
@@ -866,7 +866,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
               <button onclick="cargarPedidoSugerido()" class="btn-outline" style="width:auto;font-size:12px;padding:6px 14px;margin-top:0">🔄 Calcular</button>
             </div>
           </div>
-          <div style="font-size:12px;color:var(--muted)">Promedio ponderado del potencial de los últimos 4 días del mismo día de semana (o últimos 4 con ventas) + 15%, por localidad. El día inmediato anterior pesa 50%; los otros 3 reparten el resto. Excluye ventas de ruta.</div>
+          <div style="font-size:12px;color:var(--muted)">Promedio ponderado del potencial de los 7 días previos (del mismo día de la semana pasada a ayer) + 25%, por localidad. El mismo día de la semana pasada y ayer pesan 25% cada uno; los otros 5 días, 10% cada uno. Excluye ventas de ruta.</div>
         </div>
         <div id="pedido-content"><div class="card"><div class="empty-state"><div class="empty-icon">🍰</div><div>Elige el día y pulsa Calcular</div></div></div></div>
       </div>
@@ -4664,7 +4664,7 @@ async function cargarPedidoSugerido(){
       <tbody>${arr.map(r=>`<tr><td style="padding:3px 0">${r.sabor}</td><td>${r.tamano}</td><td style="text-align:right;color:var(--muted)">${r.promPotencial}</td><td style="text-align:right;font-weight:700;color:var(--accent)">${r.sugerido}</td></tr>`).join("")}</tbody></table>`;
   };
   const dia=res.diaSemana.toLowerCase();
-  const modoTxt = res.modo==="mismo-dia" ? `promedio ponderado de los últimos ${res.muestras} ${dia}s` : `promedio ponderado de los últimos ${res.muestras} días con ventas (aún no hay ${res.n} ${dia}s de historia)`;
+  const modoTxt = `promedio ponderado de 7 días (del ${dia} de la semana pasada a ayer)`;
   const cols=[["Polanco",res.sucursales.Polanco],["Cuajimalpa",res.sucursales.Cuajimalpa]];
   const html=`
     <div class="card">
@@ -4676,7 +4676,7 @@ async function cargarPedidoSugerido(){
           ${tabla(loc,arr)}
         </div>`).join("")}
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:12px;line-height:1.5">Potencial/día = lo vendido ese día, proyectado a día completo si se agotó temprano (mismo cálculo que el reporte de Oportunidad). Se hace un promedio ponderado de los días muestra (el inmediato anterior pesa 50%, los demás reparten el otro 50%) y se aplica +${res.bufferPct}%, redondeando hacia arriba. No incluye ventas de ruta (esas se planean según lo que pidan los clientes).</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:12px;line-height:1.5">Potencial/día = lo vendido ese día, proyectado a día completo si se agotó temprano (mismo cálculo que el reporte de Oportunidad). Se hace un promedio ponderado de los 7 días previos (mismo día de la semana pasada y ayer 25% c/u; los otros 5 días 10% c/u) y se aplica +${res.bufferPct}%, redondeando hacia arriba. No incluye ventas de ruta (esas se planean según lo que pidan los clientes).</div>
     </div>`;
   L("pedido-content").innerHTML=html;
 }
