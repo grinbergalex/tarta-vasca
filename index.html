@@ -1895,6 +1895,13 @@ function aplicarPermisosUI() {
 }
 // ===== MENÚ AGRUPADO (2 niveles) — v3.4.27 =====
 const MENU = [
+  { id:"mp", label:"🥫 Materia prima", items:[
+    { label:"Insumos",          pane:"costos", sub:["setCostosTab","insumos"],     perm:"owner" },
+    { label:"Recetas",          pane:"costos", sub:["setCostosTab","recetas"],     perm:"owner" },
+    { label:"Calculadora",      pane:"costos", sub:["setCostosTab","calculadora"], perm:"owner" },
+    { label:"Carga masiva",     pane:"costos", sub:["setCostosTab","carga"],       perm:"owner" },
+    { label:"Utilidad unitaria",pane:"costos", sub:["setCostosTab","tabla-util"],  perm:"owner" },
+  ]},
   { id:"inv", label:"🎂 Inventario", items:[
     { label:"Stock",            pane:"stock",          perm:"all" },
     { label:"Producción",       pane:"produccion",     perm:"producir" },
@@ -1906,38 +1913,29 @@ const MENU = [
     { label:"Rutas",            pane:"rutas",  perm:"owner" },
     { label:"Historial",        pane:"ventas", perm:"owner" },
   ]},
-  { id:"mp", label:"🥫 Materia prima", items:[
-    { label:"Insumos",          pane:"costos", sub:["setCostosTab","insumos"],     perm:"owner" },
-    { label:"Recetas",          pane:"costos", sub:["setCostosTab","recetas"],     perm:"owner" },
-    { label:"Calculadora",      pane:"costos", sub:["setCostosTab","calculadora"], perm:"owner" },
-    { label:"Carga masiva",     pane:"costos", sub:["setCostosTab","carga"],       perm:"owner" },
-    { label:"Utilidad unitaria",pane:"costos", sub:["setCostosTab","tabla-util"],  perm:"owner" },
-  ]},
-  { id:"prod", label:"🏷️ Producto", items:[
-    { label:"Catálogo",         pane:"catalogo", perm:"owner" },
-    { label:"Precios",          pane:"precios",  perm:"owner" },
-  ]},
   { id:"op", label:"📊 Operación", items:[
-    { label:"Seguimiento diario",pane:"reporte", sub:["setReporteTab","diario"],       perm:"owner" },
-    { label:"Por período",       pane:"reporte", sub:["setReporteTab","periodo"],      perm:"owner" },
-    { label:"Conciliación",      pane:"reporte", sub:["setReporteTab","conciliacion"], perm:"owner" },
-    { label:"Stock por hora",    pane:"reporte", sub:["setReporteTab","stockhora"],    perm:"owner" },
+    { label:"Seguimiento diario",pane:"reporte", sub:["setReporteTab","diario"],    perm:"owner" },
+    { label:"Por período",       pane:"reporte", sub:["setReporteTab","periodo"],   perm:"owner" },
+    { label:"Stock por hora",    pane:"reporte", sub:["setReporteTab","stockhora"], perm:"owner" },
     { label:"Objetivos",         pane:"objetivos", perm:"owner" },
-    { label:"Cómo se calcula",   pane:"reporte", sub:["setReporteTab","formulas"],     perm:"owner" },
+    { label:"Cómo se calcula",   pane:"reporte", sub:["setReporteTab","formulas"],  perm:"owner" },
   ]},
   { id:"fin", label:"💰 Finanzas", items:[
-    { label:"Gastos",              pane:"costos",  sub:["setCostosTab","gastos"],        perm:"owner" },
-    { label:"Comisiones",          pane:"costos",  sub:["setCostosTab","comisiones"],    perm:"owner" },
+    { label:"Gastos",              pane:"costos",  sub:["setCostosTab","gastos"],         perm:"owner" },
+    { label:"Comisiones",          pane:"costos",  sub:["setCostosTab","comisiones"],     perm:"owner" },
+    { label:"Conciliación",        pane:"reporte", sub:["setReporteTab","conciliacion"],  perm:"owner" },
     { label:"Utilidad por ventas", pane:"utilidades", perm:"owner" },
-    { label:"Utilidad diaria",     pane:"reporte", sub:["setReporteTab","utildiario"],  perm:"owner" },
-    { label:"Utilidad por período",pane:"reporte", sub:["setReporteTab","utilperiodo"], perm:"owner" },
-    { label:"Estado de resultados",pane:"reporte", sub:["setReporteTab","estado"],      perm:"owner" },
+    { label:"Utilidad diaria",     pane:"reporte", sub:["setReporteTab","utildiario"],   perm:"owner" },
+    { label:"Utilidad por período",pane:"reporte", sub:["setReporteTab","utilperiodo"],  perm:"owner" },
+    { label:"Estado de resultados",pane:"reporte", sub:["setReporteTab","estado"],       perm:"owner" },
   ]},
   { id:"adm", label:"⚙️ Admin", items:[
     { label:"Movimientos", pane:"movimientos", perm:"owner" },
     { label:"Alertas",     pane:"alertas",     perm:"owner" },
     { label:"Usuarios",    pane:"usuarios",    perm:"owner" },
     { label:"Auditoría",   pane:"auditoria",   perm:"owner" },
+    { label:"Catálogo",    pane:"catalogo",    perm:"owner" },
+    { label:"Precios",     pane:"precios",     perm:"owner" },
   ]},
 ];
 function _permOK(perm){
