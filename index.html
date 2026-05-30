@@ -551,6 +551,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           <button onclick="cargarVentas()" class="btn-outline" style="width:auto;font-size:12px;padding:6px 14px;margin-top:0">🔄 Recargar</button>
         </div>
         <div id="ventas-filtros" style="display:flex;flex-wrap:wrap;gap:8px;margin:12px 0">
+          <label style="font-size:11px;color:var(--muted);align-self:center">Del</label>
+          <input type="date" id="fv-fdesde" onchange="cargarVentas()" style="font-family:'DM Sans',sans-serif;font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)">
+          <label style="font-size:11px;color:var(--muted);align-self:center">al</label>
+          <input type="date" id="fv-fhasta" onchange="cargarVentas()" style="font-family:'DM Sans',sans-serif;font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)">
           <select id="fv-sucursal" onchange="renderVentasHist()" style="font-family:'DM Sans',sans-serif;font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)"></select>
           <select id="fv-canal" onchange="renderVentasHist()" style="font-family:'DM Sans',sans-serif;font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)"></select>
           <select id="fv-metodo" onchange="renderVentasHist()" style="font-family:'DM Sans',sans-serif;font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)"></select>
@@ -1230,6 +1234,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
                 <label class="form-label">Tipo *</label>
                 <select class="mini-select" id="g-tipo" style="width:100%">
                   <option value="Fijo">Fijo</option>
+                  <option value="Semifijo">Semifijo</option>
                   <option value="Variable">Variable</option>
                 </select>
               </div>
@@ -1254,6 +1259,17 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
                   <option value="Cuajimalpa">Cuajimalpa</option>
                   <option value="Polanco">Polanco</option>
                 </select>
+              </div>
+              <div>
+                <label class="form-label">Vigencia *</label>
+                <select class="mini-select" id="g-vigencia" style="width:100%" onchange="toggleGastoVigencia()">
+                  <option value="Siempre">Recurrente (todos los meses)</option>
+                  <option value="mes">Solo un mes (único / extraordinario)</option>
+                </select>
+              </div>
+              <div id="g-vigencia-mes-wrap" style="display:none">
+                <label class="form-label">¿Qué mes?</label>
+                <input class="mini-input" id="g-vigencia-mes" type="month" style="width:100%">
               </div>
               <div>
               <div>
@@ -2583,7 +2599,9 @@ document.addEventListener("DOMContentLoaded", () => {
 let _ventasHist = [];
 async function cargarVentas(){
   L("ventas-list").innerHTML=`<div class="loading"><div class="spinner"></div></div>`;
-  const res=await api("getVentas");
+  const fd=L("fv-fdesde")?.value||"", fh=L("fv-fhasta")?.value||"";
+  const params={}; if(fd) params.desde=fd; if(fh) params.hasta=fh;
+  const res=await api("getVentas", params);
   if(!res.ok) return;
   _ventasHist = res.ventas || [];
   poblarFiltrosVentas();
@@ -2605,8 +2623,8 @@ function poblarFiltrosVentas(){
   _optsVent("fv-tipo",     uniq(v=>v.tipoOp),    "Todos los tipos");
 }
 function limpiarFiltrosVentas(){
-  ["fv-sucursal","fv-canal","fv-metodo","fv-sabor","fv-tamano","fv-tipo"].forEach(id=>{const e=L(id);if(e)e.value="";});
-  renderVentasHist();
+  ["fv-sucursal","fv-canal","fv-metodo","fv-sabor","fv-tamano","fv-tipo","fv-fdesde","fv-fhasta"].forEach(id=>{const e=L(id);if(e)e.value="";});
+  cargarVentas();
 }
 function renderVentasHist(){
   const fS=L("fv-sucursal")?.value||"", fC=L("fv-canal")?.value||"", fM=L("fv-metodo")?.value||"",
@@ -3457,8 +3475,10 @@ function renderGastosList(){
     L("gastos-list").innerHTML=`<div class="empty-state"><div class="empty-icon">💸</div><div>Sin gastos registrados — agrega renta, comisiones, merma, etc.</div></div>`;
     return;
   }
-  const fijos    = gastos.filter(g=>g.tipo==="Fijo");
-  const variables= gastos.filter(g=>g.tipo==="Variable");
+  const esMesEsp = g => /^\d{4}-\d{2}$/.test(g.vigencia||"Siempre");
+  const fijos     = gastos.filter(g=>g.tipo==="Fijo");
+  const semifijos = gastos.filter(g=>g.tipo==="Semifijo");
+  const variables = gastos.filter(g=>g.tipo==="Variable");
   function etiquetaFrecuencia(g){
     if(g.frecuencia==="% sobre venta") return `${g.monto}%`;
     if(g.frecuencia==="Condicional") return `${fmtMXN(g.monto)} si se cumple`;
@@ -3466,6 +3486,11 @@ function renderGastosList(){
     const mens = montoMensual(g);
     const sufijo = g.frecuencia==="Semanal" ? ` <span style="font-size:11px;color:var(--muted);font-weight:400">${fmtMXN(g.monto)}/sem × 4.2</span>` : "";
     return `<span style="color:var(--accent);font-weight:700">${fmtMXN(mens)}/mes</span>${sufijo}`;
+  }
+  function vigenciaTag(g){
+    return esMesEsp(g)
+      ? `<span class="tag" style="background:rgba(200,96,42,.15);color:var(--accent);font-weight:700">📌 Solo ${g.vigencia}</span>`
+      : `<span class="tag" style="background:var(--warm);color:var(--muted)">Recurrente</span>`;
   }
   function renderGrupo(lista, titulo){
     if(!lista.length) return "";
@@ -3475,6 +3500,7 @@ function renderGastosList(){
           <div style="flex:1">
             <div style="font-weight:600;font-size:14px">${g.concepto}</div>
             <div style="font-size:12px;color:var(--muted)">${g.frecuencia} · ${g.sucursal}${g.descripcion?' · '+g.descripcion:''}</div>
+            <div style="margin-top:3px">${vigenciaTag(g)}</div>
             ${g.frecuencia==="Condicional"&&g.condicion?`<div style="font-size:11px;color:var(--accent);margin-top:2px">📋 ${g.condicion}${g.aplicaA?' → '+g.aplicaA:''}</div>`:''}
           </div>
           <div style="font-weight:700;font-size:15px;color:var(--accent);margin:0 12px">${etiquetaFrecuencia(g)}</div>
@@ -3484,14 +3510,18 @@ function renderGastosList(){
           </div>
         </div>`).join("")}`;
   }
-  const totalMensual = gastos.reduce((s,g) => s + montoMensual(g), 0);
-  const totalCuaji = gastos.filter(g=>g.sucursal==="Cuajimalpa"||g.sucursal==="Ambas")
+  // Resumen mensual = solo gastos recurrentes (los de un mes específico no son base mensual)
+  const recurrentes = gastos.filter(g=>!esMesEsp(g));
+  const extraord    = gastos.filter(esMesEsp);
+  const totalMensual = recurrentes.reduce((s,g) => s + montoMensual(g), 0);
+  const totalCuaji = recurrentes.filter(g=>g.sucursal==="Cuajimalpa"||g.sucursal==="Ambas")
     .reduce((s,g) => s + (g.sucursal==="Ambas" ? montoMensual(g)*0.5 : montoMensual(g)), 0);
-  const totalPolanco = gastos.filter(g=>g.sucursal==="Polanco"||g.sucursal==="Ambas")
+  const totalPolanco = recurrentes.filter(g=>g.sucursal==="Polanco"||g.sucursal==="Ambas")
     .reduce((s,g) => s + (g.sucursal==="Ambas" ? montoMensual(g)*0.5 : montoMensual(g)), 0);
+  const extraTxt = extraord.length ? `<div style="font-size:11px;color:var(--muted);margin-top:8px">+ ${extraord.length} gasto(s) extraordinario(s) de un mes específico (se suman solo en su mes dentro del Estado de resultados).</div>` : "";
   const resumenHTML = `
     <div style="margin-top:16px;padding:14px 16px;background:var(--card);border-radius:12px;border:1px solid var(--border)">
-      <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:10px;text-transform:uppercase">Resumen mensual</div>
+      <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:10px;text-transform:uppercase">Resumen mensual recurrente</div>
       <div style="display:flex;gap:12px;flex-wrap:wrap">
         <div style="flex:1;min-width:140px;text-align:center;padding:10px;background:var(--bg);border-radius:8px">
           <div style="font-size:18px;font-weight:700;color:var(--accent)">${fmtMXN(totalCuaji)}</div>
@@ -3506,14 +3536,20 @@ function renderGastosList(){
           <div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:2px">Total empresa</div>
         </div>
       </div>
+      ${extraTxt}
     </div>`;
-  L("gastos-list").innerHTML = renderGrupo(fijos,"Gastos fijos") + renderGrupo(variables,"Gastos variables") + resumenHTML;
+  L("gastos-list").innerHTML = renderGrupo(fijos,"Gastos fijos") + renderGrupo(semifijos,"Gastos semifijos") + renderGrupo(variables,"Gastos variables") + resumenHTML;
 }
 function toggleGastoCondicional(){
   const esCondicional = L("g-frecuencia").value === "Condicional";
   const fields = L("gasto-condicional-fields");
   fields.style.display = esCondicional ? "block" : "none";
   L("g-monto-label").textContent = esCondicional ? "Monto del bono/comisión ($)" : "Monto ($) *";
+}
+function toggleGastoVigencia(){
+  const esMes = L("g-vigencia") && L("g-vigencia").value === "mes";
+  const w = L("g-vigencia-mes-wrap");
+  if(w) w.style.display = esMes ? "block" : "none";
 }
 function editarGasto(id){
   const g = (S.gastos||[]).find(x=>x.id===id);
@@ -3527,7 +3563,10 @@ function editarGasto(id){
   L("g-descripcion").value    = g.descripcion||"";
   L("g-condicion").value      = g.condicion||"";
   L("g-aplica-a").value       = g.aplicaA||"";
+  if(g.vigencia && /^\d{4}-\d{2}$/.test(g.vigencia)){ L("g-vigencia").value="mes"; L("g-vigencia-mes").value=g.vigencia; }
+  else { L("g-vigencia").value="Siempre"; L("g-vigencia-mes").value=""; }
   toggleGastoCondicional();
+  toggleGastoVigencia();
   L("gasto-form-title").textContent = "Editar gasto";
   L("btn-cancelar-gasto").style.display = "inline-block";
   L("g-concepto").focus();
@@ -3535,6 +3574,7 @@ function editarGasto(id){
 function cancelarEditarGasto(){
   ["gasto-id","g-concepto","g-descripcion","g-monto","g-condicion","g-aplica-a"].forEach(id=>L(id).value="");
   L("g-tipo").value="Fijo"; L("g-frecuencia").value="Mensual"; L("g-sucursal").value="Ambas";
+  L("g-vigencia").value="Siempre"; L("g-vigencia-mes").value=""; toggleGastoVigencia();
   L("gasto-condicional-fields").style.display="none";
   L("gasto-form-title").textContent="Nuevo gasto";
   L("btn-cancelar-gasto").style.display="none";
@@ -3544,6 +3584,12 @@ async function guardarGasto(){
   if(!concepto){ toast("El concepto es obligatorio","error"); return; }
   const monto = parseFloat(L("g-monto").value);
   if(!monto||monto<=0){ toast("Ingresa un monto válido","error"); return; }
+  const vigSel = L("g-vigencia").value;
+  let vigencia = "Siempre";
+  if(vigSel==="mes"){
+    vigencia = L("g-vigencia-mes").value||"";
+    if(!/^\d{4}-\d{2}$/.test(vigencia)){ toast("Elige el mes del gasto único","error"); return; }
+  }
   const btn = L("btn-guardar-gasto"); btn.disabled=true; btn.textContent="Guardando...";
   const payload = {
     id:          L("gasto-id").value||undefined,
@@ -3555,6 +3601,7 @@ async function guardarGasto(){
     sucursal:    L("g-sucursal").value,
     condicion:   L("g-condicion").value.trim(),
     aplicaA:     L("g-aplica-a").value.trim(),
+    vigencia,
     activo:      true
   };
   const res = await api("saveGasto", payload);
