@@ -577,6 +577,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <button class="costos-tab" onclick="setReporteTab('utildiario')">💎 Utilidad diaria</button>
         <button class="costos-tab" onclick="setReporteTab('utilperiodo')">💎 Utilidad por período</button>
         <button class="costos-tab" onclick="setReporteTab('estado')">🧾 Estado de resultados</button>
+        <button class="costos-tab" onclick="setReporteTab('pedido')">🍰 Pedido sugerido</button>
         <button class="costos-tab" onclick="setReporteTab('formulas')">📐 Cómo se calcula</button>
       </div>
       <!-- SUB-PESTAÑA: DIARIO -->
@@ -853,6 +854,21 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           <div style="font-size:12px;color:var(--muted)">Rentabilidad en tiempo real: consolidado y por sucursal. Ingresos netos de comisión − costo variable − costos fijos.</div>
         </div>
         <div id="estado-content"><div class="card"><div class="empty-state"><div class="empty-icon">🧾</div><div>Selecciona un mes y pulsa Actualizar</div></div></div></div>
+      </div>
+      <!-- SUB-PESTAÑA: PEDIDO SUGERIDO (NUEVO v3.4.22) -->
+      <div id="reporte-pedido" class="costos-section">
+        <div class="card" style="padding:14px 16px;margin-bottom:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:6px">
+            <div class="card-title" style="margin-bottom:0">🍰 Pedido sugerido (cocinada)</div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <label style="font-size:11px;color:var(--muted)">Día a producir</label>
+              <input type="date" id="pedido-fecha" style="font-family:'DM Sans',sans-serif;font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)">
+              <button onclick="cargarPedidoSugerido()" class="btn-outline" style="width:auto;font-size:12px;padding:6px 14px;margin-top:0">🔄 Calcular</button>
+            </div>
+          </div>
+          <div style="font-size:12px;color:var(--muted)">Promedio del potencial de los últimos 4 días del mismo día de semana (o últimos 4 con ventas) + 15%, por localidad. Excluye ventas de ruta.</div>
+        </div>
+        <div id="pedido-content"><div class="card"><div class="empty-state"><div class="empty-icon">🍰</div><div>Elige el día y pulsa Calcular</div></div></div></div>
       </div>
       <!-- SUB-PESTAÑA: FÓRMULAS Y EJEMPLOS -->
       <div id="reporte-formulas" class="costos-section">
@@ -4527,7 +4543,7 @@ if (!S.pieEstado) S.pieEstado = { total: [], cuaji: [], polanco: [] };
 function setReporteTab(tab) {
   document.querySelectorAll("#tab-reporte > .costos-tabs > .costos-tab").forEach(t =>
     t.classList.toggle("active", t.getAttribute("onclick") === `setReporteTab('${tab}')`));
-  ["diario", "periodo", "conciliacion", "stockhora", "utildiario", "utilperiodo", "estado", "formulas"].forEach(s => {
+  ["diario", "periodo", "conciliacion", "stockhora", "utildiario", "utilperiodo", "estado", "pedido", "formulas"].forEach(s => {
     const el = L("reporte-" + s);
     if (el) el.classList.toggle("active", s === tab);
   });
@@ -4537,6 +4553,7 @@ function setReporteTab(tab) {
   if (tab === "utildiario") cargarUtilDiario();
   if (tab === "utilperiodo") cargarUtilPeriodo();
   if (tab === "estado") cargarEstadoResultados();
+  if (tab === "pedido") cargarPedidoSugerido();
 }
 
 // === ESTADO DE RESULTADOS (P&L vivo) — v3.4.20 (29-may-2026) ===
@@ -4633,6 +4650,36 @@ function renderEstadoResultados(){
   L("estado-content").innerHTML=html;
 }
 
+async function cargarPedidoSugerido(){
+  const sel=L("pedido-fecha");
+  if(sel && !sel.value){ const d=new Date(); sel.value=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+  const fecha=sel?sel.value:"";
+  L("pedido-content").innerHTML='<div class="card"><div class="empty-state"><div class="empty-icon">⏳</div><div>Calculando…</div></div></div>';
+  const res=await api("getPedidoSugerido", fecha?{fecha}:{});
+  if(!res||!res.ok){ L("pedido-content").innerHTML='<div class="card"><div class="empty-state"><div class="empty-icon">⚠️</div><div>'+((res&&res.error)||"Error al calcular")+'</div></div></div>'; return; }
+  const tabla=(loc,arr)=>{
+    if(!arr.length) return `<div style="font-size:12px;color:var(--muted)">Sin datos suficientes para ${loc}</div>`;
+    return `<table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead><tr><th style="text-align:left;padding:4px 0">Sabor</th><th style="text-align:left">Tamaño</th><th style="text-align:right">Potencial/día</th><th style="text-align:right">Sugerido</th></tr></thead>
+      <tbody>${arr.map(r=>`<tr><td style="padding:3px 0">${r.sabor}</td><td>${r.tamano}</td><td style="text-align:right;color:var(--muted)">${r.promPotencial}</td><td style="text-align:right;font-weight:700;color:var(--accent)">${r.sugerido}</td></tr>`).join("")}</tbody></table>`;
+  };
+  const dia=res.diaSemana.toLowerCase();
+  const modoTxt = res.modo==="mismo-dia" ? `promedio de los últimos ${res.muestras} ${dia}s` : `promedio de los últimos ${res.muestras} días con ventas (aún no hay ${res.n} ${dia}s de historia)`;
+  const cols=[["Polanco",res.sucursales.Polanco],["Cuajimalpa",res.sucursales.Cuajimalpa]];
+  const html=`
+    <div class="card">
+      <div style="font-size:14px;margin-bottom:4px"><strong>${res.diaSemana} ${res.fecha}</strong> · cocinada sugerida</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Base: ${modoTxt} · +${res.bufferPct}% · días usados: ${res.diasUsados.join(", ")||"—"}</div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px">
+        ${cols.map(([loc,arr])=>`<div style="background:var(--warm);border-radius:10px;padding:12px">
+          <div style="font-weight:700;color:var(--accent);margin-bottom:8px">${loc} · total ${res.totalSugerido[loc]} pzas</div>
+          ${tabla(loc,arr)}
+        </div>`).join("")}
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:12px;line-height:1.5">Potencial/día = lo vendido ese día, proyectado a día completo si se agotó temprano (mismo cálculo que el reporte de Oportunidad). Se promedian los días muestra y se aplica +${res.bufferPct}%, redondeando hacia arriba. No incluye ventas de ruta (esas se planean según lo que pidan los clientes).</div>
+    </div>`;
+  L("pedido-content").innerHTML=html;
+}
 function resetPieDrillDown(secId) {
   S.pieEstado[secId] = [];
   renderPiesSeccion(secId);
