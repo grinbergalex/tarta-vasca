@@ -561,6 +561,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <button class="costos-tab" onclick="setReporteTab('stockhora')">📦 Stock por hora</button>
         <button class="costos-tab" onclick="setReporteTab('utildiario')">💎 Utilidad diaria</button>
         <button class="costos-tab" onclick="setReporteTab('utilperiodo')">💎 Utilidad por período</button>
+        <button class="costos-tab" onclick="setReporteTab('estado')">🧾 Estado de resultados</button>
         <button class="costos-tab" onclick="setReporteTab('formulas')">📐 Cómo se calcula</button>
       </div>
       <!-- SUB-PESTAÑA: DIARIO -->
@@ -823,6 +824,20 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           <div style="position:relative;width:100%;height:320px"><canvas id="grafica-linea-utilperiodo"></canvas></div>
         </div>
         <div id="utilperiodo-content"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
+      </div>
+      <!-- SUB-PESTAÑA: ESTADO DE RESULTADOS (NUEVO v3.4.19) -->
+      <div id="reporte-estado" class="costos-section">
+        <div class="card" style="padding:14px 16px;margin-bottom:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:6px">
+            <div class="card-title" style="margin-bottom:0">🧾 Estado de resultados</div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="month" id="estado-periodo" style="font-family:'DM Sans',sans-serif;font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)">
+              <button onclick="cargarEstadoResultados()" class="btn-outline" style="width:auto;font-size:12px;padding:6px 14px;margin-top:0">🔄 Actualizar</button>
+            </div>
+          </div>
+          <div style="font-size:12px;color:var(--muted)">Rentabilidad en tiempo real: consolidado y por sucursal. Ingresos netos de comisión − costo variable − costos fijos.</div>
+        </div>
+        <div id="estado-content"><div class="card"><div class="empty-state"><div class="empty-icon">🧾</div><div>Selecciona un mes y pulsa Actualizar</div></div></div></div>
       </div>
       <!-- SUB-PESTAÑA: FÓRMULAS Y EJEMPLOS -->
       <div id="reporte-formulas" class="costos-section">
@@ -4420,7 +4435,7 @@ if (!S.pieEstado) S.pieEstado = { total: [], cuaji: [], polanco: [] };
 function setReporteTab(tab) {
   document.querySelectorAll("#tab-reporte > .costos-tabs > .costos-tab").forEach(t =>
     t.classList.toggle("active", t.getAttribute("onclick") === `setReporteTab('${tab}')`));
-  ["diario", "periodo", "conciliacion", "stockhora", "utildiario", "utilperiodo", "formulas"].forEach(s => {
+  ["diario", "periodo", "conciliacion", "stockhora", "utildiario", "utilperiodo", "estado", "formulas"].forEach(s => {
     const el = L("reporte-" + s);
     if (el) el.classList.toggle("active", s === tab);
   });
@@ -4429,6 +4444,69 @@ function setReporteTab(tab) {
   if (tab === "conciliacion") cargarConciliacion();
   if (tab === "utildiario") cargarUtilDiario();
   if (tab === "utilperiodo") cargarUtilPeriodo();
+  if (tab === "estado") cargarEstadoResultados();
+}
+
+// === ESTADO DE RESULTADOS (P&L vivo) — v3.4.19 (29-may-2026) ===
+async function cargarEstadoResultados(){
+  const sel = L("estado-periodo");
+  if(sel && !sel.value){ const d=new Date(); sel.value = d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"); }
+  const periodo = sel ? sel.value : "";
+  L("estado-content").innerHTML = '<div class="card"><div class="empty-state"><div class="empty-icon">⏳</div><div>Calculando…</div></div></div>';
+  const res = await api("getEstadoResultados", periodo ? {periodo} : {});
+  if(!res || !res.ok){ L("estado-content").innerHTML = '<div class="card"><div class="empty-state"><div class="empty-icon">⚠️</div><div>'+((res&&res.error)||"Error al cargar")+'</div></div></div>'; return; }
+  const cols = [["Consolidado",res.consolidado],["Polanco",res.sucursales.Polanco],["Cuajimalpa",res.sucursales.Cuajimalpa]];
+  const pct = v => (v==null||isNaN(v)) ? "—" : (v.toFixed(1)+"%");
+  const row = (label, key, opts={}) => {
+    const tds = cols.map(([n,d])=>{
+      const val = d[key];
+      const txt = opts.pct ? pct(val) : fmtMXN(val);
+      let style = "text-align:right";
+      if(opts.neg && val<0) style += ";color:var(--danger)";
+      if(opts.good) style += (val>=0?";color:var(--success)":";color:var(--danger)");
+      if(opts.strong) style += ";font-weight:700";
+      return `<td style="${style}">${txt}</td>`;
+    }).join("");
+    const lbl = opts.strong ? "font-weight:700" : (opts.pct ? "color:var(--muted);font-size:12px" : "");
+    const tr = opts.border ? "border-top:2px solid var(--border)" : "";
+    return `<tr style="${tr}"><td style="${lbl}">${label}</td>${tds}</tr>`;
+  };
+  const proRot = res.esMesEnCurso ? ` (prorrateado a día ${res.diaHoy}/${res.diasMes})` : " (mes completo)";
+  const html = `
+    <div class="card" style="overflow-x:auto">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Periodo <strong>${res.periodo}</strong> · ${res.esMesEnCurso?"mes en curso":"mes cerrado"} · generado ${res.generado}</div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead><tr><th style="text-align:left;padding:4px 0"></th>${cols.map(([n])=>`<th style="text-align:right;padding:4px 0;color:var(--accent)">${n}</th>`).join("")}</tr></thead>
+        <tbody>
+          ${row("Ingresos brutos (ventas)","ingresoBruto")}
+          ${row("(−) Comisiones canal/método","comision",{neg:true})}
+          ${row("= Ingresos netos","ingresoNeto",{strong:true})}
+          ${row("(−) Costo variable (receta)","costoVar")}
+          ${row("= Utilidad bruta","utilidadBruta",{strong:true,good:true,border:true})}
+          ${row("Margen bruto","margenBruto",{pct:true})}
+          ${row("(−) Mermas y regalos (costo)","mermaRegaloCosto")}
+          ${row("(−) Costos fijos"+proRot,"fijoProrrateado")}
+          ${row("= Utilidad neta","utilidadNeta",{strong:true,good:true,border:true})}
+          ${row("Margen neto","margenNeto",{pct:true})}
+        </tbody>
+      </table>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px">
+        ${cols.map(([n,d])=>`<div style="background:var(--warm);border-radius:10px;padding:10px">
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">${n}</div>
+          <div style="font-size:12px;margin-top:4px">Operaciones: <strong>${d.ops}</strong> · ${d.unidades} u.</div>
+          <div style="font-size:12px">Ticket promedio: <strong>${fmtMXN(d.ticketProm)}</strong></div>
+          <div style="font-size:12px">Costos fijos/mes: <strong>${fmtMXN(d.fijoMensual)}</strong></div>
+          <div style="font-size:12px">Venta de equilibrio/mes: <strong>${d.ventaEquilibrio==null?"—":fmtMXN(d.ventaEquilibrio)}</strong></div>
+        </div>`).join("")}
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:12px;line-height:1.5">
+        Ingresos netos = ventas − comisión de canal/método. Utilidad bruta = ingresos netos − costo de receta de lo vendido.
+        Mermas y regalos se restan como fuga (cuestan, no generan ingreso). Costos fijos vienen de la hoja <strong>Gastos</strong>;
+        los que no traen sucursal se reparten 50/50. En el mes en curso se prorratean por días transcurridos.
+        Venta de equilibrio = costos fijos del mes ÷ margen bruto.
+      </div>
+    </div>`;
+  L("estado-content").innerHTML = html;
 }
 function resetPieDrillDown(secId) {
   S.pieEstado[secId] = [];
