@@ -1683,6 +1683,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <option value="Cocinero">Cocinero (produce y transfiere, NO vende)</option>
         <option value="Mixto">Mixto (vende en su sucursal + produce + transfiere)</option>
         <option value="Admin_Ventas">Admin Ventas (vende en ambas + transfiere)</option>
+        <option value="Chofer">Chofer (solo ve sus rutas de reparto)</option>
         <option value="Owner">Owner (acceso total)</option>
       </select>
       <div id="nu-rol-info" style="font-size:11px;color:var(--muted);margin-top:4px;font-style:italic">El vendedor solo verá Stock y Nueva venta de su sucursal.</div>
@@ -1710,6 +1711,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <option value="Cocinero">Cocinero</option>
         <option value="Mixto">Mixto</option>
         <option value="Admin_Ventas">Admin Ventas</option>
+        <option value="Chofer">Chofer</option>
         <option value="Owner">Owner</option>
       </select>
     </div>
@@ -1832,7 +1834,8 @@ const PERMISOS_FALLBACK = {
   "Vendedor":     { esAdmin:false, puedeVender:true,  puedeProducir:false, puedeTransferir:false, puedeVerAmbas:false, puedeAnular:false },
   "Cocinero":     { esAdmin:false, puedeVender:false, puedeProducir:true,  puedeTransferir:true,  puedeVerAmbas:true,  puedeAnular:false },
   "Mixto":        { esAdmin:false, puedeVender:true,  puedeProducir:true,  puedeTransferir:true,  puedeVerAmbas:false, puedeAnular:false },
-  "Admin_Ventas": { esAdmin:false, puedeVender:true,  puedeProducir:false, puedeTransferir:true,  puedeVerAmbas:true,  puedeAnular:false }
+  "Admin_Ventas": { esAdmin:false, puedeVender:true,  puedeProducir:false, puedeTransferir:true,  puedeVerAmbas:true,  puedeAnular:false },
+  "Chofer":       { esAdmin:false, puedeVender:false, puedeProducir:false, puedeTransferir:false, puedeVerAmbas:false, puedeAnular:false, esChofer:true }
 };
 function getPermisos() {
   return S.permisos || PERMISOS_FALLBACK[S.rol] || PERMISOS_FALLBACK["Vendedor"];
@@ -1965,6 +1968,7 @@ const MENU = [
   ]},
   { id:"rep", label:"🚚 Reparto", items:[
     { label:"Reparto a domicilio", pane:"reparto", perm:"repartoadmin" },
+    { label:"Mi ruta", pane:"reparto", perm:"chofer" },
   ]},
   { id:"op", label:"📊 Operación", items:[
     { label:"Seguimiento diario",pane:"reporte", sub:["setReporteTab","diario"],    perm:"owner" },
@@ -2000,6 +2004,7 @@ function _permOK(perm){
   if(perm==="producir") return !!p.puedeProducir || !!p.esAdmin;
   if(perm==="transferir") return !!p.puedeTransferir || !!p.esAdmin;
   if(perm==="repartoadmin") return !!p.esAdmin || (!!p.puedeVender && !!p.puedeVerAmbas);
+  if(perm==="chofer") return !!p.esChofer || !!p.esAdmin;
   return false;
 }
 function _loadPane(t){
@@ -3102,7 +3107,8 @@ const ROL_INFO = {
   "Vendedor":     { color:"#d1ecf1", text:"#0c5460", desc:"Solo vende en su sucursal asignada" },
   "Cocinero":     { color:"#f8d7da", text:"#721c24", desc:"Produce y transfiere. NO vende." },
   "Mixto":        { color:"#d4edda", text:"#155724", desc:"Vende en su sucursal + produce + transfiere" },
-  "Admin_Ventas": { color:"#fef3c7", text:"#92400e", desc:"Vende en ambas sucursales + transfiere" }
+  "Admin_Ventas": { color:"#fef3c7", text:"#92400e", desc:"Vende en ambas sucursales + transfiere" },
+  "Chofer":       { color:"#e0e7ff", text:"#3730a3", desc:"Solo ve y opera sus rutas de reparto" }
 };
 function onCambioRol() {
   const rol = L("nu-rol").value;
@@ -6386,9 +6392,22 @@ var repEsc = null, repIdeal = null;
 
 async function cargarReparto(){
   var hoy = new Date().toISOString().slice(0,10);
-  if(!L("rep-fecha").value) L("rep-fecha").value = hoy;
-  if(!L("rep-hoy").value) L("rep-hoy").value = hoy;
+  if(L("rep-fecha")&&!L("rep-fecha").value) L("rep-fecha").value = hoy;
+  if(L("rep-hoy")&&!L("rep-hoy").value) L("rep-hoy").value = hoy;
   await repReload();
+  var perms=(typeof getPermisos==="function")?(getPermisos()||{}):{};
+  var tab=L("tab-reparto");
+  if(perms.esChofer){
+    repVista.rol="Chofer"; repVista.chofer=S.usuario;
+    tab.querySelectorAll(".card").forEach(function(c){c.style.display="none";});
+    var vc=document.getElementById("rep-rol"); if(vc&&vc.parentElement) vc.parentElement.style.display="none";
+    L("rep-overlay").style.display="block";
+    var bk=L("rep-overlay").querySelector("button"); if(bk) bk.style.display="none";
+    repRenderChofer();
+  } else {
+    tab.querySelectorAll(".card").forEach(function(c){c.style.display="";});
+    var vc2=document.getElementById("rep-rol"); if(vc2&&vc2.parentElement) vc2.parentElement.style.display="";
+  }
 }
 async function repReload(){
   var res = await api("repartoEstado");
@@ -6545,9 +6564,10 @@ function repSetRol(rol){ repVista.rol=rol; var cs=L("rep-choferSel");
   else { cs.style.display="none"; L("rep-overlay").style.display="none"; }
 }
 function repRenderChofer(){
-  repVista.chofer=L("rep-choferSel").value; var nombre=repVista.chofer, cont=L("rep-choferCont");
+  var sel=L("rep-choferSel"); if(sel && sel.style.display!=="none" && sel.value) repVista.chofer=sel.value;
+  var nombre=repVista.chofer, cont=L("rep-choferCont");
   var h="<h2 style='color:#7a1f2b'>🍰 Mi ruta — "+(nombre||"(elige tu nombre)")+"</h2>";
-  var bloques=[]; REP.rutas.forEach(function(r){r.choferes.forEach(function(c,ci){ if((c.nombre||"").trim()===nombre) bloques.push({r:r,c:c,ci:ci}); });});
+  var bloques=[]; REP.rutas.forEach(function(r){r.choferes.forEach(function(c,ci){ if((c.nombre||"").trim().toLowerCase()===(nombre||"").trim().toLowerCase()) bloques.push({r:r,c:c,ci:ci}); });});
   if(!nombre||!bloques.length){ cont.innerHTML=h+"<p style='color:#888'>No tienes rutas asignadas.</p>"; return; }
   bloques.forEach(function(o){ var r=o.r,c=o.c,ci=o.ci;
     h+="<div style='border:1px solid #ddd;border-radius:10px;padding:12px;margin:10px 0;max-width:680px'><div style='display:flex;justify-content:space-between'><b>📅 "+r.fecha+"</b><a target='_blank' style='color:#fff;background:#7a1f2b;padding:3px 8px;border-radius:6px;text-decoration:none' href='"+repMapsUrl(c)+"'>🗺️ Google Maps</a></div>";
