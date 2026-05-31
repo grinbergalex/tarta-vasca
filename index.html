@@ -1964,7 +1964,7 @@ const MENU = [
     { label:"Historial",        pane:"ventas", perm:"owner" },
   ]},
   { id:"rep", label:"🚚 Reparto", items:[
-    { label:"Reparto a domicilio", pane:"reparto", perm:"owner" },
+    { label:"Reparto a domicilio", pane:"reparto", perm:"repartoadmin" },
   ]},
   { id:"op", label:"📊 Operación", items:[
     { label:"Seguimiento diario",pane:"reporte", sub:["setReporteTab","diario"],    perm:"owner" },
@@ -1999,6 +1999,7 @@ function _permOK(perm){
   if(perm==="vender") return !!p.puedeVender || !!p.esAdmin;
   if(perm==="producir") return !!p.puedeProducir || !!p.esAdmin;
   if(perm==="transferir") return !!p.puedeTransferir || !!p.esAdmin;
+  if(perm==="repartoadmin") return !!p.esAdmin || (!!p.puedeVender && !!p.puedeVerAmbas);
   return false;
 }
 function _loadPane(t){
