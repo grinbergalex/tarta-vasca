@@ -1,275 +1,102 @@
-<!-- ===================================================================================
- TARTA VASCA — MÓDULO REPARTO A DOMICILIO · PARCHE FRONTEND (aditivo)
- Para TV_HTML v3.4.29+ · Generado 2026-05-30 · Requiere el parche de backend instalado.
+function despachar(body) {
+  const accion = body.accion;
+  if (accion === "login") return login(body);
+  if (accion === "logout") return logout(body);
 
- INSTALAR (3 ediciones pequeñas + 2 bloques que se pegan):
+  const sesion = validarToken(body.token);
+  if (!sesion.ok) return { ok: false, error: "Sesión inválida o expirada. Vuelve a iniciar sesión." };
 
- (A) En const MENU, agrega este grupo (p.ej. después del grupo "ven"):
-     { id:"rep", label:"🚚 Reparto", items:[
-       { label:"Reparto a domicilio", pane:"reparto", perm:"owner" },
-     ]},
-
- (B) En function _loadPane(t), agrega:
-       else if(t==="reparto") cargarReparto();
-
- (C) En const LECTURA = [...], agrega: "repartoEstado","repartoProponer"
-
- (D) Pega el BLOQUE HTML (abajo) entre los otros <div class="tab-pane"> (por ejemplo
-     después de <div id="tab-rutas">...</div>).
-
- (E) Pega el BLOQUE SCRIPT (abajo) antes del </script> principal.
-==================================================================================== -->
-
-<!-- ====================== (D) BLOQUE HTML ====================== -->
-<div id="tab-reparto" class="tab-pane" style="display:none">
-  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-    <h2 style="margin:0">🚚 Reparto a domicilio</h2>
-    <span style="display:flex;align-items:center;gap:8px;font-size:13px">Ver como:
-      <select id="rep-rol" onchange="repSetRol(this.value)"><option value="Admin">Administrador</option><option value="Chofer">Chofer…</option></select>
-      <select id="rep-choferSel" onchange="repRenderChofer()" style="display:none"></select>
-    </span>
-  </div>
-
-  <div class="card" style="margin-top:10px"><h3>Capturar pedido</h3>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      <input id="rep-cli" placeholder="Cliente"><input id="rep-tel" placeholder="Teléfono">
-    </div>
-    <input id="rep-dir" placeholder="Dirección completa (calle, colonia, alcaldía, CP)" style="width:100%;margin-top:8px">
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:8px">
-      <input id="rep-zona" placeholder="Zona/colonia"><input id="rep-tartas" type="number" value="1" placeholder="# tartas">
-      <input id="rep-monto" type="number" value="0" placeholder="Monto $ (0=auto)">
-      <select id="rep-pago"><option>Pagado</option><option>Cobra chofer</option></select>
-    </div>
-    <input id="rep-detalle" placeholder="Tipo de tartas (sabor / tamaño)" style="width:100%;margin-top:8px">
-    <div style="margin-top:8px"><button class="btn" onclick="repAddPedido()">+ Agregar a la base</button>
-      <span style="font-size:11px;color:#888">La dirección se geocodifica con Google Maps al agregar.</span></div>
-  </div>
-
-  <div class="card"><h3>Base de pedidos del día (<span id="rep-cnt">0</span>)</h3><div id="rep-base"></div></div>
-
-  <div class="card"><h3>Proponer rutas</h3>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-      <button class="btn" onclick="repProponer([1,2])">▶ Proponer (IDEAL + 1 + 2)</button>
-      <button class="btn-sec" onclick="repProponer([1,2,3,4])">Ver 3 y 4</button>
-      <span>Forzar N: <input id="rep-forzar" type="number" min="1" max="4" style="width:55px"><button class="btn-sec" onclick="repForzar()">Forzar</button></span>
-      <span style="margin-left:auto">Fecha de reparto: <input id="rep-fecha" type="date"></span>
-    </div>
-    <div id="rep-escenarios" style="margin-top:8px"></div>
-  </div>
-
-  <div class="card" id="rep-avisosCard"><h3>🔔 Avisos: entregas a reprogramar</h3><div id="rep-avisos"></div></div>
-  <div class="card"><h3>Rutas planeadas</h3><div id="rep-rutas"></div></div>
-  <div class="card"><h3>Cocina / Producción (alerta 2 días antes)</h3>
-    <div>Hoy (simulado): <input id="rep-hoy" type="date" onchange="repRenderCocina()"></div>
-    <div id="rep-cocina" style="margin-top:6px"></div></div>
-  <div class="card"><h3>Inventario (segmentado)</h3>
-    <div>Stock total (tartas): <input id="rep-stock" type="number" value="0" onchange="repRenderInv()" style="width:110px"></div>
-    <div id="rep-inv" style="margin-top:6px"></div></div>
-
-  <div id="rep-overlay" style="display:none;position:fixed;inset:0;background:#fff;z-index:9999;overflow:auto;padding:20px">
-    <div style="text-align:right"><button class="btn-sec" onclick="repSetRol('Admin');document.getElementById('rep-rol').value='Admin'">✕ Volver a Admin</button></div>
-    <div id="rep-choferCont"></div>
-  </div>
-</div>
-<!-- ==================== fin BLOQUE HTML ==================== -->
-
-<!-- ====================== (E) BLOQUE SCRIPT ====================== -->
-<script>
-/* ===== Estado del módulo de reparto ===== */
-var REP = { base:[], rutas:[], params:{capTartas:13,jornadaMin:360,choferes:3} };
-var repVista = { rol:"Admin", chofer:"" };
-var repEsc = null, repIdeal = null;
-
-async function cargarReparto(){
-  var hoy = new Date().toISOString().slice(0,10);
-  if(!L("rep-fecha").value) L("rep-fecha").value = hoy;
-  if(!L("rep-hoy").value) L("rep-hoy").value = hoy;
-  await repReload();
+  switch (accion) {
+    case "getStock":                return getStock(body, sesion);
+    case "altaProduccion":          return altaProduccion(body, sesion);
+    case "registrarVenta":          return registrarVenta(body, sesion);
+    case "registrarMerma":          return registrarMerma(body, sesion);
+    case "getCatalogo":             return getCatalogo(sesion);
+    case "altaSabor":               return altaSabor(body, sesion);
+    case "bajaSabor":               return bajaSabor(body, sesion);
+    case "altaTamano":              return altaTamano(body, sesion);
+    case "bajaTamano":              return bajaTamano(body, sesion);
+    case "altaCanal":               return altaCanal(body, sesion);
+    case "bajaCanal":               return bajaCanal(body, sesion);
+    case "getZonasEnvio":           return getZonasEnvio(sesion);
+    case "saveZonaEnvio":           return saveZonaEnvio(body, sesion);
+    case "deleteZonaEnvio":         return deleteZonaEnvio(body, sesion);
+    case "getCanalPrecios":         return getCanalPrecios(sesion);
+    case "saveCanalPrecio":         return saveCanalPrecio(body, sesion);
+    case "deleteCanalPrecio":       return deleteCanalPrecio(body, sesion);
+    case "getPrecios":              return getPrecios(sesion);
+    case "updatePrecio":            return updatePrecio(body, sesion);
+    case "actualizarMetodoVenta":   return actualizarMetodoVenta(body, sesion);
+    case "getRutasAbiertas":        return getRutasAbiertas(body, sesion);
+    case "archivarRuta":            return archivarRuta(body, sesion);
+    case "actualizarMetodoVentaBatch": return actualizarMetodoVentaBatch(body, sesion);
+    case "getRutasCerradas":        return getRutasCerradas(body, sesion);
+    case "getUsuarios":             return getUsuarios(sesion);
+    case "crearUsuario":            return crearUsuario(body, sesion);
+    case "editarUsuario":           return editarUsuario(body, sesion);   // NUEVO v4.3
+    case "toggleUsuario":           return toggleUsuario(body, sesion);
+    case "cambiarPassword":         return cambiarPassword(body, sesion);
+    case "getAuditoria":            return getAuditoria(sesion);
+    case "buscarCliente":           return buscarCliente(body, sesion);
+    case "getHistorialCliente":     return getHistorialCliente(body, sesion);
+    case "getVentas":               return getVentas(body, sesion);
+    case "getInsumos":              return getInsumos(sesion);
+    case "saveInsumo":              return saveInsumo(body, sesion);
+    case "deleteInsumo":            return deleteInsumo(body, sesion);
+    case "getRecetas":              return getRecetas(sesion);
+    case "saveReceta":              return saveReceta(body, sesion);
+    case "deleteRecetaIngrediente": return deleteRecetaIngrediente(body, sesion);
+    case "getCalculoCosto":         return getCalculoCosto(body, sesion);
+    case "bulkLoadInsumos":         return bulkLoadInsumos(body, sesion);
+    case "bulkLoadReceta":          return bulkLoadReceta(body, sesion);
+    case "repararPreciosSabores":   return repararPreciosSabores(sesion);
+    case "getGastos":               return getGastos(sesion);
+    case "saveGasto":               return saveGasto(body, sesion);
+    case "deleteGasto":             return deleteGasto(body, sesion);
+    case "getObjetivos":            return getObjetivos(sesion);
+    case "saveObjetivo":            return saveObjetivo(body, sesion);
+    case "deleteObjetivo":          return deleteObjetivo(body, sesion);
+    case "limpiarDatos":            return limpiarDatos(sesion);
+    case "getStockMinMax":          return getStockMinMax(sesion);
+    case "saveStockMinMax":         return saveStockMinMax(body, sesion);
+    case "getMensajes":             return getMensajes(sesion);
+    case "enviarMensaje":           return enviarMensaje(body, sesion);
+    case "marcarLeidoMensaje":      return marcarLeidoMensaje(body, sesion);
+    case "getAlertas":              return getAlertas(sesion);
+    case "getComisionesConfig":     return getComisionesConfig(sesion);
+    case "saveComisionConfig":      return saveComisionConfig(body, sesion);
+    case "registrarTransferencia":  return registrarTransferencia(body, sesion);
+    case "getTransferencias":       return getTransferencias(sesion);
+    case "confirmarTransferencia":  return confirmarTransferencia(body, sesion);
+    case "getMisPermisos":          return getMisPermisos(sesion);
+    case "listarMovimientosRecientes": return listarMovimientosRecientes(body, sesion);  // NUEVO v4.3
+    case "eliminarMovimiento":      return eliminarMovimiento(body, sesion);              // NUEVO v4.3
+    case "getSesionesActivas":      return getSesionesActivas(body, sesion);              // NUEVO v4.3
+    case "abrirDia":                return abrirDia(body, sesion);                        // NUEVO v4.4
+    case "cerrarDia":               return cerrarDia(body, sesion);                       // NUEVO v4.4
+    case "getDiaActual":            return getDiaActual(body, sesion);                    // NUEVO v4.4
+    case "exportarDisponibleDocx":  return exportarDisponibleDocx(body, sesion);          // NUEVO v4.4
+    case "getAnalisisDemanda":      return getAnalisisDemanda(body, sesion);              // NUEVO v4.4
+    case "getSeguimientoVentas":    return getSeguimientoVentas(body, sesion);            // NUEVO v4.4
+    case "getEstadoResultados":     return getEstadoResultados(body, sesion);             // NUEVO v4.5.13 (P&L)
+    case "getPedidoSugerido":       return getPedidoSugerido(body, sesion);               // NUEVO v4.5.16 (cocinada)
+    case "getReservas":             return getReservas(body, sesion);                     // NUEVO v4.4b
+    case "convertirReservaAVenta":  return convertirReservaAVenta(body, sesion);          // NUEVO v4.4b
+    case "liberarReserva":          return liberarReserva(body, sesion);                  // NUEVO v4.4b
+    case "getSucursalesUsuario":    return getSucursalesUsuario(body, sesion);            // NUEVO v4.4b
+    // ===== REPARTO A DOMICILIO =====
+    case "repartoEstado":        return repartoEstado(body, sesion);
+    case "repartoAddPedido":     return repartoAddPedido(body, sesion);
+    case "repartoDelPedido":     return repartoDelPedido(body, sesion);
+    case "repartoProponer":      return repartoProponer(body, sesion);
+    case "repartoPlanear":       return repartoPlanear(body, sesion);
+    case "repartoSetChofer":     return repartoSetChofer(body, sesion);
+    case "repartoSetResultado":  return repartoSetResultado(body, sesion);
+    case "repartoSetFormaPago":  return repartoSetFormaPago(body, sesion);
+    case "repartoSetEfectivo":   return repartoSetEfectivo(body, sesion);
+    case "repartoCerrarRuta":    return repartoCerrarRuta(body, sesion);
+    case "repartoReprogramar":   return repartoReprogramar(body, sesion);
+    case "repartoDelRuta":       return repartoDelRuta(body, sesion);
+    default: return { ok: false, error: "Acción desconocida: " + accion };
+  }
 }
-async function repReload(){
-  var res = await api("repartoEstado");
-  if(!res || !res.ok){ toast("No se pudo cargar reparto","error"); return; }
-  REP.base = res.base||[]; REP.rutas = res.rutas||[]; REP.params = res.params||REP.params;
-  repRenderBase(); repRenderRutas(); repRenderAvisos(); repRenderCocina(); repRenderInv();
-}
-
-/* ===== Captura ===== */
-async function repAddPedido(){
-  if(!L("rep-cli").value) return toast("Falta el cliente","error");
-  if(!L("rep-dir").value) return toast("Falta la dirección","error");
-  var pedido = { cliente:L("rep-cli").value, tel:L("rep-tel").value, dir:L("rep-dir").value,
-    zona:L("rep-zona").value, tartas:+L("rep-tartas").value||1, monto:+L("rep-monto").value||0,
-    detalle:L("rep-detalle").value, pago:L("rep-pago").value };
-  var res = await api("repartoAddPedido",{pedido:pedido});
-  if(res.ok){ ["rep-cli","rep-tel","rep-dir","rep-zona","rep-detalle"].forEach(function(id){L(id).value="";});
-    L("rep-tartas").value=1; L("rep-monto").value=0;
-    toast(res.geocodificado?"Pedido agregado y geocodificado":"Pedido agregado (no se pudo geocodificar; revisa la dirección)");
-    await repReload(); } else toast(res.error||"Error","error");
-}
-async function repDelPedido(id){ if(!confirm("¿Eliminar pedido?"))return; var r=await api("repartoDelPedido",{id:id}); if(r.ok) await repReload(); }
-function repRenderBase(){
-  L("rep-cnt").textContent = REP.base.length;
-  L("rep-base").innerHTML = !REP.base.length ? "<div style='font-size:12px;color:#888'>Sin pedidos en base.</div>" :
-    "<table style='width:100%;font-size:12px;border-collapse:collapse'><tr><th>Cliente</th><th>Dirección</th><th>🎂</th><th>Tartas</th><th></th></tr>"+
-    REP.base.map(function(p){ return "<tr style='border-top:1px solid #eee'><td>"+p.cliente+"</td><td>"+(p.dir||p.zona)+
-      (p.fechaDeseada?" <b>(reprog→"+p.fechaDeseada+")</b>":"")+(p.lat?"":" ⚠sin geo")+"</td><td>"+(p.detalle||"")+"</td><td>"+p.tartas+
-      "</td><td><span style='color:#b22;cursor:pointer' onclick=\"repDelPedido('"+p.id+"')\">✕</span></td></tr>"; }).join("")+"</table>";
-}
-
-/* ===== Proponer ===== */
-async function repProponer(pedir){
-  var res = await api("repartoProponer");
-  if(!res.ok) return toast(res.error||"Error","error");
-  repEsc = res.escenarios; repIdeal = res.ideal;
-  var html = repScn(repIdeal, ">>> IDEAL RECOMENDADO", true);
-  if(repIdeal.k>=3){ var menos=(repEsc[repIdeal.k-1].rompe||[]).join(", ")||"n/a";
-    html += "<div style='background:#fff4e0;border:1px solid #f0c97a;padding:6px;border-radius:6px;margin:6px 0;font-size:12px'><b>Aviso:</b> recomiendo "+repIdeal.k+" rutas. Con menos se rebasa: "+menos+".</div>"; }
-  var mostrar = pedir.concat([1,2]).filter(function(v,i,a){return a.indexOf(v)===i;}).sort();
-  mostrar.forEach(function(k){ if(k!==repIdeal.k && repEsc[k]) html += repScn(repEsc[k], "Escenario "+k+" ruta(s)", false); });
-  L("rep-escenarios").innerHTML = html;
-}
-async function repForzar(){ var n=+L("rep-forzar").value; if(!(n>=1&&n<=4))return toast("N entre 1 y 4","error");
-  var res=await api("repartoProponer"); if(!res.ok)return toast(res.error,"error"); var e=res.escenarios[n];
-  L("rep-escenarios").innerHTML = repScn(e,"FORZADO a "+n+" ruta(s)",true); }
-function repScn(e, titulo, ideal){
-  var est = e.factible ? "<span style='color:#1d7a35'>FACTIBLE</span>" : "<span style='color:#b22'>REBASA: "+e.rompe.join(", ")+"</span>";
-  var h = "<div style='border:"+(ideal?"2px solid #7a1f2b":"1px solid #ddd")+";border-radius:8px;padding:10px;margin-bottom:8px'>"+
-    "<b>"+titulo+" · "+e.k+" ruta(s)</b> — "+est+" — "+e.kmT.toFixed(1)+" km";
-  e.rutas.forEach(function(r,i){ var fl=[]; if(r.excCap)fl.push("+"+r.excCap+" tartas sobre cap"); if(r.excJor)fl.push("+"+Math.round(r.excJor)+" min sobre tiempo");
-    h += "<div style='font-size:12px;margin:4px 0;border-left:3px solid #a83246;padding-left:6px'>Chofer "+(i+1)+": "+r.tartas+" tartas · "+r.paradas+" paradas · "+r.km.toFixed(1)+" km · "+Math.round(r.dur)+" min "+(fl.length?"<span style='color:#b22'>⚠ "+fl.join("; ")+"</span>":"")+
-      "<br><span style='color:#888'>Cocina → "+r.seq.map(function(p){return p.cliente;}).join(" → ")+" → Cocina</span></div>"; });
-  h += "<button class='btn-sec' style='margin-top:6px' onclick='repPlanear("+e.k+")'>📌 Planear esta ruta</button></div>";
-  return h;
-}
-async function repPlanear(k){ var fecha=L("rep-fecha").value;
-  var res=await api("repartoPlanear",{k:k,fecha:fecha});
-  if(res.ok){ toast("Ruta planeada para "+fecha); await repReload(); L("rep-escenarios").innerHTML=""; } else toast(res.error||"Error","error"); }
-
-/* ===== Helpers ===== */
-function repAllStops(r){ return r.choferes.reduce(function(a,c){return a.concat(c.stops);},[]); }
-function repEfEsperado(r){ return repAllStops(r).filter(function(s){return s.resultado==="entregada"&&!s.pagadoPrevio&&s.formaPago==="Efectivo";}).reduce(function(a,s){return a+(+s.monto||0);},0); }
-function repTotMetodo(r){ var t={Tarjeta:0,Efectivo:0,Transferencia:0,Prepago:0}; repAllStops(r).filter(function(s){return s.resultado==="entregada";}).forEach(function(s){ if(s.pagadoPrevio)t.Prepago+=(+s.monto||0); else t[s.formaPago]=(t[s.formaPago]||0)+(+s.monto||0); }); return t; }
-function repMapsUrl(c){ var o=encodeURIComponent("Cuajimalpa de Morelos, Ciudad de México");
-  var wp=c.stops.map(function(s){return encodeURIComponent(s.dir||s.zona);}).join("%7C");
-  return "https://www.google.com/maps/dir/?api=1&origin="+o+"&destination="+o+"&waypoints="+wp+"&travelmode=driving"; }
-
-/* ===== Rutas (admin) ===== */
-function repRenderRutas(){
-  var cont=L("rep-rutas");
-  if(!REP.rutas.length){ cont.innerHTML="<div style='font-size:12px;color:#888'>Aún no hay rutas planeadas.</div>"; return; }
-  cont.innerHTML = REP.rutas.map(function(r){
-    var stops=repAllStops(r), tot=stops.length;
-    var ent=stops.filter(function(s){return s.resultado==="entregada";}).length;
-    var fall=stops.filter(function(s){return s.resultado==="fallida";}).length;
-    var repr=stops.filter(function(s){return s.resultado==="reprogramada";}).length;
-    var resu=stops.filter(function(s){return s.resultado;}).length;
-    var color=r.estado==="Cerrada"?"#1d7a35":(r.estado==="En ruta"?"#8a5a00":"#1d4ed8");
-    var h="<div style='border:1px solid #ddd;border-radius:8px;padding:10px;margin-bottom:10px'>"+
-      "<div style='display:flex;justify-content:space-between'><b>📅 "+r.fecha+" · "+r.k+" ruta(s) · "+tot+" paradas · "+r.kmT.toFixed(1)+" km</b>"+
-      "<span style='color:"+color+";font-weight:700'>"+r.estado.toUpperCase()+"</span></div>"+
-      "<div style='font-size:12px;color:#666'>Resueltas "+resu+"/"+tot+" · ✓"+ent+" entregadas · ✗"+fall+" fallidas · ↻"+repr+" reprog.</div>";
-    r.choferes.forEach(function(c,ci){
-      h+="<div style='margin-top:8px'><b>Ruta "+(ci+1)+":</b> <input value=\""+(c.nombre||"")+"\" placeholder='Nombre del chofer' "+(r.estado==="Cerrada"?"disabled":"")+" onchange=\"repSetChofer('"+r.id+"',"+ci+",this.value)\" style='width:180px'> <span style='font-size:12px;color:#888'>· "+c.stops.length+" paradas</span></div>";
-      c.stops.forEach(function(s,si){
-        var dis=r.estado==="Cerrada"?"disabled":"";
-        var est = s.resultado==="entregada"?"✓ Entregada "+(s.horaEntrega||""):(s.resultado==="fallida"?"✗ Fallida":(s.resultado==="reprogramada"?"↻ Reprog.":"pendiente"));
-        var pago = s.pagadoPrevio ? "PREPAGADO" :
-          "Pago: <select "+dis+" onchange=\"repSetFP('"+r.id+"',"+ci+","+si+",this.value)\">"+["Tarjeta","Efectivo","Transferencia"].map(function(o){return "<option "+(s.formaPago===o?"selected":"")+">"+o+"</option>";}).join("")+"</select>";
-        h+="<div style='display:flex;gap:8px;align-items:center;font-size:12px;border-top:1px dashed #eee;padding:4px 0;flex-wrap:wrap'>"+
-          "<b>"+s.cliente+"</b> <span style='color:#888'>"+s.dir+" · 🎂 "+(s.detalle||s.tartas+"t")+" · $"+s.monto+"</span>"+
-          "<span style='margin-left:auto'>"+est+"</span>"+
-          "<select id=\"rar_"+r.id+"_"+ci+"_"+si+"\" "+dis+">"+[["","—"],["entregada","Entregada"],["fallida","Fallida"],["reprogramada","Reprogramar"]].map(function(o){return "<option value='"+o[0]+"' "+(s.resultado===o[0]?"selected":"")+">"+o[1]+"</option>";}).join("")+"</select>"+
-          pago+"<button class='btn-sec' "+dis+" onclick=\"repSetResultado('"+r.id+"',"+ci+","+si+")\">Aplicar</button>"+
-          (s.resultado==="reprogramada"||s.resultado==="fallida"?"":"")+"</div>";
-      });
-    });
-    var tm=repTotMetodo(r), ef=repEfEsperado(r), efRec=(r.efectivoRecibido===""||r.efectivoRecibido==null)?"":r.efectivoRecibido;
-    var dif=(efRec==="")?null:(+efRec-ef);
-    h+="<div style='background:#faf7f4;padding:8px;border-radius:6px;margin-top:8px;font-size:12px'><b>Conciliación:</b> Tarjeta $"+tm.Tarjeta+" · Transferencia $"+tm.Transferencia+" · Prepago $"+tm.Prepago+" · <b>Efectivo esperado $"+ef+"</b>"+
-      (ef>0?"<div style='margin-top:4px'>Efectivo recibido $<input type='number' value='"+efRec+"' "+(r.estado==="Cerrada"?"disabled":"")+" style='width:100px' onchange=\"repSetEfectivo('"+r.id+"',this.value)\"> "+(dif===null?"sin conciliar":(dif===0?"✓ cuadra":"diferencia $"+dif))+"</div>":"")+"</div>";
-    var puede=stops.every(function(s){return s.resultado;})&&stops.every(function(s){return s.resultado!=="entregada"||s.confirmado;})&&(ef===0||efRec!=="")&&r.estado!=="Cerrada";
-    h+="<div style='margin-top:8px;display:flex;gap:8px'><button class='btn-sec' onclick=\"repDocs('"+r.id+"')\">🧾 Documentos</button>"+
-      "<button class='btn' "+(puede?"":"disabled")+" onclick=\"repCerrar('"+r.id+"')\">🔒 Cerrar ruta</button>"+
-      "<button class='btn-sec' onclick=\"repDelRuta('"+r.id+"')\">Eliminar</button></div></div>";
-    return h;
-  }).join("");
-}
-async function repSetChofer(id,ci,val){ await api("repartoSetChofer",{id:id,ci:ci,nombre:val}); }
-async function repSetFP(id,ci,si,val){ await api("repartoSetFormaPago",{id:id,ci:ci,si:si,formaPago:val}); }
-async function repSetResultado(id,ci,si){ var res=L("rar_"+id+"_"+ci+"_"+si).value; if(!res)return toast("Elige resultado","error");
-  var r=await api("repartoSetResultado",{id:id,ci:ci,si:si,resultado:res}); if(r.ok) await repReload(); else toast(r.error,"error"); }
-async function repSetEfectivo(id,val){ await api("repartoSetEfectivo",{id:id,valor:val}); await repReload(); }
-async function repCerrar(id){ var r=await api("repartoCerrarRuta",{id:id}); if(r.ok){toast(r.mensaje||"Ruta cerrada"); await repReload();} else toast(r.error||"No se pudo cerrar","error"); }
-async function repDelRuta(id){ if(!confirm("¿Eliminar ruta?"))return; var r=await api("repartoDelRuta",{id:id}); if(r.ok) await repReload(); }
-async function repReprog(id,ci,si){ var f=L("rrp_"+id+"_"+ci+"_"+si).value; if(!f)return toast("Define la nueva fecha","error");
-  var r=await api("repartoReprogramar",{id:id,ci:ci,si:si,fecha:f}); if(r.ok){toast("Reprogramado a "+f); await repReload();} else toast(r.error,"error"); }
-
-/* ===== Avisos de reprogramación ===== */
-function repRenderAvisos(){
-  var list=[]; REP.rutas.forEach(function(r){ r.choferes.forEach(function(c,ci){ c.stops.forEach(function(s,si){ if((s.resultado==="fallida"||s.resultado==="reprogramada")&&!s.reprogramado) list.push({r:r,ci:ci,si:si,s:s}); }); }); });
-  L("rep-avisosCard").querySelector("h3").innerHTML = "🔔 Avisos: entregas a reprogramar "+(list.length?"<span style='background:#fff4e0;border:1px solid #f0c97a;padding:1px 8px;border-radius:10px'>"+list.length+"</span>":"");
-  if(!list.length){ L("rep-avisos").innerHTML="<div style='font-size:12px;color:#888'>Sin entregas pendientes de reprogramar.</div>"; return; }
-  L("rep-avisos").innerHTML = list.map(function(o){ var s=o.s;
-    return "<div style='border:1px solid #f0c97a;border-radius:8px;padding:8px;margin-bottom:6px;font-size:12px'><b>"+s.cliente+"</b> — "+(s.resultado==="fallida"?"✗ Fallida":"↻ Reprogramar")+
-      "<br><span style='color:#888'>🎂 "+(s.detalle||s.tartas+"t")+" · $"+s.monto+" · "+s.dir+"</span><br>Era de la ruta del <b>"+o.r.fecha+"</b>"+
-      "<div style='margin-top:4px'>Nueva fecha: <input type='date' id='rrp_"+o.r.id+"_"+o.ci+"_"+o.si+"'> <button class='btn-sec' onclick=\"repReprog('"+o.r.id+"',"+o.ci+","+o.si+")\">Reprogramar → a la base</button></div></div>"; }).join("");
-}
-
-/* ===== Cocina / Inventario (cálculo cliente desde rutas) ===== */
-function repTartasPorFecha(){ var m={}; REP.rutas.forEach(function(r){ if(r.estado==="Cerrada")return; var t=repAllStops(r).reduce(function(a,s){return a+(+s.tartas||0);},0); m[r.fecha]=(m[r.fecha]||0)+t; }); return m; }
-function repDias(a,b){ return Math.round((new Date(b+"T00:00:00")-new Date(a+"T00:00:00"))/86400000); }
-function repRenderCocina(){
-  var cont=L("rep-cocina"); var hoy=L("rep-hoy").value||new Date().toISOString().slice(0,10);
-  var need=repTartasPorFecha(), fechas=Object.keys(need).sort();
-  if(!fechas.length){ cont.innerHTML="<div style='font-size:12px;color:#888'>No hay rutas que requieran producción.</div>"; return; }
-  cont.innerHTML = fechas.map(function(f){ var nec=need[f], d=repDias(hoy,f), alerta=(d>=1&&d<=2);
-    return "<div style='border:1px solid #ddd;border-radius:6px;padding:6px;margin-bottom:4px;font-size:12px'><b>📅 "+f+"</b> ("+(d<0?"pasada":(d===0?"HOY":d+" días"))+") · <b>"+nec+"</b> tartas a hornear "+
-      (alerta?"<span style='background:#fff4e0;border:1px solid #f0c97a;padding:1px 6px;border-radius:8px'>🔔 HORNEAR</span>":(d===0?"<span style='color:#8a5a00'>⚠ HOY</span>":"en agenda"))+"</div>"; }).join("");
-}
-function repRenderInv(){
-  var cont=L("rep-inv"), total=+L("rep-stock").value||0, pf=repTartasPorFecha();
-  var ruta=Object.keys(pf).reduce(function(a,k){return a+pf[k];},0), pos=total-ruta;
-  cont.innerHTML="<div style='display:flex;gap:12px;font-size:13px'><div><b>Stock total</b><br>"+total+"</div><div><b>Comprometido a ruta</b><br><span style='color:#7a1f2b'>"+ruta+"</span></div><div><b>Disponible mostrador</b><br><span style='color:"+(pos<0?"#b22":"#1d7a35")+"'>"+pos+"</span></div></div>"+
-    (pos<0?"<div style='background:#fbe6e6;color:#b22;padding:6px;border-radius:6px;margin-top:6px;font-size:12px'>⚠ Faltan "+(-pos)+" tartas: lo comprometido supera el stock.</div>":"");
-}
-
-/* ===== Vista de chofer ===== */
-function repSetRol(rol){ repVista.rol=rol; var cs=L("rep-choferSel");
-  if(rol==="Chofer"){ var set={}; REP.rutas.forEach(function(r){r.choferes.forEach(function(c){if(c.nombre&&c.nombre.trim())set[c.nombre.trim()]=1;});});
-    var nombres=Object.keys(set); cs.innerHTML=nombres.length?nombres.map(function(n){return "<option>"+n+"</option>";}).join(""):"<option value=''>(sin choferes)</option>";
-    cs.style.display=""; repVista.chofer=cs.value; L("rep-overlay").style.display="block"; repRenderChofer(); }
-  else { cs.style.display="none"; L("rep-overlay").style.display="none"; }
-}
-function repRenderChofer(){
-  repVista.chofer=L("rep-choferSel").value; var nombre=repVista.chofer, cont=L("rep-choferCont");
-  var h="<h2 style='color:#7a1f2b'>🍰 Mi ruta — "+(nombre||"(elige tu nombre)")+"</h2>";
-  var bloques=[]; REP.rutas.forEach(function(r){r.choferes.forEach(function(c,ci){ if((c.nombre||"").trim()===nombre) bloques.push({r:r,c:c,ci:ci}); });});
-  if(!nombre||!bloques.length){ cont.innerHTML=h+"<p style='color:#888'>No tienes rutas asignadas.</p>"; return; }
-  bloques.forEach(function(o){ var r=o.r,c=o.c,ci=o.ci;
-    h+="<div style='border:1px solid #ddd;border-radius:10px;padding:12px;margin:10px 0;max-width:680px'><div style='display:flex;justify-content:space-between'><b>📅 "+r.fecha+"</b><a target='_blank' style='color:#fff;background:#7a1f2b;padding:3px 8px;border-radius:6px;text-decoration:none' href='"+repMapsUrl(c)+"'>🗺️ Google Maps</a></div>";
-    c.stops.forEach(function(s,si){ var dis=r.estado==="Cerrada"?"disabled":"";
-      var est=s.resultado==="entregada"?"✓ Entregada "+(s.horaEntrega||""):(s.resultado==="fallida"?"✗ Fallida":(s.resultado==="reprogramada"?"↻ Reprog.":"por entregar"));
-      h+="<div style='border-top:1px dashed #eee;padding:8px 0;font-size:13px'><b>"+s.cliente+"</b> — "+est+"<br><span style='color:#888'>📍 "+s.dir+(s.tel?" · 📞 "+s.tel:"")+"</span><br><b>🎂 "+(s.detalle||s.tartas+"t")+"</b> · $"+s.monto+" · "+(s.pagadoPrevio?"PREPAGADO":"cobrar")+
-        "<div style='margin-top:4px'>Resultado: <select id='crr_"+r.id+"_"+ci+"_"+si+"' "+dis+">"+[["","—"],["entregada","Entregada"],["fallida","Fallida (nadie)"],["reprogramada","Reprogramar"]].map(function(opt){return "<option value='"+opt[0]+"' "+(s.resultado===opt[0]?"selected":"")+">"+opt[1]+"</option>";}).join("")+"</select> "+
-        "Pago: <select id='cpp_"+r.id+"_"+ci+"_"+si+"' "+dis+">"+["Tarjeta","Efectivo","Transferencia"].map(function(opt){return "<option "+(s.formaPago===opt?"selected":"")+">"+opt+"</option>";}).join("")+"</select> "+
-        "<button class='btn' "+dis+" onclick=\"repChoferConfirm('"+r.id+"',"+ci+","+si+")\">Confirmar y guardar</button></div></div>"; });
-    h+="</div>";
-  });
-  cont.innerHTML=h;
-}
-async function repChoferConfirm(id,ci,si){ var res=L("crr_"+id+"_"+ci+"_"+si).value; if(!res)return toast("Elige el resultado","error");
-  var fp=L("cpp_"+id+"_"+ci+"_"+si).value;
-  var r=await api("repartoSetResultado",{id:id,ci:ci,si:si,resultado:res,formaPago:fp});
-  if(r.ok){ toast("Guardado"); await repReload(); repRenderChofer(); } else toast(r.error,"error"); }
-
-/* ===== Documentos de chofer (imprimible) ===== */
-function repDocs(id){ var r=null; REP.rutas.forEach(function(x){if(x.id===id)r=x;}); if(!r)return; var w=window.open("","_blank");
-  var html="<html><head><meta charset='utf-8'><title>Hojas de ruta "+r.fecha+"</title><style>body{font-family:sans-serif}.hoja{padding:24px;page-break-after:always}.hoja:last-child{page-break-after:auto}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #ccc;padding:6px}th{background:#f3ece8}@media print{button{display:none}}</style></head><body><button onclick='window.print()'>Imprimir / PDF</button>";
-  r.choferes.forEach(function(c){ var nom=(c.nombre&&c.nombre.trim())?c.nombre.trim():("Chofer "+c.idx);
-    html+="<section class='hoja'><h2>🍰 Tarta Vasca — Hoja de ruta</h2><div>Fecha: <b>"+r.fecha+"</b> · Chofer: <b>"+nom+"</b> · Salida: Cocina Cuajimalpa · Canal: Ruta</div><table><tr><th>#</th><th>Cliente</th><th>Dirección</th><th>Contacto</th><th>Tartas</th><th>Monto</th><th>Pago</th><th>¿Pagó?</th></tr>";
-    c.stops.forEach(function(s,i){ html+="<tr><td>"+(i+1)+"</td><td>"+s.cliente+"</td><td>"+s.dir+"</td><td>"+(s.tel||"—")+"</td><td>"+(s.detalle||s.tartas)+"</td><td>$"+s.monto+"</td><td>"+s.formaPago+"</td><td>"+(s.pagadoPrevio?"SÍ":"Cobrar")+"</td></tr>"; });
-    html+="</table></section>"; });
-  w.document.write(html+"</body></html>"); w.document.close();
-}
-</script>
-<!-- ==================== fin BLOQUE SCRIPT ==================== -->
