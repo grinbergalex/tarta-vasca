@@ -1831,14 +1831,20 @@ let S = {
 };
 const PERMISOS_FALLBACK = {
   "Owner":        { esAdmin:true,  puedeVender:true,  puedeProducir:true,  puedeTransferir:true,  puedeVerAmbas:true,  puedeAnular:true  },
-  "Vendedor":     { esAdmin:false, puedeVender:true,  puedeProducir:false, puedeTransferir:false, puedeVerAmbas:false, puedeAnular:false },
+  "Vendedor":     { esAdmin:false, puedeVender:true,  puedeProducir:false, puedeTransferir:false, puedeVerAmbas:false, puedeVerStockAmbas:true, puedeAnular:false },
   "Cocinero":     { esAdmin:false, puedeVender:false, puedeProducir:true,  puedeTransferir:true,  puedeVerAmbas:true,  puedeAnular:false },
-  "Mixto":        { esAdmin:false, puedeVender:true,  puedeProducir:true,  puedeTransferir:true,  puedeVerAmbas:false, puedeAnular:false },
+  "Mixto":        { esAdmin:false, puedeVender:true,  puedeProducir:true,  puedeTransferir:true,  puedeVerAmbas:false, puedeVerStockAmbas:true, puedeAnular:false },
   "Admin_Ventas": { esAdmin:false, puedeVender:true,  puedeProducir:false, puedeTransferir:true,  puedeVerAmbas:true,  puedeAnular:false },
   "Chofer":       { esAdmin:false, puedeVender:false, puedeProducir:false, puedeTransferir:false, puedeVerAmbas:false, puedeAnular:false, esChofer:true }
 };
 function getPermisos() {
-  return S.permisos || PERMISOS_FALLBACK[S.rol] || PERMISOS_FALLBACK["Vendedor"];
+  const base = S.permisos || PERMISOS_FALLBACK[S.rol] || PERMISOS_FALLBACK["Vendedor"];
+  // Vendedor/Mixto pueden VER stock de ambas sucursales (siguen vendiendo solo en la suya).
+  // Se calcula aquí por si el backend aún no envía la bandera.
+  if (base && !base.puedeVerStockAmbas && (S.rol === "Vendedor" || S.rol === "Mixto")) {
+    return Object.assign({}, base, { puedeVerStockAmbas: true });
+  }
+  return base;
 }
 async function api(accion, body={}) {
   const payload = {accion, token:S.token, ...body};
@@ -2163,8 +2169,8 @@ function renderStock(){
   if(busqueda)    f=f.filter(s=>s.sabor.toLowerCase().includes(busqueda));
   L("sum-total").textContent=f.reduce((s,i)=>s+i.cantActual,0);
   L("stock-summary").style.display="grid";
-  L("stock-sub").textContent=S.filtroSuc||(!getPermisos().puedeVerAmbas?S.sucursal:"todas las sucursales");
-  if(S.catalogo&&getPermisos().puedeVerAmbas){
+  L("stock-sub").textContent=S.filtroSuc||((!getPermisos().puedeVerAmbas&&!getPermisos().puedeVerStockAmbas)?S.sucursal:"todas las sucursales");
+  if(S.catalogo&&(getPermisos().puedeVerAmbas||getPermisos().puedeVerStockAmbas)){
     const sucs=(S.catalogo.sucursales||[]).filter(s=>s.activo).map(s=>s.nombre);
     L("filtros-suc").innerHTML=`<div class="chip ${!S.filtroSuc?'active':''}" data-suc="">Todas</div>`+sucs.map(s=>`<div class="chip ${S.filtroSuc===s?'active':''}" data-suc="${s}">${s}</div>`).join("");
     L("filtros-suc").querySelectorAll(".chip").forEach(c=>c.addEventListener("click",()=>{S.filtroSuc=c.dataset.suc||null;renderStock();}));
@@ -2177,7 +2183,7 @@ function renderStock(){
     L("filtros-tam").querySelectorAll(".chip").forEach(c=>c.addEventListener("click",()=>{S.filtroTam=c.dataset.tam||null;renderStock();}));
   }
   if(f.length===0){L("stock-content").innerHTML=`<div class="empty-state"><div class="empty-icon">📦</div><div>Sin stock disponible</div></div>`;return;}
-  const puedeAmbas = getPermisos().puedeVerAmbas;
+  const puedeAmbas = getPermisos().puedeVerAmbas || getPermisos().puedeVerStockAmbas;
   const sucsRender = puedeAmbas
     ? (S.filtroSuc ? [S.filtroSuc] : ["Cuajimalpa","Polanco"])
     : [S.sucursal];
@@ -5192,7 +5198,7 @@ function setModoLinea(modo) {
 async function cargarReportePeriodo() {
   if (!S.catalogo) { const res = await api("getCatalogo"); if (res.ok) S.catalogo = res; }
   L("periodo-content").innerHTML = '<div class="loading"><div class="spinner"></div>Cargando...</div>';
-  const res = await api("getVentas");
+  const res = await api("getVentas", { desde: "2020-01-01" }); // FIX histórico: traer TODO (sin el tope de 200 filas del backend)
   if (!res.ok) { L("periodo-content").innerHTML = '<div class="empty-state"><div>Error</div></div>'; return; }
   S.ventasReporte = res.ventas || [];
   if (!S.periodoActual.desde) setPeriodoPreset(S.periodoActual.preset);
@@ -6093,7 +6099,7 @@ async function cargarUtilPeriodo() {
   if (!S.recetas || S.recetas.length === 0) { const r = await api("getRecetas"); if (r.ok) S.recetas = r.recetas; }
   if (!S.insumos || S.insumos.length === 0) { const i = await api("getInsumos"); if (i.ok) S.insumos = i.insumos; }
   L("utilperiodo-content").innerHTML = '<div class="loading"><div class="spinner"></div>Cargando...</div>';
-  const v = await api("getVentas");
+  const v = await api("getVentas", { desde: "2020-01-01" }); // FIX histórico: traer TODO (sin el tope de 200 filas del backend)
   if (!v.ok) { L("utilperiodo-content").innerHTML = '<div class="empty-state"><div>Error al cargar ventas</div></div>'; return; }
   S.ventasReporte = v.ventas || [];
   if (!S.utilperiodoActual.desde) setUtilPeriodoPreset(S.utilperiodoActual.preset);
@@ -6591,10 +6597,4 @@ function repDocs(id){ var r=null; REP.rutas.forEach(function(x){if(x.id===id)r=x
   var html="<html><head><meta charset='utf-8'><title>Hojas de ruta "+r.fecha+"</title><style>body{font-family:sans-serif}.hoja{padding:24px;page-break-after:always}.hoja:last-child{page-break-after:auto}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #ccc;padding:6px}th{background:#f3ece8}@media print{button{display:none}}</style></head><body><button onclick='window.print()'>Imprimir / PDF</button>";
   r.choferes.forEach(function(c){ var nom=(c.nombre&&c.nombre.trim())?c.nombre.trim():("Chofer "+c.idx);
     html+="<section class='hoja'><h2>🍰 Tarta Vasca — Hoja de ruta</h2><div>Fecha: <b>"+r.fecha+"</b> · Chofer: <b>"+nom+"</b> · Salida: Cocina Cuajimalpa · Canal: Ruta</div><table><tr><th>#</th><th>Cliente</th><th>Dirección</th><th>Contacto</th><th>Tartas</th><th>Monto</th><th>Pago</th><th>¿Pagó?</th></tr>";
-    c.stops.forEach(function(s,i){ html+="<tr><td>"+(i+1)+"</td><td>"+s.cliente+"</td><td>"+s.dir+"</td><td>"+(s.tel||"—")+"</td><td>"+(s.detalle||s.tartas)+"</td><td>$"+s.monto+"</td><td>"+s.formaPago+"</td><td>"+(s.pagadoPrevio?"SÍ":"Cobrar")+"</td></tr>"; });
-    html+="</table></section>"; });
-  w.document.write(html+"</body></html>"); w.document.close();
-}
-</script>
-</body>
-</html>
+    c.stops.forEach(function(s,i){ html+="<tr><td>"+(i+1)+"</td><td>"+s.cliente+"</td><td>"+s.dir+"</td><td>"+(s.tel||"—")+"</td><td>"+(s.detalle||s.tartas)+"</td><td>$"+s.monto+"</td><td>"+s.formaPago+"
