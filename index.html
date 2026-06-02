@@ -235,6 +235,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>/* La app define una global L() (getElementById) que pisa la L de Leaflet. Capturamos Leaflet aquí, antes. */ window._LF = window.L;</script>
 <style>
 .rep-map-num{background:transparent;border:none;box-shadow:none;color:#fff;font-weight:700;font-size:11px;text-shadow:0 0 3px rgba(0,0,0,.8)}
 .rep-tarta-row{display:flex;align-items:center;background:var(--warm);border-radius:10px;padding:8px 12px;margin-bottom:6px;font-size:13px}
@@ -6664,8 +6665,8 @@ var REP_COLORES=["#C8602A","#2E5C4A","#1976D2","#C9A84C","#9C27B0","#E91E63","#0
 function repPaintMap(contId, leyId, legs){
   var cont=L(contId); if(!cont) return;
   var ley=leyId?L(leyId):null;
-  if(typeof window.L==="undefined"){ cont.style.display="none"; if(ley) ley.style.display="none"; return; }
-  var LF=window.L;
+  var LF=window._LF||(typeof window.L==="object"?window.L:null);
+  if(!LF||!LF.map){ cont.style.display="none"; if(ley) ley.style.display="none"; if(typeof toast==="function") toast("No se pudo cargar el mapa (Leaflet). Revisa tu conexión.","error"); return; }
   var hay=(legs||[]).some(function(lg){ return (lg.pts||[]).some(function(p){return p.lat&&p.lon;}); });
   if(repMaps[contId]){ try{ repMaps[contId].remove(); }catch(e){} repMaps[contId]=null; }
   if(!hay){ cont.style.display="none"; if(ley) ley.style.display="none"; return; }
