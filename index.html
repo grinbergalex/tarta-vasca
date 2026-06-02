@@ -233,6 +233,19 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+.rep-map-num{background:transparent;border:none;box-shadow:none;color:#fff;font-weight:700;font-size:11px;text-shadow:0 0 3px rgba(0,0,0,.8)}
+.rep-tarta-row{display:flex;align-items:center;background:var(--warm);border-radius:10px;padding:8px 12px;margin-bottom:6px;font-size:13px}
+#tab-reparto h2{font-family:'Fraunces',serif;font-weight:500}
+#tab-reparto h3{font-family:'Fraunces',serif;font-weight:500;font-size:17px;margin-bottom:10px}
+#tab-reparto .btn{padding:11px 16px;background:var(--accent);border:none;border-radius:10px;color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer}
+#tab-reparto .btn:disabled{opacity:.5;cursor:default}
+#tab-reparto .btn-sec{padding:10px 14px;background:#fff;border:1px solid var(--border);border-radius:10px;color:var(--ink);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer}
+#tab-reparto .btn-sec:hover{border-color:var(--accent);color:var(--accent)}
+#tab-reparto input[type=date],#tab-reparto input[type=number],#tab-reparto select:not(.form-select){font-family:'DM Sans',sans-serif;font-size:13px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--ink);outline:none}
+</style>
 </head>
 <body>
 <!-- LOGIN -->
@@ -530,19 +543,54 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
       <select id="rep-choferSel" onchange="repRenderChofer()" style="display:none"></select>
     </span>
   </div>
-  <div class="card" style="margin-top:10px"><h3>Capturar pedido</h3>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      <input id="rep-cli" placeholder="Cliente"><input id="rep-tel" placeholder="Teléfono">
+  <div class="card" style="margin-top:10px">
+    <div class="card-title">Capturar pedido</div>
+    <div class="card-sub">Sale de cocina Cuajimalpa. Se cocina sobre pedido — no descuenta stock.</div>
+    <!-- Cliente -->
+    <div class="add-item-row" style="margin-bottom:10px">
+      <div class="form-group" style="margin-bottom:0"><label class="form-label">Cliente *</label><input class="form-input" id="rep-cli" placeholder="Nombre del cliente"></div>
+      <div class="form-group" style="margin-bottom:0"><label class="form-label">Teléfono *</label><input class="form-input" id="rep-tel" type="tel" placeholder="55 0000 0000"></div>
     </div>
-    <input id="rep-dir" placeholder="Dirección completa (calle, colonia, alcaldía, CP)" style="width:100%;margin-top:8px">
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:8px">
-      <input id="rep-zona" placeholder="Zona/colonia"><input id="rep-tartas" type="number" value="1" placeholder="# tartas">
-      <input id="rep-monto" type="number" value="0" placeholder="Monto $ (0=auto)">
-      <select id="rep-pago"><option>Pagado</option><option>Cobra chofer</option></select>
+    <!-- Dirección -->
+    <div class="form-group"><label class="form-label">Dirección completa *</label><input class="form-input" id="rep-dir" placeholder="Calle y número, colonia, alcaldía, CP"></div>
+    <div class="add-item-row" style="margin-bottom:10px">
+      <div class="form-group" style="margin-bottom:0"><label class="form-label">Zona / colonia</label><input class="form-input" id="rep-zona" placeholder="Ej: Polanco"></div>
+      <div class="form-group" style="margin-bottom:0"><label class="form-label">Referencia <span style="font-weight:300;text-transform:none;letter-spacing:0">(opcional)</span></label><input class="form-input" id="rep-ref" placeholder="Ej: edificio gris, frente al parque"></div>
     </div>
-    <input id="rep-detalle" placeholder="Tipo de tartas (sabor / tamaño)" style="width:100%;margin-top:8px">
-    <div style="margin-top:8px"><button class="btn" onclick="repAddPedido()">+ Agregar a la base</button>
-      <span style="font-size:11px;color:#888">La dirección se geocodifica con Google Maps al agregar.</span></div>
+    <div class="form-group"><label class="form-label">Instrucción adicional <span style="font-weight:300;text-transform:none;letter-spacing:0">(opcional)</span></label><input class="form-input" id="rep-inst" placeholder="Ej: dejar con el portero"></div>
+    <!-- Fecha de envío + forma de pago -->
+    <div class="add-item-row" style="margin-bottom:10px">
+      <div class="form-group" style="margin-bottom:0"><label class="form-label">Fecha de envío *</label><input class="form-input" type="date" id="rep-fechaPedido"></div>
+      <div class="form-group" style="margin-bottom:0"><label class="form-label">Forma de pago</label>
+        <select class="form-select" id="rep-pago">
+          <option value="Tarjeta" selected>Tarjeta de crédito</option>
+          <option value="Efectivo">Efectivo</option>
+          <option value="Transferencia">Transferencia</option>
+          <option value="Por definir">Por definir</option>
+        </select>
+      </div>
+    </div>
+    <!-- Tartas: cascada estilo ventas, sin stock (menú del catálogo) -->
+    <div class="add-item-box">
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:12px">Tartas del pedido</div>
+      <div class="add-item-row">
+        <div class="form-group"><label class="form-label">Sabor</label><select class="form-select" id="rep-sabor" onchange="repPrecioPreview()"></select></div>
+        <div class="form-group"><label class="form-label">Tamaño</label><select class="form-select" id="rep-tamano" onchange="repPrecioPreview()"></select></div>
+      </div>
+      <div class="add-item-row">
+        <div class="form-group"><label class="form-label">Cantidad</label><input class="form-input" type="number" id="rep-cant" min="1" value="1" oninput="repPrecioPreview()"></div>
+        <div style="display:flex;align-items:flex-end;padding-bottom:14px"><div id="rep-tarta-precio" style="font-size:13px;color:var(--muted)"></div></div>
+      </div>
+      <button class="btn-outline" onclick="repAddTarta()" style="margin-top:0">+ Agregar tarta</button>
+      <div id="rep-tartas-list" style="margin-top:10px"></div>
+    </div>
+    <!-- Monto -->
+    <div class="add-item-row" style="margin-bottom:10px">
+      <div class="form-group" style="margin-bottom:0"><label class="form-label">Monto total ($)</label><input class="form-input" type="number" id="rep-monto" value="0" placeholder="0 = automático"></div>
+      <div style="display:flex;align-items:flex-end;padding-bottom:14px"><div id="rep-monto-auto" style="font-size:12px;color:var(--muted)"></div></div>
+    </div>
+    <button class="btn-main btn-green" onclick="repAddPedido()" style="margin-top:0">+ Agregar pedido a la base</button>
+    <div style="font-size:11px;color:var(--muted);margin-top:6px">La dirección se geocodifica con Google Maps al agregar (para el mapa y las rutas).</div>
   </div>
   <div class="card"><h3>Base de pedidos del día (<span id="rep-cnt">0</span>)</h3><div id="rep-base"></div></div>
   <div class="card"><h3>Proponer rutas</h3>
@@ -555,7 +603,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <div id="rep-escenarios" style="margin-top:8px"></div>
   </div>
   <div class="card" id="rep-avisosCard"><h3>🔔 Avisos: entregas a reprogramar</h3><div id="rep-avisos"></div></div>
-  <div class="card"><h3>Rutas planeadas</h3><div id="rep-rutas"></div></div>
+  <div class="card"><div class="card-title">Rutas planeadas</div>
+    <div id="rep-mapa" style="height:340px;border-radius:12px;overflow:hidden;margin-bottom:12px;display:none;z-index:0"></div>
+    <div id="rep-rutas"></div></div>
   <div class="card"><h3>Cocina / Producción (alerta 2 días antes)</h3>
     <div>Hoy (simulado): <input id="rep-hoy" type="date" onchange="repRenderCocina()"></div>
     <div id="rep-cocina" style="margin-top:6px"></div></div>
@@ -6383,13 +6433,19 @@ function _renderGraficaLineaUtilPeriodo(ventasBruto) {
 </script>
 <script>
 /* ===== Estado del módulo de reparto ===== */
-var REP = { base:[], rutas:[], params:{capTartas:13,jornadaMin:360,choferes:3} };
+var REP = { base:[], rutas:[], params:{capTartas:13,jornadaMin:360,choferes:3}, tartasActuales:[], depot:null };
 var repVista = { rol:"Admin", chofer:"" };
 var repEsc = null, repIdeal = null;
 async function cargarReparto(){
   var hoy = new Date().toISOString().slice(0,10);
   if(L("rep-fecha")&&!L("rep-fecha").value) L("rep-fecha").value = hoy;
   if(L("rep-hoy")&&!L("rep-hoy").value) L("rep-hoy").value = hoy;
+  // Fecha de envío del pedido (punto 7): default mañana
+  var man = new Date(); man.setDate(man.getDate()+1);
+  var manStr = man.getFullYear()+"-"+String(man.getMonth()+1).padStart(2,"0")+"-"+String(man.getDate()).padStart(2,"0");
+  if(L("rep-fechaPedido")&&!L("rep-fechaPedido").value) L("rep-fechaPedido").value = manStr;
+  if(!S.catalogo){ try{ await cargarCatalogo(); }catch(e){} }
+  repPoblarTartas();
   await repReload();
   var perms=(typeof getPermisos==="function")?(getPermisos()||{}):{};
   var tab=L("tab-reparto");
@@ -6409,29 +6465,96 @@ async function repReload(){
   var res = await api("repartoEstado");
   if(!res || !res.ok){ toast("No se pudo cargar reparto","error"); return; }
   REP.base = res.base||[]; REP.rutas = res.rutas||[]; REP.params = res.params||REP.params;
+  if(res.depot) REP.depot = res.depot;
   repRenderBase(); repRenderRutas(); repRenderAvisos(); repRenderCocina(); repRenderInv();
+}
+/* ===== Selector de tartas (cascada estilo ventas, desde catálogo, SIN stock) ===== */
+function repPoblarTartas(){
+  if(!S.catalogo) return;
+  var sab=(S.catalogo.sabores||[]).filter(function(s){return s.activo;}).map(function(s){return s.nombre;});
+  var tam=(S.catalogo.tamanos||[]).filter(function(t){return t.activo;}).map(function(t){return t.nombre;});
+  var selS=L("rep-sabor"), selT=L("rep-tamano");
+  if(selS) selS.innerHTML = sab.map(function(n){return "<option value=\""+n+"\">"+n+"</option>";}).join("");
+  if(selT) selT.innerHTML = tam.map(function(n){return "<option value=\""+n+"\">"+n+"</option>";}).join("");
+  repPrecioPreview();
+  repRenderTartasList();
+}
+function repPrecioTarta(sabor,tamano){
+  if(typeof getPrecioActualLocal==="function") return getPrecioActualLocal(sabor,tamano);
+  if(!S.precios) return 0;
+  var p=S.precios.find(function(x){return x.tamano===tamano&&x.precio>0;});
+  return p?p.precio:0;
+}
+function repPrecioPreview(){
+  var sabor=L("rep-sabor")?L("rep-sabor").value:"", tamano=L("rep-tamano")?L("rep-tamano").value:"";
+  var cant=parseInt(L("rep-cant")?L("rep-cant").value:1)||1;
+  var pr=repPrecioTarta(sabor,tamano);
+  var el=L("rep-tarta-precio");
+  if(el) el.innerHTML = pr>0 ? ("$"+pr.toLocaleString('es-MX')+" × "+cant+" = <strong>$"+(pr*cant).toLocaleString('es-MX')+"</strong>") : "<span style='color:var(--muted)'>sin precio</span>";
+}
+function repAddTarta(){
+  var sabor=L("rep-sabor").value, tamano=L("rep-tamano").value;
+  var cant=parseInt(L("rep-cant").value)||0;
+  if(!sabor||!tamano){ toast("Selecciona sabor y tamaño","error"); return; }
+  if(cant<1){ toast("Cantidad inválida","error"); return; }
+  var precio=repPrecioTarta(sabor,tamano);
+  REP.tartasActuales.push({ sabor:sabor, tamano:tamano, cantidad:cant, precio:precio });
+  L("rep-cant").value=1;
+  repRenderTartasList();
+  repRenderMontoAuto();
+}
+function repQuitarTarta(i){ REP.tartasActuales.splice(i,1); repRenderTartasList(); repRenderMontoAuto(); }
+function repRenderTartasList(){
+  var el=L("rep-tartas-list"); if(!el) return;
+  var t=REP.tartasActuales||[];
+  if(!t.length){ el.innerHTML="<div style='font-size:12px;color:var(--muted)'>Sin tartas — agrega arriba.</div>"; return; }
+  el.innerHTML = t.map(function(it,i){
+    return "<div class='rep-tarta-row'><div style='flex:1'><strong>"+it.cantidad+"×</strong> "+it.sabor+" "+it.tamano+
+      "</div><span style='color:var(--accent);margin-right:10px'>$"+(it.precio*it.cantidad).toLocaleString('es-MX')+"</span>"+
+      "<button class='btn-remove' onclick='repQuitarTarta("+i+")'>×</button></div>";
+  }).join("");
+}
+function repRenderMontoAuto(){
+  var el=L("rep-monto-auto"); if(!el) return;
+  var auto=(REP.tartasActuales||[]).reduce(function(a,t){return a+t.precio*t.cantidad;},0);
+  var tot=(REP.tartasActuales||[]).reduce(function(a,t){return a+t.cantidad;},0);
+  el.innerHTML = tot ? ("Auto: <strong>$"+auto.toLocaleString('es-MX')+"</strong> · "+tot+" tarta"+(tot!==1?"s":"")) : "";
 }
 /* ===== Captura ===== */
 async function repAddPedido(){
-  if(!L("rep-cli").value) return toast("Falta el cliente","error");
-  if(!L("rep-dir").value) return toast("Falta la dirección","error");
-  var pedido = { cliente:L("rep-cli").value, tel:L("rep-tel").value, dir:L("rep-dir").value,
-    zona:L("rep-zona").value, tartas:+L("rep-tartas").value||1, monto:+L("rep-monto").value||0,
-    detalle:L("rep-detalle").value, pago:L("rep-pago").value };
+  var cli=L("rep-cli").value.trim(), tel=L("rep-tel").value.trim(), dir=L("rep-dir").value.trim();
+  if(!cli) return toast("Falta el cliente","error");
+  if(!tel) return toast("El teléfono es obligatorio","error");
+  if(!dir) return toast("Falta la dirección","error");
+  var tartas = REP.tartasActuales||[];
+  if(!tartas.length) return toast("Agrega al menos una tarta al pedido","error");
+  var totalCant = tartas.reduce(function(a,t){return a+t.cantidad;},0);
+  var detalle = tartas.map(function(t){return t.cantidad+"× "+t.sabor+" "+t.tamano;}).join(" · ");
+  var montoAuto = tartas.reduce(function(a,t){return a+t.precio*t.cantidad;},0);
+  var montoManual = parseFloat(L("rep-monto").value)||0;
+  var monto = montoManual>0 ? montoManual : montoAuto;
+  var pedido = {
+    cliente:cli, tel:tel, dir:dir, zona:L("rep-zona").value.trim(),
+    referencia:L("rep-ref").value.trim(), instruccion:L("rep-inst").value.trim(),
+    fechaDeseada:L("rep-fechaPedido").value, pago:L("rep-pago").value,
+    tartas:totalCant, detalle:detalle, items:tartas, monto:monto
+  };
   var res = await api("repartoAddPedido",{pedido:pedido});
-  if(res.ok){ ["rep-cli","rep-tel","rep-dir","rep-zona","rep-detalle"].forEach(function(id){L(id).value="";});
-    L("rep-tartas").value=1; L("rep-monto").value=0;
+  if(res.ok){
+    ["rep-cli","rep-tel","rep-dir","rep-zona","rep-ref","rep-inst"].forEach(function(id){ if(L(id)) L(id).value=""; });
+    L("rep-monto").value=0; REP.tartasActuales=[]; repRenderTartasList(); repRenderMontoAuto(); repPrecioPreview();
     toast(res.geocodificado?"Pedido agregado y geocodificado":"Pedido agregado (no se pudo geocodificar; revisa la dirección)");
-    await repReload(); } else toast(res.error||"Error","error");
+    await repReload();
+  } else toast(res.error||"Error","error");
 }
 async function repDelPedido(id){ if(!confirm("¿Eliminar pedido?"))return; var r=await api("repartoDelPedido",{id:id}); if(r.ok) await repReload(); }
 function repRenderBase(){
   L("rep-cnt").textContent = REP.base.length;
-  L("rep-base").innerHTML = !REP.base.length ? "<div style='font-size:12px;color:#888'>Sin pedidos en base.</div>" :
-    "<table style='width:100%;font-size:12px;border-collapse:collapse'><tr><th>Cliente</th><th>Dirección</th><th>🎂</th><th>Tartas</th><th></th></tr>"+
-    REP.base.map(function(p){ return "<tr style='border-top:1px solid #eee'><td>"+p.cliente+"</td><td>"+(p.dir||p.zona)+
-      (p.fechaDeseada?" <b>(reprog→"+p.fechaDeseada+")</b>":"")+(p.lat?"":" ⚠sin geo")+"</td><td>"+(p.detalle||"")+"</td><td>"+p.tartas+
-      "</td><td><span style='color:#b22;cursor:pointer' onclick=\"repDelPedido('"+p.id+"')\">✕</span></td></tr>"; }).join("")+"</table>";
+  L("rep-base").innerHTML = !REP.base.length ? "<div style='font-size:12px;color:var(--muted)'>Sin pedidos en base.</div>" :
+    "<div style='overflow-x:auto'><table style='width:100%;font-size:12px;border-collapse:collapse'><tr><th style='text-align:left'>Cliente</th><th style='text-align:left'>Dirección</th><th style='text-align:left'>Envío</th><th style='text-align:left'>🎂</th><th>Tartas</th><th></th></tr>"+
+    REP.base.map(function(p){ return "<tr style='border-top:1px solid var(--warm)'><td>"+p.cliente+(p.tel?"<div style='color:var(--muted);font-size:11px'>📞 "+p.tel+"</div>":"")+"</td><td>"+(p.dir||p.zona)+
+      (p.referencia?"<div style='color:var(--muted);font-size:11px'>Ref: "+p.referencia+"</div>":"")+(p.instruccion?"<div style='color:var(--muted);font-size:11px'>"+p.instruccion+"</div>":"")+(p.lat?"":" <span style='color:#b22'>⚠sin geo</span>")+"</td><td>"+(p.fechaDeseada||"—")+"</td><td>"+(p.detalle||"")+"</td><td style='text-align:center'>"+p.tartas+
+      "</td><td><span style='color:#b22;cursor:pointer' onclick=\"repDelPedido('"+p.id+"')\">✕</span></td></tr>"; }).join("")+"</table></div>";
 }
 /* ===== Proponer ===== */
 async function repProponer(pedir){
@@ -6508,6 +6631,45 @@ function repRenderRutas(){
       "<button class='btn-sec' onclick=\"repDelRuta('"+r.id+"')\">Eliminar</button></div></div>";
     return h;
   }).join("");
+  repRenderMapa();
+}
+/* ===== Mapa de rutas (Leaflet + OpenStreetMap), color por chofer ===== */
+var repMap=null;
+var REP_COLORES=["#C8602A","#2E5C4A","#1976D2","#C9A84C","#9C27B0","#E91E63","#00897B","#5D4037"];
+function repRenderMapa(){
+  var cont=L("rep-mapa"); if(!cont) return;
+  if(typeof window.L==="undefined"){ cont.style.display="none"; return; }
+  var LF=window.L;
+  var rutas=(REP.rutas||[]).filter(function(r){return r.estado!=="Cerrada";});
+  var hayCoord=false;
+  rutas.forEach(function(r){ (r.choferes||[]).forEach(function(c){ (c.stops||[]).forEach(function(s){ if(s.lat&&s.lon) hayCoord=true; }); }); });
+  if(repMap){ try{ repMap.remove(); }catch(e){} repMap=null; }
+  if(!rutas.length || !hayCoord){ cont.style.display="none"; return; }
+  cont.style.display="block";
+  var depot=(REP.depot&&REP.depot.lat)?[Number(REP.depot.lat),Number(REP.depot.lon)]:[19.3587,-99.2960];
+  repMap=LF.map(cont).setView(depot,12);
+  LF.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"}).addTo(repMap);
+  var bounds=[depot];
+  LF.circleMarker(depot,{radius:9,color:"#7A1F2B",fillColor:"#7A1F2B",fillOpacity:1,weight:2}).addTo(repMap).bindPopup("🏠 <b>Cocina Cuajimalpa</b> (salida y regreso)");
+  var ci=0;
+  rutas.forEach(function(r){
+    (r.choferes||[]).forEach(function(c){
+      var col=REP_COLORES[ci%REP_COLORES.length]; ci++;
+      var pts=[depot]; var hasStops=false;
+      (c.stops||[]).forEach(function(s,si){
+        if(!s.lat||!s.lon) return;
+        hasStops=true;
+        var ll=[Number(s.lat),Number(s.lon)]; pts.push(ll); bounds.push(ll);
+        var pop="<b>"+(si+1)+". "+s.cliente+"</b><br>"+(s.detalle||(s.tartas+" tartas"))+"<br>"+s.dir+
+          (s.referencia?"<br><i>Ref: "+s.referencia+"</i>":"")+(s.instruccion?"<br><i>"+s.instruccion+"</i>":"")+"<br>$"+s.monto+" · "+(s.formaPago||"");
+        LF.circleMarker(ll,{radius:8,color:col,fillColor:col,fillOpacity:.9,weight:2}).addTo(repMap)
+          .bindPopup(pop).bindTooltip(String(si+1),{permanent:true,direction:"center",className:"rep-map-num"});
+      });
+      pts.push(depot);
+      if(hasStops) LF.polyline(pts,{color:col,weight:3,opacity:.75}).addTo(repMap);
+    });
+  });
+  setTimeout(function(){ try{ repMap.invalidateSize(); if(bounds.length>1) repMap.fitBounds(bounds,{padding:[30,30]}); }catch(e){} },250);
 }
 async function repSetChofer(id,ci,val){ await api("repartoSetChofer",{id:id,ci:ci,nombre:val}); }
 async function repSetFP(id,ci,si,val){ await api("repartoSetFormaPago",{id:id,ci:ci,si:si,formaPago:val}); }
@@ -6582,9 +6744,10 @@ function repDocs(id){
   var html="<html><head><meta charset='utf-8'><title>Hojas de ruta "+r.fecha+"</title><style>body{font-family:sans-serif}.hoja{padding:24px;page-break-after:always}.hoja:last-child{page-break-after:auto}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #ccc;padding:6px}th{background:#f3ece8}@media print{button{display:none}}</style></head><body><button onclick='window.print()'>Imprimir / PDF</button>";
   r.choferes.forEach(function(c){
     var nom=(c.nombre&&c.nombre.trim())?c.nombre.trim():("Chofer "+c.idx);
-    html+="<section class='hoja'><h2>🍰 Tarta Vasca — Hoja de ruta</h2><div>Fecha: <b>"+r.fecha+"</b> · Chofer: <b>"+nom+"</b> · Salida: Cocina Cuajimalpa · Canal: Ruta</div><table><tr><th>#</th><th>Cliente</th><th>Dirección</th><th>Contacto</th><th>Tartas</th><th>Monto</th><th>Pago</th><th>¿Pagó?</th></tr>";
+    html+="<section class='hoja'><h2>🍰 Tarta Vasca — Hoja de ruta</h2><div>Fecha: <b>"+r.fecha+"</b> · Chofer: <b>"+nom+"</b> · Salida: Cocina Cuajimalpa · Canal: Ruta</div><table><tr><th>#</th><th>Cliente</th><th>Dirección / referencia</th><th>Contacto</th><th>Tartas</th><th>Monto</th><th>Pago</th><th>¿Pagó?</th></tr>";
     c.stops.forEach(function(s,i){
-      html+="<tr><td>"+(i+1)+"</td><td>"+s.cliente+"</td><td>"+s.dir+"</td><td>"+(s.tel||"—")+"</td><td>"+(s.detalle||s.tartas)+"</td><td>$"+s.monto+"</td><td>"+s.formaPago+"</td><td>"+(s.pagadoPrevio?"Prepagado":(s.resultado==="entregada"?"Cobrado":"Pendiente"))+"</td></tr>";
+      var dirCol = s.dir + (s.referencia?"<br><i>Ref: "+s.referencia+"</i>":"") + (s.instruccion?"<br><i>"+s.instruccion+"</i>":"");
+      html+="<tr><td>"+(i+1)+"</td><td>"+s.cliente+"</td><td>"+dirCol+"</td><td>"+(s.tel||"—")+"</td><td>"+(s.detalle||s.tartas)+"</td><td>$"+s.monto+"</td><td>"+s.formaPago+"</td><td>"+(s.pagadoPrevio?"Prepagado":(s.resultado==="entregada"?"Cobrado":"Pendiente"))+"</td></tr>";
     });
     html+="</table></section>";
   });
