@@ -594,6 +594,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
   </div>
   <div class="card"><h3>Base de pedidos del día (<span id="rep-cnt">0</span>)</h3><div id="rep-base"></div></div>
   <div class="card"><h3>Proponer rutas</h3>
+    <div style="background:rgba(200,96,42,.06);border:1px dashed var(--accent);border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:13px">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="rep-incPolanco" onchange="repTogglePolanco()"> Incluir el local <b>Tarta Vasca Polanco</b> como parada de la ruta</label>
+      <label id="rep-polFirst-wrap" style="display:none;align-items:center;gap:8px;cursor:pointer;margin-top:6px;margin-left:24px"><input type="checkbox" id="rep-polFirst"> Que Polanco sea la <b>primera parada</b></label>
+    </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
       <button class="btn" onclick="repProponer([1,2])">▶ Proponer (IDEAL + 1 + 2)</button>
       <button class="btn-sec" onclick="repProponer([1,2,3,4])">Ver 3 y 4</button>
@@ -604,13 +608,17 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
   </div>
   <div class="card" id="rep-avisosCard"><h3>🔔 Avisos: entregas a reprogramar</h3><div id="rep-avisos"></div></div>
   <div class="card"><div class="card-title">Rutas planeadas</div>
-    <div id="rep-mapa" style="height:340px;border-radius:12px;overflow:hidden;margin-bottom:12px;display:none;z-index:0"></div>
+    <div id="rep-mapa" style="height:340px;border-radius:12px;overflow:hidden;margin-bottom:8px;display:none;z-index:0"></div>
+    <div id="rep-mapa-leyenda" style="display:none;flex-wrap:wrap;gap:10px;margin-bottom:12px;font-size:12px"></div>
     <div id="rep-rutas"></div></div>
   <div class="card"><h3>Cocina / Producción (alerta 2 días antes)</h3>
     <div>Hoy (simulado): <input id="rep-hoy" type="date" onchange="repRenderCocina()"></div>
     <div id="rep-cocina" style="margin-top:6px"></div></div>
-  <div class="card"><h3>Inventario (segmentado)</h3>
-    <div>Stock total (tartas): <input id="rep-stock" type="number" value="0" onchange="repRenderInv()" style="width:110px"></div>
+  <div class="card"><h3>Inventario (segmentado: ruta vs tienda)</h3>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+      <span>Stock total mostrador (tartas): <input id="rep-stock" type="number" value="0" onchange="repRenderInv()" style="width:90px"></span>
+      <span>Ver: <select id="rep-inv-filtro" onchange="repRenderInv()"><option value="todo">Todo</option><option value="ruta">Solo ruta (envío)</option><option value="tienda">Solo tienda</option></select></span>
+    </div>
     <div id="rep-inv" style="margin-top:6px"></div></div>
   <div id="rep-overlay" style="display:none;position:fixed;inset:0;background:#fff;z-index:9999;overflow:auto;padding:20px">
     <div style="text-align:right"><button class="btn-sec" onclick="repSetRol('Admin');document.getElementById('rep-rol').value='Admin'">✕ Volver a Admin</button></div>
@@ -6557,8 +6565,21 @@ function repRenderBase(){
       "</td><td><span style='color:#b22;cursor:pointer' onclick=\"repDelPedido('"+p.id+"')\">✕</span></td></tr>"; }).join("")+"</table></div>";
 }
 /* ===== Proponer ===== */
+/* ===== (punto 2) Opciones de local Polanco ===== */
+function repTogglePolanco(){
+  var w=L("rep-polFirst-wrap"); if(!w) return;
+  var on=L("rep-incPolanco")&&L("rep-incPolanco").checked;
+  w.style.display = on ? "flex" : "none";
+  if(!on && L("rep-polFirst")) L("rep-polFirst").checked=false;
+}
+function repPolancoOpts(){
+  return {
+    incluirPolanco: !!(L("rep-incPolanco")&&L("rep-incPolanco").checked),
+    polancoPrimero: !!(L("rep-polFirst")&&L("rep-polFirst").checked)
+  };
+}
 async function repProponer(pedir){
-  var res = await api("repartoProponer");
+  var res = await api("repartoProponer", repPolancoOpts());
   if(!res.ok) return toast(res.error||"Error","error");
   repEsc = res.escenarios; repIdeal = res.ideal;
   var html = repScn(repIdeal, ">>> IDEAL RECOMENDADO", true);
@@ -6569,7 +6590,7 @@ async function repProponer(pedir){
   L("rep-escenarios").innerHTML = html;
 }
 async function repForzar(){ var n=+L("rep-forzar").value; if(!(n>=1&&n<=4))return toast("N entre 1 y 4","error");
-  var res=await api("repartoProponer"); if(!res.ok)return toast(res.error,"error"); var e=res.escenarios[n];
+  var res=await api("repartoProponer", repPolancoOpts()); if(!res.ok)return toast(res.error,"error"); var e=res.escenarios[n];
   L("rep-escenarios").innerHTML = repScn(e,"FORZADO a "+n+" ruta(s)",true); }
 function repScn(e, titulo, ideal){
   var est = e.factible ? "<span style='color:#1d7a35'>FACTIBLE</span>" : "<span style='color:#b22'>REBASA: "+e.rompe.join(", ")+"</span>";
@@ -6582,7 +6603,8 @@ function repScn(e, titulo, ideal){
   return h;
 }
 async function repPlanear(k){ var fecha=L("rep-fecha").value;
-  var res=await api("repartoPlanear",{k:k,fecha:fecha});
+  var o=repPolancoOpts(); o.k=k; o.fecha=fecha;
+  var res=await api("repartoPlanear",o);
   if(res.ok){ toast("Ruta planeada para "+fecha); await repReload(); L("rep-escenarios").innerHTML=""; } else toast(res.error||"Error","error"); }
 /* ===== Helpers ===== */
 function repAllStops(r){ return r.choferes.reduce(function(a,c){return a.concat(c.stops);},[]); }
@@ -6638,27 +6660,28 @@ var repMap=null;
 var REP_COLORES=["#C8602A","#2E5C4A","#1976D2","#C9A84C","#9C27B0","#E91E63","#00897B","#5D4037"];
 function repRenderMapa(){
   var cont=L("rep-mapa"); if(!cont) return;
-  if(typeof window.L==="undefined"){ cont.style.display="none"; return; }
+  var _ley=L("rep-mapa-leyenda");
+  if(typeof window.L==="undefined"){ cont.style.display="none"; if(_ley) _ley.style.display="none"; return; }
   var LF=window.L;
   var rutas=(REP.rutas||[]).filter(function(r){return r.estado!=="Cerrada";});
   var hayCoord=false;
   rutas.forEach(function(r){ (r.choferes||[]).forEach(function(c){ (c.stops||[]).forEach(function(s){ if(s.lat&&s.lon) hayCoord=true; }); }); });
   if(repMap){ try{ repMap.remove(); }catch(e){} repMap=null; }
-  if(!rutas.length || !hayCoord){ cont.style.display="none"; return; }
+  if(!rutas.length || !hayCoord){ cont.style.display="none"; if(_ley) _ley.style.display="none"; return; }
   cont.style.display="block";
   var depot=(REP.depot&&REP.depot.lat)?[Number(REP.depot.lat),Number(REP.depot.lon)]:[19.3587,-99.2960];
   repMap=LF.map(cont).setView(depot,12);
   LF.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"}).addTo(repMap);
   var bounds=[depot];
   LF.circleMarker(depot,{radius:9,color:"#7A1F2B",fillColor:"#7A1F2B",fillOpacity:1,weight:2}).addTo(repMap).bindPopup("🏠 <b>Cocina Cuajimalpa</b> (salida y regreso)");
-  var ci=0;
+  var ci=0, leyenda=[];
   rutas.forEach(function(r){
-    (r.choferes||[]).forEach(function(c){
+    (r.choferes||[]).forEach(function(c,idx){
       var col=REP_COLORES[ci%REP_COLORES.length]; ci++;
-      var pts=[depot]; var hasStops=false;
+      var pts=[depot]; var nP=0;
       (c.stops||[]).forEach(function(s,si){
         if(!s.lat||!s.lon) return;
-        hasStops=true;
+        nP++;
         var ll=[Number(s.lat),Number(s.lon)]; pts.push(ll); bounds.push(ll);
         var pop="<b>"+(si+1)+". "+s.cliente+"</b><br>"+(s.detalle||(s.tartas+" tartas"))+"<br>"+s.dir+
           (s.referencia?"<br><i>Ref: "+s.referencia+"</i>":"")+(s.instruccion?"<br><i>"+s.instruccion+"</i>":"")+"<br>$"+s.monto+" · "+(s.formaPago||"");
@@ -6666,9 +6689,16 @@ function repRenderMapa(){
           .bindPopup(pop).bindTooltip(String(si+1),{permanent:true,direction:"center",className:"rep-map-num"});
       });
       pts.push(depot);
-      if(hasStops) LF.polyline(pts,{color:col,weight:3,opacity:.75}).addTo(repMap);
+      if(nP){ LF.polyline(pts,{color:col,weight:4,opacity:.8}).addTo(repMap);
+        leyenda.push({col:col, txt:"Ruta "+(idx+1)+(c.nombre?" · "+c.nombre:"")+" · "+r.fecha+" · "+nP+" parada"+(nP!==1?"s":"")}); }
     });
   });
+  var ley=L("rep-mapa-leyenda");
+  if(ley){
+    ley.style.display="flex";
+    ley.innerHTML = "<span style='display:inline-flex;align-items:center;gap:6px'><span style='width:12px;height:12px;border-radius:50%;background:#7A1F2B;display:inline-block'></span>Cocina Cuajimalpa</span>"+
+      leyenda.map(function(e){ return "<span style='display:inline-flex;align-items:center;gap:6px'><span style='width:18px;height:4px;border-radius:2px;background:"+e.col+";display:inline-block'></span>"+e.txt+"</span>"; }).join("");
+  }
   setTimeout(function(){ try{ repMap.invalidateSize(); if(bounds.length>1) repMap.fitBounds(bounds,{padding:[30,30]}); }catch(e){} },250);
 }
 async function repSetChofer(id,ci,val){ await api("repartoSetChofer",{id:id,ci:ci,nombre:val}); }
@@ -6702,35 +6732,86 @@ function repRenderCocina(){
       (alerta?"<span style='background:#fff4e0;border:1px solid #f0c97a;padding:1px 6px;border-radius:8px'>🔔 HORNEAR</span>":(d===0?"<span style='color:#8a5a00'>⚠ HOY</span>":"en agenda"))+"</div>"; }).join("");
 }
 function repRenderInv(){
-  var cont=L("rep-inv"), total=+L("rep-stock").value||0, pf=repTartasPorFecha();
-  var ruta=Object.keys(pf).reduce(function(a,k){return a+pf[k];},0), pos=total-ruta;
-  cont.innerHTML="<div style='display:flex;gap:12px;font-size:13px'><div><b>Stock total</b><br>"+total+"</div><div><b>Comprometido a ruta</b><br><span style='color:#7a1f2b'>"+ruta+"</span></div><div><b>Disponible mostrador</b><br><span style='color:"+(pos<0?"#b22":"#1d7a35")+"'>"+pos+"</span></div></div>"+
-    (pos<0?"<div style='background:#fbe6e6;color:#b22;padding:6px;border-radius:6px;margin-top:6px;font-size:12px'>⚠ Faltan "+(-pos)+" tartas: lo comprometido supera el stock.</div>":"");
+  var cont=L("rep-inv");
+  var total=+(L("rep-stock")?L("rep-stock").value:0)||0;
+  var filtro=(L("rep-inv-filtro")?L("rep-inv-filtro").value:"todo");
+  var pf=repTartasPorFecha();              // {fecha: tartas} de rutas no cerradas
+  var fechas=Object.keys(pf).sort();
+  var ruta=fechas.reduce(function(a,k){return a+pf[k];},0), pos=total-ruta;
+  var hoy=(L("rep-hoy")&&L("rep-hoy").value)||new Date().toISOString().slice(0,10);
+  var html="";
+  // Bloque RUTA — tartas para envío (puntos 4 y 5)
+  if(filtro==="todo"||filtro==="ruta"){
+    html+="<div style='background:rgba(122,31,43,.06);border-left:3px solid #7a1f2b;border-radius:8px;padding:10px 12px;margin-bottom:8px'>"+
+      "<div style='font-weight:700;color:#7a1f2b;margin-bottom:4px'>🚚 Tartas para envío (ruta) — "+ruta+" en total</div>"+
+      "<div style='font-size:11px;color:#888;margin-bottom:6px'>Se cocinan el <b>día anterior</b> a su entrega, así no compiten con la demanda de mostrador (sobre todo Cuajimalpa).</div>";
+    if(!fechas.length){ html+="<div style='font-size:12px;color:#888'>Sin tartas comprometidas a ruta.</div>"; }
+    else { html+=fechas.map(function(f){ var d=repDias(hoy,f);
+        var coc=new Date(new Date(f+'T00:00:00').getTime()-86400000);
+        var cocStr=coc.getFullYear()+'-'+String(coc.getMonth()+1).padStart(2,'0')+'-'+String(coc.getDate()).padStart(2,'0');
+        var alerta=(d>=1&&d<=2);
+        return "<div style='font-size:12px;padding:4px 0;border-top:1px solid rgba(0,0,0,.05)'><b>"+pf[f]+"</b> tartas · entrega <b>"+f+"</b> ("+(d<0?"pasada":(d===0?"HOY":d+" día"+(d!==1?"s":"")))+") → cocinar <b>"+cocStr+"</b>"+(alerta?" <span style='background:#fff4e0;border:1px solid #f0c97a;padding:1px 6px;border-radius:8px'>🔔 hornear</span>":"")+"</div>";
+      }).join(""); }
+    html+="</div>";
+  }
+  // Bloque TIENDA — mostrador
+  if(filtro==="todo"||filtro==="tienda"){
+    html+="<div style='background:rgba(46,92,74,.06);border-left:3px solid #2e5c4a;border-radius:8px;padding:10px 12px'>"+
+      "<div style='font-weight:700;color:#2e5c4a;margin-bottom:6px'>🏪 Tartas para tienda (mostrador)</div>"+
+      "<div style='display:flex;gap:18px;font-size:13px;flex-wrap:wrap'>"+
+        "<div><b>Stock total</b><br>"+total+"</div>"+
+        "<div><b>Comprometido a ruta</b><br><span style='color:#7a1f2b'>"+ruta+"</span></div>"+
+        "<div><b>Disponible mostrador</b><br><span style='color:"+(pos<0?'#b22':'#1d7a35')+"'>"+pos+"</span></div>"+
+      "</div>"+
+      (pos<0?"<div style='background:#fbe6e6;color:#b22;padding:6px;border-radius:6px;margin-top:6px;font-size:12px'>⚠ Faltan "+(-pos)+" tartas: lo comprometido a ruta supera el stock de mostrador.</div>":"")+
+      "</div>";
+  }
+  cont.innerHTML=html;
 }
-/* ===== Vista de chofer ===== */
+/* ===== Vista de chofer (admin puede verla también — punto 3) ===== */
 function repSetRol(rol){ repVista.rol=rol; var cs=L("rep-choferSel");
-  if(rol==="Chofer"){ var set={}; REP.rutas.forEach(function(r){r.choferes.forEach(function(c){if(c.nombre&&c.nombre.trim())set[c.nombre.trim()]=1;});});
-    var nombres=Object.keys(set); cs.innerHTML=nombres.length?nombres.map(function(n){return "<option>"+n+"</option>";}).join(""):"<option value=''>(sin choferes)</option>";
-    cs.style.display=""; repVista.chofer=cs.value; L("rep-overlay").style.display="block"; repRenderChofer(); }
-  else { cs.style.display="none"; L("rep-overlay").style.display="none"; }
+  if(rol==="Chofer"){
+    var opts=[];
+    (REP.rutas||[]).forEach(function(r){ (r.choferes||[]).forEach(function(c,ci){
+      var nom=(c.nombre&&c.nombre.trim())?c.nombre.trim():("Ruta "+(ci+1)+" sin asignar");
+      opts.push("<option value=\""+r.id+"|"+ci+"\">"+r.fecha+" · "+nom+" · "+c.stops.length+" paradas</option>");
+    }); });
+    cs.innerHTML = opts.length?opts.join(""):"<option value=''>(no hay rutas planeadas)</option>";
+    cs.style.display=""; repVista.choferKey=cs.value; L("rep-overlay").style.display="block"; repRenderChofer();
+  } else { cs.style.display="none"; L("rep-overlay").style.display="none"; }
 }
 function repRenderChofer(){
-  var sel=L("rep-choferSel"); if(sel && sel.style.display!=="none" && sel.value) repVista.chofer=sel.value;
-  var nombre=repVista.chofer, cont=L("rep-choferCont");
-  var h="<h2 style='color:#7a1f2b'>🍰 Mi ruta — "+(nombre||"(elige tu nombre)")+"</h2>";
-  var bloques=[]; REP.rutas.forEach(function(r){r.choferes.forEach(function(c,ci){ if((c.nombre||"").trim().toLowerCase()===(nombre||"").trim().toLowerCase()) bloques.push({r:r,c:c,ci:ci}); });});
-  if(!nombre||!bloques.length){ cont.innerHTML=h+"<p style='color:#888'>No tienes rutas asignadas.</p>"; return; }
+  var cont=L("rep-choferCont");
+  var perms=(typeof getPermisos==="function")?(getPermisos()||{}):{};
+  var bloques=[], titulo;
+  if(perms.esChofer){
+    var nombre=S.usuario;
+    (REP.rutas||[]).forEach(function(r){ (r.choferes||[]).forEach(function(c,ci){ if((c.nombre||"").trim().toLowerCase()===(nombre||"").trim().toLowerCase()) bloques.push({r:r,c:c,ci:ci}); }); });
+    titulo="🍰 Mi ruta — "+(nombre||"");
+    if(!bloques.length){ cont.innerHTML="<h2 style='color:#7a1f2b'>"+titulo+"</h2><p style='color:#888'>No tienes rutas asignadas todavía.</p>"; return; }
+  } else {
+    var sel=L("rep-choferSel"); if(sel && sel.style.display!=="none" && sel.value) repVista.choferKey=sel.value;
+    var key=repVista.choferKey;
+    if(key){ var pp=String(key).split("|"); var rid=pp[0], cci=parseInt(pp[1]);
+      (REP.rutas||[]).forEach(function(r){ if(r.id===rid && r.choferes[cci]) bloques.push({r:r,c:r.choferes[cci],ci:cci}); }); }
+    titulo = bloques.length ? ("🍰 Vista del chofer — "+(bloques[0].c.nombre||("Ruta "+(bloques[0].ci+1)))) : "🍰 Vista del chofer";
+    if(!bloques.length){ cont.innerHTML="<h2 style='color:#7a1f2b'>"+titulo+"</h2><p style='color:#888'>Elige una ruta en el selector de arriba. Si no aparece ninguna, todavía no hay rutas planeadas.</p>"; return; }
+  }
+  cont.innerHTML = repRenderChoferHTML(titulo, bloques);
+}
+function repRenderChoferHTML(titulo, bloques){
+  var h="<h2 style='color:#7a1f2b'>"+titulo+"</h2>";
   bloques.forEach(function(o){ var r=o.r,c=o.c,ci=o.ci;
     h+="<div style='border:1px solid #ddd;border-radius:10px;padding:12px;margin:10px 0;max-width:680px'><div style='display:flex;justify-content:space-between'><b>📅 "+r.fecha+"</b><a target='_blank' style='color:#fff;background:#7a1f2b;padding:3px 8px;border-radius:6px;text-decoration:none' href='"+repMapsUrl(c)+"'>🗺️ Google Maps</a></div>";
     c.stops.forEach(function(s,si){ var dis=r.estado==="Cerrada"?"disabled":"";
       var est=s.resultado==="entregada"?"✓ Entregada "+(s.horaEntrega||""):(s.resultado==="fallida"?"✗ Fallida":(s.resultado==="reprogramada"?"↻ Reprog.":"por entregar"));
-      h+="<div style='border-top:1px dashed #eee;padding:8px 0;font-size:13px'><b>"+s.cliente+"</b> — "+est+"<br><span style='color:#888'>📍 "+s.dir+(s.tel?" · 📞 "+s.tel:"")+"</span><br><b>🎂 "+(s.detalle||s.tartas+"t")+"</b> · $"+s.monto+" · "+(s.pagadoPrevio?"PREPAGADO":"cobrar")+
+      h+="<div style='border-top:1px dashed #eee;padding:8px 0;font-size:13px'><b>"+s.cliente+"</b> — "+est+"<br><span style='color:#888'>📍 "+s.dir+(s.referencia?" · "+s.referencia:"")+(s.tel?" · 📞 "+s.tel:"")+"</span>"+(s.instruccion?"<br><span style='color:#888'>📝 "+s.instruccion+"</span>":"")+"<br><b>🎂 "+(s.detalle||s.tartas+"t")+"</b> · $"+s.monto+" · "+(s.esLocal?"LOCAL (sin venta)":(s.pagadoPrevio?"PREPAGADO":"cobrar"))+
         "<div style='margin-top:4px'>Resultado: <select id='crr_"+r.id+"_"+ci+"_"+si+"' "+dis+">"+[["","—"],["entregada","Entregada"],["fallida","Fallida (nadie)"],["reprogramada","Reprogramar"]].map(function(opt){return "<option value='"+opt[0]+"' "+(s.resultado===opt[0]?"selected":"")+">"+opt[1]+"</option>";}).join("")+"</select> "+
         "Pago: <select id='cpp_"+r.id+"_"+ci+"_"+si+"' "+dis+">"+["Tarjeta","Efectivo","Transferencia"].map(function(opt){return "<option "+(s.formaPago===opt?"selected":"")+">"+opt+"</option>";}).join("")+"</select> "+
         "<button class='btn' "+dis+" onclick=\"repChoferConfirm('"+r.id+"',"+ci+","+si+")\">Confirmar y guardar</button></div></div>"; });
     h+="</div>";
   });
-  cont.innerHTML=h;
+  return h;
 }
 async function repChoferConfirm(id,ci,si){ var res=L("crr_"+id+"_"+ci+"_"+si).value; if(!res)return toast("Elige el resultado","error");
   var fp=L("cpp_"+id+"_"+ci+"_"+si).value;
