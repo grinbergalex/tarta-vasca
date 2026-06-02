@@ -607,8 +607,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <div id="rep-escenarios" style="margin-top:8px"></div>
   </div>
   <div class="card" id="rep-avisosCard"><h3>🔔 Avisos: entregas a reprogramar</h3><div id="rep-avisos"></div></div>
-  <div class="card"><div class="card-title">Rutas planeadas</div>
-    <div id="rep-mapa" style="height:340px;border-radius:12px;overflow:hidden;margin-bottom:8px;display:none;z-index:0"></div>
+  <div class="card"><div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px"><div class="card-title" style="margin-bottom:0">Rutas planeadas</div><button class="btn-sec" onclick="repDelTodasRutas()">🗑️ Limpiar rutas planeadas</button></div>
+    <div id="rep-mapa" style="height:340px;border-radius:12px;overflow:hidden;margin:10px 0 8px;display:none;z-index:0"></div>
     <div id="rep-mapa-leyenda" style="display:none;flex-wrap:wrap;gap:10px;margin-bottom:12px;font-size:12px"></div>
     <div id="rep-rutas"></div></div>
   <div class="card"><h3>Cocina / Producción (alerta 2 días antes)</h3>
@@ -6587,11 +6587,13 @@ async function repProponer(pedir){
     html += "<div style='background:#fff4e0;border:1px solid #f0c97a;padding:6px;border-radius:6px;margin:6px 0;font-size:12px'><b>Aviso:</b> recomiendo "+repIdeal.k+" rutas. Con menos se rebasa: "+menos+".</div>"; }
   var mostrar = pedir.concat([1,2]).filter(function(v,i,a){return a.indexOf(v)===i;}).sort();
   mostrar.forEach(function(k){ if(k!==repIdeal.k && repEsc[k]) html += repScn(repEsc[k], "Escenario "+k+" ruta(s)", false); });
-  L("rep-escenarios").innerHTML = html;
+  L("rep-escenarios").innerHTML = "<div style='font-size:12px;color:var(--muted);margin-bottom:6px'>🗺️ Recorrido propuesto (clic en \"Ver recorrido\" de cada escenario para compararlos):</div><div id='rep-esc-mapa' style='height:360px;border-radius:12px;overflow:hidden;margin-bottom:8px;z-index:0'></div><div id='rep-esc-leyenda' style='display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;font-size:12px'></div>" + html;
+  repMapEscenario(repIdeal.k);
 }
 async function repForzar(){ var n=+L("rep-forzar").value; if(!(n>=1&&n<=4))return toast("N entre 1 y 4","error");
-  var res=await api("repartoProponer", repPolancoOpts()); if(!res.ok)return toast(res.error,"error"); var e=res.escenarios[n];
-  L("rep-escenarios").innerHTML = repScn(e,"FORZADO a "+n+" ruta(s)",true); }
+  var res=await api("repartoProponer", repPolancoOpts()); if(!res.ok)return toast(res.error,"error"); repEsc=res.escenarios; repIdeal=res.ideal; var e=res.escenarios[n];
+  L("rep-escenarios").innerHTML = "<div id='rep-esc-mapa' style='height:360px;border-radius:12px;overflow:hidden;margin-bottom:8px;z-index:0'></div><div id='rep-esc-leyenda' style='display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;font-size:12px'></div>" + repScn(e,"FORZADO a "+n+" ruta(s)",true);
+  repMapEscenario(n); }
 function repScn(e, titulo, ideal){
   var est = e.factible ? "<span style='color:#1d7a35'>FACTIBLE</span>" : "<span style='color:#b22'>REBASA: "+e.rompe.join(", ")+"</span>";
   var h = "<div style='border:"+(ideal?"2px solid #7a1f2b":"1px solid #ddd")+";border-radius:8px;padding:10px;margin-bottom:8px'>"+
@@ -6599,7 +6601,7 @@ function repScn(e, titulo, ideal){
   e.rutas.forEach(function(r,i){ var fl=[]; if(r.excCap)fl.push("+"+r.excCap+" tartas sobre cap"); if(r.excJor)fl.push("+"+Math.round(r.excJor)+" min sobre tiempo");
     h += "<div style='font-size:12px;margin:4px 0;border-left:3px solid #a83246;padding-left:6px'>Chofer "+(i+1)+": "+r.tartas+" tartas · "+r.paradas+" paradas · "+r.km.toFixed(1)+" km · "+Math.round(r.dur)+" min "+(fl.length?"<span style='color:#b22'>⚠ "+fl.join("; ")+"</span>":"")+
       "<br><span style='color:#888'>Cocina → "+r.seq.map(function(p){return p.cliente;}).join(" → ")+" → Cocina</span></div>"; });
-  h += "<button class='btn-sec' style='margin-top:6px' onclick='repPlanear("+e.k+")'>📌 Planear esta ruta</button></div>";
+  h += "<button class='btn-sec' style='margin-top:6px;margin-right:6px' onclick='repMapEscenario("+e.k+")'>🗺️ Ver recorrido en mapa</button><button class='btn-sec' style='margin-top:6px' onclick='repPlanear("+e.k+")'>📌 Planear esta ruta</button></div>";
   return h;
 }
 async function repPlanear(k){ var fecha=L("rep-fecha").value;
@@ -6655,51 +6657,72 @@ function repRenderRutas(){
   }).join("");
   repRenderMapa();
 }
-/* ===== Mapa de rutas (Leaflet + OpenStreetMap), color por chofer ===== */
-var repMap=null;
+/* ===== Mapa de rutas (Leaflet + OpenStreetMap), color por ruta ===== */
+var repMaps={};
 var REP_COLORES=["#C8602A","#2E5C4A","#1976D2","#C9A84C","#9C27B0","#E91E63","#00897B","#5D4037"];
-function repRenderMapa(){
-  var cont=L("rep-mapa"); if(!cont) return;
-  var _ley=L("rep-mapa-leyenda");
-  if(typeof window.L==="undefined"){ cont.style.display="none"; if(_ley) _ley.style.display="none"; return; }
+// Pintor genérico reutilizable. legs = [{label, pts:[{lat,lon,popup}]}]
+function repPaintMap(contId, leyId, legs){
+  var cont=L(contId); if(!cont) return;
+  var ley=leyId?L(leyId):null;
+  if(typeof window.L==="undefined"){ cont.style.display="none"; if(ley) ley.style.display="none"; return; }
   var LF=window.L;
-  var rutas=(REP.rutas||[]).filter(function(r){return r.estado!=="Cerrada";});
-  var hayCoord=false;
-  rutas.forEach(function(r){ (r.choferes||[]).forEach(function(c){ (c.stops||[]).forEach(function(s){ if(s.lat&&s.lon) hayCoord=true; }); }); });
-  if(repMap){ try{ repMap.remove(); }catch(e){} repMap=null; }
-  if(!rutas.length || !hayCoord){ cont.style.display="none"; if(_ley) _ley.style.display="none"; return; }
+  var hay=(legs||[]).some(function(lg){ return (lg.pts||[]).some(function(p){return p.lat&&p.lon;}); });
+  if(repMaps[contId]){ try{ repMaps[contId].remove(); }catch(e){} repMaps[contId]=null; }
+  if(!hay){ cont.style.display="none"; if(ley) ley.style.display="none"; return; }
   cont.style.display="block";
   var depot=(REP.depot&&REP.depot.lat)?[Number(REP.depot.lat),Number(REP.depot.lon)]:[19.3587,-99.2960];
-  repMap=LF.map(cont).setView(depot,12);
-  LF.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"}).addTo(repMap);
+  var map=LF.map(cont).setView(depot,12); repMaps[contId]=map;
+  LF.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"}).addTo(map);
   var bounds=[depot];
-  LF.circleMarker(depot,{radius:9,color:"#7A1F2B",fillColor:"#7A1F2B",fillOpacity:1,weight:2}).addTo(repMap).bindPopup("🏠 <b>Cocina Cuajimalpa</b> (salida y regreso)");
-  var ci=0, leyenda=[];
-  rutas.forEach(function(r){
-    (r.choferes||[]).forEach(function(c,idx){
-      var col=REP_COLORES[ci%REP_COLORES.length]; ci++;
-      var pts=[depot]; var nP=0;
-      (c.stops||[]).forEach(function(s,si){
-        if(!s.lat||!s.lon) return;
-        nP++;
-        var ll=[Number(s.lat),Number(s.lon)]; pts.push(ll); bounds.push(ll);
-        var pop="<b>"+(si+1)+". "+s.cliente+"</b><br>"+(s.detalle||(s.tartas+" tartas"))+"<br>"+s.dir+
-          (s.referencia?"<br><i>Ref: "+s.referencia+"</i>":"")+(s.instruccion?"<br><i>"+s.instruccion+"</i>":"")+"<br>$"+s.monto+" · "+(s.formaPago||"");
-        LF.circleMarker(ll,{radius:8,color:col,fillColor:col,fillOpacity:.9,weight:2}).addTo(repMap)
-          .bindPopup(pop).bindTooltip(String(si+1),{permanent:true,direction:"center",className:"rep-map-num"});
-      });
-      pts.push(depot);
-      if(nP){ LF.polyline(pts,{color:col,weight:4,opacity:.8}).addTo(repMap);
-        leyenda.push({col:col, txt:"Ruta "+(idx+1)+(c.nombre?" · "+c.nombre:"")+" · "+r.fecha+" · "+nP+" parada"+(nP!==1?"s":"")}); }
+  LF.circleMarker(depot,{radius:9,color:"#7A1F2B",fillColor:"#7A1F2B",fillOpacity:1,weight:2}).addTo(map).bindPopup("🏠 <b>Cocina Cuajimalpa</b> (salida y regreso)");
+  var leyenda=[];
+  (legs||[]).forEach(function(lg,li){
+    var col=REP_COLORES[li%REP_COLORES.length];
+    var pts=[depot]; var nP=0;
+    (lg.pts||[]).forEach(function(p){
+      if(!p.lat||!p.lon) return;
+      nP++;
+      var ll=[Number(p.lat),Number(p.lon)]; pts.push(ll); bounds.push(ll);
+      LF.circleMarker(ll,{radius:8,color:col,fillColor:col,fillOpacity:.9,weight:2}).addTo(map)
+        .bindPopup(p.popup||"").bindTooltip(String(nP),{permanent:true,direction:"center",className:"rep-map-num"});
     });
+    pts.push(depot);
+    if(nP){ LF.polyline(pts,{color:col,weight:4,opacity:.8}).addTo(map);
+      leyenda.push({col:col, txt:(lg.label||("Ruta "+(li+1)))+" · "+nP+" parada"+(nP!==1?"s":"")}); }
   });
-  var ley=L("rep-mapa-leyenda");
   if(ley){
     ley.style.display="flex";
     ley.innerHTML = "<span style='display:inline-flex;align-items:center;gap:6px'><span style='width:12px;height:12px;border-radius:50%;background:#7A1F2B;display:inline-block'></span>Cocina Cuajimalpa</span>"+
       leyenda.map(function(e){ return "<span style='display:inline-flex;align-items:center;gap:6px'><span style='width:18px;height:4px;border-radius:2px;background:"+e.col+";display:inline-block'></span>"+e.txt+"</span>"; }).join("");
   }
-  setTimeout(function(){ try{ repMap.invalidateSize(); if(bounds.length>1) repMap.fitBounds(bounds,{padding:[30,30]}); }catch(e){} },250);
+  setTimeout(function(){ try{ map.invalidateSize(); if(bounds.length>1) map.fitBounds(bounds,{padding:[30,30]}); }catch(e){} },250);
+}
+// Legs de rutas YA planeadas
+function _repLegsPlaneadas(){
+  var legs=[];
+  (REP.rutas||[]).filter(function(r){return r.estado!=="Cerrada";}).forEach(function(r){
+    (r.choferes||[]).forEach(function(c,ci){
+      legs.push({ label:"Ruta "+(ci+1)+(c.nombre?" · "+c.nombre:"")+" · "+r.fecha,
+        pts:(c.stops||[]).map(function(s){ return { lat:s.lat, lon:s.lon,
+          popup:"<b>"+s.cliente+"</b><br>"+(s.detalle||(s.tartas+" tartas"))+"<br>"+s.dir+
+            (s.referencia?"<br><i>Ref: "+s.referencia+"</i>":"")+(s.instruccion?"<br><i>"+s.instruccion+"</i>":"")+"<br>$"+s.monto+" · "+(s.formaPago||"") }; }) });
+    });
+  });
+  return legs;
+}
+function repRenderMapa(){ repPaintMap("rep-mapa","rep-mapa-leyenda", _repLegsPlaneadas()); }
+// Legs de un ESCENARIO propuesto (aún no planeado)
+function _repLegsEscenario(e){
+  if(!e||!e.rutas) return [];
+  return e.rutas.map(function(r,i){
+    return { label:"Ruta "+(i+1)+" · "+r.tartas+" tartas · "+(r.km!=null?r.km.toFixed(1)+" km":""),
+      pts:(r.seq||[]).map(function(p){ return { lat:p.lat, lon:p.lon,
+        popup:"<b>"+p.cliente+"</b><br>"+(p.detalle||(p.tartas+" tartas"))+"<br>"+(p.dir||"") }; }) };
+  });
+}
+function repMapEscenario(k){
+  var e = (typeof repEsc!=="undefined" && repEsc) ? repEsc[k] : null;
+  repPaintMap("rep-esc-mapa","rep-esc-leyenda", _repLegsEscenario(e));
 }
 async function repSetChofer(id,ci,val){ await api("repartoSetChofer",{id:id,ci:ci,nombre:val}); }
 async function repSetFP(id,ci,si,val){ await api("repartoSetFormaPago",{id:id,ci:ci,si:si,formaPago:val}); }
@@ -6708,6 +6731,13 @@ async function repSetResultado(id,ci,si){ var res=L("rar_"+id+"_"+ci+"_"+si).val
 async function repSetEfectivo(id,val){ await api("repartoSetEfectivo",{id:id,valor:val}); await repReload(); }
 async function repCerrar(id){ var r=await api("repartoCerrarRuta",{id:id}); if(r.ok){toast(r.mensaje||"Ruta cerrada"); await repReload();} else toast(r.error||"No se pudo cerrar","error"); }
 async function repDelRuta(id){ if(!confirm("¿Eliminar ruta?"))return; var r=await api("repartoDelRuta",{id:id}); if(r.ok) await repReload(); }
+async function repDelTodasRutas(){
+  var rutas=(REP.rutas||[]).filter(function(r){return r.estado!=="Cerrada";});
+  if(!rutas.length){ toast("No hay rutas planeadas para limpiar"); return; }
+  if(!confirm("¿Eliminar las "+rutas.length+" ruta(s) planeadas (no cerradas)? Borra los planes de prueba; no afecta ventas ya registradas."))return;
+  for(var i=0;i<rutas.length;i++){ try{ await api("repartoDelRuta",{id:rutas[i].id}); }catch(e){} }
+  toast("Rutas planeadas eliminadas"); await repReload();
+}
 async function repReprog(id,ci,si){ var f=L("rrp_"+id+"_"+ci+"_"+si).value; if(!f)return toast("Define la nueva fecha","error");
   var r=await api("repartoReprogramar",{id:id,ci:ci,si:si,fecha:f}); if(r.ok){toast("Reprogramado a "+f); await repReload();} else toast(r.error,"error"); }
 /* ===== Avisos de reprogramación ===== */
