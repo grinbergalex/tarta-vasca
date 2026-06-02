@@ -559,6 +559,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
       <div class="form-group" style="margin-bottom:0"><label class="form-label">Referencia <span style="font-weight:300;text-transform:none;letter-spacing:0">(opcional)</span></label><input class="form-input" id="rep-ref" placeholder="Ej: edificio gris, frente al parque"></div>
     </div>
     <div class="form-group"><label class="form-label">Instrucción adicional <span style="font-weight:300;text-transform:none;letter-spacing:0">(opcional)</span></label><input class="form-input" id="rep-inst" placeholder="Ej: dejar con el portero"></div>
+    <!-- (punto 1) Verificar dirección en el mapa antes de subir el pedido -->
+    <div style="margin-bottom:10px">
+      <button class="btn-outline" type="button" id="rep-verificar-btn" onclick="repVerificarDir()" style="margin-top:0;width:auto;padding:10px 16px">📍 Verificar dirección en el mapa</button>
+      <span id="rep-geo-status" style="font-size:12px;margin-left:8px"></span>
+      <div id="rep-cap-mapa" style="height:220px;border-radius:10px;overflow:hidden;margin-top:8px;display:none;z-index:0"></div>
+    </div>
     <!-- Fecha de envío + forma de pago -->
     <div class="add-item-row" style="margin-bottom:10px">
       <div class="form-group" style="margin-bottom:0"><label class="form-label">Fecha de envío *</label><input class="form-input" type="date" id="rep-fechaPedido"></div>
@@ -1854,7 +1860,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 <div class="toast" id="toast"></div>
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbxJfDX3lwu5AE9GDA1WGZ3_MP3AAGPsCz54CdzS_cnE9zxQArN1zLmjnZixwc2A13eF/exec";
-const LECTURA = ["getCatalogo","getStock","getPrecios","getUsuarios","getAuditoria","buscarCliente","getHistorialCliente","getVentas","getInsumos","getRecetas","getCalculoCosto","listarMovimientosRecientes","getSesionesActivas","repartoEstado","repartoProponer"];
+const LECTURA = ["getCatalogo","getStock","getPrecios","getUsuarios","getAuditoria","buscarCliente","getHistorialCliente","getVentas","getInsumos","getRecetas","getCalculoCosto","listarMovimientosRecientes","getSesionesActivas","repartoEstado","repartoProponer","repartoGeocode"];
 let S = {
   token:null, usuario:null, rol:null, sucursal:null, permisos:null,
   catalogo:null, precios:null, stock:null,
@@ -6442,7 +6448,7 @@ function _renderGraficaLineaUtilPeriodo(ventasBruto) {
 </script>
 <script>
 /* ===== Estado del módulo de reparto ===== */
-var REP = { base:[], rutas:[], params:{capTartas:13,jornadaMin:360,choferes:3}, tartasActuales:[], depot:null };
+var REP = { base:[], rutas:[], params:{capTartas:13,jornadaMin:360,choferes:3}, tartasActuales:[], depot:null, capCoord:null };
 var repVista = { rol:"Admin", chofer:"" };
 var repEsc = null, repIdeal = null;
 async function cargarReparto(){
@@ -6455,6 +6461,7 @@ async function cargarReparto(){
   if(L("rep-fechaPedido")&&!L("rep-fechaPedido").value) L("rep-fechaPedido").value = manStr;
   if(!S.catalogo){ try{ await cargarCatalogo(); }catch(e){} }
   repPoblarTartas();
+  var _di=L("rep-dir"); if(_di&&!_di._repGeoBound){ _di._repGeoBound=true; _di.addEventListener("input", repResetGeo); }
   await repReload();
   var perms=(typeof getPermisos==="function")?(getPermisos()||{}):{};
   var tab=L("tab-reparto");
@@ -6529,12 +6536,42 @@ function repRenderMontoAuto(){
   var tot=(REP.tartasActuales||[]).reduce(function(a,t){return a+t.cantidad;},0);
   el.innerHTML = tot ? ("Auto: <strong>$"+auto.toLocaleString('es-MX')+"</strong> · "+tot+" tarta"+(tot!==1?"s":"")) : "";
 }
+/* ===== (punto 1) Verificación de dirección en el mapa antes de subir ===== */
+async function repVerificarDir(){
+  var dir=L("rep-dir").value.trim();
+  if(!dir){ toast("Escribe la dirección primero","error"); return; }
+  var st=L("rep-geo-status"); if(st) st.innerHTML="<span style='color:var(--muted)'>Buscando…</span>";
+  var btn=L("rep-verificar-btn"); if(btn) btn.disabled=true;
+  var res=await api("repartoGeocode",{dir:dir});
+  if(btn) btn.disabled=false;
+  if(res && res.ok && res.found){
+    REP.capCoord={lat:res.lat, lon:res.lon};
+    if(st) st.innerHTML="<span style='color:var(--success)'>✓ Dirección encontrada — revísala en el mapa</span>";
+    repShowPin("rep-cap-mapa", res.lat, res.lon, dir);
+  } else {
+    REP.capCoord=null;
+    if(st) st.innerHTML="<span style='color:var(--danger)'>⚠ No se encontró. Afina la dirección (calle y número, colonia, alcaldía, CP).</span>";
+    var m=L("rep-cap-mapa"); if(m) m.style.display="none";
+  }
+}
+function repShowPin(contId, lat, lon, label){
+  var cont=L(contId); if(!cont) return;
+  var LF=window._LF; if(!LF||!LF.map){ cont.style.display="none"; return; }
+  cont.style.display="block";
+  if(repMaps[contId]){ try{ repMaps[contId].remove(); }catch(e){} repMaps[contId]=null; }
+  var map=LF.map(cont).setView([Number(lat),Number(lon)],15); repMaps[contId]=map;
+  LF.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"}).addTo(map);
+  LF.circleMarker([Number(lat),Number(lon)],{radius:9,color:"#C8602A",fillColor:"#C8602A",fillOpacity:.9,weight:2}).addTo(map).bindPopup(label||"").openPopup();
+  setTimeout(function(){ try{ map.invalidateSize(); }catch(e){} },250);
+}
+function repResetGeo(){ REP.capCoord=null; var st=L("rep-geo-status"); if(st) st.innerHTML=""; var m=L("rep-cap-mapa"); if(m) m.style.display="none"; }
 /* ===== Captura ===== */
 async function repAddPedido(){
   var cli=L("rep-cli").value.trim(), tel=L("rep-tel").value.trim(), dir=L("rep-dir").value.trim();
   if(!cli) return toast("Falta el cliente","error");
   if(!tel) return toast("El teléfono es obligatorio","error");
   if(!dir) return toast("Falta la dirección","error");
+  if(!REP.capCoord) return toast("Primero verifica la dirección en el mapa (botón 📍)","error");
   var tartas = REP.tartasActuales||[];
   if(!tartas.length) return toast("Agrega al menos una tarta al pedido","error");
   var totalCant = tartas.reduce(function(a,t){return a+t.cantidad;},0);
@@ -6546,12 +6583,13 @@ async function repAddPedido(){
     cliente:cli, tel:tel, dir:dir, zona:L("rep-zona").value.trim(),
     referencia:L("rep-ref").value.trim(), instruccion:L("rep-inst").value.trim(),
     fechaDeseada:L("rep-fechaPedido").value, pago:L("rep-pago").value,
+    lat:REP.capCoord.lat, lon:REP.capCoord.lon,
     tartas:totalCant, detalle:detalle, items:tartas, monto:monto
   };
   var res = await api("repartoAddPedido",{pedido:pedido});
   if(res.ok){
     ["rep-cli","rep-tel","rep-dir","rep-zona","rep-ref","rep-inst"].forEach(function(id){ if(L(id)) L(id).value=""; });
-    L("rep-monto").value=0; REP.tartasActuales=[]; repRenderTartasList(); repRenderMontoAuto(); repPrecioPreview();
+    L("rep-monto").value=0; REP.tartasActuales=[]; repRenderTartasList(); repRenderMontoAuto(); repPrecioPreview(); repResetGeo();
     toast(res.geocodificado?"Pedido agregado y geocodificado":"Pedido agregado (no se pudo geocodificar; revisa la dirección)");
     await repReload();
   } else toast(res.error||"Error","error");
@@ -6586,24 +6624,38 @@ async function repProponer(pedir){
   var html = repScn(repIdeal, ">>> IDEAL RECOMENDADO", true);
   if(repIdeal.k>=3){ var menos=(repEsc[repIdeal.k-1].rompe||[]).join(", ")||"n/a";
     html += "<div style='background:#fff4e0;border:1px solid #f0c97a;padding:6px;border-radius:6px;margin:6px 0;font-size:12px'><b>Aviso:</b> recomiendo "+repIdeal.k+" rutas. Con menos se rebasa: "+menos+".</div>"; }
+  var shown=[repIdeal.k];
   var mostrar = pedir.concat([1,2]).filter(function(v,i,a){return a.indexOf(v)===i;}).sort();
-  mostrar.forEach(function(k){ if(k!==repIdeal.k && repEsc[k]) html += repScn(repEsc[k], "Escenario "+k+" ruta(s)", false); });
-  L("rep-escenarios").innerHTML = "<div style='font-size:12px;color:var(--muted);margin-bottom:6px'>🗺️ Recorrido propuesto (clic en \"Ver recorrido\" de cada escenario para compararlos):</div><div id='rep-esc-mapa' style='height:360px;border-radius:12px;overflow:hidden;margin-bottom:8px;z-index:0'></div><div id='rep-esc-leyenda' style='display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;font-size:12px'></div>" + html;
-  repMapEscenario(repIdeal.k);
+  mostrar.forEach(function(k){ if(k!==repIdeal.k && repEsc[k]){ html += repScn(repEsc[k], "Escenario "+k+" ruta(s)", false); shown.push(k); } });
+  L("rep-escenarios").innerHTML = "<div style='font-size:12px;color:var(--muted);margin-bottom:6px'>🗺️ Cada escenario muestra su recorrido en el mini-mapa de la derecha (zoom con la rueda o +/−, o \"Ampliar\"). Compara y aprieta \"Planear esta ruta\" en el que prefieras.</div>" + html;
+  shown.forEach(function(k){ repPaintMap("rep-esc-map-"+k, null, _repLegsEscenario(repEsc[k])); });
 }
 async function repForzar(){ var n=+L("rep-forzar").value; if(!(n>=1&&n<=4))return toast("N entre 1 y 4","error");
   var res=await api("repartoProponer", repPolancoOpts()); if(!res.ok)return toast(res.error,"error"); repEsc=res.escenarios; repIdeal=res.ideal; var e=res.escenarios[n];
-  L("rep-escenarios").innerHTML = "<div id='rep-esc-mapa' style='height:360px;border-radius:12px;overflow:hidden;margin-bottom:8px;z-index:0'></div><div id='rep-esc-leyenda' style='display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;font-size:12px'></div>" + repScn(e,"FORZADO a "+n+" ruta(s)",true);
-  repMapEscenario(n); }
+  L("rep-escenarios").innerHTML = repScn(e,"FORZADO a "+n+" ruta(s)",true);
+  repPaintMap("rep-esc-map-"+n, null, _repLegsEscenario(e)); }
 function repScn(e, titulo, ideal){
   var est = e.factible ? "<span style='color:#1d7a35'>FACTIBLE</span>" : "<span style='color:#b22'>REBASA: "+e.rompe.join(", ")+"</span>";
-  var h = "<div style='border:"+(ideal?"2px solid #7a1f2b":"1px solid #ddd")+";border-radius:8px;padding:10px;margin-bottom:8px'>"+
-    "<b>"+titulo+" · "+e.k+" ruta(s)</b> — "+est+" — "+e.kmT.toFixed(1)+" km";
+  var det = "<b>"+titulo+" · "+e.k+" ruta(s)</b> — "+est+" — "+e.kmT.toFixed(1)+" km";
   e.rutas.forEach(function(r,i){ var fl=[]; if(r.excCap)fl.push("+"+r.excCap+" tartas sobre cap"); if(r.excJor)fl.push("+"+Math.round(r.excJor)+" min sobre tiempo");
-    h += "<div style='font-size:12px;margin:4px 0;border-left:3px solid #a83246;padding-left:6px'>Chofer "+(i+1)+": "+r.tartas+" tartas · "+r.paradas+" paradas · "+r.km.toFixed(1)+" km · "+Math.round(r.dur)+" min "+(fl.length?"<span style='color:#b22'>⚠ "+fl.join("; ")+"</span>":"")+
+    det += "<div style='font-size:12px;margin:4px 0;border-left:3px solid "+REP_COLORES[i%REP_COLORES.length]+";padding-left:6px'>Chofer "+(i+1)+": "+r.tartas+" tartas · "+r.paradas+" paradas · "+r.km.toFixed(1)+" km · "+Math.round(r.dur)+" min "+(fl.length?"<span style='color:#b22'>⚠ "+fl.join("; ")+"</span>":"")+
       "<br><span style='color:#888'>Cocina → "+r.seq.map(function(p){return p.cliente;}).join(" → ")+" → Cocina</span></div>"; });
-  h += "<button class='btn-sec' style='margin-top:6px;margin-right:6px' onclick='repMapEscenario("+e.k+")'>🗺️ Ver recorrido en mapa</button><button class='btn-sec' style='margin-top:6px' onclick='repPlanear("+e.k+")'>📌 Planear esta ruta</button></div>";
+  det += "<button class='btn-sec' style='margin-top:6px' onclick='repPlanear("+e.k+")'>📌 Planear esta ruta</button>";
+  var mapId = "rep-esc-map-"+e.k;
+  var h = "<div style='border:"+(ideal?"2px solid #7a1f2b":"1px solid #ddd")+";border-radius:8px;padding:10px;margin-bottom:8px'>"+
+    "<div style='display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start'>"+
+      "<div style='flex:1;min-width:240px'>"+det+"</div>"+
+      "<div style='width:300px;max-width:100%'>"+
+        "<div id='"+mapId+"' style='height:200px;border-radius:10px;overflow:hidden'></div>"+
+        "<button class='btn-sec' style='margin-top:6px;font-size:12px;padding:6px 10px' onclick=\"repToggleMapSize('"+mapId+"')\">⤢ Ampliar / reducir mapa</button>"+
+      "</div>"+
+    "</div></div>";
   return h;
+}
+function repToggleMapSize(mapId){
+  var el=L(mapId); if(!el) return;
+  el.style.height = (el.style.height==="460px") ? "200px" : "460px";
+  var m=repMaps[mapId]; if(m) setTimeout(function(){ try{ m.invalidateSize(); }catch(e){} },60);
 }
 async function repPlanear(k){ var fecha=L("rep-fecha").value;
   var o=repPolancoOpts(); o.k=k; o.fecha=fecha;
