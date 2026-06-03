@@ -596,6 +596,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
       <div class="form-group" style="margin-bottom:0"><label class="form-label">Monto total ($)</label><input class="form-input" type="number" id="rep-monto" value="0" placeholder="0 = automático"></div>
       <div style="display:flex;align-items:flex-end;padding-bottom:14px"><div id="rep-monto-auto" style="font-size:12px;color:var(--muted)"></div></div>
     </div>
+    <!-- (Adecuacion 1) Costo de envio -->
+    <div class="add-item-row" style="margin-bottom:6px">
+      <div class="form-group" style="margin-bottom:0"><label class="form-label">Zona de envio</label>
+        <select class="form-select" id="rep-envio-zona" onchange="repZonaEnvioChange()"><option value="">- Selecciona zona -</option></select>
+      </div>
+      <div class="form-group" style="margin-bottom:0"><label class="form-label">Costo de envio * ($)</label><input class="form-input" type="number" id="rep-envio" min="0" value="" placeholder="0" oninput="repEnvioInfo()"></div>
+    </div>
+    <div id="rep-envio-info" style="font-size:12px;color:var(--muted);margin:0 0 10px"></div>
     <button class="btn-main btn-green" onclick="repAddPedido()" style="margin-top:0">+ Agregar pedido a la base</button>
     <div style="font-size:11px;color:var(--muted);margin-top:6px">La dirección se geocodifica con Google Maps al agregar (para el mapa y las rutas).</div>
   </div>
@@ -632,6 +640,43 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <div id="rep-choferCont"></div>
   </div>
 </div>
+    <div id="tab-apartados" class="tab-pane" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <h2 style="margin:0">📦 Apartados</h2>
+      </div>
+      <div class="card" style="margin-top:10px">
+        <div class="card-title">Nuevo apartado</div>
+        <div class="card-sub">Se cocina sobre pedido. No descuenta inventario hasta entregar. Avisa a cocina 1 día antes de la fecha de entrega. No cuenta en potencial ni pedido sugerido.</div>
+        <div class="add-item-row" style="margin-bottom:10px">
+          <div class="form-group" style="margin-bottom:0"><label class="form-label">Cliente *</label><input class="form-input" id="ap-cli" placeholder="Nombre del cliente"></div>
+          <div class="form-group" style="margin-bottom:0"><label class="form-label">Teléfono</label><input class="form-input" id="ap-tel" type="tel" placeholder="55 0000 0000"></div>
+        </div>
+        <div class="add-item-row" style="margin-bottom:10px">
+          <div class="form-group" style="margin-bottom:0"><label class="form-label">Fecha de entrega *</label><input class="form-input" type="date" id="ap-fecha"></div>
+          <div class="form-group" id="ap-suc-group" style="margin-bottom:0"><label class="form-label">Sucursal</label><select class="form-select" id="ap-suc"></select></div>
+        </div>
+        <div class="add-item-row" style="margin-bottom:10px">
+          <div class="form-group" style="margin-bottom:0"><label class="form-label">Anticipo ($)</label><input class="form-input" type="number" id="ap-anticipo" min="0" value="0"></div>
+          <div class="form-group" style="margin-bottom:0"><label class="form-label">Método anticipo</label><select class="form-select" id="ap-metodo"><option value="Pendiente">Pendiente</option><option value="Efectivo">Efectivo</option><option value="Tarjeta">Tarjeta</option><option value="Transferencia">Transferencia</option></select></div>
+        </div>
+        <div class="add-item-box">
+          <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:12px">Tartas del apartado</div>
+          <div class="add-item-row">
+            <div class="form-group"><label class="form-label">Sabor</label><select class="form-select" id="ap-sabor" onchange="apPrecio()"></select></div>
+            <div class="form-group"><label class="form-label">Tamaño</label><select class="form-select" id="ap-tamano" onchange="apPrecio()"></select></div>
+          </div>
+          <div class="add-item-row">
+            <div class="form-group"><label class="form-label">Cantidad</label><input class="form-input" type="number" id="ap-cant" min="1" value="1" oninput="apPrecio()"></div>
+            <div style="display:flex;align-items:flex-end;padding-bottom:14px"><div id="ap-tarta-precio" style="font-size:13px;color:var(--muted)"></div></div>
+          </div>
+          <button class="btn-outline" onclick="apAddTarta()" style="margin-top:0">+ Agregar tarta</button>
+          <div id="ap-tartas-list" style="margin-top:10px"></div>
+        </div>
+        <div id="ap-total" style="font-size:13px;margin:8px 0"></div>
+        <button class="btn-main btn-green" onclick="apGuardar()" style="margin-top:0">Guardar apartado 📦</button>
+      </div>
+      <div class="card"><h3>Apartados pendientes (<span id="ap-cnt">0</span>)</h3><div id="ap-list"></div></div>
+    </div>
     <div id="tab-produccion" class="tab-pane" style="display:none">
       <div class="card">
         <div class="card-title">Cargar producción</div>
@@ -640,6 +685,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <div class="form-group"><label class="form-label">Tamaño</label><select class="form-select" id="prod-tamano"></select></div>
         <div class="form-group"><label class="form-label">Cantidad</label><input class="form-input" type="number" id="prod-cantidad" min="1" value="1"></div>
         <button class="btn-main btn-green" id="btn-cargar-prod">Cargar producción</button>
+      </div>
+      <div class="card">
+        <div class="card-title">🍳 Para hornear (ruta + apartados)</div>
+        <div class="card-sub">Tartas comprometidas a entregar. Se hornean el día anterior. No cuentan en el potencial ni en el pedido sugerido.</div>
+        <div style="margin-bottom:8px">Fecha de entrega: <input type="date" id="prodman-fecha" onchange="cargarProduccionManana()"></div>
+        <div id="prodman-list"></div>
       </div>
     </div>
     <!-- VENTAS -->
@@ -2028,6 +2079,7 @@ const MENU = [
   ]},
   { id:"ven", label:"🛒 Ventas", items:[
     { label:"Nueva venta",      pane:"venta",  perm:"vender" },
+    { label:"Apartados",        pane:"apartados", perm:"vender" },
     { label:"Rutas",            pane:"rutas",  perm:"owner" },
     { label:"Historial",        pane:"ventas", perm:"owner" },
   ]},
@@ -2089,6 +2141,8 @@ function _loadPane(t){
   else if(t==="transferencias") cargarTransferencias();
   else if(t==="alertas") cargarAlertas();
   else if(t==="reparto") cargarReparto();
+  else if(t==="apartados") cargarApartados();
+  else if(t==="produccion") cargarProduccionManana();
 }
 function irAPane(pane, subFn, subKey){
   document.querySelectorAll(".tab-pane").forEach(p=>p.style.display="none");
@@ -2250,12 +2304,15 @@ function renderStock(){
   sucsRender.forEach(suc => {
     const stockSuc = f.filter(s => s.sucursal === suc);
     const totalSuc = stockSuc.reduce((t, s) => t + Number(s.cantActual||0), 0);
+    const reservadoSuc = stockSuc.reduce((t, s) => t + Number(s.reservado||0), 0);
+    const netoSuc = stockSuc.reduce((t, s) => t + Number(s.disponibleNeto!=null ? s.disponibleNeto : s.cantActual||0), 0);
     const color = suc === "Cuajimalpa" ? "var(--green)" : "var(--accent)";
     html += `<div class="card" style="margin-bottom:12px;border-left:4px solid ${color};overflow-x:auto">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px">
         <div style="font-weight:700;font-size:15px;color:${color}">📍 ${suc}</div>
-        <div style="font-size:12px;color:var(--muted)"><strong>${totalSuc}</strong> piezas</div>
+        <div style="font-size:12px;color:var(--muted)"><strong>${totalSuc}</strong> piezas${reservadoSuc>0?` · <span style="color:#7a1f2b">${reservadoSuc} apartado/ruta</span> · <strong style="color:#1d7a35">${netoSuc} neto</strong>`:""}</div>
       </div>
+      ${reservadoSuc>0?`<div style="font-size:11px;color:#7a1f2b;background:rgba(122,31,43,.06);border-radius:6px;padding:6px 8px;margin-bottom:8px">🔒 Reservado (ruta/apartado): ${stockSuc.filter(s=>Number(s.reservado||0)>0).map(s=>`${s.reservado}× ${s.sabor} ${s.tamano}`).join(" · ")}</div>`:""}
       ${_tablaPivotInventario(stockSuc, color, "inv_"+suc.toLowerCase())}
     </div>`;
   });
@@ -6461,6 +6518,7 @@ async function cargarReparto(){
   if(L("rep-fechaPedido")&&!L("rep-fechaPedido").value) L("rep-fechaPedido").value = manStr;
   if(!S.catalogo){ try{ await cargarCatalogo(); }catch(e){} }
   repPoblarTartas();
+  try{ await repCargarZonasEnvio(); }catch(e){}
   var _di=L("rep-dir"); if(_di&&!_di._repGeoBound){ _di._repGeoBound=true; _di.addEventListener("input", repResetGeo); }
   await repReload();
   var perms=(typeof getPermisos==="function")?(getPermisos()||{}):{};
@@ -6535,6 +6593,7 @@ function repRenderMontoAuto(){
   var auto=(REP.tartasActuales||[]).reduce(function(a,t){return a+t.precio*t.cantidad;},0);
   var tot=(REP.tartasActuales||[]).reduce(function(a,t){return a+t.cantidad;},0);
   el.innerHTML = tot ? ("Auto: <strong>$"+auto.toLocaleString('es-MX')+"</strong> · "+tot+" tarta"+(tot!==1?"s":"")) : "";
+  try{ repEnvioInfo(); }catch(e){}
 }
 /* ===== (punto 1) Verificación de dirección en el mapa antes de subir ===== */
 async function repVerificarDir(){
@@ -6579,17 +6638,21 @@ async function repAddPedido(){
   var montoAuto = tartas.reduce(function(a,t){return a+t.precio*t.cantidad;},0);
   var montoManual = parseFloat(L("rep-monto").value)||0;
   var monto = montoManual>0 ? montoManual : montoAuto;
+  var _envInp=L("rep-envio"); var _subt=montoAuto;
+  var envio=(_subt>=1500)?0:(parseFloat(_envInp?_envInp.value:"")||0);
+  if(_subt<1500 && _envInp && (_envInp.value===""||_envInp.value==null)) return toast("Captura el costo de envio (obligatorio)","error");
   var pedido = {
     cliente:cli, tel:tel, dir:dir, zona:L("rep-zona").value.trim(),
     referencia:L("rep-ref").value.trim(), instruccion:L("rep-inst").value.trim(),
     fechaDeseada:L("rep-fechaPedido").value, pago:L("rep-pago").value,
     lat:REP.capCoord.lat, lon:REP.capCoord.lon,
-    tartas:totalCant, detalle:detalle, items:tartas, monto:monto
+    tartas:totalCant, detalle:detalle, items:tartas, monto:monto, envio:envio
   };
   var res = await api("repartoAddPedido",{pedido:pedido});
   if(res.ok){
     ["rep-cli","rep-tel","rep-dir","rep-zona","rep-ref","rep-inst"].forEach(function(id){ if(L(id)) L(id).value=""; });
     L("rep-monto").value=0; REP.tartasActuales=[]; repRenderTartasList(); repRenderMontoAuto(); repPrecioPreview(); repResetGeo();
+    if(L("rep-envio")){L("rep-envio").value="";L("rep-envio").disabled=false;} if(L("rep-envio-zona"))L("rep-envio-zona").value=""; if(L("rep-envio-info"))L("rep-envio-info").innerHTML="";
     toast(res.geocodificado?"Pedido agregado y geocodificado":"Pedido agregado (no se pudo geocodificar; revisa la dirección)");
     await repReload();
   } else toast(res.error||"Error","error");
@@ -6598,9 +6661,9 @@ async function repDelPedido(id){ if(!confirm("¿Eliminar pedido?"))return; var r
 function repRenderBase(){
   L("rep-cnt").textContent = REP.base.length;
   L("rep-base").innerHTML = !REP.base.length ? "<div style='font-size:12px;color:var(--muted)'>Sin pedidos en base.</div>" :
-    "<div style='overflow-x:auto'><table style='width:100%;font-size:12px;border-collapse:collapse'><tr><th style='text-align:left'>Cliente</th><th style='text-align:left'>Dirección</th><th style='text-align:left'>Envío</th><th style='text-align:left'>🎂</th><th>Tartas</th><th></th></tr>"+
+    "<div style='overflow-x:auto'><table style='width:100%;font-size:12px;border-collapse:collapse'><tr><th style='text-align:left'>Cliente</th><th style='text-align:left'>Dirección</th><th style='text-align:left'>Fecha</th><th style='text-align:left'>Envío</th><th style='text-align:left'>🎂</th><th>Tartas</th><th></th></tr>"+
     REP.base.map(function(p){ return "<tr style='border-top:1px solid var(--warm)'><td>"+p.cliente+(p.tel?"<div style='color:var(--muted);font-size:11px'>📞 "+p.tel+"</div>":"")+"</td><td>"+(p.dir||p.zona)+
-      (p.referencia?"<div style='color:var(--muted);font-size:11px'>Ref: "+p.referencia+"</div>":"")+(p.instruccion?"<div style='color:var(--muted);font-size:11px'>"+p.instruccion+"</div>":"")+(p.lat?"":" <span style='color:#b22'>⚠sin geo</span>")+"</td><td>"+(p.fechaDeseada||"—")+"</td><td>"+(p.detalle||"")+"</td><td style='text-align:center'>"+p.tartas+
+      (p.referencia?"<div style='color:var(--muted);font-size:11px'>Ref: "+p.referencia+"</div>":"")+(p.instruccion?"<div style='color:var(--muted);font-size:11px'>"+p.instruccion+"</div>":"")+(p.lat?"":" <span style='color:#b22'>⚠sin geo</span>")+"</td><td>"+(p.fechaDeseada||"—")+"</td><td>$"+(Number(p.envio)||0)+"</td><td>"+(p.detalle||"")+"</td><td style='text-align:center'>"+p.tartas+
       "</td><td><span style='color:#b22;cursor:pointer' onclick=\"repDelPedido('"+p.id+"')\">✕</span></td></tr>"; }).join("")+"</table></div>";
 }
 /* ===== Proponer ===== */
@@ -6888,7 +6951,7 @@ function repRenderChoferHTML(titulo, bloques){
     h+="<div style='border:1px solid #ddd;border-radius:10px;padding:12px;margin:10px 0;max-width:680px'><div style='display:flex;justify-content:space-between'><b>📅 "+r.fecha+"</b><a target='_blank' style='color:#fff;background:#7a1f2b;padding:3px 8px;border-radius:6px;text-decoration:none' href='"+repMapsUrl(c)+"'>🗺️ Google Maps</a></div>";
     c.stops.forEach(function(s,si){ var dis=r.estado==="Cerrada"?"disabled":"";
       var est=s.resultado==="entregada"?"✓ Entregada "+(s.horaEntrega||""):(s.resultado==="fallida"?"✗ Fallida":(s.resultado==="reprogramada"?"↻ Reprog.":"por entregar"));
-      h+="<div style='border-top:1px dashed #eee;padding:8px 0;font-size:13px'><b>"+s.cliente+"</b> — "+est+"<br><span style='color:#888'>📍 "+s.dir+(s.referencia?" · "+s.referencia:"")+(s.tel?" · 📞 "+s.tel:"")+"</span>"+(s.instruccion?"<br><span style='color:#888'>📝 "+s.instruccion+"</span>":"")+"<br><b>🎂 "+(s.detalle||s.tartas+"t")+"</b> · $"+s.monto+" · "+(s.esLocal?"LOCAL (sin venta)":(s.pagadoPrevio?"PREPAGADO":"cobrar"))+
+      h+="<div style='border-top:1px dashed #eee;padding:8px 0;font-size:13px'><b>"+s.cliente+"</b> — "+est+"<br><span style='color:#888'>📍 "+s.dir+(s.referencia?" · "+s.referencia:"")+(s.tel?" · 📞 "+s.tel:"")+"</span>"+(s.instruccion?"<br><span style='color:#888'>📝 "+s.instruccion+"</span>":"")+"<br><b>🎂 "+(s.detalle||s.tartas+"t")+"</b> · 🎂 $"+s.monto+(Number(s.envio)>0?(" + 🚚 $"+s.envio+" = $"+((Number(s.monto)||0)+(Number(s.envio)||0))):"")+" · "+(s.esLocal?"LOCAL (sin venta)":(s.pagadoPrevio?"PREPAGADO":"cobrar"))+
         "<div style='margin-top:4px'>Resultado: <select id='crr_"+r.id+"_"+ci+"_"+si+"' "+dis+">"+[["","—"],["entregada","Entregada"],["fallida","Fallida (nadie)"],["reprogramada","Reprogramar"]].map(function(opt){return "<option value='"+opt[0]+"' "+(s.resultado===opt[0]?"selected":"")+">"+opt[1]+"</option>";}).join("")+"</select> "+
         "Pago: <select id='cpp_"+r.id+"_"+ci+"_"+si+"' "+dis+">"+["Tarjeta","Efectivo","Transferencia"].map(function(opt){return "<option "+(s.formaPago===opt?"selected":"")+">"+opt+"</option>";}).join("")+"</select> "+
         "<button class='btn' "+dis+" onclick=\"repChoferConfirm('"+r.id+"',"+ci+","+si+")\">Confirmar y guardar</button></div></div>"; });
@@ -6908,16 +6971,148 @@ function repDocs(id){
   var html="<html><head><meta charset='utf-8'><title>Hojas de ruta "+r.fecha+"</title><style>body{font-family:sans-serif}.hoja{padding:24px;page-break-after:always}.hoja:last-child{page-break-after:auto}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #ccc;padding:6px}th{background:#f3ece8}@media print{button{display:none}}</style></head><body><button onclick='window.print()'>Imprimir / PDF</button>";
   r.choferes.forEach(function(c){
     var nom=(c.nombre&&c.nombre.trim())?c.nombre.trim():("Chofer "+c.idx);
-    html+="<section class='hoja'><h2>🍰 Tarta Vasca — Hoja de ruta</h2><div>Fecha: <b>"+r.fecha+"</b> · Chofer: <b>"+nom+"</b> · Salida: Cocina Cuajimalpa · Canal: Ruta</div><table><tr><th>#</th><th>Cliente</th><th>Dirección / referencia</th><th>Contacto</th><th>Tartas</th><th>Monto</th><th>Pago</th><th>¿Pagó?</th></tr>";
+    html+="<section class='hoja'><h2>🍰 Tarta Vasca — Hoja de ruta</h2><div>Fecha: <b>"+r.fecha+"</b> · Chofer: <b>"+nom+"</b> · Salida: Cocina Cuajimalpa · Canal: Ruta</div><table><tr><th>#</th><th>Cliente</th><th>Dirección / referencia</th><th>Contacto</th><th>Tartas</th><th>Monto</th><th>Envío</th><th>Total</th><th>Pago</th><th>¿Pagó?</th></tr>";
     c.stops.forEach(function(s,i){
       var dirCol = s.dir + (s.referencia?"<br><i>Ref: "+s.referencia+"</i>":"") + (s.instruccion?"<br><i>"+s.instruccion+"</i>":"");
-      html+="<tr><td>"+(i+1)+"</td><td>"+s.cliente+"</td><td>"+dirCol+"</td><td>"+(s.tel||"—")+"</td><td>"+(s.detalle||s.tartas)+"</td><td>$"+s.monto+"</td><td>"+s.formaPago+"</td><td>"+(s.pagadoPrevio?"Prepagado":(s.resultado==="entregada"?"Cobrado":"Pendiente"))+"</td></tr>";
+      html+="<tr><td>"+(i+1)+"</td><td>"+s.cliente+"</td><td>"+dirCol+"</td><td>"+(s.tel||"—")+"</td><td>"+(s.detalle||s.tartas)+"</td><td>$"+s.monto+"</td><td>$"+(Number(s.envio)||0)+"</td><td>$"+((Number(s.monto)||0)+(Number(s.envio)||0))+"</td><td>"+s.formaPago+"</td><td>"+(s.pagadoPrevio?"Prepagado":(s.resultado==="entregada"?"Cobrado":"Pendiente"))+"</td></tr>";
     });
     html+="</table></section>";
   });
   html+="</body></html>";
   w.document.write(html);
   w.document.close();
+}
+/* ===== (Adecuaciones) Envio en reparto ===== */
+async function repCargarZonasEnvio(){
+  if(!S.zonasEnvio || !S.zonasEnvio.length){ try{ await cargarZonasEnvio(); }catch(e){} }
+  var sel=L("rep-envio-zona"); if(!sel) return;
+  var act=(S.zonasEnvio||[]).filter(function(z){return z.activo;});
+  sel.innerHTML = "<option value=''>- Selecciona zona -</option>" + act.map(function(z){ return "<option value='"+z.costo+"'>"+z.nombre+" - $"+z.costo.toLocaleString('es-MX')+"</option>"; }).join("");
+}
+function repZonaEnvioChange(){
+  var sel=L("rep-envio-zona"); if(!sel) return;
+  var c=parseInt(sel.value||"0")||0;
+  if(L("rep-envio")) L("rep-envio").value=c;
+  repEnvioInfo();
+}
+function repEnvioInfo(){
+  var el=L("rep-envio-info"); if(!el) return;
+  var subtotal=(REP.tartasActuales||[]).reduce(function(a,t){return a+t.precio*t.cantidad;},0);
+  var inp=L("rep-envio");
+  if(subtotal>=1500){
+    if(inp){ inp.value=0; inp.disabled=true; }
+    el.innerHTML="<span style='color:var(--success)'>✓ Envío gratis (pedido ≥ $1,500)</span>";
+  } else {
+    if(inp) inp.disabled=false;
+    var env=parseFloat(inp?inp.value:0)||0;
+    el.innerHTML = env>0 ? ("Envío: <strong>$"+env.toLocaleString('es-MX')+"</strong> — se suma al total (1 por pedido)") : "<span style='color:var(--muted)'>Captura el costo de envío (1 por pedido). Selecciona zona o escríbelo.</span>";
+  }
+}
+/* ===== (Adecuacion 2) Apartados ===== */
+var AP = { tartas: [] };
+function apPoblar(){
+  if(!S.catalogo) return;
+  var sab=(S.catalogo.sabores||[]).filter(function(s){return s.activo;}).map(function(s){return s.nombre;});
+  var tam=(S.catalogo.tamanos||[]).filter(function(t){return t.activo;}).map(function(t){return t.nombre;});
+  if(L("ap-sabor")) L("ap-sabor").innerHTML=sab.map(function(n){return "<option>"+n+"</option>";}).join("");
+  if(L("ap-tamano")) L("ap-tamano").innerHTML=tam.map(function(n){return "<option>"+n+"</option>";}).join("");
+  var sucSel=L("ap-suc"), perms=(typeof getPermisos==="function"?getPermisos():{})||{};
+  if(sucSel){
+    var sucs = perms.puedeVerAmbas ? ((S.catalogo.sucursales||[]).filter(function(s){return s.activo;}).map(function(s){return s.nombre;})) : [S.sucursal];
+    sucSel.innerHTML=sucs.map(function(n){return "<option>"+n+"</option>";}).join("");
+    var g=L("ap-suc-group"); if(g) g.style.display = perms.puedeVerAmbas ? "" : "none";
+  }
+  apPrecio();
+}
+function apPrecio(){
+  var sabor=L("ap-sabor")?L("ap-sabor").value:"", tamano=L("ap-tamano")?L("ap-tamano").value:"";
+  var cant=parseInt(L("ap-cant")?L("ap-cant").value:1)||1;
+  var pr=(typeof repPrecioTarta==="function")?repPrecioTarta(sabor,tamano):0;
+  var el=L("ap-tarta-precio");
+  if(el) el.innerHTML = pr>0 ? ("$"+pr.toLocaleString('es-MX')+" × "+cant+" = <strong>$"+(pr*cant).toLocaleString('es-MX')+"</strong>") : "<span style='color:var(--muted)'>sin precio</span>";
+}
+function apAddTarta(){
+  var sabor=L("ap-sabor").value, tamano=L("ap-tamano").value, cant=parseInt(L("ap-cant").value)||0;
+  if(!sabor||!tamano) return toast("Selecciona sabor y tamaño","error");
+  if(cant<1) return toast("Cantidad inválida","error");
+  var pr=(typeof repPrecioTarta==="function")?repPrecioTarta(sabor,tamano):0;
+  AP.tartas.push({sabor:sabor,tamano:tamano,cantidad:cant,precio:pr});
+  L("ap-cant").value=1; apRenderTartas();
+}
+function apQuitar(i){ AP.tartas.splice(i,1); apRenderTartas(); }
+function apRenderTartas(){
+  var el=L("ap-tartas-list"); if(!el) return;
+  var t=AP.tartas||[];
+  el.innerHTML = !t.length ? "<div style='font-size:12px;color:var(--muted)'>Sin tartas.</div>" :
+    t.map(function(it,i){ return "<div class='rep-tarta-row'><div style='flex:1'><strong>"+it.cantidad+"×</strong> "+it.sabor+" "+it.tamano+"</div><span style='color:var(--accent);margin-right:10px'>$"+(it.precio*it.cantidad).toLocaleString('es-MX')+"</span><button class='btn-remove' onclick='apQuitar("+i+")'>×</button></div>"; }).join("");
+  var tot=t.reduce(function(a,x){return a+x.precio*x.cantidad;},0);
+  if(L("ap-total")) L("ap-total").innerHTML = t.length ? ("Total apartado: <strong>$"+tot.toLocaleString('es-MX')+"</strong>") : "";
+}
+async function cargarApartados(){
+  if(!S.catalogo){ try{ await cargarCatalogo(); }catch(e){} }
+  apPoblar();
+  if(L("ap-fecha")&&!L("ap-fecha").value){ var m=new Date(); m.setDate(m.getDate()+1); L("ap-fecha").value=m.getFullYear()+"-"+String(m.getMonth()+1).padStart(2,"0")+"-"+String(m.getDate()).padStart(2,"0"); }
+  apRenderTartas();
+  await apReload();
+}
+async function apReload(){
+  var res=await api("getApartados");
+  var cont=L("ap-list");
+  if(!res||!res.ok){ if(cont) cont.innerHTML="<div style='font-size:12px;color:var(--muted)'>No se pudo cargar.</div>"; return; }
+  var ap=res.apartados||[];
+  if(L("ap-cnt")) L("ap-cnt").textContent=ap.length;
+  if(!cont) return;
+  cont.innerHTML = !ap.length ? "<div style='font-size:12px;color:var(--muted)'>Sin apartados pendientes.</div>" :
+    ap.map(function(a){
+      var its=a.items.map(function(it){return it.cantidad+"× "+it.sabor+" "+it.tamano;}).join(" · ");
+      return "<div style='border:1px solid var(--warm);border-radius:8px;padding:10px;margin-bottom:8px'>"+
+        "<div style='display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px'><div><b>"+(a.clienteNombre||"Cliente")+"</b> · 📅 entrega <b>"+(a.fechaEntrega||"—")+"</b></div><div style='color:var(--accent);font-weight:700'>$"+a.total.toLocaleString('es-MX')+"</div></div>"+
+        "<div style='font-size:12px;color:var(--muted);margin-top:4px'>"+its+" · "+a.sucursal+(a.anticipo>0?(" · anticipo $"+a.anticipo.toLocaleString('es-MX')):"")+"</div>"+
+        "<div style='margin-top:6px;display:flex;gap:8px;flex-wrap:wrap'><button class='btn-sec' onclick=\"apConvertir('"+a.idVenta+"')\">✓ Entregar (convertir a venta)</button><button class='btn-sec' onclick=\"apLiberar('"+a.idVenta+"')\">Liberar</button></div>"+
+      "</div>"; }).join("");
+}
+async function apGuardar(){
+  var cli=L("ap-cli").value.trim();
+  if(!cli) return toast("Falta el cliente","error");
+  if(!L("ap-fecha").value) return toast("La fecha de entrega es obligatoria","error");
+  if(!AP.tartas.length) return toast("Agrega al menos una tarta","error");
+  var perms=(typeof getPermisos==="function"?getPermisos():{})||{};
+  var suc = (perms.puedeVerAmbas && L("ap-suc")) ? L("ap-suc").value : S.sucursal;
+  var items=AP.tartas.map(function(t){return {sabor:t.sabor,tamano:t.tamano,cantidad:t.cantidad,precioUnitario:t.precio};});
+  var res=await api("registrarApartado",{
+    items:items, tipoOp:"reserva", canal:"Apartado",
+    metodoPago:L("ap-metodo").value, anticipo:parseFloat(L("ap-anticipo").value)||0,
+    fechaEntrega:L("ap-fecha").value, sucursal:suc,
+    cliente:{nombre:cli, telefono:L("ap-tel").value.trim()}
+  });
+  if(res.ok){
+    toast("📦 Apartado guardado");
+    L("ap-cli").value=""; L("ap-tel").value=""; L("ap-anticipo").value=0; AP.tartas=[]; apRenderTartas();
+    await apReload();
+  } else toast(res.error||"Error","error");
+}
+async function apConvertir(id){
+  if(!confirm("¿Marcar como entregado y convertir a venta?")) return;
+  var res=await api("convertirReservaAVenta",{idVenta:id,canal:"Mostrador"});
+  if(res.ok){ toast("✅ Apartado entregado"); await apReload(); } else toast(res.error||"Error","error");
+}
+async function apLiberar(id){
+  if(!confirm("¿Liberar (cancelar) este apartado?")) return;
+  var res=await api("liberarReserva",{idVenta:id,motivo:"Apartado liberado"});
+  if(res.ok){ toast("Apartado liberado"); await apReload(); } else toast(res.error||"Error","error");
+}
+/* ===== (Adecuacion 3) Produccion para manana (ruta + apartados) ===== */
+async function cargarProduccionManana(){
+  var f=L("prodman-fecha");
+  if(f&&!f.value){ var m=new Date(); m.setDate(m.getDate()+1); f.value=m.getFullYear()+"-"+String(m.getMonth()+1).padStart(2,"0")+"-"+String(m.getDate()).padStart(2,"0"); }
+  var fecha=f?f.value:"";
+  var res=await api("getProduccionManana", fecha?{fecha:fecha}:{});
+  var cont=L("prodman-list"); if(!cont) return;
+  if(!res||!res.ok){ cont.innerHTML="<div style='font-size:12px;color:var(--muted)'>No se pudo cargar.</div>"; return; }
+  if(!res.items.length){ cont.innerHTML="<div style='font-size:12px;color:var(--muted)'>Nada que hornear para "+res.fecha+".</div>"; return; }
+  cont.innerHTML = "<div style='font-weight:700;margin-bottom:6px'>📅 Entrega "+res.fecha+" — "+res.totalTartas+" tartas</div>"+
+    res.items.map(function(x){ var m=[]; if(x.ruta)m.push("ruta "+x.ruta); if(x.apartado)m.push("apartado "+x.apartado);
+      return "<div style='border:1px solid var(--warm);border-radius:6px;padding:6px 10px;margin-bottom:4px;font-size:13px'><b>"+x.cantidad+"×</b> "+x.sabor+" "+x.tamano+" <span style='color:var(--muted);font-size:11px'>("+m.join(", ")+")</span></div>"; }).join("");
 }
 </script>
 </body>
