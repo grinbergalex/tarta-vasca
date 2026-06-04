@@ -680,11 +680,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <!-- NOTAS DEL CREADOR (solo Owner) -->
     <div id="tab-notas" class="tab-pane" style="display:none">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-        <h2 style="margin:0">📝 Notas del creador</h2>
+        <h2 style="margin:0">📝 Notas (errores e ideas)</h2>
       </div>
       <div class="card" style="margin-top:10px">
         <div class="card-title">Nueva nota</div>
-        <div class="card-sub">Buzon privado del creador del sistema. Cada noche (21:00) el robot revisa: los <b>errores</b> se corrigen y te dejan el codigo nuevo; las <b>ideas</b> se agregan a la seccion 💡 Ideas de tus pendientes.</div>
+        <div class="card-sub">Reporta un <b>error</b> o deja una <b>idea</b> para mejorar el sistema. Cada noche se revisan: los errores se corrigen y las ideas pasan a la lista de pendientes. Cualquier usuario puede escribir aqui.</div>
         <div class="form-group">
           <label class="form-label">Tipo</label>
           <select class="form-select" id="nota-tipo">
@@ -2136,7 +2136,7 @@ const MENU = [
     { label:"Precios",     pane:"precios",     perm:"owner" },
   ]},
   { id:"notas", label:"📝 Notas", items:[
-    { label:"Notas del creador", pane:"notas", perm:"owner" },
+    { label:"Notas y reportes", pane:"notas", perm:"all" },
   ]},
 ];
 function _permOK(perm){
@@ -7159,7 +7159,8 @@ async function cargarNotas(){
       var ic = n.tipo==="Idea" ? "💡" : "🐞";
       var col = (n.estado==="resuelta"||n.estado==="cargada") ? "#1d7a35" : (n.tipo==="Idea"?"#8a5a00":"#b22");
       var badge = "<span style='font-size:11px;color:"+col+";font-weight:700'>"+(n.estado||"nueva").toUpperCase()+"</span>";
-      var acc = (n.estado==="nueva") ? "<button class='btn-sec' onclick=\"notaResolver('"+n.id+"')\" style='font-size:11px;padding:4px 8px'>Marcar atendida</button>" : "";
+      var esAdmin = ((typeof getPermisos==="function"?getPermisos():{})||{}).esAdmin;
+      var acc = (esAdmin && n.estado==="nueva") ? "<button class='btn-sec' onclick=\"notaResolver('"+n.id+"')\" style='font-size:11px;padding:4px 8px'>Marcar atendida</button>" : "";
       return "<div style='border-top:1px dashed #eee;padding:8px 0;display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap'>"+
         "<div style='flex:1;min-width:200px'><div style='font-size:11px;color:var(--muted)'>"+ic+" "+n.tipo+" · "+String(n.fecha||"").replace('T',' ').substring(0,16)+" · "+badge+"</div>"+
         "<div style='font-size:13px;margin-top:2px'>"+String(n.texto||"").replace(/</g,'&lt;')+"</div></div>"+acc+"</div>";
