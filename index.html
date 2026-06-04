@@ -677,6 +677,29 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
       </div>
       <div class="card"><h3>Apartados pendientes (<span id="ap-cnt">0</span>)</h3><div id="ap-list"></div></div>
     </div>
+    <!-- NOTAS DEL CREADOR (solo Owner) -->
+    <div id="tab-notas" class="tab-pane" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <h2 style="margin:0">📝 Notas del creador</h2>
+      </div>
+      <div class="card" style="margin-top:10px">
+        <div class="card-title">Nueva nota</div>
+        <div class="card-sub">Buzon privado del creador del sistema. Cada noche (21:00) el robot revisa: los <b>errores</b> se corrigen y te dejan el codigo nuevo; las <b>ideas</b> se agregan a la seccion 💡 Ideas de tus pendientes.</div>
+        <div class="form-group">
+          <label class="form-label">Tipo</label>
+          <select class="form-select" id="nota-tipo">
+            <option value="Error">🐞 Error (corregir)</option>
+            <option value="Idea">💡 Idea (a pendientes)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nota</label>
+          <textarea class="form-input" id="nota-texto" rows="4" placeholder="Describe el error o la idea con detalle (que paso, donde, que esperabas)..." style="resize:vertical"></textarea>
+        </div>
+        <button class="btn-main btn-green" onclick="notaEnviar()" id="nota-btn" style="margin-top:0">Enviar comentario</button>
+      </div>
+      <div class="card"><h3>Notas recientes (<span id="nota-cnt">0</span>)</h3><div id="nota-list"></div></div>
+    </div>
     <div id="tab-produccion" class="tab-pane" style="display:none">
       <div class="card">
         <div class="card-title">Cargar producción</div>
@@ -2112,6 +2135,9 @@ const MENU = [
     { label:"Catálogo",    pane:"catalogo",    perm:"owner" },
     { label:"Precios",     pane:"precios",     perm:"owner" },
   ]},
+  { id:"notas", label:"📝 Notas", items:[
+    { label:"Notas del creador", pane:"notas", perm:"owner" },
+  ]},
 ];
 function _permOK(perm){
   const p = getPermisos() || {};
@@ -2142,6 +2168,7 @@ function _loadPane(t){
   else if(t==="alertas") cargarAlertas();
   else if(t==="reparto") cargarReparto();
   else if(t==="apartados") cargarApartados();
+  else if(t==="notas") cargarNotas();
   else if(t==="produccion") cargarProduccionManana();
 }
 function irAPane(pane, subFn, subKey){
@@ -7105,6 +7132,43 @@ async function apLiberar(id){
   if(!confirm("¿Liberar (cancelar) este apartado?")) return;
   var res=await api("liberarReserva",{idVenta:id,motivo:"Apartado liberado"});
   if(res.ok){ toast("Apartado liberado"); await apReload(); } else toast(res.error||"Error","error");
+}
+/* ===== Notas del creador (Owner) ===== */
+async function notaEnviar(){
+  var tipo=L("nota-tipo")?L("nota-tipo").value:"Error";
+  var texto=(L("nota-texto")?L("nota-texto").value:"").trim();
+  if(!texto) return toast("Escribe la nota","error");
+  var btn=L("nota-btn"); if(btn){btn.disabled=true;btn.textContent="Enviando...";}
+  var res=await api("registrarNota",{tipo:tipo, texto:texto});
+  if(btn){btn.disabled=false;btn.textContent="Enviar comentario";}
+  if(res.ok){
+    if(L("nota-texto")) L("nota-texto").value="";
+    if(L("nota-tipo")) L("nota-tipo").value="Error";
+    toast(res.mensaje||"Nota enviada");
+    cargarNotas();
+  } else toast(res.error||"Error","error");
+}
+async function cargarNotas(){
+  var res=await api("getNotas",{limite:30});
+  var cont=L("nota-list"); if(!cont) return;
+  if(!res.ok){ cont.innerHTML="<div style='font-size:12px;color:var(--muted)'>No se pudieron cargar.</div>"; return; }
+  var notas=res.notas||[];
+  if(L("nota-cnt")) L("nota-cnt").textContent=notas.length;
+  cont.innerHTML = !notas.length ? "<div style='font-size:12px;color:var(--muted)'>Sin notas todavia.</div>" :
+    notas.map(function(n){
+      var ic = n.tipo==="Idea" ? "💡" : "🐞";
+      var col = (n.estado==="resuelta"||n.estado==="cargada") ? "#1d7a35" : (n.tipo==="Idea"?"#8a5a00":"#b22");
+      var badge = "<span style='font-size:11px;color:"+col+";font-weight:700'>"+(n.estado||"nueva").toUpperCase()+"</span>";
+      var acc = (n.estado==="nueva") ? "<button class='btn-sec' onclick=\"notaResolver('"+n.id+"')\" style='font-size:11px;padding:4px 8px'>Marcar atendida</button>" : "";
+      return "<div style='border-top:1px dashed #eee;padding:8px 0;display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap'>"+
+        "<div style='flex:1;min-width:200px'><div style='font-size:11px;color:var(--muted)'>"+ic+" "+n.tipo+" · "+String(n.fecha||"").replace('T',' ').substring(0,16)+" · "+badge+"</div>"+
+        "<div style='font-size:13px;margin-top:2px'>"+String(n.texto||"").replace(/</g,'&lt;')+"</div></div>"+acc+"</div>";
+    }).join("");
+}
+async function notaResolver(id){
+  if(!confirm("¿Marcar esta nota como atendida?")) return;
+  var res=await api("setNotaEstado",{id:id, estado:"resuelta"});
+  if(res.ok){ toast("Nota actualizada"); cargarNotas(); } else toast(res.error||"Error","error");
 }
 /* ===== (Adecuacion 3) Produccion para manana (ruta + apartados) ===== */
 async function cargarProduccionManana(){
