@@ -6758,7 +6758,7 @@ function repRenderRutas(){
           "<span style='margin-left:auto'>"+est+"</span>"+
           "<select id=\"rar_"+r.id+"_"+ci+"_"+si+"\" "+dis+">"+[["","—"],["entregada","Entregada"],["fallida","Fallida"],["reprogramada","Reprogramar"]].map(function(o){return "<option value='"+o[0]+"' "+(s.resultado===o[0]?"selected":"")+">"+o[1]+"</option>";}).join("")+"</select>"+
           pago+"<button class='btn-sec' "+dis+" onclick=\"repSetResultado('"+r.id+"',"+ci+","+si+")\">Aplicar</button>"+
-          (s.resultado==="reprogramada"||s.resultado==="fallida"?"":"")+"</div>";
+          ((r.estado!=="Cerrada" && s.resultado!=="entregada")?"<button class='btn-sec' onclick=\"repLiberarStop('"+r.id+"',"+ci+","+si+")\" style='color:#b22;border-color:#e3b2b2' title='Sacar de la ruta y devolver la tarta a inventario'>Liberar</button>":"")+"</div>";
       });
     });
     var tm=repTotMetodo(r), ef=repEfEsperado(r), efRec=(r.efectivoRecibido===""||r.efectivoRecibido==null)?"":r.efectivoRecibido;
@@ -6846,7 +6846,12 @@ async function repSetResultado(id,ci,si){ var res=L("rar_"+id+"_"+ci+"_"+si).val
   var r=await api("repartoSetResultado",{id:id,ci:ci,si:si,resultado:res}); if(r.ok) await repReload(); else toast(r.error,"error"); }
 async function repSetEfectivo(id,val){ await api("repartoSetEfectivo",{id:id,valor:val}); await repReload(); }
 async function repCerrar(id){ var r=await api("repartoCerrarRuta",{id:id}); if(r.ok){toast(r.mensaje||"Ruta cerrada"); await repReload();} else toast(r.error||"No se pudo cerrar","error"); }
-async function repDelRuta(id){ if(!confirm("¿Eliminar ruta?"))return; var r=await api("repartoDelRuta",{id:id}); if(r.ok) await repReload(); }
+async function repDelRuta(id){ if(!confirm("¿Eliminar ruta? Los pedidos NO entregados regresan a la base para re-planearse."))return; var r=await api("repartoDelRuta",{id:id}); if(r.ok) await repReload(); }
+async function repLiberarStop(id,ci,si){
+  if(!confirm("¿Liberar esta tarta? Sale de la ruta y vuelve a inventario disponible. Úsalo si el pedido se canceló o cambió (aun si la ruta ya está fijada o la tarta ya se horneó)."))return;
+  var r=await api("repartoLiberar",{rutaId:id,ci:ci,si:si});
+  if(r.ok){ toast(r.mensaje||"Tarta liberada"); await repReload(); } else toast(r.error||"Error","error");
+}
 async function repDelTodasRutas(){
   var rutas=(REP.rutas||[]).filter(function(r){return r.estado!=="Cerrada";});
   if(!rutas.length){ toast("No hay rutas planeadas para limpiar"); return; }
