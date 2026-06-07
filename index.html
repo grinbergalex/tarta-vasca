@@ -1706,6 +1706,32 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
       </div>
     </div>
     <!-- ALERTAS Y MÍNIMOS/MÁXIMOS -->
+    <div id="tab-ajuste" class="tab-pane" style="display:none">
+      <div class="card">
+        <h2 style="margin-top:0">🔧 Ajuste de inventario</h2>
+        <p style="color:var(--muted);font-size:13px;margin-top:4px;line-height:1.5">Pon el sistema igual al <b>conteo físico</b>. Escribe las piezas reales que contaste por producto; al aplicar, el sistema sobrescribe su cantidad, consolida lotes en una sola fila y limpia las filas anuladas con sobrante. Todo queda en Auditoría.</p>
+        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin:12px 0">
+          <div class="form-group" style="margin:0">
+            <label>Sucursal</label>
+            <select id="ajuste-suc" onchange="refrescarAjusteInv()"></select>
+          </div>
+          <button class="btn-outline" onclick="refrescarAjusteInv()">↻ Recargar</button>
+        </div>
+        <div style="overflow:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead><tr style="border-bottom:2px solid var(--border,#eee)">
+              <th style="text-align:left;padding:8px">Sabor</th>
+              <th style="text-align:left;padding:8px">Tamaño</th>
+              <th style="text-align:center;padding:8px">Sistema</th>
+              <th style="text-align:center;padding:8px">Conteo físico</th>
+              <th style="text-align:center;padding:8px">Δ</th>
+            </tr></thead>
+            <tbody id="ajuste-tbody"></tbody>
+          </table>
+        </div>
+        <button id="ajuste-aplicar" onclick="aplicarAjusteInv()" style="margin-top:14px;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 18px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer">Aplicar ajuste</button>
+      </div>
+    </div>
     <div id="tab-alertas" class="tab-pane" style="display:none">
       <div id="alertas-panel" style="margin-bottom:12px"></div>
       <div class="card">
@@ -2099,6 +2125,7 @@ const MENU = [
     { label:"Producción",       pane:"produccion",     perm:"producir" },
     { label:"Transferencias",   pane:"transferencias", perm:"transferir" },
     { label:"Pedido sugerido",  pane:"reporte", sub:["setReporteTab","pedido"], perm:"owner" },
+    { label:"Ajuste de inventario", pane:"ajuste", perm:"owner" },
   ]},
   { id:"ven", label:"🛒 Ventas", items:[
     { label:"Nueva venta",      pane:"venta",  perm:"vender" },
@@ -2170,6 +2197,7 @@ function _loadPane(t){
   else if(t==="apartados") cargarApartados();
   else if(t==="notas") cargarNotas();
   else if(t==="produccion") cargarProduccionManana();
+  else if(t==="ajuste") cargarAjusteInv();
 }
 function irAPane(pane, subFn, subKey){
   document.querySelectorAll(".tab-pane").forEach(p=>p.style.display="none");
@@ -2204,6 +2232,69 @@ function renderMenu(){
   if(grupos[0]) _renderItems(grupos[0]);
 }
 function setupNav(){ renderMenu(); }
+// ===== Ajuste de inventario (conteo fisico) — solo Owner =====
+async function cargarAjusteInv(){
+  const sel = L("ajuste-suc");
+  if(sel && !sel.dataset.pob){
+    const sucs = ((S.catalogo&&S.catalogo.sucursales)||[]).filter(s=>s.activo).map(s=>s.nombre);
+    const list = sucs.length?sucs:["Cuajimalpa","Polanco"];
+    sel.innerHTML = list.map(s=>'<option value="'+s+'">'+s+'</option>').join("");
+    sel.dataset.pob = "1";
+  }
+  await refrescarAjusteInv();
+}
+async function refrescarAjusteInv(){
+  const suc = (L("ajuste-suc")&&L("ajuste-suc").value) || "Cuajimalpa";
+  const tb = L("ajuste-tbody");
+  if(tb) tb.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:14px">Cargando...</td></tr>';
+  const res = await api("getStock",{sucursal:suc});
+  if(!res.ok){ toast(res.error||"Error al cargar stock","error"); return; }
+  const map = {};
+  (res.stock||[]).forEach(s=>{
+    if(s.sucursal!==suc) return;
+    const k = s.sabor+"||"+s.tamano;
+    if(!map[k]) map[k] = {sabor:s.sabor, tamano:s.tamano, sistema:0};
+    map[k].sistema += Number(s.cantActual)||0;
+  });
+  const rows = Object.keys(map).map(k=>map[k]).sort((a,b)=> a.sabor.localeCompare(b.sabor) || a.tamano.localeCompare(b.tamano));
+  S._ajusteRows = rows;
+  if(!rows.length){ if(tb) tb.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:14px">Sin stock registrado en '+suc+'.</td></tr>'; return; }
+  if(tb) tb.innerHTML = rows.map((r,i)=>
+    '<tr style="border-bottom:1px solid var(--border,#f0f0f0)">'+
+      '<td style="padding:8px">'+r.sabor+'</td>'+
+      '<td style="padding:8px">'+r.tamano+'</td>'+
+      '<td style="text-align:center;padding:8px">'+r.sistema+'</td>'+
+      '<td style="text-align:center;padding:8px"><input type="number" min="0" id="aj-cnt-'+i+'" value="'+r.sistema+'" style="width:72px;text-align:center;padding:4px" oninput="_ajusteDelta('+i+')"></td>'+
+      '<td id="aj-delta-'+i+'" style="text-align:center;padding:8px;color:var(--muted)">0</td>'+
+    '</tr>'
+  ).join("");
+}
+function _ajusteDelta(i){
+  const r = (S._ajusteRows||[])[i]; if(!r) return;
+  const el0 = L("aj-cnt-"+i); const v = el0 ? parseInt(el0.value) : NaN;
+  const d = (isNaN(v)?r.sistema:v) - r.sistema;
+  const el = L("aj-delta-"+i); if(!el) return;
+  el.textContent = (d>0?"+":"")+d;
+  el.style.color = d===0 ? "var(--muted)" : (d<0 ? "var(--danger)" : "var(--accent)");
+}
+async function aplicarAjusteInv(){
+  const suc = (L("ajuste-suc")&&L("ajuste-suc").value) || "Cuajimalpa";
+  const rows = S._ajusteRows||[];
+  const ajustes = [];
+  rows.forEach((r,i)=>{
+    const el = L("aj-cnt-"+i); if(!el) return;
+    const v = parseInt(el.value);
+    if(isNaN(v)||v<0) return;
+    if(v !== r.sistema) ajustes.push({sabor:r.sabor, tamano:r.tamano, conteo:v});
+  });
+  if(!ajustes.length){ toast("No hay cambios que aplicar.","error"); return; }
+  if(!confirm("Vas a ajustar "+ajustes.length+" producto(s) en "+suc+" al conteo fisico. Esto sobrescribe la cantidad del sistema. Continuar?")) return;
+  const btn = L("ajuste-aplicar"); if(btn){ btn.disabled=true; btn.textContent="Aplicando..."; }
+  const res = await api("ajustarInventario",{sucursal:suc, ajustes:ajustes});
+  if(btn){ btn.disabled=false; btn.textContent="Aplicar ajuste"; }
+  if(res.ok){ toast(res.mensaje||"Inventario ajustado"); await refrescarAjusteInv(); if(typeof cargarStock==="function") cargarStock(); }
+  else toast(res.error||"Error al ajustar","error");
+}
 async function cargarCatalogo() {
   const res=await api("getCatalogo");
   if(!res.ok) return;
