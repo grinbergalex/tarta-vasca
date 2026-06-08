@@ -688,7 +688,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
       </div>
       <div class="card" style="margin-top:10px">
         <div class="card-title">Nueva nota</div>
-        <div class="card-sub">Reporta un <b>error</b> o deja una <b>idea</b> para mejorar el sistema. Cada noche se revisan: los errores se corrigen y las ideas pasan a la lista de pendientes. Cualquier usuario puede escribir aqui.</div>
+        <div class="card-sub">Reporta un <b>error</b> o deja una <b>idea</b>. Nada es obligatorio, pero <b>entre más detalle, más rápido se resuelve</b>. Llena lo que aplique. Cada noche se revisan: los errores se corrigen y las ideas pasan a pendientes. Cualquier usuario puede escribir aquí.</div>
+        <div style="background:rgba(46,92,74,.06);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin:10px 0;font-size:12px;color:var(--muted);line-height:1.55">
+          <b>Ejemplo del nivel de detalle ideal:</b><br>
+          <b>Sección:</b> Ventas · <b>Pestaña:</b> Reportes · <b>Sub-pestaña:</b> Por período<br>
+          <b>Qué pasó:</b> Filtré "Mayo" y la gráfica quedó en blanco; el total de arriba sí decía $48,000 pero la gráfica no pintó nada.<br>
+          <b>Qué debió pasar:</b> La gráfica debería mostrar las líneas de Cuajimalpa, Polanco y Ruta de mayo.<br>
+          <b>Ejemplo:</b> Pasó hoy ~13:00, usuario de Dulce, tablet de Polanco. Recargué y siguió igual.<br>
+          📷 Adjunté el pantallazo de la pantalla en blanco.
+        </div>
         <div class="form-group">
           <label class="form-label">Tipo</label>
           <select class="form-select" id="nota-tipo">
@@ -696,10 +704,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
             <option value="Idea">💡 Idea (a pendientes)</option>
           </select>
         </div>
-        <div class="form-group">
-          <label class="form-label">Nota</label>
-          <textarea class="form-input" id="nota-texto" rows="4" placeholder="Describe el error o la idea con detalle (que paso, donde, que esperabas)..." style="resize:vertical"></textarea>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="form-group"><label class="form-label">Sección</label><input class="form-input" id="nota-seccion" placeholder="Ej: Ventas, Inventario, Reportes..."></div>
+          <div class="form-group"><label class="form-label">Pestaña</label><input class="form-input" id="nota-pestana" placeholder="Ej: Reportes, Stock, Objetivos..."></div>
         </div>
+        <div class="form-group"><label class="form-label">Sub-pestaña <span style="color:var(--muted);font-weight:400">(si aplica)</span></label><input class="form-input" id="nota-subpestana" placeholder="Ej: Por período, Stock por hora..."></div>
+        <div class="form-group"><label class="form-label">¿Qué pasó?</label><textarea class="form-input" id="nota-quepaso" rows="3" placeholder="Con detalle: qué hiciste, qué viste, a qué hora, con qué usuario y dispositivo..." style="resize:vertical"></textarea></div>
+        <div class="form-group"><label class="form-label">¿Qué debió pasar?</label><textarea class="form-input" id="nota-quedebio" rows="2" placeholder="Qué esperabas que pasara en vez de eso" style="resize:vertical"></textarea></div>
+        <div class="form-group"><label class="form-label">Ejemplo / detalles</label><textarea class="form-input" id="nota-ejemplo" rows="2" placeholder="Un caso concreto, números, pasos para reproducirlo..." style="resize:vertical"></textarea></div>
+        <div class="form-group"><label class="form-label">Foto / pantallazo <span style="color:var(--muted);font-weight:400">(recomendado)</span></label><input type="file" accept="image/*" id="nota-foto" class="form-input" onchange="_notaPrevFoto()"><div id="nota-foto-prev" style="margin-top:6px"></div></div>
         <button class="btn-main btn-green" onclick="notaEnviar()" id="nota-btn" style="margin-top:0">Enviar comentario</button>
       </div>
       <div class="card"><h3>Notas recientes (<span id="nota-cnt">0</span>)</h3><div id="nota-list"></div></div>
@@ -7299,18 +7312,62 @@ async function apLiberar(id){
 }
 /* ===== Notas del creador (Owner) ===== */
 async function notaEnviar(){
-  var tipo=L("nota-tipo")?L("nota-tipo").value:"Error";
-  var texto=(L("nota-texto")?L("nota-texto").value:"").trim();
-  if(!texto) return toast("Escribe la nota","error");
-  var btn=L("nota-btn"); if(btn){btn.disabled=true;btn.textContent="Enviando...";}
-  var res=await api("registrarNota",{tipo:tipo, texto:texto});
-  if(btn){btn.disabled=false;btn.textContent="Enviar comentario";}
-  if(res.ok){
-    if(L("nota-texto")) L("nota-texto").value="";
-    if(L("nota-tipo")) L("nota-tipo").value="Error";
+  var tipo=(L("nota-tipo")?L("nota-tipo").value:"Error");
+  var seccion=(L("nota-seccion")&&L("nota-seccion").value||"").trim();
+  var pestana=(L("nota-pestana")&&L("nota-pestana").value||"").trim();
+  var subp=(L("nota-subpestana")&&L("nota-subpestana").value||"").trim();
+  var quepaso=(L("nota-quepaso")&&L("nota-quepaso").value||"").trim();
+  var quedebio=(L("nota-quedebio")&&L("nota-quedebio").value||"").trim();
+  var ejemplo=(L("nota-ejemplo")&&L("nota-ejemplo").value||"").trim();
+  var partes=[];
+  if(seccion) partes.push("Sección: "+seccion);
+  if(pestana||subp) partes.push("Pestaña: "+(pestana||"-")+(subp?(" / Sub-pestaña: "+subp):""));
+  if(quepaso) partes.push("Qué pasó: "+quepaso);
+  if(quedebio) partes.push("Qué debió pasar: "+quedebio);
+  if(ejemplo) partes.push("Ejemplo: "+ejemplo);
+  var texto=partes.join("\n");
+  if(!texto){ toast("Escribe al menos qué pasó.","error"); return; }
+  var btn=L("nota-btn"); if(btn){ btn.disabled=true; btn.textContent="Enviando..."; }
+  var fotoData="";
+  try{ fotoData=await _notaLeerFotoResize(); }catch(e){ fotoData=""; }
+  var res=await api("registrarNota",{tipo:tipo, texto:texto, foto:fotoData});
+  if(btn){ btn.disabled=false; btn.textContent="Enviar comentario"; }
+  if(res&&res.ok){
     toast(res.mensaje||"Nota enviada");
+    ["nota-seccion","nota-pestana","nota-subpestana","nota-quepaso","nota-quedebio","nota-ejemplo"].forEach(function(id){ if(L(id)) L(id).value=""; });
+    if(L("nota-foto")) L("nota-foto").value="";
+    if(L("nota-foto-prev")) L("nota-foto-prev").innerHTML="";
     cargarNotas();
-  } else toast(res.error||"Error","error");
+  } else { toast((res&&res.error)||"Error al enviar","error"); }
+}
+function _notaPrevFoto(){
+  var inp=L("nota-foto"), prev=L("nota-foto-prev");
+  if(!inp||!prev) return;
+  if(!inp.files||!inp.files[0]){ prev.innerHTML=""; return; }
+  var r=new FileReader();
+  r.onload=function(e){ prev.innerHTML='<img src="'+e.target.result+'" style="max-width:160px;max-height:120px;border-radius:8px;border:1px solid var(--border)">'; };
+  r.readAsDataURL(inp.files[0]);
+}
+function _notaLeerFotoResize(){
+  return new Promise(function(resolve){
+    var inp=L("nota-foto");
+    if(!inp||!inp.files||!inp.files[0]){ resolve(""); return; }
+    var reader=new FileReader();
+    reader.onload=function(e){
+      var img=new Image();
+      img.onload=function(){
+        var max=1200, w=img.width, h=img.height;
+        if(w>max||h>max){ if(w>=h){ h=Math.round(h*max/w); w=max; } else { w=Math.round(w*max/h); h=max; } }
+        var c=document.createElement("canvas"); c.width=w; c.height=h;
+        c.getContext("2d").drawImage(img,0,0,w,h);
+        try{ resolve(c.toDataURL("image/jpeg",0.7)); }catch(err){ resolve(""); }
+      };
+      img.onerror=function(){ resolve(""); };
+      img.src=e.target.result;
+    };
+    reader.onerror=function(){ resolve(""); };
+    reader.readAsDataURL(inp.files[0]);
+  });
 }
 async function cargarNotas(){
   var res=await api("getNotas",{limite:30});
@@ -7327,7 +7384,9 @@ async function cargarNotas(){
       var acc = (esAdmin && n.estado==="nueva") ? "<button class='btn-sec' onclick=\"notaResolver('"+n.id+"')\" style='font-size:11px;padding:4px 8px'>Marcar atendida</button>" : "";
       return "<div style='border-top:1px dashed #eee;padding:8px 0;display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap'>"+
         "<div style='flex:1;min-width:200px'><div style='font-size:11px;color:var(--muted)'>"+ic+" "+n.tipo+" · "+String(n.fecha||"").replace('T',' ').substring(0,16)+" · "+badge+"</div>"+
-        "<div style='font-size:13px;margin-top:2px'>"+String(n.texto||"").replace(/</g,'&lt;')+"</div></div>"+acc+"</div>";
+        "<div style='font-size:13px;margin-top:2px;white-space:pre-wrap'>"+String(n.texto||"").replace(/</g,'&lt;')+"</div>"+
+        (n.foto? "<div style='margin-top:4px'><a href='"+String(n.foto).replace(/'/g,'%27')+"' target='_blank' rel='noopener' style='font-size:12px'>📷 Ver pantallazo</a></div>" : "")+
+        "</div>"+acc+"</div>";
     }).join("");
 }
 async function notaResolver(id){
