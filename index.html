@@ -315,12 +315,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
       <div class="card">
         <div class="card-title">Inventario actual</div>
         <div class="card-sub" id="stock-sub">Cargando...</div>
-        <div class="summary-grid" id="stock-summary" style="display:none">
-          <div class="summary-card"><div class="summary-num" id="sum-total">0</div><div class="summary-label">Piezas disponibles</div></div>
+        <div class="summary-grid" id="stock-summary" style="display:none;grid-template-columns:repeat(auto-fit,minmax(78px,1fr));gap:8px">
+          <div class="summary-card" id="card-total"><div class="summary-num" id="sum-total">0</div><div class="summary-label">Total</div></div>
+          <div class="summary-card" id="card-tienda"><div class="summary-num" id="sum-tienda">0</div><div class="summary-label">Tienda</div></div>
+          <div class="summary-card" id="card-apartado"><div class="summary-num" id="sum-apartado">0</div><div class="summary-label">Apartado</div></div>
+          <div class="summary-card" id="card-ruta"><div class="summary-num" id="sum-ruta">0</div><div class="summary-label">Ruta</div></div>
         </div>
         <input class="stock-search" type="text" id="stock-search" placeholder="Buscar sabor...">
         <div class="filter-row" id="filtros-suc"></div>
         <div class="filter-row" id="filtros-tam"></div>
+        <div class="filter-row" id="filtros-cuadritos"></div>
         <div style="font-size:11px;color:var(--muted);margin-top:6px">Clic en una columna para ordenar (otra vez = invertir).</div>
         <div id="stock-content"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
       </div>
@@ -1645,7 +1649,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           <span id="tbl-config-arrow" style="color:var(--muted);font-size:18px">▼</span>
         </div>
         <div id="tbl-config-body" style="display:none;margin-top:14px">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
             <div>
               <label class="form-label">Meta Cuajimalpa (medianas equiv.)</label>
               <input class="mini-input" id="tbl-meta-cuaji" type="number" placeholder="1000" style="width:100%">
@@ -1653,6 +1657,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
             <div>
               <label class="form-label">Meta Polanco (medianas equiv.)</label>
               <input class="mini-input" id="tbl-meta-polanco" type="number" placeholder="1000" style="width:100%">
+            </div>
+            <div>
+              <label class="form-label">Meta Ruta (medianas equiv.)</label>
+              <input class="mini-input" id="tbl-meta-ruta" type="number" placeholder="0" style="width:100%">
             </div>
           </div>
           <button onclick="guardarMetasTablero()" style="background:var(--accent);border:none;color:#fff;padding:10px 20px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;width:100%">GUARDAR METAS</button>
@@ -2398,7 +2406,22 @@ function renderStock(){
   if(S.filtroSuc) f=f.filter(s=>s.sucursal===S.filtroSuc);
   if(S.filtroTam) f=f.filter(s=>s.tamano===S.filtroTam);
   if(busqueda)    f=f.filter(s=>s.sabor.toLowerCase().includes(busqueda));
-  L("sum-total").textContent=f.reduce((s,i)=>s+i.cantActual,0);
+  if(!S.cuadritosVisibles) S.cuadritosVisibles={total:true,tienda:true,apartado:true,ruta:true};
+  const _sumTotal = f.reduce((s,i)=>s+Number(i.cantActual||0),0);
+  const _sumTienda = f.reduce((s,i)=>s+Number(i.disponibleTienda!=null?i.disponibleTienda:(i.disponibleNeto!=null?i.disponibleNeto:i.cantActual)||0),0);
+  const _sumApartado = f.reduce((s,i)=>s+Number(i.reservadoApartado||0),0);
+  const _sumRuta = f.reduce((s,i)=>s+Number(i.reservadoRuta||0),0);
+  L("sum-total").textContent=_sumTotal;
+  if(L("sum-tienda")) L("sum-tienda").textContent=_sumTienda;
+  if(L("sum-apartado")) L("sum-apartado").textContent=_sumApartado;
+  if(L("sum-ruta")) L("sum-ruta").textContent=_sumRuta;
+  [["total","card-total"],["tienda","card-tienda"],["apartado","card-apartado"],["ruta","card-ruta"]].forEach(([k,id])=>{ const el=L(id); if(el) el.style.display=S.cuadritosVisibles[k]?"":"none"; });
+  const _cuadEl=L("filtros-cuadritos");
+  if(_cuadEl){
+    const _labels={total:"Total",tienda:"Tienda",apartado:"Apartado",ruta:"Ruta"};
+    _cuadEl.innerHTML=Object.keys(_labels).map(k=>`<div class="chip ${S.cuadritosVisibles[k]?'active':''}" data-cuad="${k}">${_labels[k]}</div>`).join("");
+    _cuadEl.querySelectorAll(".chip").forEach(c=>c.addEventListener("click",()=>{const k=c.dataset.cuad;S.cuadritosVisibles[k]=!S.cuadritosVisibles[k];renderStock();}));
+  }
   L("stock-summary").style.display="grid";
   L("stock-sub").textContent=S.filtroSuc||((!getPermisos().puedeVerAmbas&&!getPermisos().puedeVerStockAmbas)?S.sucursal:"todas las sucursales");
   if(S.catalogo&&(getPermisos().puedeVerAmbas||getPermisos().puedeVerStockAmbas)){
@@ -4401,28 +4424,55 @@ function getMetas() {
   const mes  = parseInt(L("tbl-mes")?.value)  || new Date().getMonth()+1;
   const anio = parseInt(L("tbl-anio")?.value) || new Date().getFullYear();
   const key  = `metas_${mes}_${anio}`;
-  return S[key] || { cuaji: 1000, polanco: 1000 };
+  return S[key] || { cuaji: 0, polanco: 0, ruta: 0 };
 }
-function guardarMetasTablero() {
+async function cargarMetas(mes, anio) {
+  const key = `metas_${mes}_${anio}`;
+  try {
+    const res = await api("getObjetivos");
+    if (res && res.ok) {
+      const objs = (res.objetivos || []).filter(o => o.activo !== false && Number(o.mes) === Number(mes) && Number(o.anio) === Number(anio));
+      const find = suc => { const o = objs.find(x => x.sucursal === suc); return o ? (Number(o.metaTotal) || 0) : 0; };
+      S[key] = { cuaji: find("Cuajimalpa"), polanco: find("Polanco"), ruta: find("Ruta") };
+    } else if (!S[key]) {
+      S[key] = { cuaji: 0, polanco: 0, ruta: 0 };
+    }
+  } catch (e) {
+    if (!S[key]) S[key] = { cuaji: 0, polanco: 0, ruta: 0 };
+  }
+  return S[key];
+}
+async function guardarMetasTablero() {
   const mes   = parseInt(L("tbl-mes")?.value)  || new Date().getMonth()+1;
   const anio  = parseInt(L("tbl-anio")?.value) || new Date().getFullYear();
   const key   = `metas_${mes}_${anio}`;
-  const cuaji   = parseFloat(L("tbl-meta-cuaji")?.value)   || 1000;
-  const polanco = parseFloat(L("tbl-meta-polanco")?.value) || 1000;
-  S[key] = { cuaji, polanco };
+  const cuaji   = parseFloat(L("tbl-meta-cuaji")?.value)   || 0;
+  const polanco = parseFloat(L("tbl-meta-polanco")?.value) || 0;
+  const ruta    = parseFloat(L("tbl-meta-ruta")?.value)    || 0;
+  try {
+    await api("saveObjetivo", { id:"OBJ-"+anio+"-"+mes+"-Cuajimalpa", nombre:"Meta "+mes+"/"+anio+" Cuajimalpa", sucursal:"Cuajimalpa", mes, anio, metaTotal:cuaji });
+    await api("saveObjetivo", { id:"OBJ-"+anio+"-"+mes+"-Polanco",    nombre:"Meta "+mes+"/"+anio+" Polanco",    sucursal:"Polanco",    mes, anio, metaTotal:polanco });
+    await api("saveObjetivo", { id:"OBJ-"+anio+"-"+mes+"-Ruta",       nombre:"Meta "+mes+"/"+anio+" Ruta",       sucursal:"Ruta",       mes, anio, metaTotal:ruta });
+  } catch(e) {}
+  S[key] = { cuaji, polanco, ruta };
   toast("✅ Metas guardadas");
   renderTablero();
 }
-function toggleObjetivosConfig() {
+async function toggleObjetivosConfig() {
   const body  = L("tbl-config-body");
   const arrow = L("tbl-config-arrow");
   const open  = body.style.display === "block";
   body.style.display  = open ? "none" : "block";
   arrow.textContent   = open ? "▼" : "▲";
   if (!open) {
+    const mes  = parseInt(L("tbl-mes")?.value)  || new Date().getMonth()+1;
+    const anio = parseInt(L("tbl-anio")?.value) || new Date().getFullYear();
+    const key  = `metas_${mes}_${anio}`;
+    if (!S[key]) { await cargarMetas(mes, anio); }
     const metas = getMetas();
     if (L("tbl-meta-cuaji"))   L("tbl-meta-cuaji").value   = metas.cuaji;
     if (L("tbl-meta-polanco")) L("tbl-meta-polanco").value = metas.polanco;
+    if (L("tbl-meta-ruta"))    L("tbl-meta-ruta").value    = metas.ruta;
   }
 }
 let _vistaTablero = "mes";
@@ -4455,6 +4505,7 @@ async function renderTablero() {
   const mes   = parseInt(L("tbl-mes")?.value)   || new Date().getMonth()+1;
   const anio  = parseInt(L("tbl-anio")?.value)  || new Date().getFullYear();
   const semana = parseInt(L("tbl-semana")?.value) || 1;
+  await cargarMetas(mes, anio);
   const metas = getMetas();
   const esSemana = _vistaTablero === "semana";
   const _diasMes = new Date(anio, mes, 0).getDate();
@@ -4481,6 +4532,7 @@ async function renderTablero() {
   const factorMeta = _diasSemana / _diasMes;
   const metasCuajiEfectiva   = metas.cuaji   * factorMeta;
   const metasPolancoEfectiva = metas.polanco * factorMeta;
+  const metasRutaEfectiva    = (metas.ruta || 0) * factorMeta;
   function calcEquiv(ventasSuc) {
     let total = 0;
     const desglose = {};
@@ -4494,12 +4546,14 @@ async function renderTablero() {
     }
     return { total, desglose };
   }
-  const vCuaji   = ventas.filter(v => v.sucursal === "Cuajimalpa");
+  const vRuta    = ventas.filter(v => v.canal === "Ruta");
+  const vCuaji   = ventas.filter(v => v.sucursal === "Cuajimalpa" && v.canal !== "Ruta");
   const vPolanco = ventas.filter(v => v.sucursal === "Polanco");
   const resCuaji   = calcEquiv(vCuaji);
   const resPolanco = calcEquiv(vPolanco);
-  const totalEquiv = resCuaji.total + resPolanco.total;
-  const metaTotal  = metasCuajiEfectiva + metasPolancoEfectiva;
+  const resRuta    = calcEquiv(vRuta);
+  const totalEquiv = resCuaji.total + resPolanco.total + resRuta.total;
+  const metaTotal  = metasCuajiEfectiva + metasPolancoEfectiva + metasRutaEfectiva;
   const periodoLabel = esSemana ? `Semana ${semana} · ${MESES[mes]} ${anio}` : `${MESES[mes]} ${anio}`;
   function barraHTML(pct, color) {
     const w = Math.min(100, pct);
@@ -4561,11 +4615,13 @@ async function renderTablero() {
       <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:13px;opacity:.8">
         <span>Cuajimalpa: ${resCuaji.total.toFixed(1)}</span>
         <span>Polanco: ${resPolanco.total.toFixed(1)}</span>
+        <span>Ruta: ${resRuta.total.toFixed(1)}</span>
       </div>
     </div>`;
   contenido.innerHTML = totalHTML +
     tarjetaSucursal("Cuajimalpa", resCuaji,   metasCuajiEfectiva,   "#86BDAD") +
-    tarjetaSucursal("Polanco",    resPolanco, metasPolancoEfectiva, "#86BDAD");
+    tarjetaSucursal("Polanco",    resPolanco, metasPolancoEfectiva, "#86BDAD") +
+    tarjetaSucursal("Ruta",       resRuta,    metasRutaEfectiva,    "#C8602A");
 }
 L("btn-logout").addEventListener("click",async()=>{
   if(S.token){
@@ -4865,25 +4921,29 @@ function renderReporte() {
     L("reporte-content").innerHTML = `<div class="card"><div class="empty-state"><div class="empty-icon">📊</div><div>Sin ventas hoy${(S.reporteFiltros.sabores.length || S.reporteFiltros.tamanos.length || S.reporteFiltros.canales.length) ? ' (con los filtros aplicados)' : ''}</div></div></div>`;
     return;
   }
-  const vCuaji = ventasHoy.filter(v => v.sucursal === "Cuajimalpa");
+  const vCuaji = ventasHoy.filter(v => v.sucursal === "Cuajimalpa" && v.canal !== "Ruta");
   const vPolanco = ventasHoy.filter(v => v.sucursal === "Polanco");
+  const vRuta = ventasHoy.filter(v => v.canal === "Ruta");
   const total = _resumenVentas(ventasHoy);
   const cuaji = _resumenVentas(vCuaji);
   const polanco = _resumenVentas(vPolanco);
-  S.ventasPorSeccion = { total: ventasHoy, cuaji: vCuaji, polanco: vPolanco };
+  const ruta = _resumenVentas(vRuta);
+  S.ventasPorSeccion = { total: ventasHoy, cuaji: vCuaji, polanco: vPolanco, ruta: vRuta };
   L("reporte-content").innerHTML =
     _tarjetaResumen("🏢 Total empresa", total, "var(--accent)", "total", ventasHoy) +
     _tarjetaResumen("🍰 Cuajimalpa", cuaji, "var(--green)", "cuaji", vCuaji) +
     _tarjetaResumen("🍰 Polanco", polanco, "var(--accent)", "polanco", vPolanco) +
+    _tarjetaResumen("🚚 Ruta", ruta, "#C8602A", "ruta", vRuta) +
     _chipsPivotModo() +
     _bloquePivotsReporte(ventasHoy, vCuaji, vPolanco) +
     `<div style="height:6px;background:linear-gradient(90deg,transparent,var(--border),transparent);border-radius:3px;margin:18px 0"></div>` +
     `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.1em;margin-bottom:10px;text-transform:uppercase;text-align:center">Análisis gráfico (drill-down)</div>` +
     _tarjetaPie("Total empresa", "var(--accent)", "total") +
     _tarjetaPie("Cuajimalpa", "var(--green)", "cuaji") +
-    _tarjetaPie("Polanco", "var(--accent)", "polanco");
+    _tarjetaPie("Polanco", "var(--accent)", "polanco") +
+    _tarjetaPie("Ruta", "#C8602A", "ruta");
   setTimeout(() => {
-    ["total", "cuaji", "polanco"].forEach(secId => renderPiesSeccion(secId));
+    ["total", "cuaji", "polanco", "ruta"].forEach(secId => renderPiesSeccion(secId));
   }, 50);
 }
 const DIMENSIONES = {
@@ -4913,7 +4973,7 @@ function _hashColor(s) {
   for (let i = 0; i < s.length; i++) h = ((h << 5) - h) + s.charCodeAt(i) | 0;
   return COLORES_PIE[Math.abs(h) % COLORES_PIE.length];
 }
-if (!S.pieEstado) S.pieEstado = { total: [], cuaji: [], polanco: [] };
+if (!S.pieEstado) S.pieEstado = { total: [], cuaji: [], polanco: [], ruta: [] };
 function setReporteTab(tab) {
   document.querySelectorAll("#tab-reporte > .costos-tabs > .costos-tab").forEach(t =>
     t.classList.toggle("active", t.getAttribute("onclick") === `setReporteTab('${tab}')`));
@@ -5244,6 +5304,9 @@ function renderStockHora() {
   const ventasHoy = (S.ventasReporte || []).filter(v => {
     if (!v.fecha || !String(v.fecha).startsWith(hoyStr)) return false;
     if (!(f.tipos||["venta"]).includes(_tipoOpVenta(v))) return false; // v3.4.16: filtro tipo
+    if ((v.tipoOp || v.tipo_op) === "Reservado") return false; // excluir apartados
+    if (v.canal === "Ruta") return false; // excluir ruta
+    if (v.canal === "Merma" || v.canal === "Cortesía") return false; // excluir mermas/cortesías
     if (f.sabores.length && !f.sabores.includes(v.sabor)) return false;
     if (f.tamanos.length && !f.tamanos.includes(v.tamano)) return false;
     if (f.canales.length && !f.canales.includes(v.canal)) return false;
@@ -5492,26 +5555,30 @@ function renderReportePeriodo() {
     L("periodo-content").innerHTML = '<div class="card"><div class="empty-state"><div class="empty-icon">📊</div><div>Sin ventas en este período</div></div></div>';
     return;
   }
-  const vCuaji = ventas.filter(v => v.sucursal === "Cuajimalpa");
+  const vCuaji = ventas.filter(v => v.sucursal === "Cuajimalpa" && v.canal !== "Ruta");
   const vPolanco = ventas.filter(v => v.sucursal === "Polanco");
+  const vRuta = ventas.filter(v => v.canal === "Ruta");
   const total = _resumenVentas(ventas);
   const cuaji = _resumenVentas(vCuaji);
   const polanco = _resumenVentas(vPolanco);
-  S.ventasPorSeccion = { total: ventas, cuaji: vCuaji, polanco: vPolanco };
-  S.pieEstado = { total: [], cuaji: [], polanco: [] };
+  const ruta = _resumenVentas(vRuta);
+  S.ventasPorSeccion = { total: ventas, cuaji: vCuaji, polanco: vPolanco, ruta: vRuta };
+  S.pieEstado = { total: [], cuaji: [], polanco: [], ruta: [] };
   L("periodo-content").innerHTML =
     _tarjetaResumen("🏢 Total empresa", total, "var(--accent)", "total", ventas) +
     _tarjetaResumen("🍰 Cuajimalpa", cuaji, "var(--green)", "cuaji", vCuaji) +
     _tarjetaResumen("🍰 Polanco", polanco, "var(--accent)", "polanco", vPolanco) +
+    _tarjetaResumen("🚚 Ruta", ruta, "#C8602A", "ruta", vRuta) +
     _chipsPivotModo() +
     _bloquePivotsReporte(ventas, vCuaji, vPolanco) +
     `<div style="height:6px;background:linear-gradient(90deg,transparent,var(--border),transparent);border-radius:3px;margin:18px 0"></div>` +
     `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.1em;margin-bottom:10px;text-transform:uppercase;text-align:center">Análisis gráfico (drill-down)</div>` +
     _tarjetaPie("Total empresa", "var(--accent)", "total") +
     _tarjetaPie("Cuajimalpa", "var(--green)", "cuaji") +
-    _tarjetaPie("Polanco", "var(--accent)", "polanco");
+    _tarjetaPie("Polanco", "var(--accent)", "polanco") +
+    _tarjetaPie("Ruta", "#C8602A", "ruta");
   setTimeout(() => {
-    ["total", "cuaji", "polanco"].forEach(secId => renderPiesSeccion(secId));
+    ["total", "cuaji", "polanco", "ruta"].forEach(secId => renderPiesSeccion(secId));
   }, 50);
 }
 let _chartLineaPeriodo = null;
@@ -5535,33 +5602,38 @@ function _renderGraficaLineaPeriodo(ventas) {
     cur.setDate(cur.getDate() + 1);
   }
   const acc = {};
-  dias.forEach(d => acc[d] = { total: 0, cuaji: 0, polanco: 0, totalU: 0, cuajiU: 0, polancoU: 0 });
+  dias.forEach(d => acc[d] = { total: 0, cuaji: 0, polanco: 0, ruta: 0, totalU: 0, cuajiU: 0, polancoU: 0, rutaU: 0 });
   ventas.forEach(v => {
     const fechaStr = String(v.fecha).substring(0, 10);
     if (!acc[fechaStr]) return;
     const monto = Number(v.subtotal) || 0;
     const uds = Number(v.cantidad) || 0;
     acc[fechaStr].total += monto; acc[fechaStr].totalU += uds;
-    if (v.sucursal === "Cuajimalpa") { acc[fechaStr].cuaji += monto; acc[fechaStr].cuajiU += uds; }
+    if (v.canal === "Ruta") { acc[fechaStr].ruta += monto; acc[fechaStr].rutaU += uds; }
+    else if (v.sucursal === "Cuajimalpa") { acc[fechaStr].cuaji += monto; acc[fechaStr].cuajiU += uds; }
     else if (v.sucursal === "Polanco") { acc[fechaStr].polanco += monto; acc[fechaStr].polancoU += uds; }
   });
   let totales = dias.map(d => acc[d].total);
   let cuajis = dias.map(d => acc[d].cuaji);
   let polancos = dias.map(d => acc[d].polanco);
+  let rutas = dias.map(d => acc[d].ruta);
   let totalesU = dias.map(d => acc[d].totalU);
   let cuajisU = dias.map(d => acc[d].cuajiU);
   let polancosU = dias.map(d => acc[d].polancoU);
+  let rutasU = dias.map(d => acc[d].rutaU);
   if (S.periodoActual.modoLinea === "acumulado") {
-    let sT = 0, sC = 0, sP = 0;
+    let sT = 0, sC = 0, sP = 0, sR = 0;
     totales = totales.map(x => sT += x);
     cuajis = cuajis.map(x => sC += x);
     polancos = polancos.map(x => sP += x);
-    let sTu = 0, sCu = 0, sPu = 0;
+    rutas = rutas.map(x => sR += x);
+    let sTu = 0, sCu = 0, sPu = 0, sRu = 0;
     totalesU = totalesU.map(x => sTu += x);
     cuajisU = cuajisU.map(x => sCu += x);
     polancosU = polancosU.map(x => sPu += x);
+    rutasU = rutasU.map(x => sRu += x);
   }
-  const unidadesPorLabel = { "Total": totalesU, "Cuajimalpa": cuajisU, "Polanco": polancosU };
+  const unidadesPorLabel = { "Total": totalesU, "Cuajimalpa": cuajisU, "Polanco": polancosU, "Ruta": rutasU };
   if (_chartLineaPeriodo) { try { _chartLineaPeriodo.destroy(); } catch(e) {} }
   _chartLineaPeriodo = new Chart(ctx, {
     type: "line",
@@ -5571,6 +5643,7 @@ function _renderGraficaLineaPeriodo(ventas) {
         { label: "Total", data: totales, borderColor: "#C8602A", backgroundColor: "rgba(200,96,42,.1)", tension: 0.3, fill: false, borderWidth: 3 },
         { label: "Cuajimalpa", data: cuajis, borderColor: "#2E5C4A", backgroundColor: "rgba(46,92,74,.1)", tension: 0.3, fill: false, borderWidth: 2 },
         { label: "Polanco", data: polancos, borderColor: "#1976D2", backgroundColor: "rgba(25,118,210,.1)", tension: 0.3, fill: false, borderWidth: 2 },
+        { label: "Ruta", data: rutas, borderColor: "#C8602A", backgroundColor: "rgba(200,96,42,.1)", tension: 0.3, fill: false, borderWidth: 2 },
       ]
     },
     options: {
