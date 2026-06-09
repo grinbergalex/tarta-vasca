@@ -2615,13 +2615,17 @@ function actualizarPrecioPreview(){
   const cantidad = parseInt(L("item-cantidad")?.value)||1;
   const descVal = parseFloat(L("item-descuento")?.value)||0;
   const descTipo = L("item-desc-tipo")?.value||"pct";
-  const precioBaseStd = getPrecioActualLocal(sabor, tamano);
   const canalActual = L("venta-canal")?.value||"";
-  const reglaCanal = (S.canalPrecios||[]).find(r=>r.canal===canalActual&&r.activo);
-  let precioBase = precioBaseStd;
-  if(reglaCanal&&precioBase>0){
-    if(reglaCanal.tipo==="pct") precioBase = Math.round(precioBase*(1+reglaCanal.valor/100));
-    else precioBase = Math.max(0, precioBase + reglaCanal.valor);
+  let precioBase;
+  if(tienePrecioCanal(sabor, tamano, canalActual)){
+    precioBase = getPrecioActualLocal(sabor, tamano, canalActual);
+  } else {
+    precioBase = getPrecioActualLocal(sabor, tamano);
+    const reglaCanal = (S.canalPrecios||[]).find(r=>r.canal===canalActual&&r.activo);
+    if(reglaCanal&&precioBase>0){
+      if(reglaCanal.tipo==="pct") precioBase = Math.round(precioBase*(1+reglaCanal.valor/100));
+      else precioBase = Math.max(0, precioBase + reglaCanal.valor);
+    }
   }
   if(!precioBase){ L("item-precio-preview").innerHTML=""; return; }
   let precioFinal = precioBase;
@@ -2634,12 +2638,22 @@ function actualizarPrecioPreview(){
     : `<span style="color:var(--muted)">$${precioBase.toLocaleString('es-MX')}</span>`;
   L("item-precio-preview").innerHTML = preview + ` × ${cantidad}`;
 }
-function getPrecioActualLocal(sabor, tamano){
+function getPrecioActualLocal(sabor, tamano, canal){
   if(!S.precios) return 0;
-  const esp = S.precios.find(p=>p.sabor===sabor&&p.tamano===tamano);
-  if(esp&&esp.precio>0) return esp.precio;
-  const base = S.precios.find(p=>p.tamano===tamano&&p.precio>0);
+  if(canal){
+    const exC = S.precios.find(p=>p.canal===canal&&p.sabor===sabor&&p.tamano===tamano&&p.precio>0);
+    if(exC) return exC.precio;
+    const tmC = S.precios.find(p=>p.canal===canal&&p.tamano===tamano&&p.precio>0);
+    if(tmC) return tmC.precio;
+  }
+  const esp = S.precios.find(p=>!p.canal&&p.sabor===sabor&&p.tamano===tamano&&p.precio>0);
+  if(esp) return esp.precio;
+  const base = S.precios.find(p=>!p.canal&&p.tamano===tamano&&p.precio>0);
   return base ? base.precio : 0;
+}
+function tienePrecioCanal(sabor, tamano, canal){
+  if(!S.precios||!canal) return false;
+  return S.precios.some(p=>p.canal===canal&&p.tamano===tamano&&p.precio>0);
 }
 L("item-descuento")?.addEventListener("input", actualizarPrecioPreview);
 L("item-desc-tipo")?.addEventListener("change", actualizarPrecioPreview);
@@ -2656,13 +2670,17 @@ L("btn-agregar-item")?.addEventListener("click",()=>{
   const optTam = L("item-tamano")?.querySelector(`option[value="${tamano}"]`);
   if(optSab?.disabled){toast(`${sabor} no tiene stock en ${sucursal}`, "error");return;}
   if(optTam?.disabled){toast(`Tamaño ${tamano} no disponible para ${sabor} en ${sucursal}`, "error");return;}
-  const precioBaseStd=getPrecioActualLocal(sabor,tamano);
   const canalActual = L("venta-canal")?.value||"";
-  const reglaCanal = (S.canalPrecios||[]).find(r=>r.canal===canalActual&&r.activo);
-  let precioBase = precioBaseStd;
-  if(reglaCanal&&precioBase>0){
-    if(reglaCanal.tipo==="pct") precioBase = Math.round(precioBase*(1+reglaCanal.valor/100));
-    else precioBase = Math.max(0, precioBase + reglaCanal.valor);
+  let precioBase;
+  if(tienePrecioCanal(sabor,tamano,canalActual)){
+    precioBase = getPrecioActualLocal(sabor,tamano,canalActual);
+  } else {
+    precioBase = getPrecioActualLocal(sabor,tamano);
+    const reglaCanal = (S.canalPrecios||[]).find(r=>r.canal===canalActual&&r.activo);
+    if(reglaCanal&&precioBase>0){
+      if(reglaCanal.tipo==="pct") precioBase = Math.round(precioBase*(1+reglaCanal.valor/100));
+      else precioBase = Math.max(0, precioBase + reglaCanal.valor);
+    }
   }
   let precioFinal=precioBase, descuento=0, descTipo="";
   if(tipoOp==="venta"){
@@ -2843,7 +2861,7 @@ L("btn-cargar-prod").addEventListener("click",async()=>{
 });
 const PAQUETE_CONFIG = {
   paquete3: { size: 3, totalBase: 590, totalRappi: 630, tituloBase: "🎁 Paquete 3 indiv — $590 (no Rappi)", tituloRappi: "🎁 Paquete 3 indiv — $630 (Rappi)" },
-  paquete4: { size: 4, totalBase: 720, totalRappi: 760, tituloBase: "🎁 Paquete 4 indiv — $720 (no Rappi)", tituloRappi: "🎁 Paquete 4 indiv — $760 (Rappi)" }
+  paquete4: { size: 4, totalBase: 720, totalRappi: 780, tituloBase: "🎁 Paquete 4 indiv — $720 (no Rappi)", tituloRappi: "🎁 Paquete 4 indiv — $780 (Rappi)" }
 };
 function _esCanalRappi() {
   return (L("venta-canal")?.value || "") === "Rappi";
@@ -3110,12 +3128,19 @@ async function cargarPrecios(silencioso=false){
   S.precios=resP.precios;
   if(silencioso) return;
   const tamanos=(resC.tamanos||[]).filter(t=>t.activo).map(t=>t.nombre);
-  const getP=t=>{const p=resP.precios.find(p=>p.tamano===t);return p?p.precio:0;};
-  L("precios-content").innerHTML=tamanos.map(tamano=>`
-    <div class="precio-row">
+  const getP=t=>{const p=resP.precios.find(p=>!p.canal&&p.tamano===t&&p.precio>0);return p?p.precio:0;};
+  const getPC=(t,c)=>{const p=resP.precios.find(p=>p.canal===c&&p.tamano===t&&p.precio>0);return p?p.precio:0;};
+  L("precios-content").innerHTML=tamanos.map(tamano=>{
+    const b=getP(tamano), r=getPC(tamano,'Rappi'), u=getPC(tamano,'Uber Eats');
+    return `<div class="precio-row">
       <span class="precio-label">${tamano}</span>
-      <span class="precio-val" onclick="abrirModalPrecio('${tamano}',${getP(tamano)})">$${getP(tamano).toLocaleString('es-MX')}</span>
-    </div>`).join("");
+      <span class="precio-val" onclick="abrirModalPrecio('${tamano}',${b},'')">$${b.toLocaleString('es-MX')}</span>
+    </div>
+    <div style="display:flex;gap:14px;padding:0 0 10px 4px;font-size:12px;flex-wrap:wrap">
+      <span style="color:var(--muted);cursor:pointer" onclick="abrirModalPrecio('${tamano}',${r||b},'Rappi')">Rappi: <strong>${r?('$'+r.toLocaleString('es-MX')):'—'}</strong></span>
+      <span style="color:var(--muted);cursor:pointer" onclick="abrirModalPrecio('${tamano}',${u||b},'Uber Eats')">Uber Eats: <strong>${u?('$'+u.toLocaleString('es-MX')):'—'}</strong></span>
+    </div>`;
+  }).join("");
 }
 async function repararPrecios(){
   const btn=event.target;btn.disabled=true;btn.textContent="Reparando...";
@@ -3123,15 +3148,16 @@ async function repararPrecios(){
   if(res.ok){toast(res.mensaje);cargarPrecios();}else toast(res.error,"error");
   btn.disabled=false;btn.textContent="🔧 Crear precios para sabores sin precio";
 }
-function abrirModalPrecio(tamano,precioActual){S.precioEditar=tamano;L("modal-precio-title").textContent=`Precio — ${tamano}`;L("modal-precio-input").value=precioActual;L("modal-precio").classList.add("show");setTimeout(()=>L("modal-precio-input").focus(),100);}
+function abrirModalPrecio(tamano,precioActual,canal){S.precioEditar=tamano;S.precioCanalEditar=canal||"";L("modal-precio-title").textContent=`Precio — ${tamano}${canal?" ("+canal+")":""}`;L("modal-precio-input").value=precioActual;L("modal-precio").classList.add("show");setTimeout(()=>L("modal-precio-input").focus(),100);}
 L("btn-guardar-precio").addEventListener("click",async()=>{
   const precio=parseFloat(L("modal-precio-input").value);
   if(isNaN(precio)||precio<0){toast("Precio inválido","error");return;}
   const tamano=S.precioEditar;
+  const canal=S.precioCanalEditar||"";
   const sabores=(S.catalogo?.sabores||[]).filter(s=>s.activo).map(s=>s.nombre);
-  const promesas=sabores.map(sabor=>api("updatePrecio",{sabor,tamano,precio}));
+  const promesas=sabores.map(sabor=>api("updatePrecio",{sabor,tamano,precio,canal}));
   const resultados=await Promise.all(promesas);
-  if(resultados.every(r=>r.ok)){toast(`✅ Precio ${tamano} = $${precio.toLocaleString('es-MX')}`);L("modal-precio").classList.remove("show");cargarPrecios();}
+  if(resultados.every(r=>r.ok)){toast(`✅ Precio ${tamano}${canal?" ("+canal+")":""} = $${precio.toLocaleString('es-MX')}`);L("modal-precio").classList.remove("show");cargarPrecios();}
   else toast("Error al guardar precio","error");
 });
 function setCostosTab(tab){
