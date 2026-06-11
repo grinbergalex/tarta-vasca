@@ -2412,6 +2412,19 @@ async function cargarStock() {
   S.stock=res.stock;
   renderStock(); poblarSelectsVenta();
 }
+function _invValorVisible(s){
+  // v4.6.4: los cuadritos Total/Tienda/Apartado/Ruta son FILTROS de vista.
+  // Si "Total" esta activo la tabla muestra piezas totales; si no, la suma de
+  // los componentes activos (tienda=neto, apartado, ruta). Asi la tabla de abajo
+  // siempre cuadra con los cuadritos seleccionados.
+  const v=S.cuadritosVisibles||{total:true,tienda:true,apartado:true,ruta:true};
+  if(v.total) return Number(s.cantActual)||0;
+  let x=0;
+  if(v.tienda)   x += Number(s.disponibleTienda!=null?s.disponibleTienda:s.cantActual)||0;
+  if(v.apartado) x += Number(s.reservadoApartado)||0;
+  if(v.ruta)     x += Number(s.reservadoRuta)||0;
+  return x;
+}
 function renderStock(){
   const stock=S.stock||[];
   const busqueda=(L("stock-search").value||"").toLowerCase();
@@ -2457,7 +2470,7 @@ function renderStock(){
   let html = "";
   sucsRender.forEach(suc => {
     const stockSuc = f.filter(s => s.sucursal === suc);
-    const totalSuc = stockSuc.reduce((t, s) => t + Number(s.cantActual||0), 0);
+    const totalSuc = stockSuc.reduce((t, s) => t + _invValorVisible(s), 0); // v4.6.4: cuadra con los cuadritos
     const reservadoSuc = stockSuc.reduce((t, s) => t + Number(s.reservado||0), 0);
     const netoSuc = stockSuc.reduce((t, s) => t + Number(s.disponibleNeto!=null ? s.disponibleNeto : s.cantActual||0), 0);
     const color = suc === "Cuajimalpa" ? "var(--green)" : "var(--accent)";
@@ -3572,6 +3585,7 @@ async function anularSeleccionadosMov() {
   L("modal-anular-multi").classList.remove("show");
   cargarMovimientos();
   cargarStock();
+  try{ if(typeof apReload==="function") apReload(); }catch(e){} // v4.6.4: refrescar apartados
 }
 function abrirModalAnularMulti() {
   if (S.movSeleccionados.size === 0) { toast("No hay seleccionados", "error"); return; }
@@ -3605,6 +3619,7 @@ L("btn-confirmar-anular").addEventListener("click", async () => {
     S.anularPendiente = null;
     cargarMovimientos();
     cargarStock();
+    try{ if(typeof apReload==="function") apReload(); }catch(e){} // v4.6.4: refrescar apartados
   } else {
     toast(res.error||"Error al anular","error");
   }
@@ -4854,9 +4869,11 @@ function _tablaPivotInventario(stock, color, scope) {
   const M = {};
   sabores.forEach(sab => { M[sab] = {}; tamanos.forEach(tam => M[sab][tam] = { piezas: 0 }); });
   (stock || []).forEach(s => {
-    if (s.vencido || s.cantActual <= 0) return;
+    if (s.vencido) return;
+    const _v = _invValorVisible(s); // v4.6.4: respeta los cuadritos seleccionados
+    if (_v <= 0) return;
     if (!M[s.sabor] || !M[s.sabor][s.tamano]) return;
-    M[s.sabor][s.tamano].piezas += Number(s.cantActual) || 0;
+    M[s.sabor][s.tamano].piezas += _v;
   });
   return _renderPivotMatriz(M, sabores, tamanos, "unidades", color, scope, false, true);
 }
