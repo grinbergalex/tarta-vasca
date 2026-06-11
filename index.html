@@ -2415,7 +2415,7 @@ async function cargarStock() {
 function renderStock(){
   const stock=S.stock||[];
   const busqueda=(L("stock-search").value||"").toLowerCase();
-  let f=stock.filter(s=>!s.vencido&&s.cantActual>0);
+  let f=stock.filter(s=>!s.vencido&&(s.cantActual>0||Number(s.reservado||0)>0)); // v4.6.2: SKUs apartados visibles aunque 0 fisico
   if(S.filtroSuc) f=f.filter(s=>s.sucursal===S.filtroSuc);
   if(S.filtroTam) f=f.filter(s=>s.tamano===S.filtroTam);
   if(busqueda)    f=f.filter(s=>s.sabor.toLowerCase().includes(busqueda));
@@ -2484,8 +2484,11 @@ function calcDisp(sabor,tamano){
   if(!S.stock) return 0;
   const suc=getSucursalVenta();
   const enCarrito=S.carrito.filter(i=>i.sabor===sabor&&i.tamano===tamano).reduce((s,i)=>s+i.cantidad,0);
-  const enStock=S.stock.filter(s=>s.sabor===sabor&&s.tamano===tamano&&s.sucursal===suc&&!s.vencido&&s.cantActual>0).reduce((s,i)=>s+i.cantActual,0);
-  return Math.max(0,enStock-enCarrito);
+  // v4.6.2-apartados: las piezas apartadas se restan del disponible para vender
+  const filasSku=S.stock.filter(s=>s.sabor===sabor&&s.tamano===tamano&&s.sucursal===suc&&!s.vencido);
+  const enStock=filasSku.reduce((s,i)=>s+Math.max(0,Number(i.cantActual)||0),0);
+  const apartadas=filasSku.reduce((s,i)=>s+(Number(i.reservadoApartado)||0),0);
+  return Math.max(0,enStock-apartadas-enCarrito);
 }
 function getPrecio(tamano){if(!S.precios)return 0;const p=S.precios.find(p=>p.tamano===tamano);return p?p.precio:0;}
 function actualizarSelectoresCascada(){
@@ -7301,7 +7304,8 @@ async function apGuardar(){
     cliente:{nombre:cli, telefono:L("ap-tel").value.trim()}
   });
   if(res.ok){
-    toast("📦 Apartado guardado");
+    if(res.cocinaPendiente&&res.cocinaPendiente.length){ toast("📦 Apartado guardado — sin stock suficiente: se cocina sobre pedido ("+res.cocinaPendiente.join(", ")+"). Ya aparece en 🍳 Para hornear."); }
+    else { toast("📦 Apartado guardado"); }
     L("ap-cli").value=""; L("ap-tel").value=""; L("ap-anticipo").value=0; AP.tartas=[]; apRenderTartas();
     await apReload();
   } else toast(res.error||"Error","error");
