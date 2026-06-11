@@ -677,7 +677,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           <div id="ap-tartas-list" style="margin-top:10px"></div>
         </div>
         <div id="ap-total" style="font-size:13px;margin:8px 0"></div>
-        <button class="btn-main btn-green" onclick="apGuardar()" style="margin-top:0">Guardar apartado 📦</button>
+        <button class="btn-main btn-green" id="ap-guardar-btn" onclick="apGuardar()" style="margin-top:0">Guardar apartado 📦</button>
       </div>
       <div class="card"><h3>Apartados pendientes (<span id="ap-cnt">0</span>)</h3><div id="ap-list"></div></div>
     </div>
@@ -7297,12 +7297,15 @@ async function apGuardar(){
   var perms=(typeof getPermisos==="function"?getPermisos():{})||{};
   var suc = (perms.puedeVerAmbas && L("ap-suc")) ? L("ap-suc").value : S.sucursal;
   var items=AP.tartas.map(function(t){return {sabor:t.sabor,tamano:t.tamano,cantidad:t.cantidad,precioUnitario:t.precio};});
+  // v4.6.3-ux: bloquear el boton mientras procesa (evita doble captura)
+  var _btnAp=L("ap-guardar-btn"); if(_btnAp){ _btnAp.disabled=true; _btnAp.textContent="Guardando apartado..."; }
   var res=await api("registrarApartado",{
     items:items, tipoOp:"reserva", canal:"Apartado",
     metodoPago:L("ap-metodo").value, anticipo:parseFloat(L("ap-anticipo").value)||0,
     fechaEntrega:L("ap-fecha").value, sucursal:suc,
     cliente:{nombre:cli, telefono:L("ap-tel").value.trim()}
   });
+  if(_btnAp){ _btnAp.disabled=false; _btnAp.textContent="Guardar apartado 📦"; }
   if(res.ok){
     if(res.cocinaPendiente&&res.cocinaPendiente.length){ toast("📦 Apartado guardado — sin stock suficiente: se cocina sobre pedido ("+res.cocinaPendiente.join(", ")+"). Ya aparece en 🍳 Para hornear."); }
     else { toast("📦 Apartado guardado"); }
@@ -7312,13 +7315,21 @@ async function apGuardar(){
 }
 async function apConvertir(id){
   if(!confirm("¿Marcar como entregado y convertir a venta?")) return;
+  // v4.6.3-ux: bloquear botones mientras procesa (evita doble click) + aviso
+  document.querySelectorAll("#ap-list button").forEach(function(b){b.disabled=true;});
+  toast("Procesando entrega...");
   var res=await api("convertirReservaAVenta",{idVenta:id,canal:"Mostrador"});
-  if(res.ok){ toast("✅ Apartado entregado"); await apReload(); } else toast(res.error||"Error","error");
+  if(res.ok){ toast(res.mensaje||"✅ Apartado entregado — inventario descontado"); await apReload(); try{ await cargarStock(); }catch(e){} }
+  else { toast(res.error||"Error","error"); document.querySelectorAll("#ap-list button").forEach(function(b){b.disabled=false;}); }
 }
 async function apLiberar(id){
   if(!confirm("¿Liberar (cancelar) este apartado?")) return;
+  // v4.6.3-ux: bloquear botones mientras procesa (evita doble click) + aviso
+  document.querySelectorAll("#ap-list button").forEach(function(b){b.disabled=true;});
+  toast("Liberando apartado...");
   var res=await api("liberarReserva",{idVenta:id,motivo:"Apartado liberado"});
-  if(res.ok){ toast("Apartado liberado"); await apReload(); } else toast(res.error||"Error","error");
+  if(res.ok){ toast("✅ Apartado liberado"); await apReload(); try{ await cargarStock(); }catch(e){} }
+  else { toast(res.error||"Error","error"); document.querySelectorAll("#ap-list button").forEach(function(b){b.disabled=false;}); }
 }
 /* ===== Notas del creador (Owner) ===== */
 async function notaEnviar(){
