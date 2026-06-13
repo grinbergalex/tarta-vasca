@@ -732,6 +732,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <div style="margin-bottom:8px">Fecha de entrega: <input type="date" id="prodman-fecha" onchange="cargarProduccionManana()"></div>
         <div id="prodman-list"></div>
       </div>
+      <div class="card">
+        <div class="card-title">🗓 Plan de producción (v5)</div>
+        <div class="card-sub">Demanda real (rutas + apartados) dentro del horizonte configurado, contra inventario disponible real. Pedidos fuera del horizonte se ignoran.</div>
+        <div id="plan-prod-list"><div class="loading"><div class="spinner"></div>Calculando...</div></div>
+      </div>
     </div>
     <!-- VENTAS -->
     <div id="tab-ventas" class="tab-pane" style="display:none">
@@ -1751,6 +1756,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           </table>
         </div>
         <button id="ajuste-aplicar" onclick="aplicarAjusteInv()" style="margin-top:14px;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 18px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer">Aplicar ajuste</button>
+        <div style="margin-top:18px;border-top:1px solid var(--border);padding-top:12px">
+          <div style="font-weight:700;font-size:14px;margin-bottom:6px">⚙️ Parámetros v5 (InvCore)</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+            <div><label class="form-label">Horizonte planeación (días)</label><input class="mini-input" type="number" id="cfg-horizonte" min="1" style="width:130px"></div>
+            <div><label class="form-label">Anticipación reserva (días)</label><input class="mini-input" type="number" id="cfg-anticipacion" min="0" style="width:130px"></div>
+            <button class="btn-outline" style="width:auto;margin-top:0" onclick="guardarConfigV5()">Guardar</button>
+            <button class="btn-outline" style="width:auto;margin-top:0" onclick="verificarConsistencia()">🔍 Verificar consistencia</button>
+          </div>
+          <div id="cfg-status" style="font-size:12px;color:var(--muted);margin-top:6px"></div>
+        </div>
       </div>
     </div>
     <div id="tab-alertas" class="tab-pane" style="display:none">
@@ -2151,7 +2166,6 @@ const MENU = [
   { id:"ven", label:"🛒 Ventas", items:[
     { label:"Nueva venta",      pane:"venta",  perm:"vender" },
     { label:"Apartados",        pane:"apartados", perm:"vender" },
-    { label:"Rutas",            pane:"rutas",  perm:"owner" },
     { label:"Historial",        pane:"ventas", perm:"owner" },
   ]},
   { id:"rep", label:"🚚 Reparto", items:[
@@ -2217,7 +2231,7 @@ function _loadPane(t){
   else if(t==="reparto") cargarReparto();
   else if(t==="apartados") cargarApartados();
   else if(t==="notas") cargarNotas();
-  else if(t==="produccion") cargarProduccionManana();
+  else if(t==="produccion"){ cargarProduccionManana(); try{ cargarPlanProduccion(); }catch(e){} }
   else if(t==="ajuste") cargarAjusteInv();
 }
 function irAPane(pane, subFn, subKey){
@@ -2263,6 +2277,7 @@ async function cargarAjusteInv(){
     sel.dataset.pob = "1";
   }
   await refrescarAjusteInv();
+  try{ cargarConfigV5UI(); }catch(e){}
 }
 async function refrescarAjusteInv(){
   const suc = (L("ajuste-suc")&&L("ajuste-suc").value) || "Cuajimalpa";
@@ -2497,11 +2512,10 @@ function calcDisp(sabor,tamano){
   if(!S.stock) return 0;
   const suc=getSucursalVenta();
   const enCarrito=S.carrito.filter(i=>i.sabor===sabor&&i.tamano===tamano).reduce((s,i)=>s+i.cantidad,0);
-  // v4.6.2-apartados: las piezas apartadas se restan del disponible para vender
+  // v5: el vendedor solo puede vender DISPONIBLE (físico − reservas ruta/apartado)
   const filasSku=S.stock.filter(s=>s.sabor===sabor&&s.tamano===tamano&&s.sucursal===suc&&!s.vencido);
-  const enStock=filasSku.reduce((s,i)=>s+Math.max(0,Number(i.cantActual)||0),0);
-  const apartadas=filasSku.reduce((s,i)=>s+(Number(i.reservadoApartado)||0),0);
-  return Math.max(0,enStock-apartadas-enCarrito);
+  const enStock=filasSku.reduce((s,i)=>s+Math.max(0,Number(i.disponibleNeto!=null?i.disponibleNeto:i.cantActual)||0),0);
+  return Math.max(0,enStock-enCarrito);
 }
 function getPrecio(tamano){if(!S.precios)return 0;const p=S.precios.find(p=>p.tamano===tamano);return p?p.precio:0;}
 function actualizarSelectoresCascada(){
@@ -2897,7 +2911,7 @@ function _getStockIndividual() {
   const sucursal = getSucursalVenta();
   const stockInd = (S.stock || []).filter(s => s.tamano === "Individual" && !s.vencido && s.cantActual > 0 && (!sucursal || s.sucursal === sucursal));
   const porSabor = {};
-  stockInd.forEach(s => { porSabor[s.sabor] = (porSabor[s.sabor] || 0) + Number(s.cantActual); });
+  stockInd.forEach(s => { porSabor[s.sabor] = (porSabor[s.sabor] || 0) + Number(s.disponibleNeto != null ? s.disponibleNeto : s.cantActual); }); // v5: solo disponible
   S.carrito.forEach(it => {
     if (it.tamano === "Individual") porSabor[it.sabor] = (porSabor[it.sabor] || 0) - it.cantidad;
   });
@@ -7303,7 +7317,8 @@ async function apReload(){
       return "<div style='border:1px solid var(--warm);border-radius:8px;padding:10px;margin-bottom:8px'>"+
         "<div style='display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px'><div><b>"+(a.clienteNombre||"Cliente")+"</b> · 📅 entrega <b>"+(a.fechaEntrega||"—")+"</b></div><div style='color:var(--accent);font-weight:700'>$"+a.total.toLocaleString('es-MX')+"</div></div>"+
         "<div style='font-size:12px;color:var(--muted);margin-top:4px'>"+its+" · "+a.sucursal+(a.anticipo>0?(" · anticipo $"+a.anticipo.toLocaleString('es-MX')):"")+"</div>"+
-        "<div style='margin-top:6px;display:flex;gap:8px;flex-wrap:wrap'><button class='btn-sec' onclick=\"apConvertir('"+a.idVenta+"')\">✓ Entregar (convertir a venta)</button><button class='btn-sec' onclick=\"apLiberar('"+a.idVenta+"')\">Liberar</button></div>"+
+        "<div style='font-size:11px;margin-top:4px'>"+((a.reservado||0)>0?"<span style='color:#1d7a35'>🔒 Reservado en inventario ("+a.reservado+"/"+(a.piezas||0)+" pzas)</span>":"<span style='color:#8a5a00'>⏳ Sin reservar aún — se reserva automático antes de la entrega</span>")+"</div>"+
+        "<div style='margin-top:6px;display:flex;gap:8px;flex-wrap:wrap'><button class='btn-sec' onclick=\"apConvertir('"+a.idVenta+"')\">✓ Entregar (convertir a venta)</button><button class='btn-sec' onclick=\"apLiberar('"+a.idVenta+"')\">Liberar</button>"+(((a.reservado||0)<=0)?"<button class='btn-sec' onclick=\"apReservarYa('"+a.idVenta+"')\">🔒 Reservar desde ya</button>":"")+"</div>"+
       "</div>"; }).join("");
 }
 async function apGuardar(){
@@ -7347,6 +7362,57 @@ async function apLiberar(id){
   var res=await api("liberarReserva",{idVenta:id,motivo:"Apartado liberado"});
   if(res.ok){ toast("✅ Apartado liberado"); await apReload(); try{ await cargarStock(); }catch(e){} }
   else { toast(res.error||"Error","error"); document.querySelectorAll("#ap-list button").forEach(function(b){b.disabled=false;}); }
+}
+async function apReservarYa(id){
+  // v5: fuerza la reserva física del apartado desde ahora
+  document.querySelectorAll("#ap-list button").forEach(function(b){b.disabled=true;});
+  toast("Reservando piezas...");
+  var res=await api("reservarApartadoYa",{idVenta:id});
+  if(res.ok){ toast(res.mensaje||"✅ Reservado"); await apReload(); try{ await cargarStock(); }catch(e){} }
+  else { toast(res.error||"Error","error"); document.querySelectorAll("#ap-list button").forEach(function(b){b.disabled=false;}); }
+}
+/* ===== v5: Config + consistencia + plan de producción ===== */
+async function cargarConfigV5UI(){
+  try{
+    var r=await api("getConfigV5");
+    if(r&&r.ok&&r.config){
+      if(L("cfg-horizonte")) L("cfg-horizonte").value=r.config.horizonte_planeacion_dias;
+      if(L("cfg-anticipacion")) L("cfg-anticipacion").value=r.config.dias_anticipacion_reserva;
+    }
+  }catch(e){}
+}
+async function guardarConfigV5(){
+  var r=await api("saveConfigV5",{config:{
+    horizonte_planeacion_dias: parseInt(L("cfg-horizonte").value)||1,
+    dias_anticipacion_reserva: parseInt(L("cfg-anticipacion").value)||0 }});
+  if(r.ok) toast("✅ Configuración guardada"); else toast(r.error||"Error","error");
+}
+async function verificarConsistencia(){
+  var st=L("cfg-status"); if(st) st.textContent="Verificando contra el ledger...";
+  var r=await api("auditarConsistencia");
+  if(!r||!r.ok){ if(st)st.textContent=""; toast((r&&r.error)||"Error","error"); return; }
+  if(r.consistente){
+    if(st) st.innerHTML="<span style='color:var(--success)'>✅ Inventario consistente (ledger ↔ físico ↔ reservas)</span>";
+    toast("✅ Inventario consistente");
+  } else {
+    if(st) st.innerHTML="<span style='color:var(--danger)'>⚠️ "+r.problemas.length+" inconsistencia(s):</span><br>"+r.problemas.slice(0,10).map(function(p){return "· "+p;}).join("<br>");
+    toast("⚠️ Inconsistencias encontradas","error");
+  }
+}
+async function cargarPlanProduccion(){
+  var el=L("plan-prod-list"); if(!el) return;
+  el.innerHTML='<div class="loading"><div class="spinner"></div>Calculando...</div>';
+  var r=await api("getPlanProduccion");
+  if(!r||!r.ok){ el.innerHTML="<div style='font-size:12px;color:var(--muted)'>"+((r&&r.error)||"No disponible (¿falta migrar v5?)")+"</div>"; return; }
+  if(!r.dias||!r.dias.length){ el.innerHTML="<div style='font-size:12px;color:var(--muted)'>Sin pedidos en el horizonte ("+r.horizonte+" día(s): hoy → "+r.limite+").</div>"; return; }
+  el.innerHTML = "<div style='font-size:12px;color:var(--muted);margin-bottom:8px'>Horizonte: <b>"+r.horizonte+"</b> día(s) (hoy → "+r.limite+"). Lo posterior se ignora.</div>" + r.dias.map(function(d){
+    var filas=d.items.map(function(x){
+      return "<tr><td style='padding:4px 6px'>"+x.sabor+" "+x.tamano+"</td><td style='text-align:right'>"+x.demanda+"</td><td style='text-align:right;color:#1d7a35'>"+x.reservado+"</td><td style='text-align:right;color:var(--muted)'>"+x.cubiertoConStock+"</td><td style='text-align:right;font-weight:700;color:"+(x.hornear>0?"var(--accent)":"var(--muted)")+"'>"+x.hornear+"</td></tr>";
+    }).join("");
+    return "<div style='border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px'>"+
+      "<div style='font-weight:700;font-size:13px'>📅 Entrega "+d.fecha+" — hornear el <span style='color:var(--accent)'>"+d.hornearEl+"</span> · total: <b>"+d.totalHornear+"</b> tarta(s)</div>"+
+      "<table style='width:100%;border-collapse:collapse;font-size:12px;margin-top:6px'><tr style='color:var(--muted)'><th style='text-align:left;padding:4px 6px'>Producto</th><th style='text-align:right'>Demanda</th><th style='text-align:right'>Reservado</th><th style='text-align:right'>Cubre stock</th><th style='text-align:right'>Hornear</th></tr>"+filas+"</table></div>";
+  }).join("");
 }
 /* ===== Notas del creador (Owner) ===== */
 async function notaEnviar(){
