@@ -677,7 +677,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           <div id="ap-tartas-list" style="margin-top:10px"></div>
         </div>
         <div id="ap-total" style="font-size:13px;margin:8px 0"></div>
-        <button class="btn-main btn-green" id="ap-guardar-btn" onclick="apGuardar()" style="margin-top:0">Guardar apartado 📦</button>
+        <button class="btn-main btn-green" onclick="apGuardar()" style="margin-top:0">Guardar apartado 📦</button>
       </div>
       <div class="card"><h3>Apartados pendientes (<span id="ap-cnt">0</span>)</h3><div id="ap-list"></div></div>
     </div>
@@ -731,11 +731,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
         <div class="card-sub">Tartas comprometidas a entregar. Se hornean el día anterior. No cuentan en el potencial ni en el pedido sugerido.</div>
         <div style="margin-bottom:8px">Fecha de entrega: <input type="date" id="prodman-fecha" onchange="cargarProduccionManana()"></div>
         <div id="prodman-list"></div>
-      </div>
-      <div class="card">
-        <div class="card-title">🗓 Plan de producción (v5)</div>
-        <div class="card-sub">Demanda real (rutas + apartados) dentro del horizonte configurado, contra inventario disponible real. Pedidos fuera del horizonte se ignoran.</div>
-        <div id="plan-prod-list"><div class="loading"><div class="spinner"></div>Calculando...</div></div>
       </div>
     </div>
     <!-- VENTAS -->
@@ -1756,16 +1751,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
           </table>
         </div>
         <button id="ajuste-aplicar" onclick="aplicarAjusteInv()" style="margin-top:14px;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 18px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer">Aplicar ajuste</button>
-        <div style="margin-top:18px;border-top:1px solid var(--border);padding-top:12px">
-          <div style="font-weight:700;font-size:14px;margin-bottom:6px">⚙️ Parámetros v5 (InvCore)</div>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
-            <div><label class="form-label">Horizonte planeación (días)</label><input class="mini-input" type="number" id="cfg-horizonte" min="1" style="width:130px"></div>
-            <div><label class="form-label">Anticipación reserva (días)</label><input class="mini-input" type="number" id="cfg-anticipacion" min="0" style="width:130px"></div>
-            <button class="btn-outline" style="width:auto;margin-top:0" onclick="guardarConfigV5()">Guardar</button>
-            <button class="btn-outline" style="width:auto;margin-top:0" onclick="verificarConsistencia()">🔍 Verificar consistencia</button>
-          </div>
-          <div id="cfg-status" style="font-size:12px;color:var(--muted);margin-top:6px"></div>
-        </div>
       </div>
     </div>
     <div id="tab-alertas" class="tab-pane" style="display:none">
@@ -2166,6 +2151,7 @@ const MENU = [
   { id:"ven", label:"🛒 Ventas", items:[
     { label:"Nueva venta",      pane:"venta",  perm:"vender" },
     { label:"Apartados",        pane:"apartados", perm:"vender" },
+    { label:"Rutas",            pane:"rutas",  perm:"owner" },
     { label:"Historial",        pane:"ventas", perm:"owner" },
   ]},
   { id:"rep", label:"🚚 Reparto", items:[
@@ -2231,7 +2217,7 @@ function _loadPane(t){
   else if(t==="reparto") cargarReparto();
   else if(t==="apartados") cargarApartados();
   else if(t==="notas") cargarNotas();
-  else if(t==="produccion"){ cargarProduccionManana(); try{ cargarPlanProduccion(); }catch(e){} }
+  else if(t==="produccion") cargarProduccionManana();
   else if(t==="ajuste") cargarAjusteInv();
 }
 function irAPane(pane, subFn, subKey){
@@ -2277,7 +2263,6 @@ async function cargarAjusteInv(){
     sel.dataset.pob = "1";
   }
   await refrescarAjusteInv();
-  try{ cargarConfigV5UI(); }catch(e){}
 }
 async function refrescarAjusteInv(){
   const suc = (L("ajuste-suc")&&L("ajuste-suc").value) || "Cuajimalpa";
@@ -2427,23 +2412,10 @@ async function cargarStock() {
   S.stock=res.stock;
   renderStock(); poblarSelectsVenta();
 }
-function _invValorVisible(s){
-  // v4.6.4: los cuadritos Total/Tienda/Apartado/Ruta son FILTROS de vista.
-  // Si "Total" esta activo la tabla muestra piezas totales; si no, la suma de
-  // los componentes activos (tienda=neto, apartado, ruta). Asi la tabla de abajo
-  // siempre cuadra con los cuadritos seleccionados.
-  const v=S.cuadritosVisibles||{total:true,tienda:true,apartado:true,ruta:true};
-  if(v.total) return Number(s.cantActual)||0;
-  let x=0;
-  if(v.tienda)   x += Number(s.disponibleTienda!=null?s.disponibleTienda:s.cantActual)||0;
-  if(v.apartado) x += Number(s.reservadoApartado)||0;
-  if(v.ruta)     x += Number(s.reservadoRuta)||0;
-  return x;
-}
 function renderStock(){
   const stock=S.stock||[];
   const busqueda=(L("stock-search").value||"").toLowerCase();
-  let f=stock.filter(s=>!s.vencido&&(s.cantActual>0||Number(s.reservado||0)>0)); // v4.6.2: SKUs apartados visibles aunque 0 fisico
+  let f=stock.filter(s=>!s.vencido&&s.cantActual>0);
   if(S.filtroSuc) f=f.filter(s=>s.sucursal===S.filtroSuc);
   if(S.filtroTam) f=f.filter(s=>s.tamano===S.filtroTam);
   if(busqueda)    f=f.filter(s=>s.sabor.toLowerCase().includes(busqueda));
@@ -2485,7 +2457,7 @@ function renderStock(){
   let html = "";
   sucsRender.forEach(suc => {
     const stockSuc = f.filter(s => s.sucursal === suc);
-    const totalSuc = stockSuc.reduce((t, s) => t + _invValorVisible(s), 0); // v4.6.4: cuadra con los cuadritos
+    const totalSuc = stockSuc.reduce((t, s) => t + Number(s.cantActual||0), 0);
     const reservadoSuc = stockSuc.reduce((t, s) => t + Number(s.reservado||0), 0);
     const netoSuc = stockSuc.reduce((t, s) => t + Number(s.disponibleNeto!=null ? s.disponibleNeto : s.cantActual||0), 0);
     const color = suc === "Cuajimalpa" ? "var(--green)" : "var(--accent)";
@@ -2512,9 +2484,7 @@ function calcDisp(sabor,tamano){
   if(!S.stock) return 0;
   const suc=getSucursalVenta();
   const enCarrito=S.carrito.filter(i=>i.sabor===sabor&&i.tamano===tamano).reduce((s,i)=>s+i.cantidad,0);
-  // v5: el vendedor solo puede vender DISPONIBLE (físico − reservas ruta/apartado)
-  const filasSku=S.stock.filter(s=>s.sabor===sabor&&s.tamano===tamano&&s.sucursal===suc&&!s.vencido);
-  const enStock=filasSku.reduce((s,i)=>s+Math.max(0,Number(i.disponibleNeto!=null?i.disponibleNeto:i.cantActual)||0),0);
+  const enStock=S.stock.filter(s=>s.sabor===sabor&&s.tamano===tamano&&s.sucursal===suc&&!s.vencido&&s.cantActual>0).reduce((s,i)=>s+i.cantActual,0);
   return Math.max(0,enStock-enCarrito);
 }
 function getPrecio(tamano){if(!S.precios)return 0;const p=S.precios.find(p=>p.tamano===tamano);return p?p.precio:0;}
@@ -2911,7 +2881,7 @@ function _getStockIndividual() {
   const sucursal = getSucursalVenta();
   const stockInd = (S.stock || []).filter(s => s.tamano === "Individual" && !s.vencido && s.cantActual > 0 && (!sucursal || s.sucursal === sucursal));
   const porSabor = {};
-  stockInd.forEach(s => { porSabor[s.sabor] = (porSabor[s.sabor] || 0) + Number(s.disponibleNeto != null ? s.disponibleNeto : s.cantActual); }); // v5: solo disponible
+  stockInd.forEach(s => { porSabor[s.sabor] = (porSabor[s.sabor] || 0) + Number(s.cantActual); });
   S.carrito.forEach(it => {
     if (it.tamano === "Individual") porSabor[it.sabor] = (porSabor[it.sabor] || 0) - it.cantidad;
   });
@@ -3599,7 +3569,6 @@ async function anularSeleccionadosMov() {
   L("modal-anular-multi").classList.remove("show");
   cargarMovimientos();
   cargarStock();
-  try{ if(typeof apReload==="function") apReload(); }catch(e){} // v4.6.4: refrescar apartados
 }
 function abrirModalAnularMulti() {
   if (S.movSeleccionados.size === 0) { toast("No hay seleccionados", "error"); return; }
@@ -3633,7 +3602,6 @@ L("btn-confirmar-anular").addEventListener("click", async () => {
     S.anularPendiente = null;
     cargarMovimientos();
     cargarStock();
-    try{ if(typeof apReload==="function") apReload(); }catch(e){} // v4.6.4: refrescar apartados
   } else {
     toast(res.error||"Error al anular","error");
   }
@@ -4883,11 +4851,9 @@ function _tablaPivotInventario(stock, color, scope) {
   const M = {};
   sabores.forEach(sab => { M[sab] = {}; tamanos.forEach(tam => M[sab][tam] = { piezas: 0 }); });
   (stock || []).forEach(s => {
-    if (s.vencido) return;
-    const _v = _invValorVisible(s); // v4.6.4: respeta los cuadritos seleccionados
-    if (_v <= 0) return;
+    if (s.vencido || s.cantActual <= 0) return;
     if (!M[s.sabor] || !M[s.sabor][s.tamano]) return;
-    M[s.sabor][s.tamano].piezas += _v;
+    M[s.sabor][s.tamano].piezas += Number(s.cantActual) || 0;
   });
   return _renderPivotMatriz(M, sabores, tamanos, "unidades", color, scope, false, true);
 }
@@ -5145,8 +5111,8 @@ async function cargarPedidoSugerido(){
   const tabla=(loc,arr)=>{
     if(!arr.length) return `<div style="font-size:12px;color:var(--muted)">Sin datos suficientes para ${loc}</div>`;
     return `<table style="width:100%;border-collapse:collapse;font-size:13px">
-      <thead><tr><th style="text-align:left;padding:4px 0">Sabor</th><th style="text-align:left">Tamaño</th><th style="text-align:right">Potencial/día</th><th style="text-align:right">Sugerido</th></tr></thead>
-      <tbody>${arr.map(r=>`<tr><td style="padding:3px 0">${r.sabor}</td><td>${r.tamano}</td><td style="text-align:right;color:var(--muted)">${r.promPotencial}</td><td style="text-align:right;font-weight:700;color:var(--accent)">${r.sugerido}</td></tr>`).join("")}</tbody></table>`;
+      <thead><tr><th style="text-align:left;padding:4px 0">Sabor</th><th style="text-align:left">Tamaño</th><th style="text-align:right">Pot/día</th><th style="text-align:right" title="Método A: ventana 7 días (actual)">Sug A</th><th style="text-align:right" title="Método B: tendencia mismo día">Sug B</th></tr></thead>
+      <tbody>${arr.map(r=>`<tr><td style="padding:3px 0">${r.sabor}</td><td>${r.tamano}</td><td style="text-align:right;color:var(--muted)">${r.promPotencial}</td><td style="text-align:right;font-weight:700;color:var(--accent)">${r.sugerido}</td><td style="text-align:right;font-weight:700;color:var(--success)">${r.sugerido2!=null?r.sugerido2:"—"}</td></tr>`).join("")}</tbody></table>`;
   };
   const dia=res.diaSemana.toLowerCase();
   const modoTxt = `promedio ponderado de 7 días (del ${dia} de la semana pasada al día previo al objetivo)`;
@@ -5157,11 +5123,11 @@ async function cargarPedidoSugerido(){
       <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Base: ${modoTxt} · +${res.bufferPct}% · ${(res.diasUsados||[]).map((d,i)=>`${d} (${Math.round((res.pesos&&res.pesos[i]!=null?res.pesos[i]:0)*100)}%)`).join(" · ")||"—"}</div>
       <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px">
         ${cols.map(([loc,arr])=>`<div style="background:var(--warm);border-radius:10px;padding:12px">
-          <div style="font-weight:700;color:var(--accent);margin-bottom:8px">${loc} · total ${res.totalSugerido[loc]} pzas</div>
+          <div style="font-weight:700;margin-bottom:8px">${loc} · <span style="color:var(--accent)">A: ${res.totalSugerido[loc]}</span> · <span style="color:var(--success)">B: ${res.totalSugerido2?res.totalSugerido2[loc]:0}</span> pzas</div>
           ${tabla(loc,arr)}
         </div>`).join("")}
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:12px;line-height:1.5">Potencial/día = lo vendido ese día, proyectado a día completo si se agotó temprano (mismo cálculo que el reporte de Oportunidad). Se hace un promedio ponderado de los 7 días previos (mismo día de la semana pasada y día previo al objetivo 25% c/u; los otros 5 días 10% c/u) y se aplica +${res.bufferPct}%, redondeando hacia arriba. No incluye ventas de ruta (esas se planean según lo que pidan los clientes).</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:12px;line-height:1.5"><strong style="color:var(--accent)">Sug A — método actual (ventana 7 días):</strong> Potencial/día = lo vendido ese día, proyectado a día completo si se agotó temprano. Promedio ponderado de los 7 días previos (mismo día de la semana pasada y día previo al objetivo 25% c/u; los otros 5 días 10% c/u) +${res.bufferPct}%, redondeando hacia arriba.<br><strong style="color:var(--success)">Sug B — tendencia mismo día:</strong> promedio ponderado de los 4 ${dia}s anteriores con <em>unidades realmente vendidas</em> (hace 1/2/3/4 semanas con 32/24/16/8% — bloque 80%) + 20% del Sug A, +${(res.metodo2&&res.metodo2.bufferPct!=null)?res.metodo2.bufferPct:10}% al final. Si falta una semana, su peso se reparte entre las que sí tienen ventas.${(res.metodo2&&res.metodo2.diasMismoDia)?" Días usados: "+res.metodo2.diasMismoDia.map((d,i)=>`${d} (${Math.round((res.metodo2.pesosMismoDia&&res.metodo2.pesosMismoDia[i]!=null?res.metodo2.pesosMismoDia[i]:0)*100)}%)`).join(" · ")+".":""}<br>Ninguno incluye ventas de ruta (esas se planean según lo que pidan los clientes).</div>
     </div>`;
   L("pedido-content").innerHTML=html;
 }
@@ -7317,8 +7283,7 @@ async function apReload(){
       return "<div style='border:1px solid var(--warm);border-radius:8px;padding:10px;margin-bottom:8px'>"+
         "<div style='display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px'><div><b>"+(a.clienteNombre||"Cliente")+"</b> · 📅 entrega <b>"+(a.fechaEntrega||"—")+"</b></div><div style='color:var(--accent);font-weight:700'>$"+a.total.toLocaleString('es-MX')+"</div></div>"+
         "<div style='font-size:12px;color:var(--muted);margin-top:4px'>"+its+" · "+a.sucursal+(a.anticipo>0?(" · anticipo $"+a.anticipo.toLocaleString('es-MX')):"")+"</div>"+
-        "<div style='font-size:11px;margin-top:4px'>"+((a.reservado||0)>0?"<span style='color:#1d7a35'>🔒 Reservado en inventario ("+a.reservado+"/"+(a.piezas||0)+" pzas)</span>":"<span style='color:#8a5a00'>⏳ Sin reservar aún — se reserva automático antes de la entrega</span>")+"</div>"+
-        "<div style='margin-top:6px;display:flex;gap:8px;flex-wrap:wrap'><button class='btn-sec' onclick=\"apConvertir('"+a.idVenta+"')\">✓ Entregar (convertir a venta)</button><button class='btn-sec' onclick=\"apLiberar('"+a.idVenta+"')\">Liberar</button>"+(((a.reservado||0)<=0)?"<button class='btn-sec' onclick=\"apReservarYa('"+a.idVenta+"')\">🔒 Reservar desde ya</button>":"")+"</div>"+
+        "<div style='margin-top:6px;display:flex;gap:8px;flex-wrap:wrap'><button class='btn-sec' onclick=\"apConvertir('"+a.idVenta+"')\">✓ Entregar (convertir a venta)</button><button class='btn-sec' onclick=\"apLiberar('"+a.idVenta+"')\">Liberar</button></div>"+
       "</div>"; }).join("");
 }
 async function apGuardar(){
@@ -7329,90 +7294,27 @@ async function apGuardar(){
   var perms=(typeof getPermisos==="function"?getPermisos():{})||{};
   var suc = (perms.puedeVerAmbas && L("ap-suc")) ? L("ap-suc").value : S.sucursal;
   var items=AP.tartas.map(function(t){return {sabor:t.sabor,tamano:t.tamano,cantidad:t.cantidad,precioUnitario:t.precio};});
-  // v4.6.3-ux: bloquear el boton mientras procesa (evita doble captura)
-  var _btnAp=L("ap-guardar-btn"); if(_btnAp){ _btnAp.disabled=true; _btnAp.textContent="Guardando apartado..."; }
   var res=await api("registrarApartado",{
     items:items, tipoOp:"reserva", canal:"Apartado",
     metodoPago:L("ap-metodo").value, anticipo:parseFloat(L("ap-anticipo").value)||0,
     fechaEntrega:L("ap-fecha").value, sucursal:suc,
     cliente:{nombre:cli, telefono:L("ap-tel").value.trim()}
   });
-  if(_btnAp){ _btnAp.disabled=false; _btnAp.textContent="Guardar apartado 📦"; }
   if(res.ok){
-    if(res.cocinaPendiente&&res.cocinaPendiente.length){ toast("📦 Apartado guardado — sin stock suficiente: se cocina sobre pedido ("+res.cocinaPendiente.join(", ")+"). Ya aparece en 🍳 Para hornear."); }
-    else { toast("📦 Apartado guardado"); }
+    toast("📦 Apartado guardado");
     L("ap-cli").value=""; L("ap-tel").value=""; L("ap-anticipo").value=0; AP.tartas=[]; apRenderTartas();
     await apReload();
   } else toast(res.error||"Error","error");
 }
 async function apConvertir(id){
   if(!confirm("¿Marcar como entregado y convertir a venta?")) return;
-  // v4.6.3-ux: bloquear botones mientras procesa (evita doble click) + aviso
-  document.querySelectorAll("#ap-list button").forEach(function(b){b.disabled=true;});
-  toast("Procesando entrega...");
   var res=await api("convertirReservaAVenta",{idVenta:id,canal:"Mostrador"});
-  if(res.ok){ toast(res.mensaje||"✅ Apartado entregado — inventario descontado"); await apReload(); try{ await cargarStock(); }catch(e){} }
-  else { toast(res.error||"Error","error"); document.querySelectorAll("#ap-list button").forEach(function(b){b.disabled=false;}); }
+  if(res.ok){ toast("✅ Apartado entregado"); await apReload(); } else toast(res.error||"Error","error");
 }
 async function apLiberar(id){
   if(!confirm("¿Liberar (cancelar) este apartado?")) return;
-  // v4.6.3-ux: bloquear botones mientras procesa (evita doble click) + aviso
-  document.querySelectorAll("#ap-list button").forEach(function(b){b.disabled=true;});
-  toast("Liberando apartado...");
   var res=await api("liberarReserva",{idVenta:id,motivo:"Apartado liberado"});
-  if(res.ok){ toast("✅ Apartado liberado"); await apReload(); try{ await cargarStock(); }catch(e){} }
-  else { toast(res.error||"Error","error"); document.querySelectorAll("#ap-list button").forEach(function(b){b.disabled=false;}); }
-}
-async function apReservarYa(id){
-  // v5: fuerza la reserva física del apartado desde ahora
-  document.querySelectorAll("#ap-list button").forEach(function(b){b.disabled=true;});
-  toast("Reservando piezas...");
-  var res=await api("reservarApartadoYa",{idVenta:id});
-  if(res.ok){ toast(res.mensaje||"✅ Reservado"); await apReload(); try{ await cargarStock(); }catch(e){} }
-  else { toast(res.error||"Error","error"); document.querySelectorAll("#ap-list button").forEach(function(b){b.disabled=false;}); }
-}
-/* ===== v5: Config + consistencia + plan de producción ===== */
-async function cargarConfigV5UI(){
-  try{
-    var r=await api("getConfigV5");
-    if(r&&r.ok&&r.config){
-      if(L("cfg-horizonte")) L("cfg-horizonte").value=r.config.horizonte_planeacion_dias;
-      if(L("cfg-anticipacion")) L("cfg-anticipacion").value=r.config.dias_anticipacion_reserva;
-    }
-  }catch(e){}
-}
-async function guardarConfigV5(){
-  var r=await api("saveConfigV5",{config:{
-    horizonte_planeacion_dias: parseInt(L("cfg-horizonte").value)||1,
-    dias_anticipacion_reserva: parseInt(L("cfg-anticipacion").value)||0 }});
-  if(r.ok) toast("✅ Configuración guardada"); else toast(r.error||"Error","error");
-}
-async function verificarConsistencia(){
-  var st=L("cfg-status"); if(st) st.textContent="Verificando contra el ledger...";
-  var r=await api("auditarConsistencia");
-  if(!r||!r.ok){ if(st)st.textContent=""; toast((r&&r.error)||"Error","error"); return; }
-  if(r.consistente){
-    if(st) st.innerHTML="<span style='color:var(--success)'>✅ Inventario consistente (ledger ↔ físico ↔ reservas)</span>";
-    toast("✅ Inventario consistente");
-  } else {
-    if(st) st.innerHTML="<span style='color:var(--danger)'>⚠️ "+r.problemas.length+" inconsistencia(s):</span><br>"+r.problemas.slice(0,10).map(function(p){return "· "+p;}).join("<br>");
-    toast("⚠️ Inconsistencias encontradas","error");
-  }
-}
-async function cargarPlanProduccion(){
-  var el=L("plan-prod-list"); if(!el) return;
-  el.innerHTML='<div class="loading"><div class="spinner"></div>Calculando...</div>';
-  var r=await api("getPlanProduccion");
-  if(!r||!r.ok){ el.innerHTML="<div style='font-size:12px;color:var(--muted)'>"+((r&&r.error)||"No disponible (¿falta migrar v5?)")+"</div>"; return; }
-  if(!r.dias||!r.dias.length){ el.innerHTML="<div style='font-size:12px;color:var(--muted)'>Sin pedidos en el horizonte ("+r.horizonte+" día(s): hoy → "+r.limite+").</div>"; return; }
-  el.innerHTML = "<div style='font-size:12px;color:var(--muted);margin-bottom:8px'>Horizonte: <b>"+r.horizonte+"</b> día(s) (hoy → "+r.limite+"). Lo posterior se ignora.</div>" + r.dias.map(function(d){
-    var filas=d.items.map(function(x){
-      return "<tr><td style='padding:4px 6px'>"+x.sabor+" "+x.tamano+"</td><td style='text-align:right'>"+x.demanda+"</td><td style='text-align:right;color:#1d7a35'>"+x.reservado+"</td><td style='text-align:right;color:var(--muted)'>"+x.cubiertoConStock+"</td><td style='text-align:right;font-weight:700;color:"+(x.hornear>0?"var(--accent)":"var(--muted)")+"'>"+x.hornear+"</td></tr>";
-    }).join("");
-    return "<div style='border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px'>"+
-      "<div style='font-weight:700;font-size:13px'>📅 Entrega "+d.fecha+" — hornear el <span style='color:var(--accent)'>"+d.hornearEl+"</span> · total: <b>"+d.totalHornear+"</b> tarta(s)</div>"+
-      "<table style='width:100%;border-collapse:collapse;font-size:12px;margin-top:6px'><tr style='color:var(--muted)'><th style='text-align:left;padding:4px 6px'>Producto</th><th style='text-align:right'>Demanda</th><th style='text-align:right'>Reservado</th><th style='text-align:right'>Cubre stock</th><th style='text-align:right'>Hornear</th></tr>"+filas+"</table></div>";
-  }).join("");
+  if(res.ok){ toast("Apartado liberado"); await apReload(); } else toast(res.error||"Error","error");
 }
 /* ===== Notas del creador (Owner) ===== */
 async function notaEnviar(){
