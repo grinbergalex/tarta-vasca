@@ -2809,8 +2809,10 @@ L("btn-confirmar").addEventListener("click",async()=>{
       const total=S.carrito.reduce((s,i)=>s+i.subtotal,0);
       toast(tipoOp==="regalo"?`✅ Regalo registrado`:`✅ Venta $${total.toLocaleString('es-MX')} registrada`);
       const _idRecibo=res.idVenta;
+      const _cTel=(cliente&&cliente.telefono)||"";
+      const _cMail=(cliente&&cliente.email)||"";
       limpiarVenta(); cargarStock();
-      if(_idRecibo && tipoOp!=="regalo" && tipoOp!=="merma" && confirm("¿Elaborar recibo para el cliente?")){ enviarRecibo(_idRecibo); }
+      if(_idRecibo && tipoOp!=="regalo" && tipoOp!=="merma" && confirm("¿Elaborar recibo para el cliente?")){ enviarRecibo(_idRecibo,{tel:_cTel,email:_cMail}); }
     } else toast(res.error,"error");
   }
   btn.disabled=false;
@@ -3049,12 +3051,13 @@ function limpiarFiltrosVentas(){
   ["fv-sucursal","fv-canal","fv-metodo","fv-sabor","fv-tamano","fv-tipo","fv-fdesde","fv-fhasta"].forEach(id=>{const e=L(id);if(e)e.value="";});
   cargarVentas();
 }
-async function enviarRecibo(idVenta){
+async function enviarRecibo(idVenta, opts){
+  opts=opts||{};
   const metodo=prompt("¿Cómo enviar el recibo?\n\n1 = WhatsApp\n2 = Correo");
   if(metodo===null) return;
   const op=String(metodo).trim();
   if(op==="1"){
-    let tel=prompt("Número de WhatsApp del cliente (10 dígitos):");
+    let tel=prompt(opts.tel?"Confirma el WhatsApp del cliente (10 dígitos):":"Número de WhatsApp del cliente (10 dígitos):", opts.tel||"");
     if(!tel) return;
     tel=String(tel).replace(/\D/g,"");
     if(tel.length===10) tel="52"+tel;
@@ -3063,7 +3066,7 @@ async function enviarRecibo(idVenta){
     if(!res||!res.ok){ toast((res&&res.error)||"No se pudo generar el recibo","error"); return; }
     window.open("https://wa.me/"+tel+"?text="+encodeURIComponent("Aquí está tu recibo de Tarta Vasca\n"+res.url),"_blank");
   } else if(op==="2"){
-    const email=prompt("Correo del cliente:");
+    const email=prompt(opts.email?"Confirma el correo del cliente:":"Correo del cliente:", opts.email||"");
     if(!email) return;
     toast("Enviando recibo por correo...");
     const res=await api("enviarReciboEmail",{idVenta,email});
