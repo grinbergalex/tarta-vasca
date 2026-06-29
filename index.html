@@ -3061,10 +3061,12 @@ async function enviarRecibo(idVenta, opts){
     if(!tel) return;
     tel=String(tel).replace(/\D/g,"");
     if(tel.length===10) tel="52"+tel;
+    var _w=window.open("","_blank"); // iOS: abrir la pestaña DENTRO del toque, antes del await
     toast("Generando recibo...");
     const res=await api("generarReciboPDF",{idVenta});
-    if(!res||!res.ok){ toast((res&&res.error)||"No se pudo generar el recibo","error"); return; }
-    window.open("https://wa.me/"+tel+"?text="+encodeURIComponent("Aquí está tu recibo de Tarta Vasca\n"+res.url),"_blank");
+    if(!res||!res.ok){ if(_w)try{_w.close();}catch(e){} toast((res&&res.error)||"No se pudo generar el recibo","error"); return; }
+    var _wa="https://wa.me/"+tel+"?text="+encodeURIComponent("Aquí está tu recibo de Tarta Vasca\n"+res.url);
+    if(_w){ try{_w.location.href=_wa;}catch(e){ window.location.href=_wa; } } else { window.location.href=_wa; }
   } else if(op==="2"){
     const email=prompt(opts.email?"Confirma el correo del cliente:":"Correo del cliente:", opts.email||"");
     if(!email) return;
