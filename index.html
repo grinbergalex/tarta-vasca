@@ -7443,5 +7443,31 @@ async function cargarProduccionManana(){
       return "<div style='border:1px solid var(--warm);border-radius:6px;padding:6px 10px;margin-bottom:4px;font-size:13px'><b>"+x.cantidad+"×</b> "+x.sabor+" "+x.tamano+" <span style='color:var(--muted);font-size:11px'>("+m.join(", ")+")</span></div>"; }).join("");
 }
 </script>
+
+  <script>
+/* v6.3 — Anti doble-tap (2026-07-03): bloquea 5s los botones de accion al tocarlos,
+   para que la lentitud del backend no provoque envios dobles ni errores fantasma.
+   Fix del caso 3-jul: transferencia ejecutada + error "Disponible insuficiente" del reintento.
+   PEGAR JUSTO ANTES DEL ULTIMO </body> DEL index.html (si no se usa el archivo ya parchado). */
+(function(){
+  var MARCA = '⏳ Procesando…';
+  document.addEventListener('click', function(ev){
+    var b = ev.target && ev.target.closest ? ev.target.closest('button') : null;
+    if (!b || b.disabled) return;
+    var tx = (b.textContent || '');
+    if (!/registrar|confirmar|guardar|vender|cobrar|transfer|anular|agregar|producir|producci|ajustar|mover/i.test(tx)) return;
+    b.dataset.vTxt = b.textContent;
+    b.disabled = true;
+    b.style.opacity = '0.55';
+    b.textContent = MARCA;
+    setTimeout(function(){
+      b.disabled = false;
+      b.style.opacity = '';
+      if (b.textContent === MARCA && b.dataset.vTxt) { b.textContent = b.dataset.vTxt; }
+      delete b.dataset.vTxt;
+    }, 5000);
+  }, true);
+})();
+</script>
 </body>
 </html>
