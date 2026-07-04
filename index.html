@@ -6408,7 +6408,8 @@ function renderConciliacion() {
       <table style="width:100%;border-collapse:collapse;font-size:13px">
         <thead><tr>
           <th style="text-align:left;padding:8px 6px;border-bottom:2px solid var(--border);background:var(--warm)">Método de pago</th>
-          <th style="text-align:right;padding:8px 6px;border-bottom:2px solid var(--border);background:var(--warm)">Monto</th>
+          <th style="text-align:right;padding:8px 6px;border-bottom:2px solid var(--border);background:var(--warm)">Cobro cliente</th>
+          <th style="text-align:right;padding:8px 6px;border-bottom:2px solid var(--border);background:var(--warm)">Ingreso neto</th>
           <th style="text-align:center;padding:8px 6px;border-bottom:2px solid var(--border);background:var(--warm)">Tickets</th>
           <th style="text-align:center;padding:8px 6px;border-bottom:2px solid var(--border);background:var(--warm)">Piezas</th>
           <th style="text-align:right;padding:8px 6px;border-bottom:2px solid var(--border);background:var(--warm)">% del total</th>
@@ -6419,9 +6420,12 @@ function renderConciliacion() {
       if (d.monto === 0 && d.tickets.size === 0) return;
       const pct = sumaMonto > 0 ? (d.monto / sumaMonto * 100).toFixed(1) : "0.0";
       const colorM = COLOR_METODO[m] || "var(--ink)";
+      const comTarjeta = Math.abs(getComisionesActuales()["Tarjeta"] ?? 0.06);
+      const ingresoNeto = (m === "Tarjeta") ? d.monto * (1 - comTarjeta) : d.monto;
       html += `<tr>
         <td style="padding:8px 6px;border-bottom:1px solid var(--warm)"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${colorM};margin-right:8px;vertical-align:middle"></span><strong>${m}</strong></td>
         <td style="padding:8px 6px;border-bottom:1px solid var(--warm);text-align:right;font-weight:700">$${d.monto.toLocaleString('es-MX')}</td>
+        <td style="padding:8px 6px;border-bottom:1px solid var(--warm);text-align:right;color:var(--muted)">$${ingresoNeto.toLocaleString('es-MX', {maximumFractionDigits:0})}</td>
         <td style="padding:8px 6px;border-bottom:1px solid var(--warm);text-align:center;color:var(--muted)">${d.tickets.size}</td>
         <td style="padding:8px 6px;border-bottom:1px solid var(--warm);text-align:center;color:var(--muted)">${d.piezas}</td>
         <td style="padding:8px 6px;border-bottom:1px solid var(--warm);text-align:right;color:var(--muted)">${pct}%</td>
