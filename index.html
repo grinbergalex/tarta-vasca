@@ -2414,6 +2414,9 @@ async function cargarStock() {
   const res=await api("getStock");
   if(!res.ok){L("stock-content").innerHTML=`<div class="empty-state"><div>Error al cargar</div></div>`;return;}
   S.stock=res.stock;
+  // v6.4: si el catálogo no cargó al iniciar sesión (falla de red), reintentarlo aquí
+  // para que los filtros de sucursal/tamaño y la tabla sabor×tamaño no se queden vacíos.
+  if(!S.catalogo) await cargarCatalogo();
   renderStock(); poblarSelectsVenta();
 }
 function renderStock(){
@@ -7451,7 +7454,6 @@ async function cargarProduccionManana(){
       return "<div style='border:1px solid var(--warm);border-radius:6px;padding:6px 10px;margin-bottom:4px;font-size:13px'><b>"+x.cantidad+"×</b> "+x.sabor+" "+x.tamano+" <span style='color:var(--muted);font-size:11px'>("+m.join(", ")+")</span></div>"; }).join("");
 }
 </script>
-
 <script>
 /* v6.3 — Anti doble-tap (2026-07-03): bloquea 5s los botones de accion al tocarlos,
    para que la lentitud del backend no provoque envios dobles ni errores fantasma.
