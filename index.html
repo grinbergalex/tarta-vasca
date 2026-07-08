@@ -7470,9 +7470,19 @@ async function cargarProduccionManana(){
     b.style.opacity = '0.55';
     b.textContent = MARCA;
     setTimeout(function(){
-      b.disabled = false;
-      b.style.opacity = '';
-      if (b.textContent === MARCA && b.dataset.vTxt) { b.textContent = b.dataset.vTxt; }
+      // v6.5: si el handler propio del boton ya tomo control (cambio el texto a
+      // "Registrando...", "Anulando...", "Cargando...", etc.) NO lo reactivamos aqui —
+      // dejamos que ese handler lo reactive cuando su llamada al servidor termine
+      // (puede tardar mas de 5s bajo carga, como hoy). Antes este timer reactivaba el
+      // boton a la fuerza a los 5s aunque la peticion real siguiera en curso, dejando
+      // una ventana en la que un usuario desesperado podia volver a apretar y disparar
+      // una segunda venta/produccion/anulacion real y completa (no un reintento silencioso,
+      // sino un segundo clic legitimo que el boton ya no bloqueaba).
+      if (b.textContent === MARCA) {
+        b.disabled = false;
+        b.style.opacity = '';
+        if (b.dataset.vTxt) { b.textContent = b.dataset.vTxt; }
+      }
       delete b.dataset.vTxt;
     }, 5000);
   }, true);
