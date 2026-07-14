@@ -2819,7 +2819,7 @@ L("btn-confirmar").addEventListener("click",async()=>{
       const _cTel=(cliente&&cliente.telefono)||"";
       const _cMail=(cliente&&cliente.email)||"";
       limpiarVenta(); cargarStock();
-      if(_idRecibo && tipoOp!=="regalo" && tipoOp!=="merma" && confirm("¿Elaborar recibo para el cliente?")){ enviarRecibo(_idRecibo,{tel:_cTel,email:_cMail}); }
+      if(_idRecibo && tipoOp!=="regalo" && tipoOp!=="merma" && true){ imprimirReciboAuto(_idRecibo); }
     } else toast(res.error,"error");
   }
   btn.disabled=false;
@@ -3058,6 +3058,21 @@ function limpiarFiltrosVentas(){
   ["fv-sucursal","fv-canal","fv-metodo","fv-sabor","fv-tamano","fv-tipo","fv-fdesde","fv-fhasta"].forEach(id=>{const e=L(id);if(e)e.value="";});
   cargarVentas();
 }
+async function imprimirReciboAuto(idVenta){
+  try{
+    const res = await api("generarReciboPDF", {idVenta});
+    if(!res || !res.ok || !res.url){ toast((res&&res.error)||"No se pudo generar el recibo","error"); return; }
+    const ifr=document.createElement('iframe');
+    ifr.style.display='none';
+    ifr.src=res.url;
+    document.body.appendChild(ifr);
+    ifr.onload=function(){
+      try{ ifr.contentWindow.focus(); ifr.contentWindow.print(); }catch(e){}
+      setTimeout(()=>{ try{ document.body.removeChild(ifr); }catch(e){} }, 60000);
+    };
+  }catch(e){ toast("Error al generar el recibo","error"); }
+}
+
 async function enviarRecibo(idVenta, opts){
   opts=opts||{};
   const metodo=prompt("¿Cómo enviar el recibo?\n\n1 = WhatsApp\n2 = Correo");
