@@ -1720,10 +1720,15 @@ const { sabor, tamano, sucursal, cantidad } = body;
 if (!sabor || !tamano || !sucursal || !cantidad || cantidad <= 0) return { ok:false, error:"Faltan datos requeridos." };
 const lock=LockService.getScriptLock(); try{lock.waitLock(30000);}catch(e){return{ok:false,error:"El sistema esta ocupado, intenta de nuevo."};}
 try{
+  const _opId=String(body.opId||"").trim();
+  const _opDup=_opYaRegistrada(_opId);
+  if(_opDup) return _opDup;
   const ss=SpreadsheetApp.getActiveSpreadsheet();
   invProducir(ss, String(sabor).trim(), String(tamano).trim(), sucursal, Number(cantidad), "PRODUCCION", sesion.usuario, "Alta produccion");
   registrarAuditoria(sesion.usuario, sesion.rol, "PRODUCCION", cantidad+"x "+sabor+" "+tamano+" @ "+sucursal);
-  return { ok:true, mensaje:"✅ "+cantidad+" "+sabor+" "+tamano+" agregados a "+sucursal+"." };
+  const _resOk = { ok:true, mensaje:"✅ "+cantidad+" "+sabor+" "+tamano+" agregados a "+sucursal+"." };
+  _opRegistrar(_opId,_resOk);
+  return _resOk;
 }catch(err){ return { ok:false, error:String(err&&err.message?err.message:err) }; }
 finally{ try{lock.releaseLock();}catch(_e){} }
 }
@@ -1824,6 +1829,9 @@ const cambiosTotales = [];   // para rollback si algo falla a mitad
 const filasAppendedRows = []; // para rollback de Ventas si fuera necesario
 let hojaVentas = null;
 try {
+const _opId = String(body.opId || "").trim();
+const _opDup = _opYaRegistrada(_opId);
+if (_opDup) return _opDup;
 const ss = SpreadsheetApp.getActiveSpreadsheet();
 const hojaInv = ss.getSheetByName("Inventario");
 if (!hojaInv) throw new Error("No existe la hoja Inventario.");
@@ -1915,7 +1923,9 @@ if (!hojaInv) throw new Error("No existe la hoja Inventario.");
     _utilMarcarDirty();
     try { _generarAlertasMensajes(ss, sesion); } catch(e) {}
     const msgRes = esReserva ? `📌 Reserva registrada` : (esRegalo ? `✅ Regalo registrado` : `✅ Venta registrada`);
-    return { ok: true, mensaje: msgRes, idVenta, items: resumenItems, total: totalVenta, cliente: clienteId, esReserva, envio: Number(envio)||0, totalConEnvio: totalVenta + (Number(envio)||0) };
+    const _resOk = { ok: true, mensaje: msgRes, idVenta, items: resumenItems, total: totalVenta, cliente: clienteId, esReserva, envio: Number(envio)||0, totalConEnvio: totalVenta + (Number(envio)||0) };
+    _opRegistrar(_opId, _resOk);
+    return _resOk;
 
 } catch (err) {
 // ROLLBACK: revertir todo el stock descontado
@@ -1953,6 +1963,9 @@ try { lock.waitLock(30000); }
 catch (e) { return { ok: false, error: "El sistema está ocupado, intenta de nuevo." }; }
 const cambiosTotales = [];
 try {
+const _opId = String(body.opId || "").trim();
+const _opDup = _opYaRegistrada(_opId);
+if (_opDup) return _opDup;
 const ss = SpreadsheetApp.getActiveSpreadsheet();
 const hojaInv = ss.getSheetByName("Inventario");
 if (!hojaInv) throw new Error("No existe la hoja Inventario.");
@@ -1992,7 +2005,9 @@ if (!hojaInv) throw new Error("No existe la hoja Inventario.");
 
     registrarAuditoria(sesion.usuario, sesion.rol, "MERMA", `${resumen.join(", ")} | ${sucursal} | Motivo: ${motivo}`);
     try { _generarAlertasMensajes(ss, sesion); } catch(e) {}
-    return { ok: true, mensaje: `✅ Merma registrada: ${resumen.join(", ")}` };
+    const _resOk = { ok: true, mensaje: `✅ Merma registrada: ${resumen.join(", ")}` };
+    _opRegistrar(_opId, _resOk);
+    return _resOk;
 
 } catch (err) {
 try {
@@ -2795,12 +2810,17 @@ if(!sabor||!tamano||!cantidad||cantidad<=0) return {ok:false,error:"Faltan datos
 const lock=LockService.getScriptLock();
 try{ lock.waitLock(30000); }catch(e){ return {ok:false,error:"El sistema esta ocupado, intenta de nuevo."}; }
 try{
+  const _opId=String(body.opId||"").trim();
+  const _opDup=_opYaRegistrada(_opId);
+  if(_opDup) return _opDup;
   const ss=SpreadsheetApp.getActiveSpreadsheet(), ahora=new Date().toISOString(), id="TRF-"+Date.now();
   invTransferir(ss,sabor,tamano,cantidad,id,sesion.usuario,body.notas||"");
   const h=ensureHojaTransferencias(ss);
   h.appendRow([id,sabor,tamano,cantidad,"completada",ahora,ahora,sesion.usuario,sesion.usuario,body.notas||""]);
   registrarAuditoria(sesion.usuario,sesion.rol,"TRANSFERENCIA",`${cantidad}x ${sabor} ${tamano} Cuajimalpa -> Polanco`);
-  return {ok:true,mensaje:`✅ ${cantidad} ${sabor} ${tamano} movidos a Polanco.`,id};
+  const _resOk={ok:true,mensaje:`✅ ${cantidad} ${sabor} ${tamano} movidos a Polanco.`,id};
+  _opRegistrar(_opId,_resOk);
+  return _resOk;
 }catch(err){ return {ok:false,error:String(err&&err.message?err.message:err)}; }
 finally{ try{lock.releaseLock();}catch(_e){} }
 }
@@ -4593,6 +4613,26 @@ function instalarTriggerUtilidades(){
   _utilMarcarDirty(); // fuerza una primera reconstruccion al proximo tick
   Logger.log("OK: trigger cada 10 min instalado (recalcularUtilidadesSiDirty).");
   return { ok:true, mensaje:"Trigger de utilidades instalado (cada 10 min)." };
+}
+
+// ============================================================================
+// v6.5b — IDEMPOTENCIA DE ESCRITURAS (2026-07-16)
+// El frontend manda body.opId (UUID) en venta/merma/produccion/transferencia.
+// Si la misma operacion llega dos veces (reintento tras respuesta perdida),
+// el servidor regresa el resultado original en vez de duplicarla. El check
+// corre DENTRO del lock para que dos peticiones simultaneas no se crucen.
+// ponytail: CacheService puede desalojar antes de las 6h; si pasa, el dedupe
+// no aplica y queda el comportamiento previo. Cubre la ventana real de
+// reintentos (segundos). Si algun dia hiciera falta durabilidad total,
+// migrar a una hoja de operaciones con limpieza periodica.
+// ============================================================================
+function _opYaRegistrada(opId){
+  if(!opId) return null;
+  try { const c = CacheService.getScriptCache().get("tvop_"+opId); return c ? JSON.parse(c) : null; } catch(e){ return null; }
+}
+function _opRegistrar(opId, resultado){
+  if(!opId) return;
+  try { CacheService.getScriptCache().put("tvop_"+opId, JSON.stringify(resultado), 21600); } catch(e){}
 }
 
 // ============================================================================

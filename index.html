@@ -2028,7 +2028,12 @@ function getPermisos() {
   }
   return base;
 }
-async function api(accion, body={}) {
+// v6.5b — Idempotencia: las escrituras críticas (venta/merma/producción/
+// transferencia/apartado) mandan body.opId (UUID). Si la respuesta se pierde,
+// api() reintenta UNA vez con el MISMO opId y el servidor regresa el resultado
+// original en lugar de duplicar la operación.
+function opIdNuevo(){ return (crypto.randomUUID ? crypto.randomUUID() : "OP-"+Date.now()+"-"+Math.random().toString(36).slice(2)); }
+async function api(accion, body={}, _reintento=false) {
   const payload = {accion, token:S.token, ...body};
   try {
     if (LECTURA.includes(accion)) {
@@ -2039,13 +2044,14 @@ async function api(accion, body={}) {
       const txt = await r.text();
       try { return JSON.parse(txt); }
       catch(e) {
-        // v6.4: ya NO se reintenta la escritura sola — evita duplicados.
-        // Si esto pasa, probablemente la acción SÍ se guardó en el servidor.
-        // El usuario debe revisar Movimientos recientes antes de repetir la acción.
+        if (payload.opId && !_reintento) { await new Promise(rs=>setTimeout(rs,1500)); return api(accion, body, true); }
         return {ok:false, error:"No se pudo confirmar la respuesta del servidor. Antes de repetir, revisa Movimientos recientes para ver si la acción ya se guardó."};
       }
     }
-  } catch(e) { return {ok:false,error:"Error de conexión."}; }
+  } catch(e) {
+    if (payload.opId && !_reintento) { await new Promise(rs=>setTimeout(rs,1500)); return api(accion, body, true); }
+    return {ok:false,error:"Error de conexión."};
+  }
 }
 function L(id) { return document.getElementById(id); }
 function toast(msg, tipo="success") {
@@ -2788,7 +2794,7 @@ L("btn-confirmar").addEventListener("click",async()=>{
     if(!motivo){toast("El motivo es obligatorio","error");btn.disabled=false;btn.textContent="Registrar merma 🗑";return;}
     const res=await api("registrarMerma",{
       items:S.carrito.map(i=>({sabor:i.sabor,tamano:i.tamano,cantidad:i.cantidad})),
-      sucursal, motivo
+      sucursal, motivo, opId: opIdNuevo()
     });
     if(res.ok){ toast(`✅ Merma registrada`); limpiarVenta(); cargarStock(); }
     else toast(res.error,"error");
@@ -2811,7 +2817,7 @@ L("btn-confirmar").addEventListener("click",async()=>{
       esPaquete: i.esPaquete === true,
       paqueteId: i.paqueteId || ""
     }));
-    const res=await api("registrarVenta",{items,canal,metodoPago:metodo,sucursal,cliente,tipoOp,motivo});
+    const res=await api("registrarVenta",{items,canal,metodoPago:metodo,sucursal,cliente,tipoOp,motivo,opId:opIdNuevo()});
     if(res.ok){
       const total=S.carrito.reduce((s,i)=>s+i.subtotal,0);
       toast(tipoOp==="regalo"?`✅ Regalo registrado`:`✅ Venta $${total.toLocaleString('es-MX')} registrada`);
@@ -2842,7 +2848,7 @@ L("btn-cargar-prod").addEventListener("click",async()=>{
   const sabor=L("prod-sabor").value,tamano=L("prod-tamano").value,cantidad=parseInt(L("prod-cantidad").value);
   if(!sabor||!tamano||cantidad<1){toast("Completa todos los campos","error");return;}
   const btn=L("btn-cargar-prod");btn.disabled=true;btn.textContent="Cargando...";
-  const res=await api("altaProduccion",{sabor,tamano,sucursal:"Cuajimalpa",cantidad});
+  const res=await api("altaProduccion",{sabor,tamano,sucursal:"Cuajimalpa",cantidad,opId:opIdNuevo()});
   if(res.ok){
     toast(res.mensaje);
     L("prod-cantidad").value="1";
@@ -3902,7 +3908,7 @@ async function solicitarTransferencia(){
   const cantidad=parseInt(L("trf-cantidad")?.value)||0, notas=L("trf-notas")?.value.trim()||"";
   if(!sabor||!tamano||cantidad<=0){ toast("Completa sabor, tamaño y cantidad","error"); return; }
   const btn=L("btn-trf"); btn.disabled=true; btn.textContent="Registrando...";
-  const res=await api("registrarTransferencia",{sabor,tamano,cantidad,notas});
+  const res=await api("registrarTransferencia",{sabor,tamano,cantidad,notas,opId:opIdNuevo()});
   btn.disabled=false; btn.textContent="REGISTRAR TRANSFERENCIA";
   if(res.ok){ toast(res.mensaje); L("trf-cantidad").value=""; L("trf-notas").value=""; await cargarStock(); cargarTransferencias(); cargarMensajesHeader(); }
   else toast(res.error,"error");
@@ -5902,7 +5908,7 @@ async function confirmarRuta() {
         items, canal: "Domicilio", metodoPago: "Por definir",
         sucursal: "Cuajimalpa", cliente, tipoOp: "venta",
         motivo: rutaId,
-        fechaPersonalizada
+        fechaPersonalizada, opId: opIdNuevo()
       });
       if (res.ok) exitosos++; else { fallidos++; errores.push(`${p.nombre}: ${res.error}`); }
     } catch(e) { fallidos++; errores.push(`${p.nombre}: ${e.message}`); }
@@ -7353,7 +7359,8 @@ async function apGuardar(){
     items:items, tipoOp:"reserva", canal:"Apartado",
     metodoPago:L("ap-metodo").value, anticipo:parseFloat(L("ap-anticipo").value)||0,
     fechaEntrega:L("ap-fecha").value, sucursal:suc,
-    cliente:{nombre:cli, telefono:L("ap-tel").value.trim()}
+    cliente:{nombre:cli, telefono:L("ap-tel").value.trim()},
+    opId: opIdNuevo()
   });
   if(res.ok){
     toast("📦 Apartado guardado");
