@@ -15,6 +15,14 @@ index.html  ──fetch──►  Apps Script web app (backend/)  ──►  Goo
   deploy inmediato a producción** (https://grinbergalex.github.io/tarta-vasca/).
 - **Backend**: `backend/*.js` — Google Apps Script vinculado al Sheet.
   Se sincroniza con `clasp` (login: maichomper@gmail.com).
+  Todos los archivos comparten UN solo namespace global (los límites de
+  archivo son solo organización). El prefijo numérico define el orden:
+  - `01`–`15`: código vivo, agrupado por dominio (config, InvCore, HTTP,
+    auth, ventas, reportes, mantenimiento…). El router está en
+    `04_http_setup.js` (`despachar()`).
+  - `90`–`99`: scripts de una sola vez (setup, migraciones, utilerías
+    peligrosas) — nunca llamarlos desde el API. ⚠️ `98_util_limpiar_reservas`
+    borra TODAS las reservas físicas.
 - **Base de datos**: el Google Sheet. Las pestañas (Ventas, Inventario,
   Usuarios, Sesiones_Activas, Inv_Ledger, …) son **datos de producción**.
   La pestaña Utilidades es un reporte generado — se reconstruye sola.
@@ -41,8 +49,12 @@ index.html  ──fetch──►  Apps Script web app (backend/)  ──►  Goo
   `Código.js` **y**, si es de solo lectura, a la lista `LECTURA` en
   `index.html` (las lecturas van por GET, las escrituras por POST).
 - Toda mutación de inventario pasa por InvCore y queda en `Inv_Ledger`
-  (ver encabezado de `Código.js`). `auditarConsistencia()` debe dar verde.
+  (ver encabezado de `02_invcore.js`). `auditarConsistencia()` debe dar verde.
 - Los textos de UI y comentarios van en español.
+- **Clean Code**: nombres descriptivos sin espacios ni acentos en archivos,
+  funciones cortas que hacen una sola cosa, sin código muerto ni copias
+  "por si acaso" (para eso está git), sin números mágicos (constantes en
+  `01_config_roles.js`), y borrar > comentar código viejo.
 
 ## Triggers instalados (una sola vez, desde el editor)
 

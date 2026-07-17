@@ -1,0 +1,180 @@
+// ============================================================================
+// RECIBOS DIGITALES (PDF a Drive + link para WhatsApp) — 2026-06-28
+// Encabezado configurable en la hoja "Configuración" (Parámetro/Valor):
+//   negocio_nombre, negocio_telefono, negocio_instagram,
+//   negocio_direccion_cuajimalpa, negocio_direccion_polanco
+// ============================================================================
+function _cfgVal(ss, clave, def){
+  try{ var h=ss.getSheetByName("Configuración"); if(!h) return def; var d=h.getDataRange().getValues();
+    for(var i=1;i<d.length;i++){ if(String(d[i][0])===clave){ var v=d[i][1]; return (v===""||v==null)?def:v; } } }catch(e){}
+  return def;
+}
+function _ensureFolderRecibos(){
+  var it=DriveApp.getFoldersByName("Recibos Tarta Vasca");
+  return it.hasNext()? it.next() : DriveApp.createFolder("Recibos Tarta Vasca");
+}
+function generarReciboPDF(idVenta, sesion){
+  requierePuedeVender(sesion);
+  if(!idVenta) return {ok:false,error:"Falta idVenta."};
+  var ss=SpreadsheetApp.getActiveSpreadsheet();
+  var h=ss.getSheetByName("Ventas"); var datos=h.getDataRange().getValues(); var H=datos[0];
+  var iAnul=H.indexOf("estado_anul"), iEnv=H.indexOf("envio_monto");
+  var lineas=[], info=null, total=0, envio=0;
+  for(var i=1;i<datos.length;i++){ var r=datos[i]; if(String(r[0])!==String(idVenta)) continue;
+    if(iAnul!==-1 && r[iAnul]==="ANULADO") continue;
+    lineas.push({sabor:r[4],tamano:r[5],cant:Number(r[6])||0,precio:Number(r[7])||0,sub:Number(r[8])||0});
+    total+=Number(r[8])||0;
+    if(!info) info={fecha:r[1],usuario:r[2],sucursal:r[3],canal:r[9],metodo:r[10],cliente:r[12]};
+    if(iEnv!==-1 && Number(r[iEnv])>0) envio=Number(r[iEnv]);
+  }
+  if(!lineas.length) return {ok:false,error:"Venta no encontrada o anulada."};
+  var nombre=_cfgVal(ss,"negocio_nombre","Tarta Vasca");
+  var suc=info.sucursal||"";
+  var dir=_cfgVal(ss,"negocio_direccion_"+String(suc).toLowerCase(), _cfgVal(ss,"negocio_direccion",""));
+  var tel=_cfgVal(ss,"negocio_telefono","");
+  var ig=_cfgVal(ss,"negocio_instagram","");
+  var fechaTxt = info.fecha instanceof Date ? Utilities.formatDate(info.fecha,TZ_MX,"dd/MM/yyyy HH:mm") : String(info.fecha||"").substring(0,16).replace("T"," ");
+  var filas = lineas.map(function(l){ return "<tr><td>"+l.cant+"</td><td>"+l.sabor+" "+l.tamano+"</td><td style='text-align:right'>$"+l.precio+"</td><td style='text-align:right'>$"+l.sub+"</td></tr>"; }).join("");
+  var totalFinal=total+envio;
+  var html="<div style='font-family:Arial,Helvetica,sans-serif;width:300px;margin:0 auto;color:#222'>"+
+    "<div style='text-align:center'><div style='font-size:20px;font-weight:bold'>"+nombre+"</div>"+
+    "<div style='font-size:12px'>Sucursal "+suc+"</div>"+
+    (dir?"<div style='font-size:11px'>"+dir+"</div>":"")+
+    (tel?"<div style='font-size:11px'>Tel: "+tel+"</div>":"")+"</div>"+
+    "<hr><div style='font-size:11px'>Folio: "+idVenta+"<br>Fecha: "+fechaTxt+"<br>Atendio: "+(info.usuario||"")+" &middot; Pago: "+(info.metodo||"")+(info.cliente?"<br>Cliente: "+info.cliente:"")+"</div><hr>"+
+    "<table style='width:100%;font-size:12px;border-collapse:collapse'><thead><tr><th style='text-align:left'>Cant</th><th style='text-align:left'>Producto</th><th style='text-align:right'>P.U.</th><th style='text-align:right'>Importe</th></tr></thead><tbody>"+filas+"</tbody></table><hr>"+
+    (envio>0?"<div style='font-size:12px;display:flex;justify-content:space-between'><span>Envio</span><span>$"+envio+"</span></div>":"")+
+    "<div style='font-size:16px;font-weight:bold;display:flex;justify-content:space-between'><span>TOTAL</span><span>$"+totalFinal+"</span></div><hr>"+
+    "<div style='text-align:center;font-size:11px'>"+_cfgVal(ss,"negocio_mensaje_pie","Gracias por tu compra!")+(ig?"<br>"+ig:"")+"</div></div>";
+  var blob=Utilities.newBlob(html,"text/html","recibo.html").getAs("application/pdf").setName("Recibo_"+idVenta+".pdf");
+  var folder=_ensureFolderRecibos();
+  var ex=folder.getFilesByName("Recibo_"+idVenta+".pdf"); while(ex.hasNext()){ ex.next().setTrashed(true); }
+  var file=folder.createFile(blob);
+  try{ file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); }catch(e){}
+  return {ok:true, url:file.getUrl(), id:file.getId(), total:totalFinal};
+}
+
+
+function enviarReciboEmail(idVenta, email, sesion){
+  requierePuedeVender(sesion);
+  if(!email || String(email).indexOf("@")<0) return {ok:false,error:"Correo invalido."};
+  var r=generarReciboPDF(idVenta, sesion);
+  if(!r.ok) return r;
+  var ss=SpreadsheetApp.getActiveSpreadsheet();
+  try{
+    var blob=DriveApp.getFileById(r.id).getAs("application/pdf").setName("Recibo_"+idVenta+".pdf");
+    var fromAddr=_cfgVal(ss,"negocio_email_envio","");
+    var nombre=_cfgVal(ss,"negocio_nombre","Tarta Vasca");
+    var htmlBody="Gracias por tu compra en "+nombre+".<br>Adjuntamos tu recibo en PDF.<br><br>Tambien puedes verlo aqui: "+r.url;
+    var body="Gracias por tu compra en "+nombre+". Recibo: "+r.url;
+    var to=String(email).trim();
+    if(fromAddr){
+      try{
+        GmailApp.sendEmail(to, "Tu recibo - "+nombre, body, {from:fromAddr, name:nombre, htmlBody:htmlBody, attachments:[blob]});
+        return {ok:true, mensaje:"Recibo enviado a "+email+" (desde "+fromAddr+")", url:r.url};
+      }catch(eAlias){
+        MailApp.sendEmail({to:to, subject:"Tu recibo - "+nombre, name:nombre, htmlBody:htmlBody, attachments:[blob]});
+        return {ok:true, mensaje:"Recibo enviado a "+email+" (el alias "+fromAddr+" aun no esta listo; salio de la cuenta base)", url:r.url};
+      }
+    }
+    MailApp.sendEmail({to:to, subject:"Tu recibo - "+nombre, name:nombre, htmlBody:htmlBody, attachments:[blob]});
+    return {ok:true, mensaje:"Recibo enviado a "+email, url:r.url};
+  }catch(e){ return {ok:false, error:"No se pudo enviar el correo: "+e.message}; }
+}
+
+
+function autorizarPermisos(){
+  // EJECUTAR UNA VEZ. Autoriza Drive (completo) + Gmail (incluye envio con alias).
+  var it=DriveApp.getFoldersByName("Recibos Tarta Vasca");
+  var f = it.hasNext() ? it.next() : DriveApp.createFolder("Recibos Tarta Vasca");
+  var tmp = f.createFile("autorizacion_tmp.txt", "ok", "text/plain");
+  tmp.setTrashed(true);
+  try { GmailApp.getAliases(); } catch(e){}                 // autoriza Gmail (alias/envio)
+  try { MailApp.getRemainingDailyQuota(); } catch(e){}
+  return "Permisos de Drive (completo) y Gmail (con alias) autorizados correctamente.";
+}
+
+
+function probarCorreoTV(){
+  // Selecciona ESTA funcion en el menu y Ejecutar. Lee el "Registro de ejecucion" abajo.
+  var yo = Session.getEffectiveUser().getEmail();
+  var quota = MailApp.getRemainingDailyQuota();
+  Logger.log("CUENTA QUE ENVIA: " + yo);
+  Logger.log("CORREOS DISPONIBLES HOY: " + quota);
+  MailApp.sendEmail(yo, "Prueba recibo - Tarta Vasca", "Si recibes esto, el correo funciona. Revisa tambien spam.");
+  Logger.log("RESULTADO: correo enviado a " + yo + " (revisa bandeja y SPAM)");
+  return "Cuenta: " + yo + " | Cuota: " + quota + " | Enviado.";
+}
+
+
+function guardarDatosNegocio(){
+  // EJECUTAR UNA VEZ desde el editor. Guarda los datos del negocio para los recibos.
+  var ss=SpreadsheetApp.getActiveSpreadsheet();
+  var h=ss.getSheetByName("Configuración");
+  if(!h){ h=ss.insertSheet("Configuración"); h.appendRow(["Parámetro","Valor","Descripción"]); }
+  var datos={
+    "negocio_nombre":"Tarta Vasca",
+    "negocio_telefono":"55-8803-9327",
+    "negocio_instagram":"@tartavasca",
+    "negocio_email_envio":"latartavasca@gmail.com",
+    "negocio_mensaje_pie":"\u00A1Gracias por tu compra! - Esperamos verte pronto",
+    "negocio_direccion_cuajimalpa":"Av Noche de Paz 14, Granjas Navidad, Cuajimalpa de Morelos, 05219, CDMX",
+    "negocio_direccion_polanco":"C. Arqu\u00EDmedes 69, Chapultepec Morales, Polanco V Secc, Miguel Hidalgo, 11560, CDMX"
+  };
+  var vals=h.getDataRange().getValues();
+  Object.keys(datos).forEach(function(k){
+    var found=false;
+    for(var i=1;i<vals.length;i++){ if(String(vals[i][0])===k){ h.getRange(i+1,2).setValue(datos[k]); found=true; break; } }
+    if(!found) h.appendRow([k, datos[k], "Dato del negocio para recibos"]);
+  });
+  SpreadsheetApp.flush();
+  return "Datos del negocio guardados en Configuración.";
+}
+
+
+function verAliasTV(){
+  // Ejecutar y leer el Registro de ejecucion. Dice todo lo necesario.
+  var ss=SpreadsheetApp.getActiveSpreadsheet();
+  Logger.log("CUENTA QUE EJECUTA EL SCRIPT: " + Session.getEffectiveUser().getEmail());
+  Logger.log("ALIAS DE ENVIO DISPONIBLES: " + JSON.stringify(GmailApp.getAliases()));
+  Logger.log("negocio_email_envio EN CONFIG: '" + _cfgVal(ss,"negocio_email_envio","(VACIO)") + "'");
+  return "Revisa el Registro de ejecucion (las 3 lineas de arriba).";
+}
+
+function getPermisos(rol) {
+switch(rol) {
+case "Owner":
+return { esAdmin:true, puedeVender:true, puedeProducir:true, puedeTransferir:true, puedeVerAmbas:true, puedeAnular:true };
+case "Vendedor":
+return { esAdmin:false, puedeVender:true, puedeProducir:false, puedeTransferir:false, puedeVerAmbas:false, puedeAnular:false };
+case "Cocinero":
+return { esAdmin:false, puedeVender:false, puedeProducir:true, puedeTransferir:true, puedeVerAmbas:true, puedeAnular:false };
+case "Mixto":
+return { esAdmin:false, puedeVender:true, puedeProducir:true, puedeTransferir:true, puedeVerAmbas:false, puedeAnular:false };
+case "Admin_Ventas":
+return { esAdmin:false, puedeVender:true, puedeProducir:false, puedeTransferir:true, puedeVerAmbas:true, puedeAnular:false };
+case "Chofer":
+return { esAdmin:false, puedeVender:false, puedeProducir:false, puedeTransferir:false, puedeVerAmbas:false, puedeAnular:false, esChofer:true };
+default:
+return { esAdmin:false, puedeVender:false, puedeProducir:false, puedeTransferir:false, puedeVerAmbas:false, puedeAnular:false };
+}
+}
+function soloOwner(sesion) {
+if (sesion.rol !== "Owner") throw new Error("Acción reservada para Owner.");
+}
+function requierePuedeVender(sesion) {
+if (!getPermisos(sesion.rol).puedeVender) throw new Error("Tu rol no permite registrar ventas.");
+}
+function requierePuedeProducir(sesion) {
+if (!getPermisos(sesion.rol).puedeProducir) throw new Error("Tu rol no permite producción.");
+}
+function requierePuedeTransferir(sesion) {
+if (!getPermisos(sesion.rol).puedeTransferir) throw new Error("Tu rol no permite transferencias.");
+}
+function requierePuedeAnular(sesion) {
+// Por defecto solo Owner; si tiene permiso individual lo respeta
+if (sesion.rol === "Owner") return;
+const extra = leerPermisosExtraUsuario(sesion.usuario);
+if (extra && extra.puedeAnular) return;
+throw new Error("Tu rol no permite anular movimientos. Pídeselo al Owner.");
+}
