@@ -10,7 +10,11 @@ reparto, reportes financieros, usuarios con roles.
 index.html  ──fetch──►  Apps Script web app (backend/)  ──►  Google Sheet (= base de datos)
 ```
 
-- **Frontend**: `index.html` — un solo archivo, vanilla JS, sin build.
+- **Frontend**: vanilla JS, sin build. Cuatro archivos:
+  - `index.html` — todo el markup + scripts chicos inline
+  - `styles.css` — estilos
+  - `app.js` — la lógica principal (api(), ventas, stock, reportes…)
+  - `reparto.js` — módulo de reparto a domicilio y apartados
   Servido por **GitHub Pages desde `main`**: ⚠️ **cada push a `main` es un
   deploy inmediato a producción** (https://grinbergalex.github.io/tarta-vasca/).
 - **Backend**: `backend/*.js` — Google Apps Script vinculado al Sheet.

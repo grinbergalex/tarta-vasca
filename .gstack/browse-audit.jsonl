@@ -1,0 +1,9 @@
+{"ts":"2026-07-17T04:06:01.006Z","cmd":"goto","args":"http://127.0.0.1:8742/index.html","origin":"http://127.0.0.1:8742/index.html","durationMs":589,"status":"ok","hasCookies":false,"mode":"launched"}
+{"ts":"2026-07-17T04:06:01.254Z","cmd":"wait","args":"--load","origin":"http://127.0.0.1:8742/index.html","durationMs":201,"status":"ok","hasCookies":false,"mode":"launched"}
+{"ts":"2026-07-17T04:06:01.299Z","cmd":"console","args":"--errors","origin":"http://127.0.0.1:8742/index.html","durationMs":1,"status":"ok","hasCookies":false,"mode":"launched"}
+{"ts":"2026-07-17T04:06:01.361Z","cmd":"is","args":"visible #login-user","origin":"http://127.0.0.1:8742/index.html","durationMs":19,"status":"ok","hasCookies":false,"mode":"launched"}
+{"ts":"2026-07-17T04:06:01.406Z","cmd":"is","args":"visible #login-pass","origin":"http://127.0.0.1:8742/index.html","durationMs":1,"status":"ok","hasCookies":false,"mode":"launched"}
+{"ts":"2026-07-17T04:06:01.451Z","cmd":"is","args":"visible #btn-login","origin":"http://127.0.0.1:8742/index.html","durationMs":2,"status":"ok","hasCookies":false,"mode":"launched"}
+{"ts":"2026-07-17T04:06:12.367Z","cmd":"network","args":"","origin":"http://127.0.0.1:8742/index.html","durationMs":0,"status":"ok","hasCookies":false,"mode":"launched"}
+{"ts":"2026-07-17T04:06:12.414Z","cmd":"js","args":"typeof api === 'function' && typeof cargarReparto === 'function' && typeof opIdNuevo === 'function' && getComputedStyle(document.querySelector('.login-card')||document.body).backgroundColor","origin":"http://127.0.0.1:8742/index.html","durationMs":1,"status":"ok","hasCookies":false,"mode":"launched"}
+{"ts":"2026-07-17T04:06:12.717Z","cmd":"screenshot","args":"/private/tmp/claude-501/-Users-micho-Documents-repos-tarta-vasca/e7584cfc-dfd5-4a90-9c33-6ec37f2213db/scratchpad/split-login.png","origin":"http://127.0.0.1:8742/index.html","durationMs":261,"status":"ok","hasCookies":false,"mode":"launched"}
