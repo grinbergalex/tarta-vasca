@@ -3389,17 +3389,11 @@ async function procesarBulkInsumos(){
   if(!texto){toast("Ingresa la lista de insumos","error");return;}
   const btn=L("btn-bulk-insumos");btn.disabled=true;btn.textContent="Procesando con IA...";
   try {
-    const response=await fetch("https://api.anthropic.com/v1/messages",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({
-        model:"claude-sonnet-4-20250514",
-        max_tokens:1000,
-        messages:[{role:"user",content:`Convierte esta lista de insumos de pastelería a JSON. Extrae: nombre, descripcion (opcional), buyQty (número), buyUnit (unidad: unidad/g/kg/ml/L/docena), buyPrice (número, precio en MXN). Responde SOLO con un array JSON sin markdown ni texto extra. Lista:\n${texto}`}]
-      })
-    });
-    const data=await response.json();
-    const txt=data.content?.[0]?.text||"";
+    // v6.5d: la llamada a la IA ahora pasa por el backend (accion iaProcesar),
+    // que guarda la API key en Propiedades del script — nunca en este HTML.
+    const resIA=await api("iaProcesar",{prompt:`Convierte esta lista de insumos de pastelería a JSON. Extrae: nombre, descripcion (opcional), buyQty (número), buyUnit (unidad: unidad/g/kg/ml/L/docena), buyPrice (número, precio en MXN). Responde SOLO con un array JSON sin markdown ni texto extra. Lista:\n${texto}`});
+    if(!resIA.ok) throw new Error(resIA.error);
+    const txt=resIA.texto||"";
     const clean=txt.replace(/```json|```/g,"").trim();
     const insumos=JSON.parse(clean);
     const res=await api("bulkLoadInsumos",{insumos});
@@ -3416,17 +3410,9 @@ async function procesarBulkReceta(){
   const btn=L("btn-bulk-receta");btn.disabled=true;btn.textContent="Procesando con IA...";
   const insumosDisponibles=S.insumos.filter(i=>i.activo).map(i=>`${i.id}: ${i.nombre}`).join("\n");
   try {
-    const response=await fetch("https://api.anthropic.com/v1/messages",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({
-        model:"claude-sonnet-4-20250514",
-        max_tokens:1000,
-        messages:[{role:"user",content:`Tengo esta lista de insumos disponibles con sus IDs:\n${insumosDisponibles}\n\nConvierte esta receta a JSON, mapeando cada ingrediente al insumoId más cercano de los disponibles. Campos: insumoId, insumoNombre, cantidad (número), unidad (unidad/g/kg/ml/L). Responde SOLO con array JSON sin markdown. Receta:\n${texto}`}]
-      })
-    });
-    const data=await response.json();
-    const txt=data.content?.[0]?.text||"";
+    const resIA=await api("iaProcesar",{prompt:`Tengo esta lista de insumos disponibles con sus IDs:\n${insumosDisponibles}\n\nConvierte esta receta a JSON, mapeando cada ingrediente al insumoId más cercano de los disponibles. Campos: insumoId, insumoNombre, cantidad (número), unidad (unidad/g/kg/ml/L). Responde SOLO con array JSON sin markdown. Receta:\n${texto}`});
+    if(!resIA.ok) throw new Error(resIA.error);
+    const txt=resIA.texto||"";
     const clean=txt.replace(/```json|```/g,"").trim();
     const ingredientes=JSON.parse(clean);
     const res=await api("saveReceta",{sabor,tamano,ingredientes});

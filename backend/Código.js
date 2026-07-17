@@ -652,6 +652,7 @@ case "deleteRecetaIngrediente": return deleteRecetaIngrediente(body, sesion);
 case "getCalculoCosto":         return getCalculoCosto(body, sesion);
 case "bulkLoadInsumos":         return bulkLoadInsumos(body, sesion);
 case "bulkLoadReceta":          return bulkLoadReceta(body, sesion);
+case "iaProcesar":              return iaProcesar(body, sesion);             // v6.5d proxy IA
 case "repararPreciosSabores":   return repararPreciosSabores(sesion);
 case "getGastos":               return getGastos(sesion);
 case "saveGasto":               return saveGasto(body, sesion);
@@ -4661,6 +4662,45 @@ function instalarTriggerUtilidades(){
   _utilMarcarDirty(); // fuerza una primera reconstruccion al proximo tick
   Logger.log("OK: trigger cada 10 min instalado (recalcularUtilidadesSiDirty).");
   return { ok:true, mensaje:"Trigger de utilidades instalado (cada 10 min)." };
+}
+
+// ============================================================================
+// v6.5d — PROXY DE IA (2026-07-16)
+// La "carga masiva con IA" del frontend llamaba a api.anthropic.com directo
+// desde el navegador: sin API key no funcionaba, y ponerla en el HTML la
+// haria publica. Ahora el frontend llama la accion "iaProcesar" y este proxy
+// hace la llamada con la key guardada en Propiedades del script.
+// ACTIVAR: Configuracion del proyecto (engrane) → Propiedades del script →
+// agregar ANTHROPIC_API_KEY con una key de console.anthropic.com.
+// ============================================================================
+function iaProcesar(body, sesion) {
+  soloOwner(sesion);
+  const apiKey = PropertiesService.getScriptProperties().getProperty("ANTHROPIC_API_KEY");
+  if (!apiKey) return { ok:false, error:"Falta configurar ANTHROPIC_API_KEY en Apps Script (Configuración del proyecto → Propiedades del script)." };
+  const prompt = String(body.prompt || "").substring(0, 30000);
+  if (!prompt.trim()) return { ok:false, error:"Falta el texto a procesar." };
+  try {
+    const resp = UrlFetchApp.fetch("https://api.anthropic.com/v1/messages", {
+      method: "post",
+      contentType: "application/json",
+      headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
+      payload: JSON.stringify({
+        model: "claude-sonnet-5",
+        max_tokens: 8192,
+        messages: [{ role: "user", content: prompt }]
+      }),
+      muteHttpExceptions: true
+    });
+    const data = JSON.parse(resp.getContentText());
+    if (resp.getResponseCode() !== 200) {
+      const msg = (data && data.error && data.error.message) ? data.error.message : ("HTTP " + resp.getResponseCode());
+      return { ok:false, error: "IA: " + msg };
+    }
+    let texto = "";
+    (data.content || []).forEach(function(b){ if (b.type === "text") texto += b.text; });
+    if (!texto) return { ok:false, error: "IA: respuesta vacía (stop_reason: " + (data.stop_reason||"?") + ")." };
+    return { ok:true, texto: texto };
+  } catch(e) { return { ok:false, error: "IA: " + e.message }; }
 }
 
 // ============================================================================

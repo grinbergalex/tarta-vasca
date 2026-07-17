@@ -56,11 +56,9 @@ Los triggers corren como la cuenta que ejecutó el instalador.
 
 ## Legacy / pendientes
 
-- `tarta-vasca-app.html` y `tarta_vasca_v5.html`: copias viejas muertas,
-  borrar cuando haya confianza.
 - `cargaInv 17.js`, `ventasmasivoCuaji17.js`, `limpiar apartados.js`:
   scripts de migración de una sola vez — no llamarlos desde el API.
-- Las funciones de "carga masiva con IA" del frontend llaman a
-  api.anthropic.com sin API key desde el navegador: están rotas por diseño;
-  si se rescatan, deben pasar por el backend (UrlFetchApp + key en
-  Script Properties), nunca con la key en el HTML.
+- La "carga masiva con IA" pasa por la acción `iaProcesar` del backend
+  (v6.5d), que usa la API key guardada en Propiedades del script
+  (`ANTHROPIC_API_KEY`). **Nunca** poner una API key en index.html —
+  GitHub Pages es público.
