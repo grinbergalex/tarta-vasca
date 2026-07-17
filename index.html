@@ -7363,7 +7363,8 @@ async function apGuardar(){
     opId: opIdNuevo()
   });
   if(res.ok){
-    toast("📦 Apartado guardado");
+    if(res.mensaje && res.mensaje.indexOf("⚠️")!==-1) toast(res.mensaje,"error");
+    else toast("📦 Apartado guardado");
     L("ap-cli").value=""; L("ap-tel").value=""; L("ap-anticipo").value=0; AP.tartas=[]; apRenderTartas();
     await apReload();
   } else toast(res.error||"Error","error");

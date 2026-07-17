@@ -276,6 +276,35 @@ function auditarConsistencia(){
   return { ok: difs.length===0, diferencias: difs };
 }
 
+// v6.5c — reconciliarLedger(): correr UNA sola vez desde el editor despues de
+// desplegar el fix de mermas (antes las mermas no se asentaban en Inv_Ledger y
+// dejaban drift permanente). Asienta una entrada RECONCILIACION por SKU para
+// que la suma del ledger vuelva a cuadrar con Inventario. Despues de correrla,
+// auditarConsistencia() debe dar verde.
+function reconciliarLedger(){
+  var ss=SpreadsheetApp.getActiveSpreadsheet();
+  var hoja=ss.getSheetByName("Inventario"); var idx=_invIdx(hoja); var datos=hoja.getDataRange().getValues();
+  var hled=ss.getSheetByName("Inv_Ledger"); var led=hled?hled.getDataRange().getValues():[];
+  var cur={}, lg={};
+  for(var i=1;i<datos.length;i++){ var r=datos[i]; if(!r[1]) continue; if(_invAnulada(r,idx)) continue;
+    var k=r[3]+"|"+r[1]+"|"+r[2]; if(!cur[k])cur[k]={total:0,ruta:0,apart:0};
+    cur[k].total+=_invNum(r[5]); if(idx.ruta!==-1)cur[k].ruta+=_invNum(r[idx.ruta]); if(idx.apart!==-1)cur[k].apart+=_invNum(r[idx.apart]); }
+  for(var j=1;j<led.length;j++){ var L=led[j]; var k2=L[4]+"|"+L[2]+"|"+L[3]; if(!lg[k2])lg[k2]={total:0,ruta:0,apart:0};
+    lg[k2].total+=_invNum(L[6]); lg[k2].ruta+=_invNum(L[7]); lg[k2].apart+=_invNum(L[8]); }
+  var keys={}; Object.keys(cur).forEach(function(k){keys[k]=1}); Object.keys(lg).forEach(function(k){keys[k]=1});
+  var ajustadas=0;
+  Object.keys(keys).forEach(function(k){
+    var a=cur[k]||{total:0,ruta:0,apart:0}; var b=lg[k]||{total:0,ruta:0,apart:0};
+    var dT=a.total-b.total, dR=a.ruta-b.ruta, dA=a.apart-b.apart;
+    if(dT===0&&dR===0&&dA===0) return;
+    var p=k.split("|"); // suc|sabor|tamano
+    _invLedger(ss,"RECONCILIACION",p[1],p[2],p[0],"",dT,dR,dA,a.total,a.ruta,a.apart,"RECON","sistema","Cierre de drift historico (mermas sin asentar en ledger)");
+    ajustadas++;
+  });
+  Logger.log("RECONCILIACION: "+ajustadas+" SKUs ajustados. Correr auditarConsistencia() para verificar verde.");
+  return { ok:true, skusAjustados: ajustadas };
+}
+
 
 function migrarReservasFisicas(){
   const ss=SpreadsheetApp.getActiveSpreadsheet();
@@ -1907,13 +1936,23 @@ if (!hojaInv) throw new Error("No existe la hoja Inventario.");
       resumenItems.push(`${cantidad} ${sabor} ${tamano}`);
     }
     SpreadsheetApp.flush();
-    // InvCore: asentar venta en ledger (solo en exito) y reservar fisicamente apartados
-    try {
-      for (var _ii=0; _ii<itemsNorm.length; _ii++){ var _it=itemsNorm[_ii];
-        if (esReserva){ try{ invReservar(ss,_it.sabor,_it.tamano,sucursal,_it.cantidad,"apartado",idVenta,sesion.usuario); }catch(_e){} }
-        else { try{ var _sx=invSaldos(ss,_it.sabor,_it.tamano,sucursal); _invLedger(ss,(canalReal==="Ruta"?"VENTA_RUTA":"VENTA"),_it.sabor,_it.tamano,sucursal,(lotesPorItem[_ii]||[]).join(", "),-_it.cantidad,0,0,_sx.total,_sx.resRuta,_sx.resApartado,idVenta,sesion.usuario,canalReal); }catch(_e){} }
+    // InvCore: asentar venta en ledger (solo en exito) y reservar fisicamente apartados.
+    // v6.5c: los fallos ya NO se tragan en silencio — quedan en Auditoría y, si un
+    // apartado no pudo apartar stock físico, el vendedor lo ve en la respuesta.
+    const _fallasReserva = [];
+    for (var _ii=0; _ii<itemsNorm.length; _ii++){ var _it=itemsNorm[_ii];
+      if (esReserva){
+        try{ invReservar(ss,_it.sabor,_it.tamano,sucursal,_it.cantidad,"apartado",idVenta,sesion.usuario); }
+        catch(_e){ _fallasReserva.push(_it.sabor+" "+_it.tamano+": "+(_e&&_e.message?_e.message:_e)); }
       }
-    } catch(_e){}
+      else {
+        try{ var _sx=invSaldos(ss,_it.sabor,_it.tamano,sucursal); _invLedger(ss,(canalReal==="Ruta"?"VENTA_RUTA":"VENTA"),_it.sabor,_it.tamano,sucursal,(lotesPorItem[_ii]||[]).join(", "),-_it.cantidad,0,0,_sx.total,_sx.resRuta,_sx.resApartado,idVenta,sesion.usuario,canalReal); }
+        catch(_e){ try{ registrarAuditoria(sesion.usuario, sesion.rol, "LEDGER_FAIL", "VENTA "+idVenta+" | "+_it.sabor+" "+_it.tamano+": "+(_e&&_e.message?_e.message:_e)); }catch(_e2){} }
+      }
+    }
+    if (_fallasReserva.length) {
+      try{ registrarAuditoria(sesion.usuario, sesion.rol, "RESERVA_SIN_STOCK", "Apartado "+idVenta+" NO apartó stock físico (riesgo de sobreventa): "+_fallasReserva.join("; ")); }catch(_e2){}
+    }
 
     if (clienteId && clienteId !== "Rappi" && clienteId !== "Uber Eats" && clienteId !== "Cortesía" && !esReserva) {
       registrarHistorialCliente(ss, clienteId, idVenta, fechaVenta, sucursal, canalReal, metodoReal, totalVenta, resumenItems);
@@ -1922,7 +1961,8 @@ if (!hojaInv) throw new Error("No existe la hoja Inventario.");
     registrarAuditoria(sesion.usuario, sesion.rol, accionAud, `ID: ${idVenta} | ${resumenItems.join(", ")} | ${canalReal} | $${totalVenta}${motivo?" | "+motivo:""}${anticipo?" | anticipo $"+anticipo:""}`);
     _utilMarcarDirty();
     try { _generarAlertasMensajes(ss, sesion); } catch(e) {}
-    const msgRes = esReserva ? `📌 Reserva registrada` : (esRegalo ? `✅ Regalo registrado` : `✅ Venta registrada`);
+    let msgRes = esReserva ? `📌 Reserva registrada` : (esRegalo ? `✅ Regalo registrado` : `✅ Venta registrada`);
+    if (_fallasReserva.length) msgRes += " ⚠️ OJO: no se pudo apartar stock físico ("+_fallasReserva.join("; ")+"). Puede venderse doble — revisa el stock.";
     const _resOk = { ok: true, mensaje: msgRes, idVenta, items: resumenItems, total: totalVenta, cliente: clienteId, esReserva, envio: Number(envio)||0, totalConEnvio: totalVenta + (Number(envio)||0) };
     _opRegistrar(_opId, _resOk);
     return _resOk;
@@ -1992,8 +2032,10 @@ if (!hojaInv) throw new Error("No existe la hoja Inventario.");
     const resumen = [];
 
     // PASO 1 — descontar todo primero
+    const lotesPorItem = [];
     for (const item of itemsNorm) {
       const res = descontarStock(hojaInv, item.sabor, item.tamano, sucursal, item.cantidad);
+      lotesPorItem.push(res.lotesDescontados);
       cambiosTotales.push(...res.cambios);
     }
     // PASO 2 — escribir filas de Ventas/Merma
@@ -2003,6 +2045,12 @@ if (!hojaInv) throw new Error("No existe la hoja Inventario.");
     }
     SpreadsheetApp.flush();
 
+    // v6.5c: asentar merma en Inv_Ledger — antes NO se asentaba y cada merma
+    // dejaba drift permanente inventario-vs-ledger en auditarConsistencia().
+    for (let _mi = 0; _mi < itemsNorm.length; _mi++) { const _it = itemsNorm[_mi];
+      try { const _sx = invSaldos(ss, _it.sabor, _it.tamano, sucursal); _invLedger(ss, "MERMA", _it.sabor, _it.tamano, sucursal, (lotesPorItem[_mi]||[]).join(", "), -_it.cantidad, 0, 0, _sx.total, _sx.resRuta, _sx.resApartado, idVenta, sesion.usuario, motivo||""); }
+      catch(_e) { try { registrarAuditoria(sesion.usuario, sesion.rol, "LEDGER_FAIL", "MERMA "+idVenta+" | "+_it.sabor+" "+_it.tamano+": "+(_e&&_e.message?_e.message:_e)); } catch(_e2) {} }
+    }
     registrarAuditoria(sesion.usuario, sesion.rol, "MERMA", `${resumen.join(", ")} | ${sucursal} | Motivo: ${motivo}`);
     try { _generarAlertasMensajes(ss, sesion); } catch(e) {}
     const _resOk = { ok: true, mensaje: `✅ Merma registrada: ${resumen.join(", ")}` };
@@ -4323,7 +4371,7 @@ precioUnitario: (Number(it.precio)>0 ? Number(it.precio) : ((Number(s.monto)/(Nu
 lineas = [{ sabor:(s.sabor||_repSaborDeDetalle(s.detalle)||"Frutos Rojos"), tamano:(s.tamano||"Mediana"),
 cantidad: Number(s.tartas)||1, precioUnitario: (Number(s.monto)/(Number(s.tartas)||1))||REP_PRECIO_TARTA }];
 }
-lineas.forEach(function(_ln){ try{ invLiberar(ss,_ln.sabor,_ln.tamano,"Cuajimalpa",Number(_ln.cantidad)||1,"ruta",(r.id||"ruta"),sesion.usuario); }catch(_e){} });
+lineas.forEach(function(_ln){ try{ invLiberar(ss,_ln.sabor,_ln.tamano,"Cuajimalpa",Number(_ln.cantidad)||1,"ruta",(r.id||"ruta"),sesion.usuario); }catch(_e){ try{ registrarAuditoria(sesion.usuario,sesion.rol,"LIBERA_FAIL","Ruta "+(r.id||"?")+" | "+_ln.sabor+" "+_ln.tamano+": "+(_e&&_e.message?_e.message:_e)); }catch(_e2){} } });
 var resV = registrarVenta({ items:lineas, canal:"Ruta", metodoPago: s.formaPago||"Efectivo", envio: Number(s.envio)||0,
 cliente:{ nombre:s.cliente||"Cliente ruta", telefono:s.tel||"" }, sucursal:"Cuajimalpa" }, sesion);
 if(resV && resV.ok){ s.ventaId = resV.idVenta || resV.id || "OK"; } else { errores.push((s.cliente||s.id)+": "+(resV&&resV.error||"error")); }
