@@ -1,4 +1,67 @@
 
+Nube
+/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+App · JS
+El resaltado de sintaxis se ha deshabilitado debido al tamaño del código.
+
 const API_URL = "https://script.google.com/macros/s/AKfycbxJfDX3lwu5AE9GDA1WGZ3_MP3AAGPsCz54CdzS_cnE9zxQArN1zLmjnZixwc2A13eF/exec";
 const LECTURA = ["getCatalogo","getStock","getPrecios","getUsuarios","getAuditoria","buscarCliente","getHistorialCliente","getVentas","getInsumos","getRecetas","getCalculoCosto","listarMovimientosRecientes","getSesionesActivas","repartoEstado","repartoProponer","repartoGeocode"];
 let S = {
@@ -1055,7 +1118,7 @@ let _ventasHist = [];
 async function cargarVentas(){
   L("ventas-list").innerHTML=`<div class="loading"><div class="spinner"></div></div>`;
   const fd=L("fv-fdesde")?.value||"", fh=L("fv-fhasta")?.value||"";
-  const params={}; if(fd) params.desde=fd; if(fh) params.hasta=fh;
+  const params={ incluirAnuladas:true }; if(fd) params.desde=fd; if(fh) params.hasta=fh;
   const res=await api("getVentas", params);
   if(!res.ok) return;
   _ventasHist = res.ventas || [];
@@ -1134,21 +1197,33 @@ function renderVentasHist(){
     if (v.rutaId && !grupos[v.idVenta].rutaId) grupos[v.idVenta].rutaId = v.rutaId;
   });
   const lista=Object.values(grupos);
-  const totMonto=rows.reduce((s,v)=>s+(Number(v.subtotal)||0),0);
-  if(L("ventas-count")) L("ventas-count").textContent = `${lista.length} operación${lista.length!==1?"es":""} · ${rows.length} líneas · $${totMonto.toLocaleString('es-MX')}`;
+  const totMonto=rows.reduce((s,v)=>s+(v.anulada?0:(Number(v.subtotal)||0)),0);
+  const nAnul=lista.filter(g=>g.anulada).length;
+  if(L("ventas-count")) L("ventas-count").textContent = `${lista.length} operación${lista.length!==1?"es":""} · ${rows.length} líneas · $${totMonto.toLocaleString('es-MX')}${nAnul?` · ${nAnul} cancelada${nAnul!==1?"s":""}`:""}`;
   L("ventas-list").innerHTML=lista.map(g=>{
+    const anul = g.anulada;
     const rutaTag = g.rutaId ? `<span class="tag" style="background:rgba(200,96,42,.15);color:var(--accent);font-weight:700">🚚 ${g.rutaId}</span>` : "";
     const metodoColor = (!g.metodoPago || g.metodoPago === "Por definir") ? 'style="background:#FFEBEE;color:#C0392B;font-weight:700"' : "";
+    const badgeAnul = anul ? `<span class="tag" style="background:#FDEDED;color:var(--danger);font-weight:700">✖ CANCELADA</span>` : "";
+    const motivoAnul = anul && g.anuladoMotivo ? `<div class="hist-fecha" style="color:var(--danger);font-size:11px">Motivo: ${g.anuladoMotivo}</div>` : "";
+    const estiloItem = anul ? 'style="opacity:.6"' : "";
+    const estiloProd = anul ? 'style="text-decoration:line-through"' : "";
+    const totalTag = anul
+      ? `<span class="tag" style="text-decoration:line-through;color:var(--muted)">$${g.items.reduce((s,i)=>s+i.subtotal,0).toLocaleString('es-MX')}</span>`
+      : `<span class="tag tag-total">$${g.items.reduce((s,i)=>s+i.subtotal,0).toLocaleString('es-MX')}</span>`;
+    const btnRecibo = anul ? "" : `<button class="btn-sm" onclick="enviarRecibo('${g.idVenta}')" style="margin-left:6px">🧾 Recibo</button>`;
     return `
-    <div class="historial-item">
+    <div class="historial-item" ${estiloItem}>
       <div class="hist-fecha">${g.fecha?g.fecha.substring(0,16).replace('T',' '):''} · <code style="font-size:10px;color:var(--muted)">${g.idVenta}</code></div>
-      <div class="hist-productos">${g.items.map(i=>`${i.cantidad}× ${i.sabor} ${i.tamano}`).join(" · ")}</div>
+      <div class="hist-productos" ${estiloProd}>${g.items.map(i=>`${i.cantidad}× ${i.sabor} ${i.tamano}`).join(" · ")}</div>
+      ${motivoAnul}
       <div class="hist-meta">
+        ${badgeAnul}
         <span class="tag">${g.canal}</span><span class="tag" ${metodoColor}>${g.metodoPago}</span><span class="tag">${g.sucursal}</span>
         ${g.clienteNombre?`<span class="tag">${g.clienteNombre}</span>`:""}
         ${rutaTag}
-        <span class="tag tag-total">$${g.items.reduce((s,i)=>s+i.subtotal,0).toLocaleString('es-MX')}</span>
-        <button class="btn-sm" onclick="enviarRecibo('${g.idVenta}')" style="margin-left:6px">🧾 Recibo</button>
+        ${totalTag}
+        ${btnRecibo}
       </div>
     </div>`;
   }).join("");
@@ -2714,7 +2789,9 @@ document.querySelectorAll(".modal-overlay").forEach(o=>{o.addEventListener("clic
 async function cargarReporte() {
   if (!S.catalogo) { const res = await api("getCatalogo"); if (res.ok) S.catalogo = res; }
   L("reporte-content").innerHTML = '<div class="loading"><div class="spinner"></div>Cargando...</div>';
-  const res = await api("getVentas");
+  // v6.x: pedir el rango de HOY. Sin rango, el backend recorta a las ultimas 200 filas
+  // y en dias con muchos renglones el reporte subcuenta ventas/tickets del dia.
+  const res = await api("getVentas", { desde: _hoyCDMXString() });
   if (!res.ok) { L("reporte-content").innerHTML = '<div class="empty-state"><div>Error al cargar ventas</div></div>'; return; }
   S.ventasReporte = res.ventas || [];
   _renderFiltrosReporte();
@@ -3306,7 +3383,8 @@ const STOCK_HORA_RANGO = { inicio: 9, fin: 21 };
 async function cargarStockHora() {
   L("stockhora-content").innerHTML = '<div class="loading"><div class="spinner"></div>Cargando...</div>';
   if (!S.catalogo) { const c = await api("getCatalogo"); if (c.ok) S.catalogo = c; }
-  const [resStock, resVentas] = await Promise.all([api("getStock"), api("getVentas")]);
+  // v6.x: rango de HOY para no caer en el tope de 200 filas del backend (subcontaba el dia).
+  const [resStock, resVentas] = await Promise.all([api("getStock"), api("getVentas", { desde: _hoyCDMXString() })]);
   if (!resStock.ok || !resVentas.ok) {
     L("stockhora-content").innerHTML = '<div class="empty-state"><div>Error al cargar datos</div></div>';
     return;
@@ -4338,8 +4416,10 @@ const COLOR_METODO = {
 async function cargarConciliacion() {
   L("conciliacion-content").innerHTML = '<div class="loading"><div class="spinner"></div>Cargando...</div>';
   if (!S.catalogo) { const c = await api("getCatalogo"); if (c.ok) S.catalogo = c; }
-  if (!S.ventasReporte || S.ventasReporte.length === 0) {
-    const res = await api("getVentas");
+  // v6.x: la conciliacion (caja) puede abarcar dias pasados, asi que traemos TODO el historial.
+  // Sin rango el backend recorta a 200 filas y el efectivo esperado en caja quedaba subcontado.
+  {
+    const res = await api("getVentas", { desde: "2020-01-01" });
     if (!res.ok) { L("conciliacion-content").innerHTML = '<div class="empty-state"><div>Error al cargar ventas</div></div>'; return; }
     S.ventasReporte = res.ventas || [];
   }
@@ -4477,7 +4557,8 @@ async function cargarUtilDiario() {
   if (!S.catalogo) { const c = await api("getCatalogo"); if (c.ok) S.catalogo = c; }
   if (!S.recetas || S.recetas.length === 0) { const r = await api("getRecetas"); if (r.ok) S.recetas = r.recetas; }
   if (!S.insumos || S.insumos.length === 0) { const i = await api("getInsumos"); if (i.ok) S.insumos = i.insumos; }
-  const v = await api("getVentas"); if (v.ok) S.ventasReporte = v.ventas || [];
+  // v6.x: rango de HOY para no caer en el tope de 200 filas del backend (subcontaba el dia).
+  const v = await api("getVentas", { desde: _hoyCDMXString() }); if (v.ok) S.ventasReporte = v.ventas || [];
   _renderFiltrosUtilDiario();
   renderUtilDiario();
 }
@@ -4776,3 +4857,4 @@ function _renderGraficaLineaUtilPeriodo(ventasBruto) {
     }
   });
 }
+No se puede abrir el archivo.
