@@ -1,67 +1,4 @@
 
-Nube
-/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-App · JS
-El resaltado de sintaxis se ha deshabilitado debido al tamaño del código.
-
 const API_URL = "https://script.google.com/macros/s/AKfycbxJfDX3lwu5AE9GDA1WGZ3_MP3AAGPsCz54CdzS_cnE9zxQArN1zLmjnZixwc2A13eF/exec";
 const LECTURA = ["getCatalogo","getStock","getPrecios","getUsuarios","getAuditoria","buscarCliente","getHistorialCliente","getVentas","getInsumos","getRecetas","getCalculoCosto","listarMovimientosRecientes","getSesionesActivas","repartoEstado","repartoProponer","repartoGeocode"];
 let S = {
@@ -4857,4 +4794,3 @@ function _renderGraficaLineaUtilPeriodo(ventasBruto) {
     }
   });
 }
-No se puede abrir el archivo.
