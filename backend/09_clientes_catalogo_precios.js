@@ -74,8 +74,11 @@ const datos = hoja.getDataRange().getValues();
 // Detectar columna estado_anul para filtrar
 const headers = hoja.getRange(1, 1, 1, hoja.getLastColumn()).getValues()[0];
 const idxEstadoAnul = headers.indexOf("estado_anul");
+const idxAnulPor = headers.indexOf("anulado_por");
+const idxAnulMotivo = headers.indexOf("anulado_motivo");
 const idxNotas = headers.indexOf("notas");
 const idxN = idxNotas === -1 ? 14 : idxNotas;
+const _incAnul = !!(body && body.incluirAnuladas);   // el historial de Ventas las pide para mostrarlas marcadas
 const _desde = body && body.desde ? String(body.desde) : null;   // "yyyy-MM-dd"
 const _hasta = body && body.hasta ? String(body.hasta) : null;
 const _rango = _desde || _hasta;
@@ -84,7 +87,8 @@ const _ini = _rango ? 1 : Math.max(1, datos.length-200);
 for (let i = _ini; i < datos.length; i++) {
 const [idVenta, fecha, usuario, sucursal, sabor, tamano, cantidad, precio, subtotal, canal, metodoPago, clienteId, clienteNombre] = datos[i];
 if (!idVenta) continue;
-if (idxEstadoAnul !== -1 && datos[i][idxEstadoAnul] === "ANULADO") continue;  // ocultar anuladas
+const _esAnulada = idxEstadoAnul !== -1 && datos[i][idxEstadoAnul] === "ANULADO";
+if (_esAnulada && !_incAnul) continue;  // ocultar anuladas salvo que se pidan explicitamente
 if (_rango) {
 const _fdd = fecha instanceof Date ? Utilities.formatDate(fecha, TZ_MX, "yyyy-MM-dd") : String(fecha).substring(0,10);
 if (_desde && _fdd < _desde) continue;
@@ -95,7 +99,7 @@ const fechaFmt = fecha instanceof Date ? Utilities.formatDate(fecha, TZ_MX, "yyy
 const notas = String(datos[i][idxN] || "");
 const matchRuta = notas.match(/RUTA-[A-Z0-9-]+/);
 const rutaId = matchRuta ? matchRuta[0] : null;
-ventas.unshift({ idVenta, fecha: fechaFmt, usuario, sucursal, sabor, tamano, cantidad: Number(cantidad), precio: Number(precio), subtotal: Number(subtotal), canal, metodoPago, clienteId, clienteNombre, notas, rutaId, tipoOp: (function(){var ix=headers.indexOf("tipo_op");return ix!==-1?(datos[i][ix]||"Venta"):"Venta";})() });
+ventas.unshift({ idVenta, fecha: fechaFmt, usuario, sucursal, sabor, tamano, cantidad: Number(cantidad), precio: Number(precio), subtotal: Number(subtotal), canal, metodoPago, clienteId, clienteNombre, notas, rutaId, tipoOp: (function(){var ix=headers.indexOf("tipo_op");return ix!==-1?(datos[i][ix]||"Venta"):"Venta";})(), anulada: _esAnulada, anuladoPor: _esAnulada && idxAnulPor !== -1 ? String(datos[i][idxAnulPor] || "") : "", anuladoMotivo: _esAnulada && idxAnulMotivo !== -1 ? String(datos[i][idxAnulMotivo] || "") : "" });
 }
 return { ok: true, ventas };
 }

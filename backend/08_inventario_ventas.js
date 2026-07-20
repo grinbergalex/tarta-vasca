@@ -96,6 +96,7 @@ requierePuedeVender(sesion);
 const { items, canal, metodoPago, cliente, tipoOp, motivo, anticipo, envio, fechaEntrega } = body;
 const esRegalo = tipoOp === "regalo";
 const esReserva = tipoOp === "reserva";  // v4.4
+if (esRegalo && !getPermisos(sesion.rol).esAdmin) return { ok: false, error: "Tu rol no permite registrar regalos." };  // solo Owner (Vendedor no da cortesias)
 if (!items || items.length === 0) return { ok: false, error: "Agrega al menos un producto." };
 if (!esRegalo && !esReserva && !canal) return { ok: false, error: "Selecciona el canal de venta." };
 if (!esRegalo && !esReserva && !metodoPago) return { ok: false, error: "Selecciona el método de pago." };
