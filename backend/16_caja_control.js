@@ -69,6 +69,53 @@ function verificarCaja() {
   Logger.log(msg);
   return msg;
 }
+/**
+ * Diagnóstico del CÁLCULO del efectivo esperado (solo lectura).
+ * Muestra de dónde sale cada número y las últimas ventas en efectivo detectadas,
+ * para poder verificar que las columnas se están leyendo bien.
+ */
+function diagnosticoCaja() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var out = [];
+  for (var s = 0; s < CAJA_SUCURSALES.length; s++) {
+    var suc = CAJA_SUCURSALES[s];
+    var base = _cajaBaseline(ss, suc);
+    var acumHoy = _cajaSumaVentasEfectivo(ss, suc);
+    var calc = cajaEsperado(ss, suc);
+    out.push("");
+    out.push("──────── " + suc + " ────────");
+    if (!base.existe) { out.push("  SIN BASE: la Dueña aún no ha usado 'Fijar saldo'."); }
+    else {
+      out.push("  Saldo base declarado ....... " + _cajaMoney(base.saldo) + "   (fila " + (base.fila + 1) + " del Caja_Ledger, " + base.ts + ")");
+      out.push("  Ventas efectivo al fijar ... " + _cajaMoney(base.ventasAcum));
+      out.push("  Ventas efectivo acumuladas . " + _cajaMoney(acumHoy));
+      out.push("  → Ventas del periodo ....... " + _cajaMoney(calc.ventasEfectivo));
+      out.push("  + Aportaciones ............. " + _cajaMoney(calc.aportaciones));
+      out.push("  − Retiros .................. " + _cajaMoney(-calc.retiros));
+      out.push("  = ESPERADO ................. " + _cajaMoney(calc.esperado));
+    }
+  }
+  // Últimas ventas en efectivo vistas por el cálculo (verifica el mapeo de columnas)
+  var hV = ss.getSheetByName("Ventas");
+  if (hV) {
+    var d = hV.getDataRange().getValues();
+    var H = d[0], iAnul = H.indexOf("estado_anul"), iTipo = H.indexOf("tipo_op");
+    var vistas = [];
+    for (var i = d.length - 1; i >= 1 && vistas.length < 8; i--) {
+      var r = d[i];
+      if (String(r[10]).trim() !== "Efectivo") continue;
+      if (iAnul !== -1 && r[iAnul] === "ANULADO") continue;
+      if (iTipo !== -1 && r[iTipo] && r[iTipo] !== "Venta") continue;
+      vistas.push("   " + r[0] + " | " + r[3] + " | " + _cajaMoney(r[8]) + " | " + (r[1] instanceof Date ? Utilities.formatDate(r[1], TZ_MX, "yyyy-MM-dd HH:mm") : r[1]));
+    }
+    out.push("");
+    out.push("Últimas ventas en EFECTIVO detectadas (id | sucursal | subtotal | fecha):");
+    out.push(vistas.length ? vistas.join("\n") : "   NINGUNA — revisar el método de pago en la hoja Ventas.");
+  }
+  var msg = "=== DIAGNÓSTICO DEL CÁLCULO DE CAJA ===" + out.join("\n");
+  Logger.log(msg);
+  return msg;
+}
 function _cajaSeedConfig(ss, clave, valor) {
   var h = ss.getSheetByName("Configuración");
   if (!h) { h = ss.insertSheet("Configuración"); h.appendRow(["Parámetro", "Valor", "Descripción"]); }
@@ -97,8 +144,16 @@ function ensureHojaCajaLedger(ss) {
   var h = ss.getSheetByName("Caja_Ledger");
   if (!h) {
     h = ss.insertSheet("Caja_Ledger"); h.setTabColor("#7D6608");
-    _cajaHeader(h, ["timestamp", "tipo", "sucursal", "caja_id", "sesion_id", "delta", "saldo", "referencia", "usuario", "motivo"],
-      { 1: 200, 2: 150, 10: 340 });
+    _cajaHeader(h, ["timestamp", "tipo", "sucursal", "caja_id", "sesion_id", "delta", "saldo", "referencia", "usuario", "motivo", "ventas_acum"],
+      { 1: 160, 2: 150, 10: 340 });
+    return h;
+  }
+  // Migración: `ventas_acum` se agregó después. Guarda el acumulado de ventas en
+  // efectivo que existía al momento de un OVERRIDE_DUEÑA (base del cálculo).
+  var hdr = h.getRange(1, 1, 1, h.getLastColumn()).getValues()[0];
+  if (hdr.indexOf("ventas_acum") === -1) {
+    var col = h.getLastColumn() + 1;
+    h.getRange(1, col).setValue("ventas_acum").setBackground("#2E4756").setFontColor("#FFFFFF").setFontWeight("bold");
   }
   return h;
 }
@@ -126,25 +181,44 @@ function ensureHojaRetirosEvidencias(ss) {
 // =================================================================================
 // LEDGER (append-only, clon de _invLedger) + CÁLCULO DE EFECTIVO ESPERADO
 // =================================================================================
-function _cajaLedger(ss, tipo, sucursal, sesionId, delta, saldo, ref, usuario, motivo) {
+// El timestamp se guarda con el MISMO formato que _invLedger (texto local, no ISO):
+// un ISO con "Z" lo convierte Sheets a fecha y le quita la zona, desfasando 6 horas.
+// Aquí el timestamp es SOLO informativo — ningún cálculo depende de él.
+function _cajaLedger(ss, tipo, sucursal, sesionId, delta, saldo, ref, usuario, motivo, ventasAcum) {
   var h = ensureHojaCajaLedger(ss);
-  // timestamp en ISO para poder reconstruir Date confiable al comparar contra ventas.
-  h.appendRow([new Date().toISOString(), tipo, sucursal, "principal", sesionId || "",
-    Number(delta) || 0, Number(saldo) || 0, ref || "", usuario || "", motivo || ""]);
+  var fila = [Utilities.formatDate(new Date(), TZ_MX, "yyyy-MM-dd HH:mm:ss"), tipo, sucursal, "principal", sesionId || "",
+    Number(delta) || 0, Number(saldo) || 0, ref || "", usuario || "", motivo || ""];
+  fila.push(ventasAcum == null ? "" : Number(ventasAcum) || 0);   // col 11: ventas_acum
+  h.appendRow(fila);
 }
-function _cajaParseTs(v) { try { return (v instanceof Date) ? v : new Date(v); } catch (e) { return null; } }
-// Última "verdad" declarada por la Dueña: saldo base + desde cuándo se cuentan los movimientos.
+/**
+ * Última "verdad" declarada por la Dueña. Devuelve el saldo, la FILA del asiento
+ * (el orden del libro es cronológico porque es append-only) y el acumulado de
+ * ventas en efectivo que ya existía en ese momento.
+ * Se apoya en posición de fila y en acumulados — nunca en comparar fechas.
+ */
 function _cajaBaseline(ss, sucursal) {
   var h = ss.getSheetByName("Caja_Ledger");
-  if (!h) return { saldo: 0, ts: null };
+  if (!h) return { existe: false, saldo: 0, fila: 0, ventasAcum: 0, ts: "" };
   var d = h.getDataRange().getValues();
+  if (d.length < 2) return { existe: false, saldo: 0, fila: 0, ventasAcum: 0, ts: "" };
+  var iAcum = d[0].indexOf("ventas_acum");
   for (var i = d.length - 1; i >= 1; i--) {
-    if (d[i][2] === sucursal && d[i][1] === "OVERRIDE_DUEÑA") return { saldo: Number(d[i][6]) || 0, ts: _cajaParseTs(d[i][0]) };
+    if (d[i][2] !== sucursal || d[i][1] !== "OVERRIDE_DUEÑA") continue;
+    var acum = (iAcum !== -1 && d[i][iAcum] !== "" && d[i][iAcum] != null) ? (Number(d[i][iAcum]) || 0) : null;
+    if (acum === null) {
+      // Migración auto-sanadora: asientos creados antes de este arreglo no traen el
+      // acumulado. Se fija ahora, de modo que a partir de este momento el conteo
+      // sea exacto. (Si quieres cuadrar el pasado, vuelve a "Fijar saldo".)
+      acum = _cajaSumaVentasEfectivo(ss, sucursal);
+      if (iAcum !== -1) { try { h.getRange(i + 1, iAcum + 1).setValue(acum); } catch (e) { } }
+    }
+    return { existe: true, saldo: Number(d[i][6]) || 0, fila: i, ventasAcum: acum, ts: String(d[i][0] || "") };
   }
-  return { saldo: 0, ts: null };
+  return { existe: false, saldo: 0, fila: 0, ventasAcum: 0, ts: "" };
 }
-// Ventas en efectivo de la sucursal después de `desdeTs` (o todas si null).
-function _cajaSumaVentasEfectivo(ss, sucursal, desdeTs) {
+// Acumulado histórico de ventas en efectivo de la sucursal (sin filtro de tiempo).
+function _cajaSumaVentasEfectivo(ss, sucursal) {
   var h = ss.getSheetByName("Ventas");
   if (!h) return 0;
   var d = h.getDataRange().getValues();
@@ -153,25 +227,22 @@ function _cajaSumaVentasEfectivo(ss, sucursal, desdeTs) {
   var suma = 0;
   for (var i = 1; i < d.length; i++) {
     var r = d[i];
-    if (r[3] !== sucursal) continue;              // sucursal (col D / idx3)
-    if (String(r[10]) !== "Efectivo") continue;   // metodoPago (col K / idx10)
+    if (r[3] !== sucursal) continue;                          // sucursal (col D / idx3)
+    if (String(r[10]).trim() !== "Efectivo") continue;         // metodoPago (col K / idx10)
     if (iAnul !== -1 && r[iAnul] === "ANULADO") continue;
-    if (iTipo !== -1 && r[iTipo] && r[iTipo] !== "Venta") continue; // excluye Reservado/Regalo
-    if (desdeTs) { var f = (r[1] instanceof Date) ? r[1] : new Date(r[1]); if (!(f > desdeTs)) continue; }
-    suma += Number(r[8]) || 0;                     // subtotal (col I / idx8)
+    if (iTipo !== -1 && r[iTipo] && r[iTipo] !== "Venta") continue;  // excluye Reservado/Regalo
+    suma += Number(r[8]) || 0;                                 // subtotal (col I / idx8)
   }
   return suma;
 }
-// Suma de deltas del ledger para un tipo dado, después de `desdeTs`.
-function _cajaSumaLedgerDesde(ss, sucursal, tipo, desdeTs) {
+// Suma de deltas del ledger de un tipo, para los asientos POSTERIORES a `filaDesde`.
+function _cajaSumaLedgerDesdeFila(ss, sucursal, tipo, filaDesde) {
   var h = ss.getSheetByName("Caja_Ledger");
   if (!h) return 0;
   var d = h.getDataRange().getValues(), suma = 0;
-  for (var i = 1; i < d.length; i++) {
-    var r = d[i];
-    if (r[2] !== sucursal || r[1] !== tipo) continue;
-    if (desdeTs) { var t = _cajaParseTs(r[0]); if (!(t > desdeTs)) continue; }
-    suma += Number(r[5]) || 0;                     // delta (idx5)
+  for (var i = Math.max(1, (filaDesde || 0) + 1); i < d.length; i++) {
+    if (d[i][2] !== sucursal || d[i][1] !== tipo) continue;
+    suma += Number(d[i][5]) || 0;                              // delta (idx5)
   }
   return suma;
 }
@@ -180,17 +251,18 @@ function cajaEsperado(ss, sucursal) {
   var base = _cajaBaseline(ss, sucursal);
   // Sin "saldo en caja al momento" declarado aún: la Dueña debe fijarlo la primera vez.
   // No sumamos ventas históricas (daría un esperado sin sentido).
-  if (!base.ts) {
-    return { esperado: base.saldo, baseline: base.saldo, baselineTs: null, ventasEfectivo: 0, aportaciones: 0, retiros: 0, desde: "(sin configurar)", sinBase: true };
+  if (!base.existe) {
+    return { esperado: 0, baseline: 0, baselineTs: null, ventasEfectivo: 0, aportaciones: 0, retiros: 0, desde: "(sin configurar)", sinBase: true };
   }
-  var ventas = _cajaSumaVentasEfectivo(ss, sucursal, base.ts);
-  var aport = _cajaSumaLedgerDesde(ss, sucursal, "APORTACION", base.ts);
-  var retiros = _cajaSumaLedgerDesde(ss, sucursal, "RETIRO", base.ts); // deltas negativos
+  // Ventas del periodo = acumulado de hoy − acumulado al momento del ajuste.
+  var ventas = _cajaSumaVentasEfectivo(ss, sucursal) - base.ventasAcum;
+  var aport = _cajaSumaLedgerDesdeFila(ss, sucursal, "APORTACION", base.fila);
+  var retiros = _cajaSumaLedgerDesdeFila(ss, sucursal, "RETIRO", base.fila);  // deltas negativos
   var esperado = base.saldo + ventas + aport + retiros;
   return {
-    esperado: esperado, baseline: base.saldo, baselineTs: base.ts ? base.ts.toISOString() : null,
+    esperado: esperado, baseline: base.saldo, baselineTs: base.ts,
     ventasEfectivo: ventas, aportaciones: aport, retiros: retiros,
-    desde: base.ts ? formatFechaHoraMX(base.ts) : "inicio", sinBase: false
+    desde: base.ts || "inicio", sinBase: false
   };
 }
 
@@ -498,8 +570,11 @@ function cajaFijarSaldo(body, sesion) {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var espAntes = cajaEsperado(ss, sucursal).esperado;
     var delta = declarado - espAntes;
+    // Se guarda el acumulado de ventas en efectivo de ESTE momento: es el punto de
+    // corte contra el que se miden las ventas siguientes (sin depender de fechas).
+    var ventasAcum = _cajaSumaVentasEfectivo(ss, sucursal);
     _cajaLedger(ss, "OVERRIDE_DUEÑA", sucursal, "", delta, declarado, "OVERRIDE", sesion.usuario,
-      (body.motivo || "Saldo en caja fijado por la Dueña") + " · antes " + _cajaMoney(espAntes) + " → " + _cajaMoney(declarado));
+      (body.motivo || "Saldo en caja fijado por la Dueña") + " · antes " + _cajaMoney(espAntes) + " → " + _cajaMoney(declarado), ventasAcum);
     registrarAuditoria(sesion.usuario, sesion.rol, "CAJA_FIJAR_SALDO", sucursal + " · " + _cajaMoney(espAntes) + " → " + _cajaMoney(declarado) + " (Δ" + _cajaMoney(delta) + ")");
     var _res = { ok: true, mensaje: "✅ Saldo de caja fijado en " + _cajaMoney(declarado) + " para " + sucursal + ".", esperado: declarado, ajuste: delta };
     _opRegistrar(_opId, _res);
