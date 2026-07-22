@@ -1607,6 +1607,17 @@
         <div style="font-size:11px;color:var(--muted);margin-top:6px">Borra ventas, stock, clientes y auditoría. Conserva catálogo, precios, insumos, recetas y usuarios.</div>
       </div>
     </div>
+    <!-- CONTROL DE CAJA (v7) -->
+    <div id="tab-caja" class="tab-pane" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <h2 style="margin:0">🔐 Control de caja</h2>
+        <div id="caja-suc-sel"></div>
+      </div>
+      <div class="card-sub" style="margin-top:4px">Apertura, cierre, retiros y conciliación de efectivo por sucursal.</div>
+      <div id="caja-estado" style="margin-top:10px"><div class="loading"><div class="spinner"></div></div></div>
+      <div id="caja-acciones" style="margin-top:4px"></div>
+      <div id="caja-retiros" style="margin-top:14px"></div>
+    </div>
   </main>
 </div>
 <!-- MODALES -->
@@ -1760,6 +1771,7 @@
 <div class="toast" id="toast"></div>
 <script src="app.js"></script>
 <script src="reparto.js"></script>
+<script src="caja.js"></script>
 <script>
 /* v6.3 — Anti doble-tap (2026-07-03): bloquea 5s los botones de accion al tocarlos,
    para que la lentitud del backend no provoque envios dobles ni errores fantasma.

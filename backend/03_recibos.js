@@ -141,22 +141,36 @@ function verAliasTV(){
   return "Revisa el Registro de ejecucion (las 3 lineas de arriba).";
 }
 
+/**
+ * Flags de caja (v7 — módulo Control de Caja):
+ *   cajaOperar        : abrir/cerrar tienda y operar caja de su sucursal
+ *   cajaRetiroDirecto : retirar efectivo directo (Dueña/Admin) — igual documenta y sube evidencia
+ *   cajaSolicitarRetiro: pedir un retiro que otro debe autorizar (Vendedora)
+ *   cajaAutorizar     : autorizar solicitudes de retiro
+ *   cajaConciliar     : marcar un retiro como conciliado
+ *   cajaFijarSaldo    : "saldo en caja al momento" — sobrescribe el esperado (SOLO Dueña)
+ * Otros v7:
+ *   puedeVerHistorial      : ver el historial de ventas (getVentas)
+ *   puedeModificarInventario: ajuste de inventario por conteo físico
+ */
 function getPermisos(rol) {
 switch(rol) {
 case "Owner":
-return { esAdmin:true, puedeVender:true, puedeProducir:true, puedeTransferir:true, puedeVerAmbas:true, puedeAnular:true };
+return { esAdmin:true, puedeVender:true, puedeProducir:true, puedeTransferir:true, puedeVerAmbas:true, puedeAnular:true, puedeVerHistorial:true, puedeModificarInventario:true, cajaOperar:true, cajaRetiroDirecto:true, cajaSolicitarRetiro:false, cajaAutorizar:true, cajaConciliar:true, cajaFijarSaldo:true };
 case "Vendedor":
-return { esAdmin:false, puedeVender:true, puedeProducir:false, puedeTransferir:false, puedeVerAmbas:false, puedeAnular:false };
+return { esAdmin:false, puedeVender:true, puedeProducir:false, puedeTransferir:false, puedeVerAmbas:false, puedeAnular:false, puedeVerHistorial:false, puedeModificarInventario:false, cajaOperar:true, cajaRetiroDirecto:false, cajaSolicitarRetiro:true, cajaAutorizar:false, cajaConciliar:false, cajaFijarSaldo:false };
 case "Cocinero":
-return { esAdmin:false, puedeVender:false, puedeProducir:true, puedeTransferir:true, puedeVerAmbas:true, puedeAnular:false };
+return { esAdmin:false, puedeVender:false, puedeProducir:true, puedeTransferir:true, puedeVerAmbas:true, puedeAnular:false, puedeVerHistorial:false, puedeModificarInventario:false, cajaOperar:false, cajaRetiroDirecto:false, cajaSolicitarRetiro:false, cajaAutorizar:false, cajaConciliar:false, cajaFijarSaldo:false };
 case "Mixto":
-return { esAdmin:false, puedeVender:true, puedeProducir:true, puedeTransferir:true, puedeVerAmbas:false, puedeAnular:false };
+return { esAdmin:false, puedeVender:true, puedeProducir:true, puedeTransferir:true, puedeVerAmbas:false, puedeAnular:false, puedeVerHistorial:false, puedeModificarInventario:false, cajaOperar:true, cajaRetiroDirecto:false, cajaSolicitarRetiro:true, cajaAutorizar:false, cajaConciliar:false, cajaFijarSaldo:false };
 case "Admin_Ventas":
-return { esAdmin:false, puedeVender:true, puedeProducir:false, puedeTransferir:true, puedeVerAmbas:true, puedeAnular:false };
+// v7: la Administradora (Yessenia) — ahora también produce, ve historial, modifica
+// inventario y cancela operaciones, y tiene mando de caja (autorizar/conciliar retiros).
+return { esAdmin:false, puedeVender:true, puedeProducir:true, puedeTransferir:true, puedeVerAmbas:true, puedeAnular:true, puedeVerHistorial:true, puedeModificarInventario:true, cajaOperar:true, cajaRetiroDirecto:true, cajaSolicitarRetiro:false, cajaAutorizar:true, cajaConciliar:true, cajaFijarSaldo:false };
 case "Chofer":
-return { esAdmin:false, puedeVender:false, puedeProducir:false, puedeTransferir:false, puedeVerAmbas:false, puedeAnular:false, esChofer:true };
+return { esAdmin:false, puedeVender:false, puedeProducir:false, puedeTransferir:false, puedeVerAmbas:false, puedeAnular:false, esChofer:true, puedeVerHistorial:false, puedeModificarInventario:false, cajaOperar:false, cajaRetiroDirecto:false, cajaSolicitarRetiro:false, cajaAutorizar:false, cajaConciliar:false, cajaFijarSaldo:false };
 default:
-return { esAdmin:false, puedeVender:false, puedeProducir:false, puedeTransferir:false, puedeVerAmbas:false, puedeAnular:false };
+return { esAdmin:false, puedeVender:false, puedeProducir:false, puedeTransferir:false, puedeVerAmbas:false, puedeAnular:false, puedeVerHistorial:false, puedeModificarInventario:false, cajaOperar:false, cajaRetiroDirecto:false, cajaSolicitarRetiro:false, cajaAutorizar:false, cajaConciliar:false, cajaFijarSaldo:false };
 }
 }
 function soloOwner(sesion) {
@@ -174,7 +188,12 @@ if (!getPermisos(sesion.rol).puedeTransferir) throw new Error("Tu rol no permite
 function requierePuedeAnular(sesion) {
 // Por defecto solo Owner; si tiene permiso individual lo respeta
 if (sesion.rol === "Owner") return;
+if (getPermisos(sesion.rol).puedeAnular) return;  // v7: roles con puedeAnular (ej. Admin_Ventas)
 const extra = leerPermisosExtraUsuario(sesion.usuario);
 if (extra && extra.puedeAnular) return;
 throw new Error("Tu rol no permite anular movimientos. Pídeselo al Owner.");
+}
+// v7 — helpers de permiso reutilizables por el módulo de caja y los fixes de Admin_Ventas
+function requierePermiso(sesion, flag, mensaje) {
+if (!getPermisos(sesion.rol)[flag]) throw new Error(mensaje || "Tu rol no permite esta acción.");
 }

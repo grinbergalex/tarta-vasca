@@ -1,6 +1,6 @@
 
 const API_URL = "https://script.google.com/macros/s/AKfycbxJfDX3lwu5AE9GDA1WGZ3_MP3AAGPsCz54CdzS_cnE9zxQArN1zLmjnZixwc2A13eF/exec";
-const LECTURA = ["getCatalogo","getStock","getPrecios","getUsuarios","getAuditoria","buscarCliente","getHistorialCliente","getVentas","getInsumos","getRecetas","getCalculoCosto","listarMovimientosRecientes","getSesionesActivas","repartoEstado","repartoProponer","repartoGeocode"];
+const LECTURA = ["getCatalogo","getStock","getPrecios","getUsuarios","getAuditoria","buscarCliente","getHistorialCliente","getVentas","getInsumos","getRecetas","getCalculoCosto","listarMovimientosRecientes","getSesionesActivas","repartoEstado","repartoProponer","repartoGeocode","cajaEstado","getRetiros"];
 let S = {
   token:null, usuario:null, rol:null, sucursal:null, permisos:null,
   catalogo:null, precios:null, stock:null,
@@ -28,13 +28,15 @@ let S = {
   // v3.4.16: filtro de tipo de operación para conciliación
   conciFiltros: { tipos: ["venta"] }
 };
+// Respaldo por si el backend no enviara `permisos`. El backend manda el objeto real
+// en login (getPermisos), incluidas las banderas de caja (v7).
 const PERMISOS_FALLBACK = {
-  "Owner":        { esAdmin:true,  puedeVender:true,  puedeProducir:true,  puedeTransferir:true,  puedeVerAmbas:true,  puedeAnular:true  },
-  "Vendedor":     { esAdmin:false, puedeVender:true,  puedeProducir:false, puedeTransferir:false, puedeVerAmbas:false, puedeVerStockAmbas:true, puedeAnular:false },
-  "Cocinero":     { esAdmin:false, puedeVender:false, puedeProducir:true,  puedeTransferir:true,  puedeVerAmbas:true,  puedeAnular:false },
-  "Mixto":        { esAdmin:false, puedeVender:true,  puedeProducir:true,  puedeTransferir:true,  puedeVerAmbas:false, puedeVerStockAmbas:true, puedeAnular:false },
-  "Admin_Ventas": { esAdmin:false, puedeVender:true,  puedeProducir:false, puedeTransferir:true,  puedeVerAmbas:true,  puedeAnular:false },
-  "Chofer":       { esAdmin:false, puedeVender:false, puedeProducir:false, puedeTransferir:false, puedeVerAmbas:false, puedeAnular:false, esChofer:true }
+  "Owner":        { esAdmin:true,  puedeVender:true,  puedeProducir:true,  puedeTransferir:true,  puedeVerAmbas:true,  puedeAnular:true,  puedeVerHistorial:true,  puedeModificarInventario:true,  cajaOperar:true,  cajaRetiroDirecto:true,  cajaSolicitarRetiro:false, cajaAutorizar:true,  cajaConciliar:true,  cajaFijarSaldo:true  },
+  "Vendedor":     { esAdmin:false, puedeVender:true,  puedeProducir:false, puedeTransferir:false, puedeVerAmbas:false, puedeVerStockAmbas:true, puedeAnular:false, puedeVerHistorial:false, puedeModificarInventario:false, cajaOperar:true,  cajaRetiroDirecto:false, cajaSolicitarRetiro:true,  cajaAutorizar:false, cajaConciliar:false, cajaFijarSaldo:false },
+  "Cocinero":     { esAdmin:false, puedeVender:false, puedeProducir:true,  puedeTransferir:true,  puedeVerAmbas:true,  puedeAnular:false, puedeVerHistorial:false, puedeModificarInventario:false, cajaOperar:false, cajaRetiroDirecto:false, cajaSolicitarRetiro:false, cajaAutorizar:false, cajaConciliar:false, cajaFijarSaldo:false },
+  "Mixto":        { esAdmin:false, puedeVender:true,  puedeProducir:true,  puedeTransferir:true,  puedeVerAmbas:false, puedeVerStockAmbas:true, puedeAnular:false, puedeVerHistorial:false, puedeModificarInventario:false, cajaOperar:true,  cajaRetiroDirecto:false, cajaSolicitarRetiro:true,  cajaAutorizar:false, cajaConciliar:false, cajaFijarSaldo:false },
+  "Admin_Ventas": { esAdmin:false, puedeVender:true,  puedeProducir:true,  puedeTransferir:true,  puedeVerAmbas:true,  puedeAnular:true,  puedeVerHistorial:true,  puedeModificarInventario:true,  cajaOperar:true,  cajaRetiroDirecto:true,  cajaSolicitarRetiro:false, cajaAutorizar:true,  cajaConciliar:true,  cajaFijarSaldo:false },
+  "Chofer":       { esAdmin:false, puedeVender:false, puedeProducir:false, puedeTransferir:false, puedeVerAmbas:false, puedeAnular:false, esChofer:true, puedeVerHistorial:false, puedeModificarInventario:false, cajaOperar:false, cajaRetiroDirecto:false, cajaSolicitarRetiro:false, cajaAutorizar:false, cajaConciliar:false, cajaFijarSaldo:false }
 };
 function getPermisos() {
   const base = S.permisos || PERMISOS_FALLBACK[S.rol] || PERMISOS_FALLBACK["Vendedor"];
@@ -149,6 +151,8 @@ function iniciarApp() {
   cargarRecetasAlInicio();
   setTimeout(cargarMensajesHeader, 1500);
   setInterval(cargarMensajesHeader, 120000);
+  // v7 — si la tienda está cerrada, llevar al operador (no-admin) al flujo de apertura.
+  if (typeof cajaGateInicial === "function") setTimeout(cajaGateInicial, 800);
 }
 function aplicarPermisosUI() {
   const p = getPermisos();
@@ -173,13 +177,16 @@ const MENU = [
     { label:"Producción",       pane:"produccion",     perm:"producir" },
     { label:"Transferencias",   pane:"transferencias", perm:"transferir" },
     { label:"Pedido sugerido",  pane:"reporte", sub:["setReporteTab","pedido"], perm:"owner" },
-    { label:"Ajuste de inventario", pane:"ajuste", perm:"owner" },
+    { label:"Ajuste de inventario", pane:"ajuste", perm:"ajusteinv" },
+  ]},
+  { id:"caja", label:"🔐 Caja", items:[
+    { label:"Control de caja",  pane:"caja", perm:"caja" },
   ]},
   { id:"ven", label:"🛒 Ventas", items:[
     { label:"Nueva venta",      pane:"venta",  perm:"vender" },
     { label:"Apartados",        pane:"apartados", perm:"vender" },
     { label:"Rutas",            pane:"rutas",  perm:"owner" },
-    { label:"Historial",        pane:"ventas", perm:"owner" },
+    { label:"Historial",        pane:"ventas", perm:"historial" },
   ]},
   { id:"rep", label:"🚚 Reparto", items:[
     { label:"Reparto a domicilio", pane:"reparto", perm:"repartoadmin" },
@@ -203,7 +210,7 @@ const MENU = [
     { label:"Estado de resultados",pane:"reporte", sub:["setReporteTab","estado"],       perm:"owner" },
   ]},
   { id:"adm", label:"⚙️ Admin", items:[
-    { label:"Movimientos", pane:"movimientos", perm:"owner" },
+    { label:"Movimientos", pane:"movimientos", perm:"anular" },
     { label:"Alertas",     pane:"alertas",     perm:"owner" },
     { label:"Usuarios",    pane:"usuarios",    perm:"owner" },
     { label:"Auditoría",   pane:"auditoria",   perm:"owner" },
@@ -223,6 +230,11 @@ function _permOK(perm){
   if(perm==="transferir") return !!p.puedeTransferir || !!p.esAdmin;
   if(perm==="repartoadmin") return !!p.esAdmin || (!!p.puedeVender && !!p.puedeVerAmbas);
   if(perm==="chofer") return !!p.esChofer || !!p.esAdmin;
+  // v7 — permisos ampliados (Admin_Ventas / caja)
+  if(perm==="historial") return !!p.puedeVerHistorial || !!p.esAdmin;
+  if(perm==="ajusteinv") return !!p.puedeModificarInventario || !!p.esAdmin;
+  if(perm==="anular") return !!p.puedeAnular || !!p.esAdmin;
+  if(perm==="caja") return !!p.cajaOperar || !!p.esAdmin;
   return false;
 }
 function _loadPane(t){
@@ -246,6 +258,7 @@ function _loadPane(t){
   else if(t==="notas") cargarNotas();
   else if(t==="produccion") cargarProduccionManana();
   else if(t==="ajuste") cargarAjusteInv();
+  else if(t==="caja") cargarCaja();
 }
 function irAPane(pane, subFn, subKey){
   document.querySelectorAll(".tab-pane").forEach(p=>p.style.display="none");
@@ -612,7 +625,7 @@ function setTipoOp(tipo, btn){
     aviso.style.display = "block";
     aviso.style.background = "rgba(46,92,74,.1)";
     aviso.style.color = "var(--success)";
-    aviso.textContent = "🎁 Regalo — se descuenta stock pero no se cobra. Requiere motivo.";
+    aviso.textContent = "🎁 Regalo — se descuenta stock pero no se cobra. Requiere motivo. El cliente es opcional.";
     ventaFields.style.display = "none";
     descRow.style.display = "none";
     motivoRow.style.display = "block";
@@ -825,8 +838,11 @@ L("btn-confirmar").addEventListener("click",async()=>{
     let cliente=null;
     if(!plataforma){
       const nombre=L("cli-nombre").value.trim();
-      if(!nombre){toast("El nombre del cliente es obligatorio","error");btn.disabled=false;btn.textContent=tipoOp==="regalo"?"Registrar regalo 🎁":"Confirmar venta ✓";return;}
-      cliente=S.clienteSel||{nombre,telefono:L("cli-tel").value.trim(),email:L("cli-email").value.trim()};
+      // FIX: en regalos el cliente es OPCIONAL. El backend no lo exige para cortesías
+      // (canalRequiereCliente = !esRegalo, ver 08_inventario_ventas.js), pero aquí se
+      // pedía siempre — eso impedía registrar un regalo sin inventar un cliente.
+      if(!nombre && tipoOp!=="regalo"){toast("El nombre del cliente es obligatorio","error");btn.disabled=false;btn.textContent="Confirmar venta ✓";return;}
+      if(nombre) cliente=S.clienteSel||{nombre,telefono:L("cli-tel").value.trim(),email:L("cli-email").value.trim()};
     }
     const items=S.carrito.map(i=>({
       sabor:i.sabor, tamano:i.tamano, cantidad:i.cantidad,

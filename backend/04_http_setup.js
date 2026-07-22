@@ -168,6 +168,18 @@ case "getSesionesActivas":      return getSesionesActivas(body, sesion);        
 case "abrirDia":                return abrirDia(body, sesion);                        // NUEVO v4.4
 case "cerrarDia":               return cerrarDia(body, sesion);                       // NUEVO v4.4
 case "getDiaActual":            return getDiaActual(body, sesion);                    // NUEVO v4.4
+// ===== CONTROL DE CAJA (v7) =====
+case "cajaEstado":              return cajaEstado(body, sesion);
+case "cajaAbrir":               return cajaAbrir(body, sesion);
+case "cajaCerrar":              return cajaCerrar(body, sesion);
+case "cajaFijarSaldo":          return cajaFijarSaldo(body, sesion);                  // solo Dueña
+case "cajaAportacion":          return cajaAportacion(body, sesion);
+case "retiroRegistrar":         return retiroRegistrar(body, sesion);
+case "retiroAutorizar":         return retiroAutorizar(body, sesion);
+case "retiroRechazar":          return retiroRechazar(body, sesion);
+case "retiroSubirEvidencia":    return retiroSubirEvidencia(body, sesion);
+case "retiroConciliar":         return retiroConciliar(body, sesion);
+case "getRetiros":              return getRetiros(body, sesion);
 case "exportarDisponibleDocx":  return exportarDisponibleDocx(body, sesion);          // NUEVO v4.4
 case "getAnalisisDemanda":      return getAnalisisDemanda(body, sesion);              // NUEVO v4.4
 case "getSeguimientoVentas":    return getSeguimientoVentas(body, sesion);            // NUEVO v4.4

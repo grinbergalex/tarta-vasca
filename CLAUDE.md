@@ -21,8 +21,8 @@ index.html  ──fetch──►  Apps Script web app (backend/)  ──►  Goo
   Se sincroniza con `clasp` (login: maichomper@gmail.com).
   Todos los archivos comparten UN solo namespace global (los límites de
   archivo son solo organización). El prefijo numérico define el orden:
-  - `01`–`15`: código vivo, agrupado por dominio (config, InvCore, HTTP,
-    auth, ventas, reportes, mantenimiento…). El router está en
+  - `01`–`16`: código vivo, agrupado por dominio (config, InvCore, HTTP,
+    auth, ventas, reportes, mantenimiento, **caja (16)**…). El router está en
     `04_http_setup.js` (`despachar()`).
   - `90`–`99`: scripts de una sola vez (setup, migraciones, utilerías
     peligrosas) — nunca llamarlos desde el API. ⚠️ `98_util_limpiar_reservas`
@@ -67,8 +67,42 @@ index.html  ──fetch──►  Apps Script web app (backend/)  ──►  Goo
 | `auditoriaDiaria` | diario 7am | `instalarAuditoriaDiaria()` |
 | `respaldoDiario` | diario 2am | (ver Código.js) |
 | `recalcularUtilidadesSiDirty` | cada 10 min | `instalarTriggerUtilidades()` |
+| `cierreAutoCaja` | cada 30 min | `instalarCierreAutoCaja()` |
 
 Los triggers corren como la cuenta que ejecutó el instalador.
+
+## Módulo Control de Caja (v7)
+
+Control de efectivo y auditoría por sucursal. Backend en `16_caja_control.js`;
+frontend en `caja.js` + pane `#tab-caja` en `index.html`.
+
+- **Efectivo esperado = saldo corriente CONTINUO** (no se reinicia por día):
+  `saldo_base(último OVERRIDE_DUEÑA) + ventas Efectivo (hoja Ventas) + aportaciones
+  − retiros`. La apertura/cierre son puntos de **conciliación** (capturan efectivo
+  físico, comparan, registran diferencia, mandan correo) pero **no** ajustan el saldo.
+- **Libro mayor** `Caja_Ledger` (append-only, clon de `Inv_Ledger`). Otras hojas:
+  `Caja_Sesiones` (apertura/cierre), `Retiros`, `Retiros_Evidencias`.
+- **Solo la Dueña** (`cajaFijarSaldo`) puede sobrescribir el esperado ("saldo en caja
+  al momento") → asienta `OVERRIDE_DUEÑA`, que es la nueva base.
+- **Retiros**: máquina de estados `SOLICITADO → ENTREGADO → COMPROBADO → CONCILIADO`
+  (+ `RECHAZADO`). Vendedora solicita; Dueña/Admin autorizan (autorizar = liberar
+  efectivo, asienta el `RETIRO`). Evidencia = expediente multi-archivo en Drive
+  (`TV_Caja_Evidencias`). Conciliar solo Dueña/Admin y exige evidencia. Los retiros
+  no conciliados salen en **cada** correo de apertura/cierre.
+- **Correos** a `caja_correo_dueña` / `caja_correo_admin` (hoja Configuración).
+  Asunto con `⚠️ DIFERENCIA DE CAJA` si no concilia.
+- **v7 también amplió el rol `Admin_Ventas`** (Yessenia): ahora produce, ve historial,
+  modifica inventario y cancela operaciones (`getPermisos` en `03_recibos.js`).
+
+**Setup del módulo (una vez, desde el editor, tras `clasp push` + nueva versión):**
+1. `setupCaja()` — crea las 4 hojas y las llaves de config.
+2. Llenar en la hoja `Configuración`: `caja_correo_dueña` y `caja_correo_admin`.
+3. `instalarCierreAutoCaja()` — trigger de cierre automático (cada 30 min; cierra
+   una sucursal ABIERTA si pasó su horario+margen y no hay actividad).
+
+> El gating "tienda cerrada = no operar" para la Vendedora vive en el frontend
+> (`cajaGateInicial` la lleva al flujo de apertura). `registrarVenta` **no** se
+> bloquea en backend (para no romper rutas/reservas); endurecerlo es un follow-up.
 
 ## Legacy / pendientes
 

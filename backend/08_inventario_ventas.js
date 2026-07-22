@@ -71,7 +71,7 @@ finally{ try{lock.releaseLock();}catch(_e){} }
 // fila, limpia "stock fantasma" (filas anuladas con piezas) y registra en Auditoria.
 // =================================================================================
 function ajustarInventario(body, sesion) {
-soloOwner(sesion);
+requierePermiso(sesion, "puedeModificarInventario", "Tu rol no permite modificar inventario.");  // v7: Owner + Admin_Ventas
 const sucursal=body.sucursal; const ajustes=Array.isArray(body.ajustes)?body.ajustes:[];
 if(!sucursal) return {ok:false,error:"Falta la sucursal."};
 if(!ajustes.length) return {ok:false,error:"No hay ajustes que aplicar."};

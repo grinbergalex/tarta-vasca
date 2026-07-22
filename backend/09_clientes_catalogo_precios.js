@@ -67,7 +67,7 @@ if (cid === clienteId) historial.unshift({ ventaId, fecha: fecha instanceof Date
 return { ok: true, cliente: clienteInfo, historial };
 }
 function getVentas(body, sesion) {
-soloOwner(sesion);
+requierePermiso(sesion, "puedeVerHistorial", "Tu rol no permite ver el historial de ventas.");  // v7: Owner + Admin_Ventas
 const ss = SpreadsheetApp.getActiveSpreadsheet();
 const hoja = ss.getSheetByName("Ventas");
 const datos = hoja.getDataRange().getValues();
