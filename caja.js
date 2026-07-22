@@ -61,6 +61,7 @@ async function cargarCaja() {
   var cont = L("caja-estado"); if (cont) cont.innerHTML = "<div class='loading'><div class='spinner'></div></div>";
   var res = await api("cajaEstado");
   CAJA.estado = res;
+  _cajaRenderHeader();   // mantiene sincronizado el botón del encabezado
   if (!res || !res.ok || res.sinCaja) {
     if (cont) cont.innerHTML = "<div class='card'>Tu rol no participa en la caja.</div>";
     L("caja-acciones").innerHTML = ""; L("caja-retiros").innerHTML = ""; L("caja-suc-sel").innerHTML = "";
@@ -254,13 +255,57 @@ function cajaVerEvidencias(id) {
   cajaModal({ titulo: "Evidencias del retiro", html: links, campos: [], submitLabel: "Cerrar" });
 }
 
+// ---- botón de Abrir/Cerrar tienda en el encabezado (siempre visible) ----
+function _cajaRenderHeader() {
+  var btn = L("hdr-caja"); if (!btn) return;
+  var res = CAJA.estado || {};
+  var sucs = res.sucursales || [];
+  if (!res.ok || res.sinCaja || !sucs.length) { btn.style.display = "none"; return; }
+  var cerradas = sucs.filter(function (s) { return !s.abierta; });
+  var angosto = (window.innerWidth || 999) < 620;   // en celular solo el ícono
+  btn.style.display = "";
+  if (cerradas.length) {
+    btn.textContent = angosto ? ("🔓" + (sucs.length > 1 ? " " + cerradas.length : "")) : ("🔓 Abrir tienda" + (sucs.length > 1 ? " (" + cerradas.length + ")" : ""));
+    btn.title = "Abrir tienda";
+    btn.style.background = "#1a6b3c";
+    btn.setAttribute("data-accion", "abrir");
+  } else {
+    btn.textContent = angosto ? "🔒" : "🔒 Cerrar tienda";
+    btn.title = "Cerrar tienda";
+    btn.style.background = "#b3261e";
+    btn.setAttribute("data-accion", "cerrar");
+  }
+}
+async function cajaHeaderRefresh() {
+  var btn = L("hdr-caja"); if (!btn) return;
+  var p = (typeof getPermisos === "function") ? (getPermisos() || {}) : {};
+  if (!p.cajaOperar && !p.esAdmin) { btn.style.display = "none"; return; }
+  var res = await api("cajaEstado");
+  CAJA.estado = res;
+  if (res && res.ok) { CAJA.categorias = res.categorias || []; CAJA.permisos = res.permisos || {}; }
+  _cajaRenderHeader();
+}
+// Con una sola sucursal actúa directo; con varias lleva a la pantalla para elegir.
+function cajaHeaderClick() {
+  var sucs = ((CAJA.estado || {}).sucursales) || [];
+  var btn = L("hdr-caja");
+  var accion = btn ? btn.getAttribute("data-accion") : "abrir";
+  if (sucs.length === 1) {
+    CAJA.sucSel = sucs[0].sucursal;
+    if (accion === "cerrar") cajaCerrarFlow(); else cajaAbrirFlow();
+    return;
+  }
+  if (typeof irAPane === "function") irAPane("caja");
+}
+
 // ---- gating de apertura al iniciar sesión ----
 async function cajaGateInicial() {
+  await cajaHeaderRefresh();   // deja el botón del encabezado listo para todos
   var p = (typeof getPermisos === "function") ? (getPermisos() || {}) : {};
   // Solo se fuerza a operadores básicos (Vendedora/Mixto). Dueña y Administradora
   // (mando de caja) no se bloquean; Cocina/Chofer no operan caja.
   if (!p.cajaOperar || p.cajaAutorizar) return;
-  var res = await api("cajaEstado");
+  var res = CAJA.estado;
   if (!res || !res.ok || res.sinCaja) return;
   var mias = res.sucursales || [];
   var cerradas = mias.filter(function (s) { return !s.abierta; });
