@@ -1,16 +1,27 @@
 // =================================================================================
 // CLIENTES
 // =================================================================================
+// La hoja Clientes puede devolver números o fechas donde esperamos texto
+// (Sheets convierte "5543456698" a número). Todo se normaliza a texto antes
+// de comparar: si no, .toLowerCase()/.includes() truenan y se duplican clientes.
+function _aTexto(valor) {
+if (valor === null || valor === undefined) return "";
+return String(valor).trim();
+}
 function registrarOActualizarCliente(ss, cliente) {
 const hoja = ss.getSheetByName("Clientes");
 const datos = hoja.getDataRange().getValues();
-const nombre = cliente.nombre.trim();
-const telefono = (cliente.telefono||"").trim();
-const email = (cliente.email||"").trim();
+const nombre = _aTexto(cliente.nombre);
+const telefono = _aTexto(cliente.telefono);
+const email = _aTexto(cliente.email);
 for (let i = 1; i < datos.length; i++) {
-const [id, nom, tel, eml] = datos[i];
+const [id] = datos[i];
 if (!id) continue;
-if ((telefono&&tel===telefono)||(email&&eml===email)||(nom&&nom.toLowerCase()===nombre.toLowerCase()&&!telefono&&!email)) {
+const nom = _aTexto(datos[i][1]), tel = _aTexto(datos[i][2]), eml = _aTexto(datos[i][3]);
+const mismoTel = telefono && tel === telefono;
+const mismoEmail = email && eml.toLowerCase() === email.toLowerCase();
+const mismoNombre = !telefono && !email && nom && nom.toLowerCase() === nombre.toLowerCase();
+if (mismoTel || mismoEmail || mismoNombre) {
 if (telefono&&!tel) hoja.getRange(i+1,3).setValue(telefono);
 if (email&&!eml) hoja.getRange(i+1,4).setValue(email);
 return id;
@@ -36,12 +47,13 @@ if (!busqueda || busqueda.length < 2) return { ok: true, clientes: [] };
 const ss = SpreadsheetApp.getActiveSpreadsheet();
 const hoja = ss.getSheetByName("Clientes");
 const datos = hoja.getDataRange().getValues();
-const term = busqueda.toLowerCase();
+const term = _aTexto(busqueda).toLowerCase();
 const clientes = [];
 for (let i = 1; i < datos.length; i++) {
-const [id, nombre, telefono, email] = datos[i];
+const [id] = datos[i];
 if (!id) continue;
-if ((nombre&&nombre.toLowerCase().includes(term))||(telefono&&telefono.includes(term))||(email&&email.toLowerCase().includes(term))) clientes.push({ id, nombre, telefono, email });
+const nombre = _aTexto(datos[i][1]), telefono = _aTexto(datos[i][2]), email = _aTexto(datos[i][3]);
+if (nombre.toLowerCase().includes(term)||telefono.includes(term)||email.toLowerCase().includes(term)) clientes.push({ id, nombre, telefono, email });
 if (clientes.length >= 5) break;
 }
 return { ok: true, clientes };
