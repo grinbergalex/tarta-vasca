@@ -18,7 +18,7 @@ index.html  ──fetch──►  Apps Script web app (backend/)  ──►  Goo
   Servido por **GitHub Pages desde `main`**: ⚠️ **cada push a `main` es un
   deploy inmediato a producción** (https://grinbergalex.github.io/tarta-vasca/).
 - **Backend**: `backend/*.js` — Google Apps Script vinculado al Sheet.
-  Se sincroniza con `clasp` (login: maichomper@gmail.com).
+  Se sincroniza con `clasp` (login actual: grinbergalex@gmail.com).
   Todos los archivos comparten UN solo namespace global (los límites de
   archivo son solo organización). El prefijo numérico define el orden:
   - `01`–`16`: código vivo, agrupado por dominio (config, InvCore, HTTP,
