@@ -4,7 +4,8 @@ var REP = { base:[], rutas:[], params:{capTartas:13,jornadaMin:360,choferes:3}, 
 var repVista = { rol:"Admin", chofer:"" };
 var repEsc = null, repIdeal = null;
 async function cargarReparto(){
-  var hoy = new Date().toISOString().slice(0,10);
+  // Fecha local, NO UTC: toISOString adelantaba un día a partir de las 18:00 de CDMX.
+  var hoy = _hoyCDMXString();
   if(L("rep-fecha")&&!L("rep-fecha").value) L("rep-fecha").value = hoy;
   if(L("rep-hoy")&&!L("rep-hoy").value) L("rep-hoy").value = hoy;
   // Fecha de envío del pedido (punto 7): default mañana
@@ -370,7 +371,7 @@ function repRenderAvisos(){
 function repTartasPorFecha(){ var m={}; REP.rutas.forEach(function(r){ if(r.estado==="Cerrada")return; var t=repAllStops(r).reduce(function(a,s){return a+(+s.tartas||0);},0); m[r.fecha]=(m[r.fecha]||0)+t; }); return m; }
 function repDias(a,b){ return Math.round((new Date(b+"T00:00:00")-new Date(a+"T00:00:00"))/86400000); }
 function repRenderCocina(){
-  var cont=L("rep-cocina"); var hoy=L("rep-hoy").value||new Date().toISOString().slice(0,10);
+  var cont=L("rep-cocina"); var hoy=L("rep-hoy").value||_hoyCDMXString();
   var need=repTartasPorFecha(), fechas=Object.keys(need).sort();
   if(!fechas.length){ cont.innerHTML="<div style='font-size:12px;color:#888'>No hay rutas que requieran producción.</div>"; return; }
   cont.innerHTML = fechas.map(function(f){ var nec=need[f], d=repDias(hoy,f), alerta=(d>=1&&d<=2);
@@ -384,7 +385,7 @@ function repRenderInv(){
   var pf=repTartasPorFecha();              // {fecha: tartas} de rutas no cerradas
   var fechas=Object.keys(pf).sort();
   var ruta=fechas.reduce(function(a,k){return a+pf[k];},0), pos=total-ruta;
-  var hoy=(L("rep-hoy")&&L("rep-hoy").value)||new Date().toISOString().slice(0,10);
+  var hoy=(L("rep-hoy")&&L("rep-hoy").value)||_hoyCDMXString();
   var html="";
   // Bloque RUTA — tartas para envío (puntos 4 y 5)
   if(filtro==="todo"||filtro==="ruta"){

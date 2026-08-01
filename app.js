@@ -265,7 +265,11 @@ function _loadPane(t){
   else if(t==="auditoria") cargarAuditoria();
   else if(t==="catalogo") cargarCatalogoPantalla();
   else if(t==="ventas") cargarVentas();
-  else if(t==="reporte") cargarReporte();
+  // OJO: el pane "reporte" NO carga aquí. Cada sub-pestaña trae su propio rango
+  // de ventas a `S.ventasReporte` (diario = hoy, período = todo el historial) y
+  // cargar las dos a la vez las hacía competir: la que respondiera al final
+  // dejaba su dataset, y el siguiente re-render (tocar un chip o un plazo)
+  // filtraba sobre el rango equivocado → reportes en cero. Carga `setReporteTab`.
   else if(t==="venta") iniciarVenta();
   else if(t==="rutas") { iniciarRuta(); cargarRutasAbiertas(); }
   else if(t==="costos") { if(!S.insumos.length) cargarCostos(); else renderCostos(); }
@@ -2353,7 +2357,9 @@ async function cargarUtilidades(){
   const primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
   L("f-desde").value = _fmtDateInput(primerDia);
   L("f-hasta").value  = _fmtDateInput(hoy);
-  const [resV, resR, resI] = await Promise.all([api("getVentas"), api("getRecetas"), api("getInsumos")]);
+  // Sin rango el backend recorta a las últimas 200 filas: la utilidad del mes salía
+  // subcontada y cualquier período pasado, en cero. Se pide todo el historial.
+  const [resV, resR, resI] = await Promise.all([api("getVentas", { desde: "2020-01-01" }), api("getRecetas"), api("getInsumos")]);
   if(!resV.ok){ L("util-ops-list").innerHTML=`<div class="empty-state"><div>Error al cargar ventas</div></div>`; return; }
   utilState.ventas  = resV.ventas  || [];
   utilState.recetas = resR.ok ? resR.recetas : (S.recetas || []);
@@ -2364,7 +2370,9 @@ async function cargarUtilidades(){
   _poblarFiltrosUtil();
   renderUtilidades();
 }
-function _fmtDateInput(d){ return d.toISOString().substring(0,10); }
+// Fecha local, NO UTC: `toISOString()` adelantaba un día a partir de las 18:00
+// de CDMX, así que el "Hasta" del filtro aparecía con la fecha de mañana.
+function _fmtDateInput(d){ return _fmtFecha(d); }
 function _poblarFiltrosUtil(){
   const ventas = utilState.ventas;
   const sucursales = [...new Set(ventas.map(v=>v.sucursal).filter(Boolean))];
@@ -3109,6 +3117,7 @@ function setReporteTab(tab) {
     const el = L("reporte-" + s);
     if (el) el.classList.toggle("active", s === tab);
   });
+  if (tab === "diario") cargarReporte();
   if (tab === "stockhora") cargarStockHora();
   if (tab === "periodo") cargarReportePeriodo();
   if (tab === "conciliacion") cargarConciliacion();
