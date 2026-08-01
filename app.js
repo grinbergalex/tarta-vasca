@@ -3570,7 +3570,7 @@ function _hoyDate() {
 }
 function _calcularRangoPreset(preset) {
   const hoy = new Date();
-  const fin = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59);
+  let fin = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59);
   let ini = new Date(fin);
   if (preset === "semana") {
     const dow = hoy.getDay() || 7;
@@ -3578,6 +3578,11 @@ function _calcularRangoPreset(preset) {
     ini.setHours(0, 0, 0, 0);
   } else if (preset === "mes") {
     ini = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+  } else if (preset === "mesanterior") {
+    // Mes calendario cerrado: del día 1 al último día del mes pasado.
+    // Es el único preset que no termina hoy, por eso mueve también `fin`.
+    ini = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+    fin = new Date(hoy.getFullYear(), hoy.getMonth(), 0, 23, 59, 59);
   } else if (preset === "trimestre") {
     const q = Math.floor(hoy.getMonth() / 3);
     ini = new Date(hoy.getFullYear(), q * 3, 1);
