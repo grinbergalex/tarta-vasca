@@ -117,6 +117,27 @@ function _tipoOpVenta(v) {
   return "venta";
 }
 const TIPOS_OP = [["venta","🛍 Venta"],["regalo","🎁 Regalo"],["merma","🗑 Merma"]];
+// A diferencia de sabores/tamaños/canales (vacío = todos), el filtro de tipo de
+// operación vacío dejaba TODOS los reportes en cero: "Venta" viene activo por
+// defecto, así que tocar ese chip lo apagaba y no quedaba ningún tipo visible.
+// Aquí se garantiza que siempre haya al menos un tipo activo.
+function _tiposActivos(filtros) {
+  const t = filtros && filtros.tipos;
+  return (t && t.length) ? t : ["venta"];
+}
+// Devuelve true si el filtro cambió (y hay que re-renderizar).
+function _toggleFiltro(filtros, campo, valor) {
+  const arr = filtros && filtros[campo];
+  if (!arr) return false;
+  const idx = arr.indexOf(valor);
+  if (idx < 0) { arr.push(valor); return true; }
+  if (campo === "tipos" && arr.length === 1) {
+    toast("Deja al menos un tipo de operación seleccionado", "error");
+    return false;
+  }
+  arr.splice(idx, 1);
+  return true;
+}
 function _renderChipsTipo(idEl, filtros, fnToggle) {
   const el = L(idEl);
   if (!el) return;
@@ -2764,9 +2785,7 @@ function _renderFiltrosReporte() {
   _renderChipsTipo("reporte-filtros-tipo", f, "toggleFiltroReporte"); // v3.4.16
 }
 function toggleFiltroReporte(tipo, valor) {
-  const arr = S.reporteFiltros[tipo];
-  const idx = arr.indexOf(valor);
-  if (idx >= 0) arr.splice(idx, 1); else arr.push(valor);
+  if (!_toggleFiltro(S.reporteFiltros, tipo, valor)) return;
   _renderFiltrosReporte();
   renderReporte();
 }
@@ -2782,7 +2801,7 @@ function _ventasFiltradas(rangoFn) {
   const f = S.reporteFiltros;
   return (S.ventasReporte || []).filter(v => {
     if (!v.fecha) return false;
-    if (!(f.tipos||["venta"]).includes(_tipoOpVenta(v))) return false; // v3.4.16: filtro tipo
+    if (!_tiposActivos(f).includes(_tipoOpVenta(v))) return false; // v3.4.16: filtro tipo
     if (!rangoFn(v.fecha, hoyStr)) return false;
     if (f.sabores.length && !f.sabores.includes(v.sabor)) return false;
     if (f.tamanos.length && !f.tamanos.includes(v.tamano)) return false;
@@ -3382,9 +3401,7 @@ function _renderFiltrosOportunidad() {
   }
 }
 function toggleFiltroOport(tipo, valor) {
-  const arr = S.oportFiltros[tipo];
-  const idx = arr.indexOf(valor);
-  if (idx >= 0) arr.splice(idx, 1); else arr.push(valor);
+  if (!_toggleFiltro(S.oportFiltros, tipo, valor)) return;
   _renderFiltrosOportunidad();
   renderStockHora();
   renderOportunidad();
@@ -3397,7 +3414,7 @@ function setOportAgrupacion(modo) {
 function _ventasOportFiltradas(ventas) {
   const f = S.oportFiltros || { sabores:[], tamanos:[], canales:[], tipos:["venta"] };
   return (ventas || []).filter(v => {
-    if (!(f.tipos||["venta"]).includes(_tipoOpVenta(v))) return false; // v3.4.16: filtro tipo
+    if (!_tiposActivos(f).includes(_tipoOpVenta(v))) return false; // v3.4.16: filtro tipo
     if (f.sabores.length && !f.sabores.includes(v.sabor)) return false;
     if (f.tamanos.length && !f.tamanos.includes(v.tamano)) return false;
     if (f.canales.length && !f.canales.includes(v.canal)) return false;
@@ -3413,7 +3430,7 @@ function renderStockHora() {
   const f = S.oportFiltros || { sabores:[], tamanos:[], canales:[], tipos:["venta"] };
   const ventasHoy = (S.ventasReporte || []).filter(v => {
     if (!v.fecha || !String(v.fecha).startsWith(hoyStr)) return false;
-    if (!(f.tipos||["venta"]).includes(_tipoOpVenta(v))) return false; // v3.4.16: filtro tipo
+    if (!_tiposActivos(f).includes(_tipoOpVenta(v))) return false; // v3.4.16: filtro tipo
     if ((v.tipoOp || v.tipo_op) === "Reservado") return false; // excluir apartados
     if (v.canal === "Ruta") return false; // excluir ruta
     if (v.canal === "Merma" || v.canal === "Cortesía") return false; // excluir mermas/cortesías
@@ -3622,9 +3639,7 @@ function _renderFiltrosPeriodo() {
   _renderChipsTipo("periodo-filtros-tipo", f, "toggleFiltroPeriodo"); // v3.4.16
 }
 function toggleFiltroPeriodo(tipo, valor) {
-  const arr = S.periodoFiltros[tipo];
-  const idx = arr.indexOf(valor);
-  if (idx >= 0) arr.splice(idx, 1); else arr.push(valor);
+  if (!_toggleFiltro(S.periodoFiltros, tipo, valor)) return;
   renderReportePeriodo();
 }
 function _ventasPeriodoFiltradas() {
@@ -3640,7 +3655,7 @@ function _ventasPeriodoFiltradas() {
   const f = S.periodoFiltros;
   return (S.ventasReporte || []).filter(v => {
     if (!v.fecha) return false;
-    if (!(f.tipos||["venta"]).includes(_tipoOpVenta(v))) return false; // v3.4.16: filtro tipo
+    if (!_tiposActivos(f).includes(_tipoOpVenta(v))) return false; // v3.4.16: filtro tipo
     const fv = new Date(v.fecha);
     if (ini && fv < ini) return false;
     if (fin && fv > fin) return false;
@@ -4390,9 +4405,7 @@ function _renderFiltrosConci() {
 }
 function toggleFiltroConci(tipo, valor) {
   if (!S.conciFiltros) S.conciFiltros = { tipos: ["venta"] };
-  const arr = S.conciFiltros[tipo];
-  const idx = arr.indexOf(valor);
-  if (idx >= 0) arr.splice(idx, 1); else arr.push(valor);
+  if (!_toggleFiltro(S.conciFiltros, tipo, valor)) return;
   _renderFiltrosConci();
   renderConciliacion();
 }
@@ -4419,7 +4432,7 @@ function _ventasEnRangoConci() {
   const f = S.conciFiltros || { tipos: ["venta"] };
   return (S.ventasReporte || []).filter(v => {
     if (!v.fecha) return false;
-    if (!(f.tipos||["venta"]).includes(_tipoOpVenta(v))) return false; // v3.4.16: filtro tipo
+    if (!_tiposActivos(f).includes(_tipoOpVenta(v))) return false; // v3.4.16: filtro tipo
     const fStr = String(v.fecha).substring(0, 10);
     return fStr >= d && fStr <= h;
   });
@@ -4625,9 +4638,7 @@ function _renderFiltrosUtilDiario() {
   _renderChipsTipo("utildiario-filtros-tipo", f, "toggleFiltroUtilDiario"); // v3.4.16
 }
 function toggleFiltroUtilDiario(tipo, valor) {
-  const arr = S.utildiarioFiltros[tipo];
-  const idx = arr.indexOf(valor);
-  if (idx >= 0) arr.splice(idx, 1); else arr.push(valor);
+  if (!_toggleFiltro(S.utildiarioFiltros, tipo, valor)) return;
   _renderFiltrosUtilDiario();
   renderUtilDiario();
 }
@@ -4636,7 +4647,7 @@ function renderUtilDiario() {
   const f = S.utildiarioFiltros;
   const ventasHoyBruto = (S.ventasReporte || []).filter(v => {
     if (!v.fecha) return false;
-    if (!(f.tipos||["venta"]).includes(_tipoOpVenta(v))) return false; // v3.4.16: filtro tipo
+    if (!_tiposActivos(f).includes(_tipoOpVenta(v))) return false; // v3.4.16: filtro tipo
     if (!String(v.fecha).startsWith(hoyStr)) return false;
     if (f.sabores.length && !f.sabores.includes(v.sabor)) return false;
     if (f.tamanos.length && !f.tamanos.includes(v.tamano)) return false;
@@ -4671,9 +4682,7 @@ function _renderFiltrosUtilPeriodo() {
   _renderChipsTipo("utilperiodo-filtros-tipo", f, "toggleFiltroUtilPeriodo"); // v3.4.16
 }
 function toggleFiltroUtilPeriodo(tipo, valor) {
-  const arr = S.utilperiodoFiltros[tipo];
-  const idx = arr.indexOf(valor);
-  if (idx >= 0) arr.splice(idx, 1); else arr.push(valor);
+  if (!_toggleFiltro(S.utilperiodoFiltros, tipo, valor)) return;
   renderUtilPeriodo();
 }
 function setUtilPeriodoPreset(preset) {
@@ -4714,7 +4723,7 @@ function _ventasUtilPeriodoFiltradas() {
   const f = S.utilperiodoFiltros;
   return (S.ventasReporte || []).filter(v => {
     if (!v.fecha) return false;
-    if (!(f.tipos||["venta"]).includes(_tipoOpVenta(v))) return false; // v3.4.16: filtro tipo
+    if (!_tiposActivos(f).includes(_tipoOpVenta(v))) return false; // v3.4.16: filtro tipo
     const fv = new Date(v.fecha);
     if (ini && fv < ini) return false;
     if (fin && fv > fin) return false;
