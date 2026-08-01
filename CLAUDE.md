@@ -52,6 +52,11 @@ index.html  ──fetch──►  Apps Script web app (backend/)  ──►  Goo
 - Toda acción nueva del API: agregarla al `switch` de `despachar()` en
   `Código.js` **y**, si es de solo lectura, a la lista `LECTURA` en
   `index.html` (las lecturas van por GET, las escrituras por POST).
+- **El filtro "Tipo de operación" de los reportes nunca queda vacío.** A diferencia
+  de sabores/tamaños/canales (vacío = todos), una lista de `tipos` vacía no dejaba
+  pasar ninguna fila y todos los reportes salían en cero: el chip "Venta" viene
+  activo y tocarlo lo apagaba (bug 1-ago). El toggle (`_toggleFiltro`) impide
+  apagar el último tipo y `_tiposActivos()` cae a `venta` si llegara vacío.
 - Toda mutación de inventario pasa por InvCore y queda en `Inv_Ledger`
   (ver encabezado de `02_invcore.js`). `auditarConsistencia()` debe dar verde.
 - Los textos de UI y comentarios van en español.
