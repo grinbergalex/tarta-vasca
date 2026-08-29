@@ -51,7 +51,9 @@ function generarReciboPDF(idVenta, sesion){
   var ex=folder.getFilesByName("Recibo_"+idVenta+".pdf"); while(ex.hasNext()){ ex.next().setTrashed(true); }
   var file=folder.createFile(blob);
   try{ file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); }catch(e){}
-  return {ok:true, url:file.getUrl(), id:file.getId(), total:totalFinal};
+  // html: el frontend lo imprime en un iframe local (mismo origen) — el PDF de Drive
+  // no se puede imprimir desde un iframe por ser de otro dominio.
+  return {ok:true, url:file.getUrl(), id:file.getId(), total:totalFinal, html:html};
 }
 
 

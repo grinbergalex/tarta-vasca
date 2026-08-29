@@ -1123,9 +1123,14 @@ function limpiarFiltrosVentas(){
   cargarVentas();
 }
 async function imprimirReciboAuto(idVenta){
+  // La venta ya quedó registrada antes de llegar aquí y el PDF queda en Drive
+  // (recibo digital) aunque la impresión falle: nada de esta función puede
+  // tirar el flujo de venta.
   try{
     const res = await api("generarReciboPDF", {idVenta});
     if(!res || !res.ok || !res.url){ toast((res&&res.error)||"No se pudo generar el recibo","error"); return; }
+    if(res.html){ imprimirReciboHTML(res.html); return; }
+    // Respaldo (backend viejo sin campo html): intento anterior con el PDF de Drive.
     const ifr=document.createElement('iframe');
     ifr.style.display='none';
     ifr.src=res.url;
@@ -1135,6 +1140,29 @@ async function imprimirReciboAuto(idVenta){
       setTimeout(()=>{ try{ document.body.removeChild(ifr); }catch(e){} }, 60000);
     };
   }catch(e){ toast("Error al generar el recibo","error"); }
+}
+
+// Imprime el recibo en un iframe local (mismo origen). Con Chrome en modo
+// --kiosk-printing sale solo, sin diálogo; sin kiosco abre el diálogo normal.
+// Impresora apagada = el trabajo espera en la cola de Windows; la app no se entera.
+function imprimirReciboHTML(html){
+  try{
+    const ifr=document.createElement("iframe");
+    ifr.style.cssText="position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden";
+    document.body.appendChild(ifr);
+    const doc=ifr.contentDocument||ifr.contentWindow.document;
+    doc.open();
+    doc.write('<!doctype html><html><head><meta charset="utf-8"><style>'+
+      '@page{size:72mm auto;margin:0}'+
+      'body{margin:0;padding:2mm 0}'+
+      'body>div{width:auto!important;max-width:68mm;margin:0!important}'+
+      '</style></head><body>'+html+'</body></html>');
+    doc.close();
+    setTimeout(function(){
+      try{ ifr.contentWindow.focus(); ifr.contentWindow.print(); }catch(e){}
+      setTimeout(function(){ try{ document.body.removeChild(ifr); }catch(e){} }, 60000);
+    }, 150);
+  }catch(e){ /* la impresión nunca debe romper la venta */ }
 }
 
 async function enviarRecibo(idVenta, opts){
