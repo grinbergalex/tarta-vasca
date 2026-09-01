@@ -57,11 +57,11 @@ async function api(accion, body={}, _reintento=false) {
   try {
     if (LECTURA.includes(accion)) {
       const r = await fetch(API_URL+"?data="+encodeURIComponent(JSON.stringify(payload)),{redirect:"follow"});
-      return JSON.parse(await r.text());
+      return _chequeoSesion(JSON.parse(await r.text()));
     } else {
       const r = await fetch(API_URL,{method:"POST",body:JSON.stringify(payload),redirect:"follow"});
       const txt = await r.text();
-      try { return JSON.parse(txt); }
+      try { return _chequeoSesion(JSON.parse(txt)); }
       catch(e) {
         if (payload.opId && !_reintento) { await new Promise(rs=>setTimeout(rs,1500)); return api(accion, body, true); }
         return {ok:false, error:"No se pudo confirmar la respuesta del servidor. Antes de repetir, revisa Movimientos recientes para ver si la acción ya se guardó."};
@@ -155,10 +155,45 @@ async function doLogin() {
   btn.disabled=true;btn.textContent="Entrando...";err.style.display="none";
   const device_info = navigator.userAgent.substring(0,80);
   const res=await api("login",{usuario,password,device_info});
-  if(res.ok){S.token=res.token;S.usuario=res.usuario;S.rol=res.rol;S.sucursal=res.sucursal;S.permisos=res.permisos||null;iniciarApp();}
+  if(res.ok){S.token=res.token;S.usuario=res.usuario;S.rol=res.rol;S.sucursal=res.sucursal;S.permisos=res.permisos||null;_guardarSesion();iniciarApp();}
   else{err.textContent=res.error||"Error al iniciar sesión.";err.style.display="block";}
   btn.disabled=false;btn.textContent="Entrar";
 }
+// ---- Sesion persistente ----
+// El token vivia solo en memoria: cualquier recarga de la pagina dejaba fuera a
+// la vendedora. Al imprimir por PassPRNT la app se lleva la pantalla y al volver
+// Chrome puede recargar, asi que la sesion tiene que sobrevivir a la recarga.
+const TV_SESION = "tv_sesion";
+function _guardarSesion(){
+  try{ localStorage.setItem(TV_SESION, JSON.stringify({token:S.token,usuario:S.usuario,rol:S.rol,sucursal:S.sucursal,permisos:S.permisos})); }catch(e){}
+}
+function _borrarSesion(){ try{ localStorage.removeItem(TV_SESION); }catch(e){} }
+function _restaurarSesion(){
+  try{
+    const g = JSON.parse(localStorage.getItem(TV_SESION)||"null");
+    if(!g || !g.token) return false;
+    S.token=g.token; S.usuario=g.usuario; S.rol=g.rol; S.sucursal=g.sucursal; S.permisos=g.permisos||null;
+    iniciarApp();
+    return true;
+  }catch(e){ return false; }
+}
+// Si el servidor dice que el token ya no sirve, se tira el guardado para que la
+// siguiente carga muestre el login y no una sesion zombie.
+function _chequeoSesion(res){
+  try{
+    if(res && res.ok===false && /Sesi[oó]n inv[aá]lida|expirada/i.test(res.error||"")){
+      _borrarSesion();
+      if(S.token){                       // sesion restaurada que ya no sirve: de vuelta al login
+        S.token=null;
+        const a=L("app"), l=L("login-screen");
+        if(a) a.style.display="none";
+        if(l) l.style.display="flex";
+      }
+    }
+  }catch(e){}
+  return res;
+}
+
 function iniciarApp() {
   L("login-screen").style.display="none";
   L("app").style.display="flex";
@@ -1086,6 +1121,7 @@ function recalcularPreciosPaquetesEnCarrito() {
   if (cambio) { toast("Precios de paquetes recalculados para nuevo canal"); renderCarrito(); }
 }
 document.addEventListener("DOMContentLoaded", () => {
+  _restaurarSesion();
   const sel = L("venta-canal");
   if (sel) sel.addEventListener("change", () => {
     if (S.modoItem !== "suelto") setModoItem(S.modoItem);
@@ -1129,7 +1165,11 @@ async function imprimirReciboAuto(idVenta){
   try{
     const res = await api("generarReciboPDF", {idVenta});
     if(!res || !res.ok || !res.url){ toast((res&&res.error)||"No se pudo generar el recibo","error"); return; }
-    if(res.html){ imprimirReciboHTML(res.html); return; }
+    if(res.html){
+      if(esAndroid()) imprimirReciboAndroid(res.html);
+      else imprimirReciboHTML(res.html);
+      return;
+    }
     // Respaldo (backend viejo sin campo html): intento anterior con el PDF de Drive.
     const ifr=document.createElement('iframe');
     ifr.style.display='none';
@@ -1164,6 +1204,60 @@ function imprimirReciboHTML(html){
     }, 150);
   }catch(e){ /* la impresión nunca debe romper la venta */ }
 }
+
+// ---- Tablets Android: impresion via la app PassPRNT de Star ----
+// Chrome de Android no sabe imprimir en una impresora USB: su dialogo solo ve
+// impresoras de red o "Guardar como PDF". PassPRNT hace ese puente — se le pasa
+// el recibo en HTML por su esquema de URL y ella lo manda a la impresora.
+// Si algo de esto falla, la venta ya quedo registrada y el PDF ya esta en Drive.
+function esAndroid(){ return /Android/i.test(navigator.userAgent||""); }
+
+function _urlPassPRNT(html){
+  const doc = "<html><head><meta charset='utf-8'></head><body style='margin:0'>"+html+"</body></html>";
+  const back = location.origin + location.pathname;  // sin query: PassPRNT agrega la suya
+  return "starpassprnt://v1/print/nopreview"
+       + "?html=" + encodeURIComponent(doc)
+       + "&size=576"
+       + "&cut=partial"
+       + "&back=" + encodeURIComponent(back);
+}
+
+function imprimirReciboAndroid(html){
+  // Chrome bloquea abrir una app externa cuando la llamada no viene de un toque
+  // del usuario, y aqui ya pasamos por dos llamadas al servidor. Por eso, ademas
+  // del intento automatico, se deja un boton visible: si el automatico no
+  // dispara, la vendedora da un toque y el recibo sale igual.
+  _botonImprimir(html);
+  try{ location.href = _urlPassPRNT(html); }catch(e){}
+}
+
+function _botonImprimir(html){
+  const previo = L("btn-print-fallback"); if(previo) previo.remove();
+  const b = document.createElement("button");
+  b.id = "btn-print-fallback";
+  b.textContent = "🖨 Imprimir recibo";
+  b.style.cssText = "position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:9999;"
+                  + "padding:14px 24px;font-size:16px;font-weight:600;border:0;border-radius:10px;"
+                  + "background:#C8602A;color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.35)";
+  b.addEventListener("click", ()=>{ try{ location.href = _urlPassPRNT(html); }catch(e){} });
+  document.body.appendChild(b);
+  setTimeout(()=>{ try{ b.remove(); }catch(e){} }, 60000);
+}
+
+// PassPRNT regresa a la pagina agregando el resultado de la impresion en la URL.
+(function _resultadoPassPRNT(){
+  try{
+    const p = new URLSearchParams(location.search||"");
+    if(!p.has("passprnt_code")) return;
+    const code = p.get("passprnt_code"), msg = p.get("passprnt_message")||"";
+    history.replaceState(null, "", location.pathname);
+    setTimeout(()=>{
+      if(typeof toast !== "function") return;
+      if(code === "0") toast("✅ Recibo impreso");
+      else toast("No se pudo imprimir ("+(msg||("codigo "+code))+"). La venta si quedo registrada.","error");
+    }, 1200);
+  }catch(e){}
+})();
 
 async function enviarRecibo(idVenta, opts){
   opts=opts||{};
@@ -2791,6 +2885,7 @@ L("btn-logout").addEventListener("click",async()=>{
   if(S.token){
     try { await api("logout",{}); } catch(e){}
   }
+  _borrarSesion();
   limpiarVenta();
   S={token:null,usuario:null,rol:null,sucursal:null,permisos:null,catalogo:null,precios:null,stock:null,carrito:[],clienteSel:null,filtroSuc:null,filtroTam:null,insumos:[],recetas:[],recetaActual:[],costoEnvio:0,zonasEnvio:[],canalPrecios:[],comisionesConfig:{},movimientos:[],anularPendiente:null,reporteFiltros:{sabores:[],tamanos:[],canales:[],tipos:["venta"]},periodoFiltros:{sabores:[],tamanos:[],canales:[],tipos:["venta"]},oportFiltros:{sabores:[],tamanos:[],canales:[],tipos:["venta"]},utildiarioFiltros:{sabores:[],tamanos:[],canales:[],tipos:["venta"]},utilperiodoFiltros:{sabores:[],tamanos:[],canales:[],tipos:["venta"]},utilperiodoActual:{preset:"semana",desde:null,hasta:null,modoLinea:"dia"},conciFiltros:{tipos:["venta"]}};
   L("app").style.display="none";L("login-screen").style.display="flex";L("login-user").value="";L("login-pass").value="";
