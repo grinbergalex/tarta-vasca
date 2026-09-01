@@ -154,7 +154,7 @@ case "marcarLeidoMensaje":      return marcarLeidoMensaje(body, sesion);
 case "getAlertas":              return getAlertas(sesion);
 case "getComisionesConfig":     return getComisionesConfig(sesion);
 case "saveComisionConfig":      return saveComisionConfig(body, sesion);
-case "generarReciboPDF":        return generarReciboPDF(body.idVenta||body.id, sesion);
+case "generarReciboPDF":        return generarReciboPDF(body.idVenta||body.id, sesion, body.soloHtml===true);
     case "enviarReciboEmail":       return enviarReciboEmail(body.idVenta||body.id, body.email, sesion);
     case "auditarConsistencia":     return auditarConsistencia();
     case "migrarReservasFisicas":   soloOwner(sesion); return migrarReservasFisicas();

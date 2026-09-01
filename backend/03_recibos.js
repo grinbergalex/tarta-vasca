@@ -13,7 +13,60 @@ function _ensureFolderRecibos(){
   var it=DriveApp.getFoldersByName("Recibos Tarta Vasca");
   return it.hasNext()? it.next() : DriveApp.createFolder("Recibos Tarta Vasca");
 }
-function generarReciboPDF(idVenta, sesion){
+// Recibo para impresora termica de 80mm. El area imprimible son 576 puntos y a
+// esa densidad la maqueta de pantalla (300 px) sale diminuta: aqui todo se
+// dimensiona contra esos 576 puntos. Se evitan flex y grid — el motor que
+// dibuja el HTML en la app de impresion es viejo y solo respeta float.
+function _reciboHtmlTermico(d){
+  function esc(t){ return String(t==null?"":t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+  var filas = (d.lineas||[]).map(function(l){
+    return "<tr>"
+      + "<td style='padding:7px 0;vertical-align:top'>"+l.cant+"</td>"
+      + "<td style='padding:7px 10px;vertical-align:top'>"+esc(l.sabor)+" "+esc(l.tamano)+"</td>"
+      + "<td style='padding:7px 0;text-align:right;white-space:nowrap;vertical-align:top'>$"+l.sub+"</td>"
+      + "</tr>";
+  }).join("");
+  var sep = "<div style='border-top:3px dashed #000;margin:12px 0'></div>";
+  var fila2 = function(izq, der, tam, negrita){
+    return "<div style='font-size:"+tam+"px;"+(negrita?"font-weight:bold;":"")+"overflow:hidden;margin:4px 0'>"
+         + "<span style='float:left'>"+izq+"</span><span style='float:right'>"+der+"</span>"
+         + "</div><div style='clear:both'></div>";
+  };
+  return "<div style=\"width:576px;font-family:Arial,Helvetica,sans-serif;color:#000;font-size:26px;line-height:1.35\">"
+    + "<div style='text-align:center'>"
+    +   "<div style='font-size:46px;font-weight:bold'>"+esc(d.nombre)+"</div>"
+    +   "<div style='font-size:26px'>Sucursal "+esc(d.sucursal)+"</div>"
+    +   (d.direccion?"<div style='font-size:21px'>"+esc(d.direccion)+"</div>":"")
+    +   (d.telefono ?"<div style='font-size:21px'>Tel: "+esc(d.telefono)+"</div>":"")
+    + "</div>"
+    + sep
+    + "<div style='font-size:24px'>"
+    +   "Folio: "+esc(d.folio)+"<br>"
+    +   "Fecha: "+esc(d.fecha)+"<br>"
+    +   "Atendio: "+esc(d.usuario)+" &middot; Pago: "+esc(d.metodo)
+    +   (d.cliente?"<br>Cliente: "+esc(d.cliente):"")
+    + "</div>"
+    + sep
+    + "<table style='width:100%;border-collapse:collapse;font-size:26px'>"
+    +   "<thead><tr style='font-size:21px'>"
+    +     "<th style='text-align:left'>Cant</th>"
+    +     "<th style='text-align:left;padding-left:10px'>Producto</th>"
+    +     "<th style='text-align:right'>Importe</th>"
+    +   "</tr></thead><tbody>"+filas+"</tbody>"
+    + "</table>"
+    + sep
+    + (Number(d.envio)>0 ? fila2("Envio","$"+d.envio,26,false) : "")
+    + fila2("TOTAL","$"+d.total,42,true)
+    + sep
+    + "<div style='text-align:center;font-size:24px'>"+esc(d.pie)+(d.instagram?"<br>"+esc(d.instagram):"")+"</div>"
+    + "<div style='height:40px'></div>"
+    + "</div>";
+}
+
+// soloHtml: devuelve el recibo sin escribir el PDF en Drive. Esa escritura tarda
+// segundos, y mientras corre Android cancela el permiso para abrir la app de
+// impresion — por eso al imprimir se pide solo el HTML y el PDF se genera aparte.
+function generarReciboPDF(idVenta, sesion, soloHtml){
   requierePuedeVender(sesion);
   if(!idVenta) return {ok:false,error:"Falta idVenta."};
   var ss=SpreadsheetApp.getActiveSpreadsheet();
@@ -46,6 +99,13 @@ function generarReciboPDF(idVenta, sesion){
     (envio>0?"<div style='font-size:12px;display:flex;justify-content:space-between'><span>Envio</span><span>$"+envio+"</span></div>":"")+
     "<div style='font-size:16px;font-weight:bold;display:flex;justify-content:space-between'><span>TOTAL</span><span>$"+totalFinal+"</span></div><hr>"+
     "<div style='text-align:center;font-size:11px'>"+_cfgVal(ss,"negocio_mensaje_pie","Gracias por tu compra!")+(ig?"<br>"+ig:"")+"</div></div>";
+  var htmlTermico = _reciboHtmlTermico({
+    nombre:nombre, sucursal:suc, direccion:dir, telefono:tel, instagram:ig,
+    folio:idVenta, fecha:fechaTxt, usuario:info.usuario, metodo:info.metodo,
+    cliente:info.cliente, lineas:lineas, envio:envio, total:totalFinal,
+    pie:_cfgVal(ss,"negocio_mensaje_pie","Gracias por tu compra!")
+  });
+  if(soloHtml) return {ok:true, total:totalFinal, html:html, htmlTermico:htmlTermico};
   var blob=Utilities.newBlob(html,"text/html","recibo.html").getAs("application/pdf").setName("Recibo_"+idVenta+".pdf");
   var folder=_ensureFolderRecibos();
   var ex=folder.getFilesByName("Recibo_"+idVenta+".pdf"); while(ex.hasNext()){ ex.next().setTrashed(true); }
@@ -53,7 +113,7 @@ function generarReciboPDF(idVenta, sesion){
   try{ file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); }catch(e){}
   // html: el frontend lo imprime en un iframe local (mismo origen) — el PDF de Drive
   // no se puede imprimir desde un iframe por ser de otro dominio.
-  return {ok:true, url:file.getUrl(), id:file.getId(), total:totalFinal, html:html};
+  return {ok:true, url:file.getUrl(), id:file.getId(), total:totalFinal, html:html, htmlTermico:htmlTermico};
 }
 
 

@@ -1163,13 +1163,20 @@ async function imprimirReciboAuto(idVenta){
   // (recibo digital) aunque la impresión falle: nada de esta función puede
   // tirar el flujo de venta.
   try{
-    const res = await api("generarReciboPDF", {idVenta});
-    if(!res || !res.ok || !res.url){ toast((res&&res.error)||"No se pudo generar el recibo","error"); return; }
-    if(res.html){
-      if(esAndroid()) imprimirReciboAndroid(res.html);
-      else imprimirReciboHTML(res.html);
+    // En Android se pide SOLO el html (sin escribir el PDF en Drive): esa
+    // escritura tarda segundos y mientras tanto Android retira el permiso para
+    // abrir otra app, que es lo que obligaba a tocar el boton. El PDF se genera
+    // enseguida por separado — ese sigue siendo el recibo digital.
+    const rapido = esAndroid();
+    const res = await api("generarReciboPDF", rapido ? {idVenta, soloHtml:true} : {idVenta});
+    if(!res || !res.ok){ toast((res&&res.error)||"No se pudo generar el recibo","error"); return; }
+    if(rapido){
+      imprimirReciboAndroid(res.htmlTermico || res.html);
+      api("generarReciboPDF", {idVenta});   // recibo digital a Drive, ya sin prisa
       return;
     }
+    if(res.html){ imprimirReciboHTML(res.html); return; }
+    if(!res.url){ toast("No se pudo generar el recibo","error"); return; }
     // Respaldo (backend viejo sin campo html): intento anterior con el PDF de Drive.
     const ifr=document.createElement('iframe');
     ifr.style.display='none';
