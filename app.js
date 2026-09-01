@@ -1220,7 +1220,16 @@ function imprimirReciboHTML(html){
 function esAndroid(){ return /Android/i.test(navigator.userAgent||""); }
 
 function _urlPassPRNT(html){
-  const doc = "<html><head><meta charset='utf-8'></head><body style='margin:0'>"+html+"</body></html>";
+  // El viewport de 576 es lo que hace legible el ticket: sin el, la app dibuja el
+  // recibo en un lienzo ancho de navegador movil y despues lo encoge al ancho del
+  // papel, o sea sale reducido y borroso. Con esto 1 px del recibo = 1 punto de
+  // la impresora. text-size-adjust apaga el "font boosting" de Android, que si no
+  // reescala las letras por su cuenta.
+  const doc = "<!DOCTYPE html><html><head><meta charset='utf-8'>"
+            + "<meta name='viewport' content='width=576,initial-scale=1'>"
+            + "<style>html,body{margin:0;padding:0;width:576px;"
+            + "-webkit-text-size-adjust:none;text-size-adjust:none}</style>"
+            + "</head><body>"+html+"</body></html>";
   const back = location.origin + location.pathname;  // sin query: PassPRNT agrega la suya
   return "starpassprnt://v1/print/nopreview"
        + "?html=" + encodeURIComponent(doc)
