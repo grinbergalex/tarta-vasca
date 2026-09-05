@@ -627,11 +627,11 @@ function renderPagoDividido(soloEstado){
   const cont=L("pago-split-filas");
   if(!soloEstado && cont){
     cont.innerHTML = S.pagos.map((p,i)=>`
-      <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
-        <select class="mini-select" style="flex:1" onchange="setPagoMetodo(${i},this.value)">
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:nowrap">
+        <select class="mini-select" style="flex:1;min-width:0" onchange="setPagoMetodo(${i},this.value)">
           ${METODOS_PAGO.map(m=>`<option value="${m}" ${p.metodo===m?"selected":""}>${m}</option>`).join("")}
         </select>
-        <input class="mini-select" type="number" min="0" step="0.01" inputmode="decimal" style="width:110px;flex:none" value="${p.monto||""}" placeholder="$0" oninput="setPagoMonto(${i},this.value)">
+        <input class="mini-select" type="number" min="0" step="0.01" inputmode="decimal" style="width:95px;flex:none" value="${p.monto||""}" placeholder="$0" oninput="setPagoMonto(${i},this.value)">
         <button type="button" class="btn-outline" onclick="completarPago(${i})" style="width:auto;margin-top:0;padding:8px 10px;font-size:11px;white-space:nowrap">Resto</button>
         ${S.pagos.length>2?`<button type="button" class="btn-remove" onclick="quitarPago(${i})">×</button>`:""}
       </div>`).join("");
