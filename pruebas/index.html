@@ -135,6 +135,16 @@
               <select class="form-select" id="venta-metodo"></select>
             </div>
           </div>
+          <!-- v7.2 — Pago dividido: un mismo ticket cobrado con varios métodos -->
+          <div id="pago-dividido-box" style="margin-top:8px">
+            <button type="button" class="btn-outline" id="btn-dividir-pago" onclick="togglePagoDividido()" style="font-size:11px;padding:7px 12px">💳 Dividir el pago</button>
+            <div id="pago-split" style="display:none;margin-top:10px;background:rgba(200,96,42,.06);border:1px dashed var(--accent);border-radius:10px;padding:12px">
+              <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Pago dividido</div>
+              <div id="pago-split-filas"></div>
+              <button type="button" class="btn-outline" id="btn-agregar-pago" onclick="agregarPago()" style="font-size:11px;padding:6px 10px;margin-top:4px">+ Agregar método</button>
+              <div id="pago-split-estado" style="font-size:12px;margin-top:10px"></div>
+            </div>
+          </div>
           <!-- Aviso precio especial por canal -->
           <div id="canal-precio-aviso" style="display:none;font-size:12px;padding:8px 12px;border-radius:8px;margin-top:6px;background:rgba(134,189,173,.15);color:var(--success)"></div>
           <div class="canal-aviso" id="canal-aviso"><span>✓</span><span>Plataforma — no se piden datos del cliente</span></div>
