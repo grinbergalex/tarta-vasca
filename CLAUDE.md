@@ -47,9 +47,13 @@ el backend de pruebas es otro proyecto y su código se lleva a mano — por eso
 
 **Frontend — no hay paso extra.** Cualquier push a `main` es deploy inmediato a
 producción. Solo hay que subir el `?v=` de los archivos en `index.html` para que las
-tablets no se queden con código viejo.
+tablets no se queden con código viejo. ⚠️ **Olvidarlo no es cosmético:** el 5-sep-2026
+salió el `index.html` nuevo con el `app.js` viejo en caché y el botón de pago dividido
+quedó pintado pero muerto al tocarlo. Si cambia `app.js`, `styles.css` o `index.html`,
+sube el `?v=` en el mismo commit.
 
-**Backend — dos pasos, y el segundo es a mano:**
+**Backend — dos pasos.** El segundo se puede hacer a mano en el editor o desde la
+terminal; las dos vías hacen exactamente lo mismo.
 
 1. Editar en `backend/` (nunca directo en el editor online: git es la fuente de
    verdad; el editor online solo para correr funciones) y `cd backend && clasp push`.
@@ -59,8 +63,21 @@ tablets no se queden con código viejo.
    ⚠️ NUNCA "Nueva implementación": genera otra URL y el frontend (`API_URL`,
    `app.js` línea 2) seguiría hablándole a la vieja.
 
+El paso 2 desde la terminal (es como se publicó la v7.2 en los dos ambientes, sin
+abrir el editor):
+
+```bash
+clasp -P backend create-version "v7.2 pago dividido"
+clasp -P backend update-deployment <deploymentId> --versionNumber <N>
+```
+
+El `deploymentId` de producción es el que coincide con el `API_URL` de `app.js`;
+sale de `clasp list-deployments`. `update-deployment` reapunta la implementación
+**existente**, así que la URL no cambia — es el equivalente exacto de "Nueva versión",
+no de "Nueva implementación".
+
 ⚠️ El paso 2 publica **todo lo que haya en el proyecto**, no solo lo último que
-tocaste. Si alguien hizo `clasp push` antes, su código se va en esa misma versión.
+tocaste, y esto vale igual por terminal que por el editor. Si alguien hizo `clasp push` antes, su código se va en esa misma versión.
 Fue exactamente lo que pasó el 4-sep-2026: al publicar el pago dividido se
 desplegaron también, sin querer, los arreglos v7.1 que ya estaban subidos.
 
