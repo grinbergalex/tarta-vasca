@@ -31,17 +31,58 @@ index.html  ──fetch──►  Apps Script web app (backend/)  ──►  Goo
   Usuarios, Sesiones_Activas, Inv_Ledger, …) son **datos de producción**.
   La pestaña Utilidades es un reporte generado — se reconstruye sola.
 
-## Cómo desplegar el backend
+## Los dos ambientes
 
-1. Editar en `backend/` (nunca directo en el editor online: git es la fuente
-   de verdad; el editor online solo para correr funciones).
-2. `cd backend && clasp push`
-3. En el editor de Apps Script: **Implementar → Administrar implementaciones →
+|          | Producción (la tienda)                    | Pruebas                                |
+|----------|-------------------------------------------|----------------------------------------|
+| Frontend | raíz del repo → `/tarta-vasca/`           | `pruebas/` → `/tarta-vasca/pruebas/`   |
+| Backend  | la carpeta `backend/` (la que usa `clasp`)| **otro** proyecto de Apps Script, fuera de este repo |
+| Hoja     | la de producción                          | TARTA VASCA — PRUEBAS                  |
+
+**`backend/` es siempre producción.** Desde ahí no se puede desplegar a pruebas:
+el backend de pruebas es otro proyecto y su código se lleva a mano — por eso
+`pruebas/backend-solo-pruebas/` no tiene `.clasp.json`.
+
+## Cómo desplegar
+
+**Frontend — no hay paso extra.** Cualquier push a `main` es deploy inmediato a
+producción. Solo hay que subir el `?v=` de los archivos en `index.html` para que las
+tablets no se queden con código viejo.
+
+**Backend — dos pasos, y el segundo es a mano:**
+
+1. Editar en `backend/` (nunca directo en el editor online: git es la fuente de
+   verdad; el editor online solo para correr funciones) y `cd backend && clasp push`.
+   Esto **solo sube el código al proyecto: producción no cambia todavía.**
+2. En el editor de Apps Script: **Implementar → Administrar implementaciones →
    ✏️ sobre la implementación existente → Versión: "Nueva versión" → Implementar**.
-   ⚠️ NUNCA "Nueva implementación": eso genera otra URL y el frontend
-   (`API_URL` en index.html, línea ~1985) quedaría apuntando a la vieja.
+   ⚠️ NUNCA "Nueva implementación": genera otra URL y el frontend (`API_URL`,
+   `app.js` línea 2) seguiría hablándole a la vieja.
 
-`clasp push` solo sube el código; producción no cambia hasta el paso 3.
+⚠️ El paso 2 publica **todo lo que haya en el proyecto**, no solo lo último que
+tocaste. Si alguien hizo `clasp push` antes, su código se va en esa misma versión.
+Fue exactamente lo que pasó el 4-sep-2026: al publicar el pago dividido se
+desplegaron también, sin querer, los arreglos v7.1 que ya estaban subidos.
+
+## Cómo saber qué está desplegado (sin adivinar)
+
+```bash
+cd backend && clasp list-deployments
+```
+
+La línea cuyo id coincide con la `API_URL` de `app.js` es producción, y el `@N` dice
+qué versión está viva. Para leer el código exacto que está corriendo, sin tocar el
+repo ni el proyecto:
+
+```bash
+REPO=$(pwd)                                   # parado en la raiz del repo
+D=$(mktemp -d) && cp backend/.clasp.json "$D"
+(cd "$D" && clasp pull --versionNumber N)     # N = el numero que salio arriba
+diff -rq "$D" "$REPO/backend" | grep -v clasp.json    # sin lineas = coinciden
+rm -rf "$D"
+```
+
+Solo lee: no toca el repo ni el proyecto de Apps Script.
 
 ## Reglas duras
 
@@ -111,7 +152,11 @@ frontend en `caja.js` + pane `#tab-caja` en `index.html`.
 > (`cajaGateInicial` la lleva al flujo de apertura). `registrarVenta` **no** se
 > bloquea en backend (para no romper rutas/reservas); endurecerlo es un follow-up.
 
-## v7.1 — Arranque y sesiones (4-sep-2026)
+## v7.1 — Arranque, sesiones y CDN (4-sep-2026)
+
+> Desplegado en producción en la **versión 119** del Apps Script, junto con el pago
+> dividido. Nota: varios comentarios de estos cambios dicen "v7.2" (los de los CDN);
+> son estos, no el pago dividido de la sección de abajo, que se etiquetó igual.
 
 Arreglos a "a veces no entra / tarda mucho en poder usarlo":
 
