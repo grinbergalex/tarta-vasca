@@ -8,6 +8,7 @@ let S = {
   token:null, usuario:null, rol:null, sucursal:null, permisos:null,
   catalogo:null, precios:null, stock:null,
   carrito:[], clienteSel:null, comisionesConfig:{},
+  pagoDividido:false, pagos:[],   // v7.2 — desglose del ticket cuando se cobra con varios métodos
   filtroSuc:null, filtroTam:null, precioEditar:null, itemTipo:null,
   insumos:[], recetas:[], recetaActual:[],
   movimientos:[], anularPendiente:null,
@@ -543,20 +544,110 @@ function llenar(id, opciones) {
   sel.innerHTML=opciones.map(o=>`<option value="${o}">${o}</option>`).join("");
 }
 const COMISIONES_DEFAULT = {"Rappi":-0.23,"Uber Eats":-0.23,"Tarjeta":-0.06,"Transferencia":-0.03,"Efectivo":0};
+// v7.2 — pago dividido. Mismos nombres y tolerancia que el backend (01_config_roles.js).
+const METODOS_PAGO = ["Efectivo","Tarjeta","Transferencia"];
+const METODO_MIXTO = "Mixto";
+const PAGO_TOLERANCIA = 0.5;
 function getComisionesActuales(){
   if(S.comisionesConfig && Object.keys(S.comisionesConfig).length>0) return S.comisionesConfig;
   return COMISIONES_DEFAULT;
 }
-function getComision(canal,metodo){
+function getComision(canal,metodo,pagos){
   const C=getComisionesActuales();
-  return canal==="Rappi"||canal==="Uber Eats"?C[canal]||-0.23:(C[metodo]||0);
+  if(canal==="Rappi"||canal==="Uber Eats") return C[canal]||-0.23;
+  // v7.2 — con pago dividido la comision es el promedio ponderado por monto:
+  // cobrar la mitad con tarjeta no cuesta lo mismo que cobrarlo todo con tarjeta.
+  if(metodo===METODO_MIXTO&&pagos&&pagos.length){
+    const suma=pagos.reduce((s,p)=>s+(Number(p.monto)||0),0);
+    if(suma>0) return pagos.reduce((s,p)=>s+(Number(p.monto)||0)*(C[p.metodo]||0),0)/suma;
+  }
+  return C[metodo]||0;
 }
 function esPlataforma(canal){return canal==="Rappi"||canal==="Uber Eats";}
+// ============================================================
+// v7.2 — PAGO DIVIDIDO: un ticket cobrado con varios metodos.
+// El total a cubrir es el mismo que valida el backend: productos + envio.
+// ============================================================
+function totalACobrarVenta(){
+  return S.carrito.reduce((s,i)=>s+i.subtotal,0) + (S.costoEnvio||0);
+}
+function pagosAsignados(){ return S.pagos.reduce((s,p)=>s+(Number(p.monto)||0),0); }
+function pagoDivididoDisponible(){ return tipoOp==="venta" && !esPlataforma(L("venta-canal")?.value||""); }
+function pagoDivididoActivo(){ return S.pagoDividido && pagoDivididoDisponible(); }
+function togglePagoDividido(){
+  S.pagoDividido = !S.pagoDividido;
+  // Arranca con el metodo ya elegido arriba y otro en blanco: el caso normal es
+  // "una parte en efectivo y el resto con tarjeta".
+  if(S.pagoDividido){
+    const actual = L("venta-metodo")?.value || METODOS_PAGO[0];
+    const otro = METODOS_PAGO.find(m=>m!==actual) || METODOS_PAGO[0];
+    S.pagos = [{metodo:actual,monto:0},{metodo:otro,monto:0}];
+  } else S.pagos = [];
+  renderPagoDividido(); renderCarrito();
+}
+function agregarPago(){
+  if(S.pagos.length>=METODOS_PAGO.length){ toast("Ya estan todos los metodos","error"); return; }
+  const usados=S.pagos.map(p=>p.metodo);
+  S.pagos.push({metodo:METODOS_PAGO.find(m=>!usados.includes(m))||METODOS_PAGO[0], monto:0});
+  renderPagoDividido(); renderCarrito();
+}
+function quitarPago(i){ S.pagos.splice(i,1); renderPagoDividido(); renderCarrito(); }
+function setPagoMetodo(i,v){ if(S.pagos[i]) S.pagos[i].metodo=v; renderPagoDividido(); renderCarrito(); }
+function setPagoMonto(i,v){
+  if(!S.pagos[i]) return;
+  S.pagos[i].monto = Math.max(0, Math.round((parseFloat(v)||0)*100)/100);
+  renderPagoDividido(true); renderCarrito();
+}
+function restoPago(iExcluir){
+  const otros=S.pagos.reduce((s,p,k)=>k===iExcluir?s:s+(Number(p.monto)||0),0);
+  return Math.max(0, Math.round((totalACobrarVenta()-otros)*100)/100);
+}
+function completarPago(i){ if(S.pagos[i]){ S.pagos[i].monto=restoPago(i); renderPagoDividido(); renderCarrito(); } }
+// Desglose listo para el backend: sin ceros y consolidado por metodo.
+function pagosParaEnviar(){
+  const porMetodo={};
+  S.pagos.forEach(p=>{ const m=Number(p.monto)||0; if(m>0) porMetodo[p.metodo]=(porMetodo[p.metodo]||0)+m; });
+  return METODOS_PAGO.filter(m=>porMetodo[m]).map(m=>({metodo:m,monto:porMetodo[m]}));
+}
+// soloEstado: al teclear un monto NO se redibujan los inputs (perderian el foco).
+function renderPagoDividido(soloEstado){
+  const caja=L("pago-dividido-box"), box=L("pago-split"), btn=L("btn-dividir-pago");
+  if(!caja||!box||!btn) return;
+  if(!pagoDivididoDisponible()){          // regalo, merma o plataforma: no aplica
+    caja.style.display="none"; box.style.display="none";
+    S.pagoDividido=false; S.pagos=[];
+    return;
+  }
+  caja.style.display="block";
+  box.style.display = S.pagoDividido ? "block" : "none";
+  btn.textContent = S.pagoDividido ? "✕ Cobrar con un solo método" : "💳 Dividir el pago";
+  const metodoGroup=L("venta-metodo")?.parentElement;
+  if(metodoGroup) metodoGroup.style.display = S.pagoDividido ? "none" : "block";
+  if(!S.pagoDividido) return;
+  const cont=L("pago-split-filas");
+  if(!soloEstado && cont){
+    cont.innerHTML = S.pagos.map((p,i)=>`
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:nowrap">
+        <select class="mini-select" style="flex:1;min-width:0" onchange="setPagoMetodo(${i},this.value)">
+          ${METODOS_PAGO.map(m=>`<option value="${m}" ${p.metodo===m?"selected":""}>${m}</option>`).join("")}
+        </select>
+        <input class="mini-select" type="number" min="0" step="0.01" inputmode="decimal" style="width:95px;flex:none" value="${p.monto||""}" placeholder="$0" oninput="setPagoMonto(${i},this.value)">
+        <button type="button" class="btn-outline" onclick="completarPago(${i})" style="width:auto;margin-top:0;padding:8px 10px;font-size:11px;white-space:nowrap">Resto</button>
+        ${S.pagos.length>2?`<button type="button" class="btn-remove" onclick="quitarPago(${i})">×</button>`:""}
+      </div>`).join("");
+  }
+  const est=L("pago-split-estado"); if(!est) return;
+  const total=totalACobrarVenta(), asignado=pagosAsignados(), falta=Math.round((total-asignado)*100)/100;
+  if(Math.abs(falta)<=PAGO_TOLERANCIA) est.innerHTML=`<span style="color:var(--success);font-weight:600">✓ Cuadra: $${asignado.toLocaleString('es-MX')} de $${total.toLocaleString('es-MX')}</span>`;
+  else if(falta>0)                     est.innerHTML=`<span style="color:var(--accent);font-weight:600">Falta asignar $${falta.toLocaleString('es-MX')}</span> <span style="color:var(--muted)">de $${total.toLocaleString('es-MX')}</span>`;
+  else                                 est.innerHTML=`<span style="color:var(--danger);font-weight:600">Te pasaste por $${Math.abs(falta).toLocaleString('es-MX')}</span> <span style="color:var(--muted)">(total $${total.toLocaleString('es-MX')})</span>`;
+}
 function actualizarMetodoPago(){
   const canal=L("venta-canal")?.value;
   if(!canal) return;
   const esPlat=esPlataforma(canal);
-  llenar("venta-metodo",esPlat?[canal]:["Efectivo","Tarjeta","Transferencia"]);
+  llenar("venta-metodo",esPlat?[canal]:METODOS_PAGO);
+  renderPagoDividido();
   const metodoGroup=L("venta-metodo")?.parentElement;
   if(metodoGroup) metodoGroup.style.display=esPlat?"none":"block";
 }
@@ -773,6 +864,8 @@ function setTipoOp(tipo, btn){
   }
   S.carrito = [];
   L("op-motivo").value = "";
+  S.pagoDividido = false; S.pagos = [];   // v7.2 — el pago dividido solo vive en la venta
+  renderPagoDividido();
   renderCarrito();
 }
 // === Precios Rappi por tamaño (el cliente paga el precio de la app de Rappi, no el de mostrador) ===
@@ -884,7 +977,8 @@ function renderCarrito(){
   const totalConEnvio = tipoOp==="venta" ? total + costoEnvio : 0;
   const canal  = L("venta-canal")?.value||"";
   const metodo = L("venta-metodo")?.value||"";
-  const comPct = tipoOp==="venta" ? getComision(canal,metodo) : 0;
+  const dividido = pagoDivididoActivo();
+  const comPct = tipoOp==="venta" ? getComision(canal, dividido?METODO_MIXTO:metodo, dividido?pagosParaEnviar():null) : 0;
   const comMonto = Math.round(totalConEnvio * comPct);
   const ingresoNeto = totalConEnvio + comMonto;
   L("total-num").textContent = tipoOp==="venta" ? "$"+totalConEnvio.toLocaleString('es-MX') : "$0";
@@ -906,10 +1000,12 @@ function renderCarrito(){
   }
   if(comMonto!==0&&tipoOp==="venta"&&getPermisos().esAdmin){
     const pct=Math.abs(comPct*100).toFixed(0);
-    const nombre=canal==="Rappi"||canal==="Uber Eats"?canal:metodo;
+    const nombre=canal==="Rappi"||canal==="Uber Eats"?canal:(dividido?"Pago dividido":metodo);
     comLabel.style.display="block";
     comLabel.textContent=`${nombre} ${pct}%: -$${Math.abs(comMonto).toLocaleString('es-MX')} → Neto: $${ingresoNeto.toLocaleString('es-MX')}`;
   } else { comLabel.style.display="none"; }
+  // El total cambia con el carrito y el envio: refrescar cuanto falta por asignar.
+  if(S.pagoDividido) renderPagoDividido(true);
 }
 function quitarItem(idx){S.carrito.splice(idx,1);renderCarrito();actualizarDisp();}
 let searchTO;
@@ -955,6 +1051,17 @@ L("btn-confirmar").addEventListener("click",async()=>{
     const canal = tipoOp==="regalo" ? "Cortesía" : L("venta-canal").value;
     const metodo = tipoOp==="regalo" ? "Regalo" : L("venta-metodo").value;
     if(tipoOp==="venta"&&!canal){toast("Selecciona un canal","error");btn.disabled=false;btn.textContent="Confirmar venta ✓";return;}
+    // v7.2 — pago dividido: se valida aqui para no mandar un ticket que el backend
+    // va a rebotar, y porque el vendedor necesita ver cuanto le falta, no un error seco.
+    const pagos = pagoDivididoActivo() ? pagosParaEnviar() : [];
+    if(pagoDivididoActivo()){
+      const faltante = Math.round((totalACobrarVenta() - pagosAsignados())*100)/100;
+      if(!pagos.length){toast("Captura cuánto se paga con cada método","error");btn.disabled=false;btn.textContent="Confirmar venta ✓";return;}
+      if(Math.abs(faltante)>PAGO_TOLERANCIA){
+        toast(faltante>0?`Falta asignar $${faltante.toLocaleString('es-MX')}`:`El pago se pasa por $${Math.abs(faltante).toLocaleString('es-MX')}`,"error");
+        btn.disabled=false;btn.textContent="Confirmar venta ✓";return;
+      }
+    }
     const motivo = tipoOp==="regalo" ? L("op-motivo").value.trim() : "";
     if(tipoOp==="regalo"&&!motivo){toast("El motivo es obligatorio","error");btn.disabled=false;btn.textContent="Registrar regalo 🎁";return;}
     const plataforma=esPlataforma(canal);
@@ -973,10 +1080,11 @@ L("btn-confirmar").addEventListener("click",async()=>{
       esPaquete: i.esPaquete === true,
       paqueteId: i.paqueteId || ""
     }));
-    const res=await api("registrarVenta",{items,canal,metodoPago:metodo,sucursal,cliente,tipoOp,motivo,opId:opIdNuevo()});
+    const res=await api("registrarVenta",{items,canal,metodoPago:metodo,pagos,sucursal,cliente,tipoOp,motivo,opId:opIdNuevo()});
     if(res.ok){
       const total=S.carrito.reduce((s,i)=>s+i.subtotal,0);
-      toast(tipoOp==="regalo"?`✅ Regalo registrado`:`✅ Venta $${total.toLocaleString('es-MX')} registrada`);
+      const desglose=(res.pagos&&res.pagos.length)?" ("+res.pagos.map(p=>`${p.metodo} $${p.monto.toLocaleString('es-MX')}`).join(" + ")+")":"";
+      toast(tipoOp==="regalo"?`✅ Regalo registrado`:`✅ Venta $${total.toLocaleString('es-MX')} registrada${desglose}`);
       const _idRecibo=res.idVenta;
       const _cTel=(cliente&&cliente.telefono)||"";
       const _cMail=(cliente&&cliente.email)||"";
@@ -988,7 +1096,9 @@ L("btn-confirmar").addEventListener("click",async()=>{
   btn.textContent=tipoOp==="merma"?"Registrar merma 🗑":tipoOp==="regalo"?"Registrar regalo 🎁":"Confirmar venta ✓";
 });
 function limpiarVenta(){
-  S.carrito=[];S.clienteSel=null;S.costoEnvio=0;renderCarrito();
+  S.carrito=[];S.clienteSel=null;S.costoEnvio=0;
+  S.pagoDividido=false;S.pagos=[];renderPagoDividido();
+  renderCarrito();
   L("cli-nombre").value="";L("cli-tel").value="";L("cli-email").value="";
   L("cli-encontrado").style.display="none";L("cli-nuevo").style.display="grid";
   const selCant=L("item-cantidad");
@@ -1365,6 +1475,12 @@ async function enviarRecibo(idVenta, opts){
     if(res&&res.ok) toast("✅ "+(res.mensaje||"Recibo enviado")); else toast((res&&res.error)||"No se pudo enviar","error");
   } else { toast("Opción no válida (1 o 2)","error"); }
 }
+// Etiqueta del método de un ticket: con pago dividido muestra el desglose.
+function textoPagos(g){
+  if(g.metodoPago===METODO_MIXTO && g.pagos && g.pagos.length)
+    return "Mixto: "+g.pagos.map(p=>`${p.metodo} $${(Number(p.monto)||0).toLocaleString('es-MX')}`).join(" + ");
+  return g.metodoPago||"";
+}
 function renderVentasHist(){
   const fS=L("fv-sucursal")?.value||"", fC=L("fv-canal")?.value||"", fM=L("fv-metodo")?.value||"",
         fSa=L("fv-sabor")?.value||"", fT=L("fv-tamano")?.value||"", fTp=L("fv-tipo")?.value||"";
@@ -1377,6 +1493,7 @@ function renderVentasHist(){
     if(!grupos[v.idVenta]) grupos[v.idVenta]={...v,items:[]};
     grupos[v.idVenta].items.push({sabor:v.sabor,tamano:v.tamano,cantidad:v.cantidad,subtotal:v.subtotal});
     if (v.rutaId && !grupos[v.idVenta].rutaId) grupos[v.idVenta].rutaId = v.rutaId;
+    if (v.pagos && v.pagos.length) grupos[v.idVenta].pagos = v.pagos;   // v7.2 — el desglose viene en una sola fila del ticket
   });
   const lista=Object.values(grupos);
   const totMonto=rows.reduce((s,v)=>s+(v.anulada?0:(Number(v.subtotal)||0)),0);
@@ -1386,6 +1503,7 @@ function renderVentasHist(){
     const anul = g.anulada;
     const rutaTag = g.rutaId ? `<span class="tag" style="background:rgba(200,96,42,.15);color:var(--accent);font-weight:700">🚚 ${g.rutaId}</span>` : "";
     const metodoColor = (!g.metodoPago || g.metodoPago === "Por definir") ? 'style="background:#FFEBEE;color:#C0392B;font-weight:700"' : "";
+    const metodoTxt = textoPagos(g);
     const badgeAnul = anul ? `<span class="tag" style="background:#FDEDED;color:var(--danger);font-weight:700">✖ CANCELADA</span>` : "";
     const motivoAnul = anul && g.anuladoMotivo ? `<div class="hist-fecha" style="color:var(--danger);font-size:11px">Motivo: ${g.anuladoMotivo}</div>` : "";
     const estiloItem = anul ? 'style="opacity:.6"' : "";
@@ -1401,7 +1519,7 @@ function renderVentasHist(){
       ${motivoAnul}
       <div class="hist-meta">
         ${badgeAnul}
-        <span class="tag">${g.canal}</span><span class="tag" ${metodoColor}>${g.metodoPago}</span><span class="tag">${g.sucursal}</span>
+        <span class="tag">${g.canal}</span><span class="tag" ${metodoColor}>${metodoTxt}</span><span class="tag">${g.sucursal}</span>
         ${g.clienteNombre?`<span class="tag">${g.clienteNombre}</span>`:""}
         ${rutaTag}
         ${totalTag}
@@ -2481,7 +2599,7 @@ function onCanalChange(){
   // (bug: a algunos usuarios se les cambiaba la forma de pago sola al cambiar de canal)
   const _selMet = L("venta-metodo");
   const _metAnt = _selMet ? _selMet.value : "";
-  llenar("venta-metodo", esPlat ? [canal] : ["Efectivo","Tarjeta","Transferencia"]);
+  llenar("venta-metodo", esPlat ? [canal] : METODOS_PAGO);
   if(_selMet && _metAnt){
     const _opts = Array.from(_selMet.options).map(o=>o.value);
     if(_opts.includes(_metAnt)) _selMet.value = _metAnt;
@@ -2502,6 +2620,7 @@ function onCanalChange(){
     else aviso.style.display="none";
   }
   actualizarPrecioPreview();
+  renderPagoDividido();
   renderCarrito();
 }
 async function renderTablaUtilidades(){
@@ -2648,6 +2767,7 @@ function renderUtilidades(){
   ventasFiltradas.forEach(v => {
     if(!grupos[v.idVenta]) grupos[v.idVenta] = { ...v, items: [] };
     grupos[v.idVenta].items.push({ sabor: v.sabor, tamano: v.tamano, cantidad: v.cantidad, subtotal: v.subtotal, precio: v.precio });
+    if(v.pagos && v.pagos.length) grupos[v.idVenta].pagos = v.pagos;
   });
   if(Object.keys(grupos).length === 0){
     L("util-resumen-periodo").style.display = "none";
@@ -2657,7 +2777,7 @@ function renderUtilidades(){
   let totalIngresos = 0, totalCostos = 0, totalUtilidad = 0, sinReceta = 0;
   const ops = Object.values(grupos).map(g => {
     const ingresoBase = g.items.reduce((s,i) => s + i.subtotal, 0);
-    const comPct = getComision(g.canal||"", g.metodoPago||"");
+    const comPct = getComision(g.canal||"", g.metodoPago||"", g.pagos);
     const comMonto = Math.round(ingresoBase * comPct);
     const ingreso = ingresoBase + comMonto;
     let costo = 0; let calculable = true;
@@ -2700,7 +2820,7 @@ function renderUtilidades(){
       </div>
       <div class="op-tags">
         <span class="tag${g.canal==='Merma'?' tag-merma':g.canal==='Cortesía'?' tag-regalo':''}">${g.canal||''}</span>
-        ${g.canal!=='Merma'?`<span class="tag">${g.metodoPago||''}</span>`:''}
+        ${g.canal!=='Merma'?`<span class="tag">${textoPagos(g)}</span>`:''}
         <span class="tag">${g.sucursal||''}</span>
         ${g.clienteNombre ? `<span class="tag">${g.clienteNombre}</span>` : ''}
         ${g.margen !== null ? `<span class="util-margen ${mCls}" style="font-size:11px">${g.margen.toFixed(1)}% margen</span>` : '<span class="tag" style="color:var(--warning)">sin receta</span>'}
@@ -4678,7 +4798,19 @@ function renderConciliacion() {
   const initSuc = () => { const o = {}; METODOS_CONCI.forEach(m => o[m] = { monto:0, tickets:new Set(), piezas:0 }); return o; };
   const total = initSuc();
   sucs.forEach(suc => agg[suc] = initSuc());
+  // v7.2 — Los tickets con pago dividido se juntan aparte: el desglose viene en UNA sola
+  // fila del ticket, y el monto se reparte entre los métodos en proporción a lo cobrado
+  // con cada uno, para que el total de la conciliación siga siendo el total vendido.
+  const mixtos = {};
   ventas.forEach(v => {
+    if (v.metodoPago !== METODO_MIXTO) return;
+    if (!mixtos[v.idVenta]) mixtos[v.idVenta] = { pagos: [], total: 0, piezas: 0, sucursal: v.sucursal };
+    if (v.pagos && v.pagos.length) mixtos[v.idVenta].pagos = v.pagos;
+    mixtos[v.idVenta].total  += Number(v.subtotal) || 0;
+    mixtos[v.idVenta].piezas += Number(v.cantidad) || 0;
+  });
+  ventas.forEach(v => {
+    if (v.metodoPago === METODO_MIXTO) return;   // se reparten más abajo
     const m = v.metodoPago || "Por definir";
     const metodoNorm = METODOS_CONCI.includes(m) ? m : "Por definir";
     const target = agg[v.sucursal];
@@ -4692,6 +4824,22 @@ function renderConciliacion() {
     total[metodoNorm].piezas  += Number(v.cantidad) || 0;
     if (v.idVenta) total[metodoNorm].tickets.add(v.idVenta);
     else total[metodoNorm].tickets.add(String(v.fecha) + "|" + (v.cliente||""));
+  });
+  const idsMixtos = Object.keys(mixtos);
+  idsMixtos.forEach(id => {
+    const t = mixtos[id];
+    const suma = t.pagos.reduce((a, p) => a + (Number(p.monto) || 0), 0);
+    // Sin desglose legible el ticket cae a "Por definir": mejor eso que repartirlo a ciegas.
+    let partes = suma > 0
+      ? t.pagos.map(p => ({ metodo: METODOS_CONCI.includes(p.metodo) ? p.metodo : "Por definir", monto: Math.round(t.total * (Number(p.monto) || 0) / suma) }))
+      : [{ metodo: "Por definir", monto: Math.round(t.total) }];
+    const dominante = partes.reduce((a, b) => b.monto > a.monto ? b : a);
+    dominante.monto += Math.round(t.total) - partes.reduce((a, p) => a + p.monto, 0);  // el redondeo se lo queda el método que pagó más
+    [agg[t.sucursal], total].forEach(target => {
+      if (!target) return;
+      partes.forEach(pt => { target[pt.metodo].monto += pt.monto; target[pt.metodo].tickets.add(id); });
+      target[dominante.metodo].piezas += t.piezas;   // las piezas no se parten
+    });
   });
   let html = `<div style="background:rgba(46,92,74,.08);border-left:3px solid var(--green);padding:8px 12px;border-radius:6px;font-size:12px;color:var(--ink);margin-bottom:12px">📅 Período: <strong>${labelRango}</strong> · ${ventas.length} ventas</div>`;
   const blocks = [
@@ -4735,7 +4883,7 @@ function renderConciliacion() {
     });
     html += `</tbody></table>
       <div style="margin-top:10px;padding:8px 10px;background:var(--warm);border-radius:6px;font-size:11px;color:var(--muted)">
-        <strong>Conciliación:</strong> Efectivo = lo que debe haber en caja física · Tarjeta + Transferencia = debe estar en cuenta bancaria · Rappi/Uber Eats = lo deposita la plataforma (mensual, menos comisión) · "Por definir" = ventas a domicilio sin método asignado todavía.
+        <strong>Conciliación:</strong> Efectivo = lo que debe haber en caja física · Tarjeta + Transferencia = debe estar en cuenta bancaria · Rappi/Uber Eats = lo deposita la plataforma (mensual, menos comisión) · "Por definir" = ventas a domicilio sin método asignado todavía.${idsMixtos.length?` · ${idsMixtos.length} ticket${idsMixtos.length!==1?"s":""} con pago dividido: el monto se repartió entre los métodos usados y las piezas se cargaron al que pagó más.`:""}
       </div>
     </div>`;
   });
@@ -4780,12 +4928,16 @@ function _enriquecerUtilidad(ventas) {
   }
   let sinReceta = 0;
   const ventasEnriquecidas = [];
+  // v7.2 — el desglose del pago dividido viene en UNA fila del ticket, pero la comisión
+  // se calcula línea por línea: hay que tenerlo a la mano para todas las líneas del ticket.
+  const pagosPorVenta = {};
+  ventas.forEach(v => { if (v.pagos && v.pagos.length) pagosPorVenta[v.idVenta] = v.pagos; });
   ventas.forEach(v => {
     const c = costoReceta(v.sabor, v.tamano);
     if (c === null) { sinReceta++; return; }
     const subtotal = Number(v.subtotal) || 0;
     const cantidad = Number(v.cantidad) || 0;
-    const comPct = getComision(v.canal || "", v.metodoPago || "");
+    const comPct = getComision(v.canal || "", v.metodoPago || "", pagosPorVenta[v.idVenta]);
     const comMonto = Math.round(subtotal * comPct);
     const ingresoNeto = subtotal + comMonto;
     const costo = c * cantidad;

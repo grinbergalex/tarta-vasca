@@ -97,6 +97,12 @@ const MAX_SESIONES_OWNER = 99;
 const MAX_SESIONES_NORMAL = 10;           // v7.1 — era 3: con un usuario compartido entre
 // varias tablets el tope se tocaba a diario y cada login expulsaba a alguien mas.
 const TZ_MX = "America/Mexico_City";
+// v7.2 — Pago dividido: un ticket cobrado con varios métodos.
+// El método del ticket queda como METODO_MIXTO y el desglose vive en la columna
+// "pagos" de la hoja Ventas (JSON, solo en la PRIMERA fila del ticket).
+const METODOS_PAGO = ["Efectivo", "Tarjeta", "Transferencia"];
+const METODO_MIXTO = "Mixto";
+const PAGO_TOLERANCIA = 0.5;   // pesos: margen de redondeo al cuadrar el desglose
 // v4.4 — Horarios por sucursal por día (0=Domingo). 24h format.
 const HORARIOS_SUCURSAL = {
 "Polanco":    [{abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}],

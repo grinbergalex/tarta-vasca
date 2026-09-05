@@ -65,6 +65,7 @@ function _reciboHtmlTermico(d){
     + sep
     + (Number(d.envio)>0 ? fila2("Envio","$"+d.envio,26,false) : "")
     + fila2("TOTAL","$"+d.total,42,true)
+    + ((d.pagos&&d.pagos.length) ? d.pagos.map(function(p){ return fila2("Pago "+esc(p.metodo),"$"+(Number(p.monto)||0),24,false); }).join("") : "")
     + sep
     + "<div style='text-align:center;font-size:24px'>"+esc(d.pie)+(d.instagram?"<br>"+esc(d.instagram):"")+"</div>"
     + "<div style='height:40px'></div>"
@@ -79,14 +80,15 @@ function generarReciboPDF(idVenta, sesion, soloHtml){
   if(!idVenta) return {ok:false,error:"Falta idVenta."};
   var ss=SpreadsheetApp.getActiveSpreadsheet();
   var h=ss.getSheetByName("Ventas"); var datos=h.getDataRange().getValues(); var H=datos[0];
-  var iAnul=H.indexOf("estado_anul"), iEnv=H.indexOf("envio_monto");
-  var lineas=[], info=null, total=0, envio=0;
+  var iAnul=H.indexOf("estado_anul"), iEnv=H.indexOf("envio_monto"), iPagos=H.indexOf("pagos");
+  var lineas=[], info=null, total=0, envio=0, pagos=[];
   for(var i=1;i<datos.length;i++){ var r=datos[i]; if(String(r[0])!==String(idVenta)) continue;
     if(iAnul!==-1 && r[iAnul]==="ANULADO") continue;
     lineas.push({sabor:r[4],tamano:r[5],cant:Number(r[6])||0,precio:Number(r[7])||0,sub:Number(r[8])||0});
     total+=Number(r[8])||0;
     if(!info) info={fecha:r[1],usuario:r[2],sucursal:r[3],canal:r[9],metodo:r[10],cliente:r[12]};
     if(iEnv!==-1 && Number(r[iEnv])>0) envio=Number(r[iEnv]);
+    if(iPagos!==-1 && r[iPagos]) pagos=_pagosLeer(r[iPagos]).pagos;   // v7.2 — solo la primera fila lo trae
   }
   if(!lineas.length) return {ok:false,error:"Venta no encontrada o anulada."};
   var nombre=_cfgVal(ss,"negocio_nombre","Tarta Vasca");
@@ -105,12 +107,13 @@ function generarReciboPDF(idVenta, sesion, soloHtml){
     "<hr><div style='font-size:11px'>Folio: "+idVenta+"<br>Fecha: "+fechaTxt+"<br>Atendio: "+(info.usuario||"")+" &middot; Pago: "+(info.metodo||"")+(info.cliente?"<br>Cliente: "+info.cliente:"")+"</div><hr>"+
     "<table style='width:100%;font-size:12px;border-collapse:collapse'><thead><tr><th style='text-align:left'>Cant</th><th style='text-align:left'>Producto</th><th style='text-align:right'>P.U.</th><th style='text-align:right'>Importe</th></tr></thead><tbody>"+filas+"</tbody></table><hr>"+
     (envio>0?"<div style='font-size:12px;display:flex;justify-content:space-between'><span>Envio</span><span>$"+envio+"</span></div>":"")+
-    "<div style='font-size:16px;font-weight:bold;display:flex;justify-content:space-between'><span>TOTAL</span><span>$"+totalFinal+"</span></div><hr>"+
+    "<div style='font-size:16px;font-weight:bold;display:flex;justify-content:space-between'><span>TOTAL</span><span>$"+totalFinal+"</span></div>"+
+    pagos.map(function(p){ return "<div style='font-size:12px;display:flex;justify-content:space-between'><span>Pago "+p.metodo+"</span><span>$"+(Number(p.monto)||0)+"</span></div>"; }).join("")+"<hr>"+
     "<div style='text-align:center;font-size:11px'>"+_cfgVal(ss,"negocio_mensaje_pie","Gracias por tu compra!")+(ig?"<br>"+ig:"")+"</div></div>";
   var htmlTermico = _reciboHtmlTermico({
     nombre:nombre, sucursal:suc, direccion:dir, telefono:tel, instagram:ig,
     folio:idVenta, fecha:fechaTxt, usuario:info.usuario, metodo:info.metodo,
-    cliente:info.cliente, lineas:lineas, envio:envio, total:totalFinal,
+    cliente:info.cliente, lineas:lineas, envio:envio, total:totalFinal, pagos:pagos,
     pie:_cfgVal(ss,"negocio_mensaje_pie","Gracias por tu compra!")
   });
   if(soloHtml) return {ok:true, total:totalFinal, html:html, htmlTermico:htmlTermico};

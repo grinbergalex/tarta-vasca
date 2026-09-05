@@ -99,14 +99,22 @@ function diagnosticoCaja() {
   var hV = ss.getSheetByName("Ventas");
   if (hV) {
     var d = hV.getDataRange().getValues();
-    var H = d[0], iAnul = H.indexOf("estado_anul"), iTipo = H.indexOf("tipo_op");
+    var H = d[0], iAnul = H.indexOf("estado_anul"), iTipo = H.indexOf("tipo_op"), iPagos = H.indexOf("pagos");
     var vistas = [];
     for (var i = d.length - 1; i >= 1 && vistas.length < 8; i--) {
       var r = d[i];
-      if (String(r[10]).trim() !== "Efectivo") continue;
+      var metodo = String(r[10]).trim();
+      if (metodo !== "Efectivo" && metodo !== METODO_MIXTO) continue;
       if (iAnul !== -1 && r[iAnul] === "ANULADO") continue;
       if (iTipo !== -1 && r[iTipo] && r[iTipo] !== "Venta") continue;
-      vistas.push("   " + r[0] + " | " + r[3] + " | " + _cajaMoney(r[8]) + " | " + (r[1] instanceof Date ? Utilities.formatDate(r[1], TZ_MX, "yyyy-MM-dd HH:mm") : r[1]));
+      var monto = Number(r[8]) || 0, nota = "";
+      if (metodo === METODO_MIXTO) {                      // v7.2 — solo una fila del ticket trae el desglose
+        if (iPagos === -1 || !r[iPagos]) continue;
+        var det = _pagosLeer(r[iPagos]);
+        monto = _pagosMonto(det.pagos, "Efectivo");
+        nota = " | dividido: " + _pagosTexto(det.pagos);
+      }
+      vistas.push("   " + r[0] + " | " + r[3] + " | " + _cajaMoney(monto) + " | " + (r[1] instanceof Date ? Utilities.formatDate(r[1], TZ_MX, "yyyy-MM-dd HH:mm") : r[1]) + nota);
     }
     out.push("");
     out.push("Últimas ventas en EFECTIVO detectadas (id | sucursal | subtotal | fecha):");
@@ -233,14 +241,34 @@ function _cajaMapaVentasEfectivo(ss) {
   if (!h) return mapa;
   var d = h.getDataRange().getValues();
   if (d.length < 2) return mapa;
-  var H = d[0], iAnul = H.indexOf("estado_anul"), iTipo = H.indexOf("tipo_op");
+  var H = d[0], iAnul = H.indexOf("estado_anul"), iTipo = H.indexOf("tipo_op"), iPagos = H.indexOf("pagos");
+  var mixtos = {};   // v7.2 — tickets con pago dividido, juntados por id
   for (var i = 1; i < d.length; i++) {
     var r = d[i];
-    if (String(r[10]).trim() !== "Efectivo") continue;         // metodoPago (col K / idx10)
-    if (iAnul !== -1 && r[iAnul] === "ANULADO") continue;
+    var metodo = String(r[10]).trim();                         // metodoPago (col K / idx10)
+    if (metodo !== "Efectivo" && metodo !== METODO_MIXTO) continue;
     if (iTipo !== -1 && r[iTipo] && r[iTipo] !== "Venta") continue;  // excluye Reservado/Regalo
+    var anulada = (iAnul !== -1 && r[iAnul] === "ANULADO");
     var suc = r[3];                                            // sucursal (col D / idx3)
-    mapa[suc] = (mapa[suc] || 0) + (Number(r[8]) || 0);        // subtotal (col I / idx8)
+    if (metodo === "Efectivo") {
+      if (!anulada) mapa[suc] = (mapa[suc] || 0) + (Number(r[8]) || 0);   // subtotal (col I / idx8)
+      continue;
+    }
+    // Pago dividido: el desglose vive en UNA sola fila del ticket, pero el monto vivo
+    // esta repartido en todas — hay que juntarlas antes de decidir cuanto entro en caja.
+    var t = mixtos[r[0]] || (mixtos[r[0]] = { suc: suc, vivo: 0, det: null });
+    if (iPagos !== -1 && r[iPagos] && !t.det) t.det = _pagosLeer(r[iPagos]);
+    if (!anulada) t.vivo += Number(r[8]) || 0;
+  }
+  for (var id in mixtos) {
+    var m = mixtos[id];
+    if (!m.det) continue;                                      // sin desglose legible no se adivina
+    var efectivo = _pagosMonto(m.det.pagos, "Efectivo");
+    // Tope contra lo que sigue vivo del ticket: si se anula (entera o en parte) el efectivo
+    // baja igual que en una venta normal, y deja fuera el envio cobrado en efectivo — que
+    // esta cuenta nunca ha contado (la columna envio_monto no entra aqui).
+    if (efectivo > m.vivo) efectivo = m.vivo;
+    mapa[m.suc] = (mapa[m.suc] || 0) + efectivo;
   }
   return mapa;
 }

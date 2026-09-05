@@ -155,6 +155,37 @@ Arreglos a "a veces no entra / tarda mucho en poder usarlo":
 - **Timeout en `api()`** (25 s lecturas, 60 s escrituras). Antes no había ninguno: un
   Apps Script atorado dejaba el fetch colgado para siempre, sin error y sin salida.
 
+## v7.2 — Pago dividido (5-sep-2026)
+
+Un mismo ticket cobrado con varios métodos (p. ej. $300 en efectivo y $200 con tarjeta).
+
+- **Dónde vive el desglose.** La hoja Ventas tiene UNA fila por producto y un solo
+  `metodo_pago` por fila, así que el desglose no cabe ahí: va como JSON en la columna
+  **`pagos`**, escrita **solo en la primera fila del ticket**, con la forma
+  `{ total, envio, pagos:[{metodo,monto}] }`. `metodo_pago` queda en `"Mixto"`.
+  La columna **se crea sola** en la primera venta dividida (`_ensureColVentas`): no hay
+  migración que correr. Escribirla en una sola fila es lo que deja sumar por ticket sin
+  contar dos veces; todo lo que lee el desglose asume eso.
+- **Reglas.** Solo en ventas normales: el regalo no cobra, la reserva paga al entregar y
+  en Rappi/Uber Eats cobra la plataforma. La suma tiene que cuadrar con el total (productos
+  + envío) dentro de `PAGO_TOLERANCIA`; se valida **antes** de tocar stock, porque validarlo
+  después obligaría a deshacer el descuento. Un solo método en el desglose **no** es pago
+  dividido: se guarda como venta normal, sin JSON.
+- **Caja.** `_cajaMapaVentasEfectivo` junta las filas del ticket mixto y suma la parte en
+  efectivo **topada contra lo que sigue vivo del ticket**, para que anular (entera o en parte)
+  saque el efectivo igual que en una venta normal, y para dejar fuera el envío cobrado en
+  efectivo — que este cálculo nunca ha contado.
+- **Comisiones.** Con pago dividido la comisión es el promedio ponderado por monto
+  (`getComision` en `app.js`, `comisionPct` en `14_reparto_pedido_sugerido.js`): cobrar la
+  mitad con tarjeta no cuesta lo mismo que cobrarlo todo con tarjeta.
+- **Conciliación.** El monto del ticket se reparte entre los métodos en proporción a lo
+  cobrado con cada uno, así que el total de la conciliación sigue siendo el total vendido.
+  Las piezas no se parten: se cargan al método que pagó más.
+- **Frontend.** Botón "Dividir el pago" en Nueva venta (`#pago-dividido-box`). Mientras está
+  activo se esconde el select de método y se manda `pagos` en vez de `metodoPago`. El aviso
+  dice cuánto falta o cuánto sobra, y "Resto" completa la diferencia.
+- Se probó primero en `/pruebas/` (ver `pruebas/LEEME.md`) antes de subirlo.
+
 ## Legacy / pendientes
 
 - `cargaInv 17.js`, `ventasmasivoCuaji17.js`, `limpiar apartados.js`:

@@ -89,17 +89,64 @@ try{
 finally{try{lock.releaseLock();}catch(_e){}}
 }
 // =================================================================================
+// PAGO DIVIDIDO (v7.2) — un ticket cobrado con varios métodos
+// ---------------------------------------------------------------------------------
+// La hoja Ventas guarda UNA fila por producto y un solo `metodo_pago` por fila, así
+// que el desglose no cabe ahí: va como JSON en la columna "pagos", escrita SOLO en la
+// primera fila del ticket (así se cuenta una vez por ticket, no una por producto) con
+// la forma { total, envio, pagos:[{metodo,monto}] }. `metodo_pago` queda en "Mixto".
+// Todo lo que agrega por método (caja, conciliación, comisiones) lee ese JSON.
+// =================================================================================
+// Consolida el desglose que manda el frontend: suma repetidos, tira montos <= 0 y
+// valida los métodos. Devuelve {ok, pagos} o {ok:false, error}.
+function _pagosNormalizar(pagos) {
+  if (!Array.isArray(pagos) || !pagos.length) return { ok: true, pagos: [] };
+  const porMetodo = {};
+  for (const p of pagos) {
+    const metodo = String((p && p.metodo) || "").trim();
+    const monto = Math.round((Number(p && p.monto) || 0) * 100) / 100;
+    if (!metodo) continue;
+    if (METODOS_PAGO.indexOf(metodo) === -1) return { ok: false, error: "Método de pago no válido: " + metodo + "." };
+    if (monto <= 0) return { ok: false, error: "El monto de " + metodo + " debe ser mayor a cero." };
+    porMetodo[metodo] = (porMetodo[metodo] || 0) + monto;
+  }
+  // Se conserva el orden de METODOS_PAGO para que el recibo y los reportes no bailen.
+  const out = METODOS_PAGO.filter(m => porMetodo[m]).map(m => ({ metodo: m, monto: porMetodo[m] }));
+  return { ok: true, pagos: out };
+}
+function _pagosSuma(pagos) { return (pagos || []).reduce((s, p) => s + (Number(p.monto) || 0), 0); }
+// Lee la columna "pagos" de una fila de Ventas. Devuelve {total, envio, pagos:[]}.
+// Una fila sin desglose (la mayoría) devuelve pagos vacío — nunca lanza.
+function _pagosLeer(valor) {
+  const vacio = { total: 0, envio: 0, pagos: [] };
+  if (!valor) return vacio;
+  try {
+    const d = JSON.parse(String(valor));
+    if (!d || !Array.isArray(d.pagos)) return vacio;
+    return { total: Number(d.total) || 0, envio: Number(d.envio) || 0, pagos: d.pagos };
+  } catch (e) { return vacio; }
+}
+function _pagosMonto(pagos, metodo) {
+  let s = 0;
+  for (const p of (pagos || [])) if (String(p.metodo) === metodo) s += Number(p.monto) || 0;
+  return s;
+}
+// Texto corto para recibos, historial de cliente y auditoría: "Efectivo $300 + Tarjeta $200".
+function _pagosTexto(pagos) {
+  return (pagos || []).map(p => p.metodo + " $" + (Number(p.monto) || 0).toLocaleString("es-MX")).join(" + ");
+}
+// =================================================================================
 // VENTAS MULTI-PRODUCTO
 // =================================================================================
 function registrarVenta(body, sesion) {
 requierePuedeVender(sesion);
-const { items, canal, metodoPago, cliente, tipoOp, motivo, anticipo, envio, fechaEntrega } = body;
+const { items, canal, metodoPago, pagos, cliente, tipoOp, motivo, anticipo, envio, fechaEntrega } = body;
 const esRegalo = tipoOp === "regalo";
 const esReserva = tipoOp === "reserva";  // v4.4
 if (esRegalo && !getPermisos(sesion.rol).esAdmin) return { ok: false, error: "Tu rol no permite registrar regalos." };  // solo Owner (Vendedor no da cortesias)
 if (!items || items.length === 0) return { ok: false, error: "Agrega al menos un producto." };
 if (!esRegalo && !esReserva && !canal) return { ok: false, error: "Selecciona el canal de venta." };
-if (!esRegalo && !esReserva && !metodoPago) return { ok: false, error: "Selecciona el método de pago." };
+if (!esRegalo && !esReserva && !metodoPago && !(Array.isArray(pagos) && pagos.length)) return { ok: false, error: "Selecciona el método de pago." };
 if (esRegalo && !motivo) return { ok: false, error: "El motivo del regalo es obligatorio." };
 if (esReserva && (!cliente || !cliente.nombre || cliente.nombre.trim() === "")) return { ok: false, error: "El cliente es obligatorio para reservar." };
 const itemsNorm = items.map(i => ({ sabor: String(i.sabor||"").trim(), tamano: String(i.tamano||"").trim(), cantidad: parseInt(i.cantidad)||0, precioUnitario: Number(i.precioUnitario)||0, descuento: Number(i.descuento)||0, descTipo: String(i.descTipo||""), esPaquete: i.esPaquete === true, paqueteId: String(i.paqueteId||"") }));
@@ -134,7 +181,18 @@ if (Math.abs(suma - esperado) > 1) {
 return { ok: false, error: `Paquete ${size} en canal ${canalReal}: precio total esperado $${esperado}, recibido $${suma}.` };
 }
 }
-const metodoReal = esRegalo ? "Regalo" : (esReserva ? (metodoPago || "Pendiente") : metodoPago);
+// v7.2 — Pago dividido. Solo en ventas normales: el regalo no cobra, la reserva paga
+// al entregar y en plataforma el cobro lo hace la plataforma con su propio método.
+const _pagosRes = _pagosNormalizar(pagos);
+if (!_pagosRes.ok) return { ok: false, error: _pagosRes.error };
+let pagosNorm = _pagosRes.pagos;
+if (pagosNorm.length) {
+if (esRegalo || esReserva) return { ok: false, error: "El pago dividido solo aplica a ventas." };
+if (canalReal === "Rappi" || canalReal === "Uber Eats") return { ok: false, error: `En ${canalReal} el cobro lo hace la plataforma: no se puede dividir el pago.` };
+}
+let metodoBase = metodoPago;
+if (pagosNorm.length === 1) { metodoBase = pagosNorm[0].metodo; pagosNorm = []; }  // un solo método no es pago dividido
+const metodoReal = esRegalo ? "Regalo" : (esReserva ? (metodoBase || "Pendiente") : (pagosNorm.length ? METODO_MIXTO : metodoBase));
 const canalRequiereCliente = !esRegalo && canalReal !== "Rappi" && canalReal !== "Uber Eats";
 if (canalRequiereCliente && !esReserva && (!cliente || !cliente.nombre || cliente.nombre.trim() === "")) return { ok: false, error: "El nombre del cliente es obligatorio para este canal." };
 // VALIDACIÓN B3 v2 — Solo Owner puede aplicar descuentos
@@ -211,6 +269,25 @@ if (!hojaInv) throw new Error("No existe la hoja Inventario.");
     const idxFechaEnt = headersV.indexOf("fecha_entrega");
     const tipoOpVal = esReserva ? "Reservado" : (esRegalo ? "Regalo" : "Venta");
 
+    // v7.2 — Precios resueltos ANTES de tocar stock: el pago dividido tiene que cuadrar
+    // contra el total real, y validarlo más adelante obligaría a deshacer el descuento.
+    const preciosItem = itemsNorm.map(item => esRegalo ? 0
+      : (item.precioUnitario > 0 ? item.precioUnitario : getPrecioActual(ss, item.sabor, item.tamano, canalReal)));
+    const totalProductos = preciosItem.reduce((s, p, i) => s + p * itemsNorm[i].cantidad, 0);
+    const totalCobrar = totalProductos + (Number(envio) || 0);
+    let idxPagos = headersV.indexOf("pagos");
+    if (pagosNorm.length) {
+      const sumaPagos = _pagosSuma(pagosNorm);
+      if (Math.abs(sumaPagos - totalCobrar) > PAGO_TOLERANCIA) {
+        return { ok: false, error: `El pago dividido no cuadra: suma $${sumaPagos.toLocaleString("es-MX")} y el total a cobrar es $${totalCobrar.toLocaleString("es-MX")}.` };
+      }
+      // La columna se crea sola en la primera venta dividida: no hace falta migrar la hoja.
+      if (idxPagos === -1) {
+        _ensureColVentas(ss, "pagos");
+        idxPagos = hojaVentas.getRange(1, 1, 1, hojaVentas.getLastColumn()).getValues()[0].indexOf("pagos");
+      }
+    }
+
     // PASO 1 — descontar TODO el stock primero (con re-lectura fresh por item).
     // Si algo falla, rollback inmediato. Las reservas NO descuentan stock.
     const lotesPorItem = [];
@@ -225,8 +302,7 @@ if (!hojaInv) throw new Error("No existe la hoja Inventario.");
     for (let idx = 0; idx < itemsNorm.length; idx++) {
       const item = itemsNorm[idx];
       const { sabor, tamano, cantidad, descuento, descTipo } = item;
-      let precio = item.precioUnitario > 0 ? item.precioUnitario : getPrecioActual(ss, sabor, tamano, canalReal);
-      if (esRegalo) precio = 0;
+      const precio = preciosItem[idx];
       const precioOriginal = getPrecioActual(ss, sabor, tamano);
       const subtotal = precio * cantidad;
       totalVenta += subtotal;
@@ -239,6 +315,10 @@ if (!hojaInv) throw new Error("No existe la hoja Inventario.");
       if (esReserva && idxAnticipo !== -1 && Number(anticipo) > 0) hojaVentas.getRange(nuevaFila, idxAnticipo + 1).setValue(Number(anticipo));
       if (idxFechaEnt !== -1 && fechaEntrega) hojaVentas.getRange(nuevaFila, idxFechaEnt + 1).setValue(String(fechaEntrega).substring(0,10));
       if (idx === 0 && idxEnvio !== -1 && Number(envio) > 0) hojaVentas.getRange(nuevaFila, idxEnvio + 1).setValue(Number(envio));
+      // v7.2 — el desglose del pago dividido va solo en la primera fila del ticket.
+      if (idx === 0 && pagosNorm.length && idxPagos !== -1) {
+        hojaVentas.getRange(nuevaFila, idxPagos + 1).setValue(JSON.stringify({ total: totalProductos, envio: Number(envio) || 0, pagos: pagosNorm }));
+      }
       resumenItems.push(`${cantidad} ${sabor} ${tamano}`);
     }
     SpreadsheetApp.flush();
@@ -264,12 +344,12 @@ if (!hojaInv) throw new Error("No existe la hoja Inventario.");
       registrarHistorialCliente(ss, clienteId, idVenta, fechaVenta, sucursal, canalReal, metodoReal, totalVenta, resumenItems);
     }
     const accionAud = esReserva ? "RESERVA" : (esRegalo ? "REGALO" : "VENTA");
-    registrarAuditoria(sesion.usuario, sesion.rol, accionAud, `ID: ${idVenta} | ${resumenItems.join(", ")} | ${canalReal} | $${totalVenta}${motivo?" | "+motivo:""}${anticipo?" | anticipo $"+anticipo:""}`);
+    registrarAuditoria(sesion.usuario, sesion.rol, accionAud, `ID: ${idVenta} | ${resumenItems.join(", ")} | ${canalReal} | $${totalVenta}${pagosNorm.length?" | "+_pagosTexto(pagosNorm):""}${motivo?" | "+motivo:""}${anticipo?" | anticipo $"+anticipo:""}`);
     _utilMarcarDirty();
     try { _generarAlertasMensajes(ss, sesion); } catch(e) {}
     let msgRes = esReserva ? `📌 Reserva registrada` : (esRegalo ? `✅ Regalo registrado` : `✅ Venta registrada`);
     if (_fallasReserva.length) msgRes += " ⚠️ OJO: no se pudo apartar stock físico ("+_fallasReserva.join("; ")+"). Puede venderse doble — revisa el stock.";
-    const _resOk = { ok: true, mensaje: msgRes, idVenta, items: resumenItems, total: totalVenta, cliente: clienteId, esReserva, envio: Number(envio)||0, totalConEnvio: totalVenta + (Number(envio)||0) };
+    const _resOk = { ok: true, mensaje: msgRes, idVenta, items: resumenItems, total: totalVenta, cliente: clienteId, esReserva, envio: Number(envio)||0, totalConEnvio: totalVenta + (Number(envio)||0), metodoPago: metodoReal, pagos: pagosNorm };
     _opRegistrar(_opId, _resOk);
     return _resOk;
 

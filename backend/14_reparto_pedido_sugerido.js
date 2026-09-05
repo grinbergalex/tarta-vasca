@@ -62,16 +62,22 @@ const key = sabor + "|||" + tamano;
 if (!recetasMap[key]) return null;
 return _calcCostoReceta(recetasMap[key], insumosMap, insumosUnidMap);
 };
-const comisionPct = function (canal, metodo) {
-return (canal === "Rappi" || canal === "Uber Eats")
-? (comMap[canal] != null ? comMap[canal] : -0.23)
-: (comMap[metodo] || 0);
+// v7.2 — En un ticket con pago dividido la comisión es el promedio ponderado por
+// monto: cobrar mitad en tarjeta no cuesta lo mismo que cobrarlo todo en tarjeta.
+const comisionPct = function (canal, metodo, pagos) {
+if (canal === "Rappi" || canal === "Uber Eats") return comMap[canal] != null ? comMap[canal] : -0.23;
+if (metodo === METODO_MIXTO && pagos && pagos.length) {
+const suma = pagos.reduce((s, p) => s + (Number(p.monto) || 0), 0);
+if (suma > 0) return pagos.reduce((s, p) => s + (Number(p.monto) || 0) * (comMap[p.metodo] || 0), 0) / suma;
+}
+return comMap[metodo] || 0;
 };
 const hV = ss.getSheetByName("Ventas");
 const datosV = hV ? hV.getDataRange().getValues() : [];
 const headersV = datosV[0] || [];
 const idxTipoOp = headersV.indexOf("tipo_op");
 const idxAnul   = headersV.indexOf("estado_anul");
+const idxPagos  = headersV.indexOf("pagos");
 function blank() { return { ingresoBruto: 0, comision: 0, costoVar: 0, mermaRegaloCosto: 0, unidades: 0, ops: {}, sabor: {}, tamano: {} }; }
 const acc = { Polanco: blank(), Cuajimalpa: blank() };
 const grupos = {}; // idVenta -> { sucursal, canal, metodo, ingreso, lines:[] }
@@ -85,6 +91,7 @@ const ym = Utilities.formatDate(fd, tz, "yyyy-MM");
 if (ym < desde || ym > hasta) continue;
     const sucursal = r[3], sabor = r[4], tamano = r[5];
     const cantidad = Number(r[6]) || 0, subtotal = Number(r[8]) || 0, canal = r[9], metodo = r[10];
+    const pagosFila = idxPagos !== -1 ? _pagosLeer(r[idxPagos]).pagos : [];
     const tipoOp = idxTipoOp !== -1 ? r[idxTipoOp] : "Venta";
     if (tipoOp === "Reservado") continue;
     if (!acc[sucursal]) continue;
@@ -95,7 +102,8 @@ if (ym < desde || ym > hasta) continue;
     const esRegalo = (tipoOp === "Regalo" || canal === "Cortesía" || subtotal === 0);
     if (esMerma || esRegalo) { acc[sucursal].mermaRegaloCosto += costoLinea; continue; }
 
-    if (!grupos[idVenta]) grupos[idVenta] = { sucursal: sucursal, canal: canal, metodo: metodo, ingreso: 0, lines: [] };
+    if (!grupos[idVenta]) grupos[idVenta] = { sucursal: sucursal, canal: canal, metodo: metodo, pagos: [], ingreso: 0, lines: [] };
+    if (pagosFila.length) grupos[idVenta].pagos = pagosFila;   // el desglose viene en una sola fila del ticket
     grupos[idVenta].ingreso += subtotal;
     grupos[idVenta].lines.push({ sabor: sabor, tamano: tamano, cant: cantidad, subtotal: subtotal, costoLinea: costoLinea });
     acc[sucursal].unidades += cantidad;
@@ -108,7 +116,7 @@ map[key].ingreso += ingNeto; map[key].costo += costo; map[key].unidades += cant;
 Object.keys(grupos).forEach(function (id) {
 const g = grupos[id];
 const a = acc[g.sucursal]; if (!a) return;
-const comTicket = Math.round(g.ingreso * comisionPct(g.canal, g.metodo)); // negativo
+const comTicket = Math.round(g.ingreso * comisionPct(g.canal, g.metodo, g.pagos)); // negativo
 a.ingresoBruto += g.ingreso;
 a.comision     += comTicket;
 g.lines.forEach(function (ln) {

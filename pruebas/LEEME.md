@@ -14,6 +14,14 @@ Copia del sitio apuntada a la hoja de pruebas.
 
 Creado el 4-sep-2026 para probar el pago dividido en un ticket.
 
+## Pruebas del backend
+
+`backend-solo-pruebas/95_prueba_pago_dividido.js` vive UNICAMENTE en el sistema de
+pruebas (nunca en `backend/`, que es produccion). Registra ventas contra la hoja de
+pruebas, revisa lo que quedo escrito y las cancela al final. Se corre desde el editor
+de Apps Script del script de pruebas: abrir el archivo, elegir `pruebaPagoDividido`
+y Ejecutar. Debe terminar en "TODO OK".
+
 ## Como actualizarlo
 
 1. Frontend: copiar los archivos del sitio real a `pruebas/` y cambiar el

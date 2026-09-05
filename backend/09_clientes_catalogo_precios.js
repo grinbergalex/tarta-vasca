@@ -89,6 +89,7 @@ const idxEstadoAnul = headers.indexOf("estado_anul");
 const idxAnulPor = headers.indexOf("anulado_por");
 const idxAnulMotivo = headers.indexOf("anulado_motivo");
 const idxNotas = headers.indexOf("notas");
+const idxPagos = headers.indexOf("pagos");   // v7.2 — desglose del pago dividido (solo en la primera fila del ticket)
 const idxN = idxNotas === -1 ? 14 : idxNotas;
 const _incAnul = !!(body && body.incluirAnuladas);   // el historial de Ventas las pide para mostrarlas marcadas
 const _desde = body && body.desde ? String(body.desde) : null;   // "yyyy-MM-dd"
@@ -111,7 +112,7 @@ const fechaFmt = fecha instanceof Date ? Utilities.formatDate(fecha, TZ_MX, "yyy
 const notas = String(datos[i][idxN] || "");
 const matchRuta = notas.match(/RUTA-[A-Z0-9-]+/);
 const rutaId = matchRuta ? matchRuta[0] : null;
-ventas.unshift({ idVenta, fecha: fechaFmt, usuario, sucursal, sabor, tamano, cantidad: Number(cantidad), precio: Number(precio), subtotal: Number(subtotal), canal, metodoPago, clienteId, clienteNombre, notas, rutaId, tipoOp: (function(){var ix=headers.indexOf("tipo_op");return ix!==-1?(datos[i][ix]||"Venta"):"Venta";})(), anulada: _esAnulada, anuladoPor: _esAnulada && idxAnulPor !== -1 ? String(datos[i][idxAnulPor] || "") : "", anuladoMotivo: _esAnulada && idxAnulMotivo !== -1 ? String(datos[i][idxAnulMotivo] || "") : "" });
+ventas.unshift({ idVenta, fecha: fechaFmt, usuario, sucursal, sabor, tamano, cantidad: Number(cantidad), precio: Number(precio), subtotal: Number(subtotal), canal, metodoPago, clienteId, clienteNombre, notas, rutaId, tipoOp: (function(){var ix=headers.indexOf("tipo_op");return ix!==-1?(datos[i][ix]||"Venta"):"Venta";})(), anulada: _esAnulada, anuladoPor: _esAnulada && idxAnulPor !== -1 ? String(datos[i][idxAnulPor] || "") : "", anuladoMotivo: _esAnulada && idxAnulMotivo !== -1 ? String(datos[i][idxAnulMotivo] || "") : "", pagos: idxPagos !== -1 ? _pagosLeer(datos[i][idxPagos]).pagos : [] });
 }
 return { ok: true, ventas };
 }
