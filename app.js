@@ -574,11 +574,14 @@ function totalACobrarVenta(){
 function pagosAsignados(){ return S.pagos.reduce((s,p)=>s+(Number(p.monto)||0),0); }
 function pagoDivididoDisponible(){ return tipoOp==="venta" && !esPlataforma(L("venta-canal")?.value||""); }
 function pagoDivididoActivo(){ return S.pagoDividido && pagoDivididoDisponible(); }
-function togglePagoDividido(){
-  S.pagoDividido = !S.pagoDividido;
-  // Arranca con el metodo ya elegido arriba y otro en blanco: el caso normal es
-  // "una parte en efectivo y el resto con tarjeta".
-  if(S.pagoDividido){
+function setModoPago(modo){
+  const dividido = modo === "dividido";
+  if(dividido === S.pagoDividido) return;
+  S.pagoDividido = dividido;
+  // Arranca con el metodo ya elegido y otro en blanco: el caso normal es "una parte
+  // en efectivo y el resto con tarjeta". El primer monto se propone completo para que
+  // baste con corregir uno de los dos.
+  if(dividido){
     const actual = L("venta-metodo")?.value || METODOS_PAGO[0];
     const otro = METODOS_PAGO.find(m=>m!==actual) || METODOS_PAGO[0];
     S.pagos = [{metodo:actual,monto:0},{metodo:otro,monto:0}];
@@ -609,20 +612,22 @@ function pagosParaEnviar(){
   S.pagos.forEach(p=>{ const m=Number(p.monto)||0; if(m>0) porMetodo[p.metodo]=(porMetodo[p.metodo]||0)+m; });
   return METODOS_PAGO.filter(m=>porMetodo[m]).map(m=>({metodo:m,monto:porMetodo[m]}));
 }
+// Unico dueño de lo que se ve en la seccion de Pago: si otra funcion tambien escondiera
+// o mostrara el metodo, las dos se pisarian y el control quedaria en un estado a medias.
 // soloEstado: al teclear un monto NO se redibujan los inputs (perderian el foco).
 function renderPagoDividido(soloEstado){
-  const caja=L("pago-dividido-box"), box=L("pago-split"), btn=L("btn-dividir-pago");
-  if(!caja||!box||!btn) return;
-  if(!pagoDivididoDisponible()){          // regalo, merma o plataforma: no aplica
-    caja.style.display="none"; box.style.display="none";
+  const sec=L("pago-section"), box=L("pago-split");
+  if(!sec||!box) return;
+  if(!pagoDivididoDisponible()){          // regalo, merma o plataforma: el pago no se elige
+    sec.style.display="none";
     S.pagoDividido=false; S.pagos=[];
     return;
   }
-  caja.style.display="block";
+  sec.style.display="block";
+  L("modo-pago-uno").classList.toggle("active", !S.pagoDividido);
+  L("modo-pago-dividido").classList.toggle("active", S.pagoDividido);
+  L("metodo-pago-group").style.display = S.pagoDividido ? "none" : "block";
   box.style.display = S.pagoDividido ? "block" : "none";
-  btn.textContent = S.pagoDividido ? "✕ Cobrar con un solo método" : "💳 Dividir el pago";
-  const metodoGroup=L("venta-metodo")?.parentElement;
-  if(metodoGroup) metodoGroup.style.display = S.pagoDividido ? "none" : "block";
   if(!S.pagoDividido) return;
   const cont=L("pago-split-filas");
   if(!soloEstado && cont){
@@ -645,11 +650,8 @@ function renderPagoDividido(soloEstado){
 function actualizarMetodoPago(){
   const canal=L("venta-canal")?.value;
   if(!canal) return;
-  const esPlat=esPlataforma(canal);
-  llenar("venta-metodo",esPlat?[canal]:METODOS_PAGO);
+  llenar("venta-metodo", esPlataforma(canal)?[canal]:METODOS_PAGO);
   renderPagoDividido();
-  const metodoGroup=L("venta-metodo")?.parentElement;
-  if(metodoGroup) metodoGroup.style.display=esPlat?"none":"block";
 }
 function actualizarUICanal(){
   const canal=L("venta-canal")?.value;
@@ -951,7 +953,12 @@ L("btn-agregar-item")?.addEventListener("click",()=>{
 });
 function renderCarrito(){
   const items=L("carrito-items");
-  if(S.carrito.length===0){items.innerHTML=`<div class="carrito-vacio">Sin productos — agrega uno arriba</div>`;L("carrito-total-bar").style.display="none";return;}
+  if(S.carrito.length===0){
+    items.innerHTML=`<div class="carrito-vacio">Sin productos — agrega uno arriba</div>`;
+    L("carrito-total-bar").style.display="none";
+    if(S.pagoDividido) renderPagoDividido(true);   // el total bajo a 0: el aviso tiene que decirlo
+    return;
+  }
   items.innerHTML=S.carrito.map((item,i)=>{
     const tieneDesc=item.descuento>0&&tipoOp==="venta";
     const descLabel=tieneDesc?(item.descTipo==="pct"?`-${item.descuento}%`:`-$${item.descuento}`):"";
@@ -2593,8 +2600,6 @@ async function eliminarCanalPrecio(id){
 function onCanalChange(){
   const canal = L("venta-canal")?.value;
   const esPlat = esPlataforma(canal);
-  const metodoGroup = L("venta-metodo")?.parentElement;
-  if(metodoGroup) metodoGroup.style.display = esPlat ? "none" : "block";
   // v3.4.18-fix: preservar el metodo de pago seleccionado al reconstruir la lista
   // (bug: a algunos usuarios se les cambiaba la forma de pago sola al cambiar de canal)
   const _selMet = L("venta-metodo");

@@ -226,9 +226,16 @@ Un mismo ticket cobrado con varios métodos (p. ej. $300 en efectivo y $200 con 
 - **Conciliación.** El monto del ticket se reparte entre los métodos en proporción a lo
   cobrado con cada uno, así que el total de la conciliación sigue siendo el total vendido.
   Las piezas no se parten: se cargan al método que pagó más.
-- **Frontend.** Botón "Dividir el pago" en Nueva venta (`#pago-dividido-box`). Mientras está
-  activo se esconde el select de método y se manda `pagos` en vez de `metodoPago`. El aviso
-  dice cuánto falta o cuánto sobra, y "Resto" completa la diferencia.
+- **Frontend.** La sección **Pago** (`#pago-section`) va **debajo del carrito**, no arriba:
+  se cobra cuando ya se sabe cuánto es. Arriba queda solo el canal, que sí tiene que ir antes
+  porque cambia los precios de lo que se agrega. Dos opciones a la vista, "Un solo método" y
+  "Dividir el pago" (`setModoPago`), para que se vea que existen las dos sin tener que probar.
+  Con el pago dividido se esconde el select de método y se manda `pagos` en vez de `metodoPago`;
+  el aviso dice cuánto falta o cuánto sobra y "Resto" completa la diferencia.
+- **`renderPagoDividido()` es la única que decide qué se ve en esa sección.** Antes
+  `onCanalChange` y `actualizarMetodoPago` también escribían sobre el select del método, así
+  que cualquier refresco (agregar al carrito, recargar catálogo) podía dejar el control a
+  medias. Si algo más vuelve a tocar esos `style.display`, vuelve el mismo bug.
 - Se probó primero en `/pruebas/` (ver `pruebas/LEEME.md`) antes de subirlo.
 
 ## Legacy / pendientes
