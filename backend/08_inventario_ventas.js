@@ -233,6 +233,7 @@ if (!hojaInv) throw new Error("No existe la hoja Inventario.");
       const notas = [item.esPaquete?`PAQ-${grupos[item.paqueteId]?grupos[item.paqueteId].length:"X"}IND`:"", descuento>0&&!item.esPaquete?`Desc: ${descuento}${descTipo==="pct"?"%":"$"} (orig $${precioOriginal})`:"", esRegalo?`Regalo: ${motivo}`:"", esReserva?`Reserva${motivo?": "+motivo:""}`:"", motivo&&!esRegalo&&!esReserva&&!item.esPaquete?`Nota: ${motivo}`:""].filter(Boolean).join(" | ");
       hojaVentas.appendRow([idVenta, fechaVenta, sesion.usuario, sucursal, sabor, tamano, cantidad, precio, subtotal, canalReal, metodoReal, clienteId, cliente?(cliente.nombre||""):"", lotesPorItem[idx].join(", "), notas]);
       const nuevaFila = hojaVentas.getLastRow();
+      _cajaMemoInvalidar();   // v7.1 — la venta cambia el efectivo esperado (memo de 16_caja_control)
       filasAppendedRows.push(nuevaFila);
       if (idxTipoOp !== -1) hojaVentas.getRange(nuevaFila, idxTipoOp + 1).setValue(tipoOpVal);
       if (esReserva && idxAnticipo !== -1 && Number(anticipo) > 0) hojaVentas.getRange(nuevaFila, idxAnticipo + 1).setValue(Number(anticipo));

@@ -89,9 +89,13 @@ _reponerStockVenta
 const VIDA_UTIL_DIAS = 9999;  // CADUCIDAD ELIMINADA — constante conservada por compatibilidad
 const FACTOR_SEMANAS_MES = 4.2;
 const SESION_HORAS = 24;                  // v4.4 — máximo absoluto
-const SESION_INACTIVIDAD_MIN = 60;        // v4.4 — auto-logout 60 min sin actividad
+const SESION_INACTIVIDAD_MIN = 720;       // v7.1 — auto-logout 12 h sin actividad.
+// Estaba en 60: una tarde floja bastaba para tirar a la vendedora al login, y cada
+// re-login expulsaba la sesion mas vieja de ese usuario (ver crearSesion). 12 h cubre
+// una jornada completa sin dejar la sesion viva de un dia para otro.
 const MAX_SESIONES_OWNER = 99;
-const MAX_SESIONES_NORMAL = 3;
+const MAX_SESIONES_NORMAL = 10;           // v7.1 — era 3: con un usuario compartido entre
+// varias tablets el tope se tocaba a diario y cada login expulsaba a alguien mas.
 const TZ_MX = "America/Mexico_City";
 // v4.4 — Horarios por sucursal por día (0=Domingo). 24h format.
 const HORARIOS_SUCURSAL = {

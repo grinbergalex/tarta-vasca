@@ -12,7 +12,7 @@ const [usu, hash, rol, sucursal, activo] = datos[i];
 if (usu !== usuario) continue;
 if (activo !== "TRUE" && activo !== true) return { ok: false, error: "Usuario inactivo." };
 if (hash !== hashSimple(password)) return { ok: false, error: "Contraseña incorrecta." };
-const token = crearSesion(usuario, rol, sucursal, device_info || "sin-etiqueta");
+const token = crearSesion(usuario, rol, sucursal, device_info || "sin-etiqueta", body.device_id || "");
 hoja.getRange(i + 1, 6).setValue(new Date().toISOString());
 registrarAuditoria(usuario, rol, "LOGIN", "Inicio de sesión" + (device_info ? " · " + device_info.substring(0, 60) : ""));
 const permisos = getPermisos(rol);
@@ -49,7 +49,40 @@ if (extra) Object.keys(extra).forEach(k => { if (extra[k] === true) permisos[k] 
 return { ok: true, rol: sesion.rol, permisos };
 }
 // Crea sesión en hoja Sesiones_Activas, controla tope de sesiones concurrentes
-function crearSesion(usuario, rol, sucursal, deviceInfo) {
+// v7.1 — Reescrita. Tres problemas que provocaban el "a veces no entra":
+//   1) Al expulsar una sesion por el tope NO se invalidaba su cache (_velTokenDrop),
+//      asi que el token expulsado seguia sirviendo hasta que CacheService desalojaba
+//      la entrada — minutos u horas despues, sin patron. Ahi la sesion moria de golpe.
+//   2) Las filas expiradas se borraban de una en una: cada deleteRow es un viaje a
+//      Sheets, asi que el login tardaba en proporcion a la basura acumulada.
+//   3) Cada login creaba fila nueva aunque fuera el mismo dispositivo, de modo que un
+//      usuario compartido entre tablets rotaba expulsiones sin parar.
+// Ahora: mismo dispositivo reemplaza su propia fila, los borrados van en bloque y
+// toda expulsion invalida el cache del token expulsado.
+const SES_DEV_MARCA = "dev:";
+// El id de dispositivo viaja dentro de la columna device_info como "dev:<id> · <userAgent>"
+// para no tener que agregar una columna a Sesiones_Activas (y romper los indices que
+// ya usan getSesionesActivas y validarToken).
+function _sesDeviceId(info) {
+const s = String(info || "");
+if (s.indexOf(SES_DEV_MARCA) !== 0) return "";
+const corte = s.indexOf(" · ");
+return corte === -1 ? s.substring(SES_DEV_MARCA.length) : s.substring(SES_DEV_MARCA.length, corte);
+}
+// Borra filas (1-based) en una sola pasada: descendente y agrupando las contiguas.
+function _sesBorrarFilas(hoja, filas) {
+if (!filas || !filas.length) return;
+const orden = filas.slice().sort((a, b) => b - a);
+let i = 0;
+while (i < orden.length) {
+const fin = orden[i];
+let ini = fin;
+while (i + 1 < orden.length && orden[i + 1] === ini - 1) { i++; ini = orden[i]; }
+try { hoja.deleteRows(ini, fin - ini + 1); } catch (e) {}
+i++;
+}
+}
+function crearSesion(usuario, rol, sucursal, deviceInfo, deviceId) {
 const ss = SpreadsheetApp.getActiveSpreadsheet();
 let h = ss.getSheetByName("Sesiones_Activas");
 if (!h) {
@@ -60,43 +93,40 @@ const ahora = new Date();
 const ahoraISO = ahora.toISOString();
 const expira = ahora.getTime() + (SESION_HORAS * 60 * 60 * 1000);
 const token = "TVT-" + Math.random().toString(36).substring(2, 12) + "-" + ahora.getTime() + "|" + rol + "|" + expira;
-// Limpiar sesiones expiradas y contar las del usuario
+const infoConId = deviceId ? (SES_DEV_MARCA + deviceId + " · " + String(deviceInfo || "")) : String(deviceInfo || "");
+// Una sola lectura: clasifica expiradas, sesiones del usuario y la fila de este mismo dispositivo.
 const datos = h.getDataRange().getValues();
-const filasMias = [];
-const filasAEliminar = [];
-for (let i = datos.length - 1; i >= 1; i--) {
+const expiradas = [];
+const mias = [];
+let filaMismoDispositivo = 0;
+let tokenMismoDispositivo = "";
+for (let i = 1; i < datos.length; i++) {
 const t = String(datos[i][0] || "");
 const partes = t.split("|");
 const expToken = partes.length === 3 ? parseInt(partes[2]) : 0;
-const usuT = datos[i][1];
-const creadoT = datos[i][5];
-if (!t || ahora.getTime() > expToken) {
-filasAEliminar.push(i + 1);
-continue;
+if (!t || ahora.getTime() > expToken) { _velTokenDrop(t); expiradas.push(i + 1); continue; }
+if (datos[i][1] !== usuario) continue;
+mias.push({ fila: i + 1, creado: new Date(datos[i][5]), token: t });
+if (deviceId && _sesDeviceId(datos[i][4]) === deviceId) { filaMismoDispositivo = i + 1; tokenMismoDispositivo = t; }
 }
-if (usuT === usuario) filasMias.push({ fila: i + 1, creado: new Date(creadoT) });
+// Mismo dispositivo: reemplaza su propia fila. No consume cupo ni expulsa a nadie.
+if (filaMismoDispositivo) {
+_velTokenDrop(tokenMismoDispositivo);
+h.getRange(filaMismoDispositivo, 1, 1, 7).setValues([[token, usuario, rol, sucursal, infoConId, ahoraISO, ahoraISO]]);
+_sesBorrarFilas(h, expiradas);
+return token;
 }
-// Eliminar expiradas
-filasAEliminar.forEach(f => h.deleteRow(f));
-// Tope concurrentes — recargar datos porque las filas cambiaron
+// Dispositivo nuevo: si el usuario ya llego al tope, expulsa las mas viejas.
 const tope = rol === "Owner" ? MAX_SESIONES_OWNER : MAX_SESIONES_NORMAL;
-if (filasMias.length >= tope) {
-// Recargar datos y volver a localizar las filas del usuario
-const datos2 = h.getDataRange().getValues();
-const propias = [];
-for (let i = 1; i < datos2.length; i++) {
-if (datos2[i][1] === usuario) propias.push({ fila: i + 1, creado: new Date(datos2[i][5]) });
+mias.sort((a, b) => a.creado - b.creado);
+const expulsadas = [];
+while (mias.length >= tope) {
+const masVieja = mias.shift();
+_velTokenDrop(masVieja.token);   // sin esto la expulsion era una bomba de tiempo
+expulsadas.push(masVieja.fila);
 }
-propias.sort((a, b) => a.creado - b.creado);
-// Eliminar las más viejas hasta dejar (tope - 1) y dar espacio a la nueva
-while (propias.length >= tope) {
-const masVieja = propias.shift();
-h.deleteRow(masVieja.fila);
-// Ajustar las filas restantes (la fila eliminada hace que las posteriores bajen 1)
-propias.forEach(p => { if (p.fila > masVieja.fila) p.fila -= 1; });
-}
-}
-h.appendRow([token, usuario, rol, sucursal, deviceInfo, ahoraISO, ahoraISO]);
+_sesBorrarFilas(h, expiradas.concat(expulsadas));
+h.appendRow([token, usuario, rol, sucursal, infoConId, ahoraISO, ahoraISO]);
 return token;
 }
 function validarToken(token) {

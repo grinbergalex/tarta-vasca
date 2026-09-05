@@ -50,8 +50,10 @@ index.html  ──fetch──►  Apps Script web app (backend/)  ──►  Goo
   cada venta sosteniendo el lock global — causaba lentitud y errores de
   "Sistema ocupado". Las escrituras solo llaman `_utilMarcarDirty()`.
 - Toda acción nueva del API: agregarla al `switch` de `despachar()` en
-  `Código.js` **y**, si es de solo lectura, a la lista `LECTURA` en
-  `index.html` (las lecturas van por GET, las escrituras por POST).
+  `04_http_setup.js` **y**, si es de solo lectura, a la lista `LECTURA` en
+  `app.js` (línea 3). Las lecturas van por GET y las escrituras por POST — y un
+  POST a Apps Script contesta 302, así que obliga a un segundo viaje: dejar una
+  lectura fuera de `LECTURA` le cuesta el doble de latencia.
 - **El filtro "Tipo de operación" de los reportes nunca queda vacío.** A diferencia
   de sabores/tamaños/canales (vacío = todos), una lista de `tipos` vacía no dejaba
   pasar ninguna fila y todos los reportes salían en cero: el chip "Venta" viene
@@ -108,6 +110,38 @@ frontend en `caja.js` + pane `#tab-caja` en `index.html`.
 > El gating "tienda cerrada = no operar" para la Vendedora vive en el frontend
 > (`cajaGateInicial` la lleva al flujo de apertura). `registrarVenta` **no** se
 > bloquea en backend (para no romper rutas/reservas); endurecerlo es un follow-up.
+
+## v7.1 — Arranque y sesiones (4-sep-2026)
+
+Arreglos a "a veces no entra / tarda mucho en poder usarlo":
+
+- **`crearSesion` invalida el cache al expulsar.** Al pasar el tope de sesiones se
+  borraba la fila pero no se llamaba `_velTokenDrop`, así que el token expulsado
+  seguía sirviendo desde `CacheService` y moría horas después, sin patrón. Era la
+  causa principal de las sesiones que se caían solas.
+- **Sesión por dispositivo.** El frontend manda `device_id` (localStorage) y el
+  backend reemplaza la fila de ESE dispositivo en vez de crear otra. Sin esto, un
+  usuario compartido entre tablets rotaba expulsiones sin parar.
+- `MAX_SESIONES_NORMAL` 3 → 10 y `SESION_INACTIVIDAD_MIN` 60 → 720 min.
+- **Borrado de sesiones expiradas en bloque** (`deleteRows` agrupando contiguas) en
+  vez de un `deleteRow` por fila: el login tardaba en proporción a la basura acumulada.
+- **Acción `bootstrap`**: catálogo + precios + stock + canal-precios + comisiones +
+  recetas en UNA sola petición. El arranque hacía 8 o 9 viajes de 1-2 s cada uno.
+  El frontend cae solo a la ruta vieja si el backend aún no la tiene desplegada.
+- **`_cajaSumaVentasEfectivo` recorre la hoja Ventas una sola vez** (mapa por sucursal,
+  memoizado durante la ejecución, invalidado en `_cajaLedger` y al registrar venta).
+  Antes eran 2-4 recorridos completos por petición, y `cajaEstado` corre al arrancar
+  la app: por eso el arranque se volvía más lento cada mes. A propósito **no** usa
+  `CacheService`: el memo vive solo lo que dura la petición, así que no puede quedar
+  desfasado de la hoja (que es dinero).
+- **`cajaEstado` no calcula el esperado para quien no lo ve** (Vendedora/Mixto): se
+  calculaba y se tiraba, y esa llamada es justo la que traba el arranque.
+- **Frontend con `defer`** en todos los `<script>`. Chart.js (205 KB) y Leaflet (147 KB)
+  eran síncronos en el `head` y dejaban la pantalla EN BLANCO hasta que respondieran los
+  dos CDN; ninguno hace falta para vender. `lf_capture.js` existe porque un `<script>`
+  inline no se puede diferir y corriendo en línea guardaría `undefined` en `window._LF`.
+- **Timeout en `api()`** (25 s lecturas, 60 s escrituras). Antes no había ninguno: un
+  Apps Script atorado dejaba el fetch colgado para siempre, sin error y sin salida.
 
 ## Legacy / pendientes
 

@@ -91,6 +91,7 @@ if (accion === "logout") return logout(body);
 const sesion = validarToken(body.token);
 if (!sesion.ok) return { ok: false, error: "Sesión inválida o expirada. Vuelve a iniciar sesión." };
 switch (accion) {
+case "bootstrap":               return bootstrap(body, sesion);   // v7.1 — arranque en 1 sola peticion
 case "getStock":                return getStock(body, sesion);
 case "altaProduccion":          return altaProduccion(body, sesion);
 case "ajustarInventario":       return ajustarInventario(body, sesion);  // Ajuste por conteo fisico (Owner)
@@ -211,6 +212,28 @@ case "repartoDelRuta":       return repartoDelRuta(body, sesion);
 case "repartoLiberar":       return repartoLiberar(body, sesion);                  // Liberar tarta apartada (ruta)
 default: return { ok: false, error: "Acción desconocida: " + accion };
 }
+}
+// =================================================================================
+// ARRANQUE EN UNA SOLA PETICION (v7.1)
+// =================================================================================
+// La app pedia catalogo, precios, stock, canal-precios, comisiones y recetas por
+// separado — y cargarPrecios volvia a pedir el catalogo — o sea 6 o 7 viajes de 1 a 2
+// segundos cada uno antes de poder vender. Aqui se responden todos juntos.
+// Cada bloque va en su propio try: si uno truena, los demas llegan igual y el frontend
+// completa lo que falte por su ruta de siempre.
+function bootstrap(body, sesion) {
+const salida = { ok: true };
+function bloque(nombre, fn) {
+try { salida[nombre] = fn(); }
+catch (e) { salida[nombre] = { ok: false, error: String(e && e.message || e) }; }
+}
+bloque("catalogo",     function () { return getCatalogo(sesion); });
+bloque("precios",      function () { return getPrecios(sesion); });
+bloque("stock",        function () { return getStock(body, sesion); });
+bloque("canalPrecios", function () { return getCanalPrecios(sesion); });
+bloque("comisiones",   function () { return getComisionesConfig(sesion); });
+bloque("recetas",      function () { return getRecetas(sesion); });
+return salida;
 }
 function respuesta(data) {
 return ContentService

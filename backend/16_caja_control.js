@@ -190,6 +190,7 @@ function _cajaLedger(ss, tipo, sucursal, sesionId, delta, saldo, ref, usuario, m
     Number(delta) || 0, Number(saldo) || 0, ref || "", usuario || "", motivo || ""];
   fila.push(ventasAcum == null ? "" : Number(ventasAcum) || 0);   // col 11: ventas_acum
   h.appendRow(fila);
+  _cajaMemoInvalidar();   // v7.1 — el asiento puede cambiar el esperado dentro de esta misma ejecucion
 }
 /**
  * Última "verdad" declarada por la Dueña. Devuelve el saldo, la FILA del asiento
@@ -217,23 +218,35 @@ function _cajaBaseline(ss, sucursal) {
   }
   return { existe: false, saldo: 0, fila: 0, ventasAcum: 0, ts: "" };
 }
-// Acumulado histórico de ventas en efectivo de la sucursal (sin filtro de tiempo).
-function _cajaSumaVentasEfectivo(ss, sucursal) {
+// Acumulado histórico de ventas en efectivo (sin filtro de tiempo).
+// v7.1 — La hoja Ventas crece sin límite y esto la recorría ENTERA, una vez por
+// sucursal y otra vez desde _cajaBaseline. Con dos sucursales eran 2-4 recorridos
+// completos en la misma petición, y cajaEstado corre al arrancar la app: por eso el
+// arranque se volvía más lento cada mes. Ahora se recorre UNA vez y se memoiza
+// durante la ejecución. No se usa CacheService a propósito: el memo vive solo lo que
+// dura la petición, así que no puede quedar desfasado de la hoja (que es dinero).
+var _CAJA_VEF_MEMO = null;
+function _cajaMemoInvalidar() { _CAJA_VEF_MEMO = null; }
+function _cajaMapaVentasEfectivo(ss) {
+  var mapa = {};
   var h = ss.getSheetByName("Ventas");
-  if (!h) return 0;
+  if (!h) return mapa;
   var d = h.getDataRange().getValues();
-  if (d.length < 2) return 0;
+  if (d.length < 2) return mapa;
   var H = d[0], iAnul = H.indexOf("estado_anul"), iTipo = H.indexOf("tipo_op");
-  var suma = 0;
   for (var i = 1; i < d.length; i++) {
     var r = d[i];
-    if (r[3] !== sucursal) continue;                          // sucursal (col D / idx3)
     if (String(r[10]).trim() !== "Efectivo") continue;         // metodoPago (col K / idx10)
     if (iAnul !== -1 && r[iAnul] === "ANULADO") continue;
     if (iTipo !== -1 && r[iTipo] && r[iTipo] !== "Venta") continue;  // excluye Reservado/Regalo
-    suma += Number(r[8]) || 0;                                 // subtotal (col I / idx8)
+    var suc = r[3];                                            // sucursal (col D / idx3)
+    mapa[suc] = (mapa[suc] || 0) + (Number(r[8]) || 0);        // subtotal (col I / idx8)
   }
-  return suma;
+  return mapa;
+}
+function _cajaSumaVentasEfectivo(ss, sucursal) {
+  if (!_CAJA_VEF_MEMO) _CAJA_VEF_MEMO = _cajaMapaVentasEfectivo(ss);
+  return _CAJA_VEF_MEMO[sucursal] || 0;
 }
 // Suma de deltas del ledger de un tipo, para los asientos POSTERIORES a `filaDesde`.
 function _cajaSumaLedgerDesdeFila(ss, sucursal, tipo, filaDesde) {
@@ -465,14 +478,19 @@ function cajaEstado(body, sesion) {
   for (var i = 0; i < vis.length; i++) {
     var suc = vis[i];
     var ab = _cajaFindSesionAbierta(hS, suc);
-    var calc = cajaEsperado(ss, suc);
+    // v7.1 — Para quien no ve montos (Vendedora/Mixto) el esperado se calculaba y
+    // enseguida se tiraba, pagando el recorrido completo de la hoja Ventas. Y esta
+    // llamada es justo la que traba el arranque de la app. Solo se calcula si se usa;
+    // lo unico que hace falta es saber si ya hay saldo base declarado.
+    var calc = puedeVerMontos ? cajaEsperado(ss, suc) : null;
+    var sinBase = calc ? (calc.sinBase === true) : !_cajaBaseline(ss, suc).existe;
     var pend = _cajaRetirosPendientes(ss, suc);
     sucs.push({
       sucursal: suc, abierta: !!ab,
       aperturaPor: ab ? ab.row[6] : null, aperturaAt: ab ? ab.row[7] : null,
       esperado: puedeVerMontos ? calc.esperado : null,
       desglose: puedeVerMontos ? calc : null,
-      sinBase: calc.sinBase === true,
+      sinBase: sinBase,
       retirosPendientes: pend.length,
       retirosPendientesMonto: pend.reduce(function (a, x) { return a + x.monto; }, 0)
     });

@@ -1,6 +1,9 @@
 
 const API_URL = "https://script.google.com/macros/s/AKfycbxHgJK4fWgTeDopx0nzYAiWVgqGITD2dktUQrYLLJIAldtB4GHaHvM7P74s7LLEjJlW/exec";
-const LECTURA = ["getCatalogo","getStock","getPrecios","getUsuarios","getAuditoria","buscarCliente","getHistorialCliente","getVentas","getInsumos","getRecetas","getCalculoCosto","listarMovimientosRecientes","getSesionesActivas","repartoEstado","repartoProponer","repartoGeocode","cajaEstado","getRetiros"];
+const LECTURA = ["getCatalogo","getStock","getPrecios","getUsuarios","getAuditoria","buscarCliente","getHistorialCliente","getVentas","getInsumos","getRecetas","getCalculoCosto","listarMovimientosRecientes","getSesionesActivas","repartoEstado","repartoProponer","repartoGeocode","cajaEstado","getRetiros",
+// v7.1 — Estas seis son de solo lectura pero iban por POST, y un POST a Apps Script
+// contesta 302 y obliga al navegador a repetir la peticion. Por GET van en un viaje.
+"bootstrap","getComisionesConfig","getCanalPrecios","getMensajes","getAlertas","getMisPermisos"];
 let S = {
   token:null, usuario:null, rol:null, sucursal:null, permisos:null,
   catalogo:null, precios:null, stock:null,
@@ -52,14 +55,27 @@ function getPermisos() {
 // api() reintenta UNA vez con el MISMO opId y el servidor regresa el resultado
 // original en lugar de duplicar la operación.
 function opIdNuevo(){ return (crypto.randomUUID ? crypto.randomUUID() : "OP-"+Date.now()+"-"+Math.random().toString(36).slice(2)); }
+// v7.1 — Timeout. Antes no habia ninguno: si Apps Script se atoraba o la red se caia a
+// media peticion, el fetch quedaba colgado indefinidamente y la pantalla se quedaba en
+// "Entrando..." o en blanco, sin error y sin salida. Las escrituras esperan mas porque el
+// backend aguanta hasta 30 s por el lock, y ya van protegidas por opId (reintento idempotente).
+const API_TIMEOUT_LECTURA = 25000;
+const API_TIMEOUT_ESCRITURA = 60000;
+function _fetchConTimeout(url, opciones, ms) {
+  if (typeof AbortController === "undefined") return fetch(url, opciones);
+  const ctrl = new AbortController();
+  const reloj = setTimeout(() => ctrl.abort(), ms);
+  return fetch(url, Object.assign({}, opciones, { signal: ctrl.signal }))
+    .finally(() => clearTimeout(reloj));
+}
 async function api(accion, body={}, _reintento=false) {
   const payload = {accion, token:S.token, ...body};
   try {
     if (LECTURA.includes(accion)) {
-      const r = await fetch(API_URL+"?data="+encodeURIComponent(JSON.stringify(payload)),{redirect:"follow"});
+      const r = await _fetchConTimeout(API_URL+"?data="+encodeURIComponent(JSON.stringify(payload)),{redirect:"follow"}, API_TIMEOUT_LECTURA);
       return _chequeoSesion(JSON.parse(await r.text()));
     } else {
-      const r = await fetch(API_URL,{method:"POST",body:JSON.stringify(payload),redirect:"follow"});
+      const r = await _fetchConTimeout(API_URL,{method:"POST",body:JSON.stringify(payload),redirect:"follow"}, API_TIMEOUT_ESCRITURA);
       const txt = await r.text();
       try { return _chequeoSesion(JSON.parse(txt)); }
       catch(e) {
@@ -69,6 +85,7 @@ async function api(accion, body={}, _reintento=false) {
     }
   } catch(e) {
     if (payload.opId && !_reintento) { await new Promise(rs=>setTimeout(rs,1500)); return api(accion, body, true); }
+    if (e && e.name === "AbortError") return {ok:false, error:"El servidor no respondió a tiempo. Revisa la conexión y vuelve a intentar."};
     return {ok:false,error:"Error de conexión."};
   }
 }
@@ -154,7 +171,7 @@ async function doLogin() {
   if(!usuario||!password){err.textContent="Ingresa usuario y contraseña.";err.style.display="block";return;}
   btn.disabled=true;btn.textContent="Entrando...";err.style.display="none";
   const device_info = navigator.userAgent.substring(0,80);
-  const res=await api("login",{usuario,password,device_info});
+  const res=await api("login",{usuario,password,device_info,device_id:_deviceId()});
   if(res.ok){S.token=res.token;S.usuario=res.usuario;S.rol=res.rol;S.sucursal=res.sucursal;S.permisos=res.permisos||null;_guardarSesion();iniciarApp();}
   else{err.textContent=res.error||"Error al iniciar sesión.";err.style.display="block";}
   btn.disabled=false;btn.textContent="Entrar";
@@ -164,6 +181,23 @@ async function doLogin() {
 // la vendedora. Al imprimir por PassPRNT la app se lleva la pantalla y al volver
 // Chrome puede recargar, asi que la sesion tiene que sobrevivir a la recarga.
 const TV_SESION = "tv_sesion";
+// v7.1 — Identificador fijo de este dispositivo (tablet, celular, computadora).
+// Antes cada login creaba una fila nueva en Sesiones_Activas aunque fuera el mismo
+// aparato, asi que con un usuario compartido entre varias tablets se llegaba al tope
+// y cada quien iba expulsando al de al lado. Con este id el backend reemplaza la fila
+// de ESTE dispositivo en vez de agregar otra. Si no hay localStorage se manda vacio y
+// el backend se comporta como antes.
+const TV_DEVICE = "tv_device_id";
+function _deviceId(){
+  try{
+    let d = localStorage.getItem(TV_DEVICE);
+    if(!d){
+      d = (crypto.randomUUID ? crypto.randomUUID() : "DEV-"+Date.now()+"-"+Math.random().toString(36).slice(2)).replace(/-/g,"").substring(0,16);
+      localStorage.setItem(TV_DEVICE, d);
+    }
+    return d;
+  }catch(e){ return ""; }
+}
 function _guardarSesion(){
   try{ localStorage.setItem(TV_SESION, JSON.stringify({token:S.token,usuario:S.usuario,rol:S.rol,sucursal:S.sucursal,permisos:S.permisos})); }catch(e){}
 }
@@ -200,15 +234,44 @@ function iniciarApp() {
   L("hdr-usuario").textContent=S.usuario;
   aplicarPermisosUI();
   setupNav();
-  cargarCatalogo();
+  arrancarDatos();
+  // Los mensajes y alertas del encabezado no estorban para vender: se piden ya que
+  // la app quedo utilizable, no compitiendo con la carga inicial.
+  setTimeout(cargarMensajesHeader, 6000);
+  setInterval(cargarMensajesHeader, 120000);
+  // v7 — si la tienda está cerrada, llevar al operador (no-admin) al flujo de apertura.
+  if (typeof cajaGateInicial === "function") setTimeout(cajaGateInicial, 800);
+}
+// v7.1 — El arranque pedia catalogo, precios, stock, canal-precios, comisiones y recetas
+// en peticiones separadas (y cargarPrecios volvia a pedir el catalogo): 6 o 7 viajes de
+// 1 a 2 segundos cada uno antes de poder vender. Ahora se piden todos juntos con la accion
+// "bootstrap". Si el backend todavia no la tiene desplegada responde "Accion desconocida"
+// y se cae solo a la ruta de siempre, asi que esto funciona con el backend viejo tal cual.
+async function arrancarDatos(){
+  const cont = L("stock-content");
+  if (cont) cont.innerHTML = `<div class="loading"><div class="spinner"></div>Cargando...</div>`;
+  let res = null;
+  try { res = await api("bootstrap"); } catch(e) { res = null; }
+  if (res && res.ok && res.catalogo && res.catalogo.ok) {
+    S.catalogo = res.catalogo;
+    if (res.precios && res.precios.ok)           S.precios = res.precios.precios;
+    if (res.canalPrecios && res.canalPrecios.ok) S.canalPrecios = res.canalPrecios.reglas || [];
+    if (res.recetas && res.recetas.ok)           S.recetas = res.recetas.recetas || [];
+    S.comisionesConfig = (res.comisiones && res.comisiones.ok && res.comisiones.comisiones)
+      ? res.comisiones.comisiones
+      : {...COMISIONES_DEFAULT};
+    poblarSelectsVenta();
+    renderComisionesList();
+    if (res.stock && res.stock.ok) { S.stock = res.stock.stock; renderStock(); poblarSelectsVenta(); }
+    else await cargarStock();
+    return;
+  }
+  // Backend sin "bootstrap" (o respuesta incompleta): ruta de siempre.
+  await cargarCatalogo();
   cargarStock();
   cargarComisionesConfig();
   cargarCanalPreciosAlInicio();
   cargarRecetasAlInicio();
-  setTimeout(cargarMensajesHeader, 1500);
-  setInterval(cargarMensajesHeader, 120000);
-  // v7 — si la tienda está cerrada, llevar al operador (no-admin) al flujo de apertura.
-  if (typeof cajaGateInicial === "function") setTimeout(cajaGateInicial, 800);
 }
 function aplicarPermisosUI() {
   const p = getPermisos();
@@ -1370,11 +1433,18 @@ L("btn-guardar-item").addEventListener("click",async()=>{
   if(res.ok){toast(res.mensaje);L("modal-nuevo-item").classList.remove("show");cargarCatalogoPantalla();cargarCatalogo();}else toast(res.error,"error");
 });
 async function cargarPrecios(silencioso=false){
-  if(!silencioso) L("precios-content").innerHTML=`<div class="loading"><div class="spinner"></div></div>`;
+  // v7.1 — En modo silencioso (lo llama cargarCatalogo al arrancar) solo hacen falta los
+  // precios: el catalogo lo acaba de traer quien llamo. Antes se volvia a pedir aqui, o sea
+  // que el arranque pedia getCatalogo dos veces.
+  if(silencioso){
+    const resP=await api("getPrecios");
+    if(resP.ok) S.precios=resP.precios;
+    return;
+  }
+  L("precios-content").innerHTML=`<div class="loading"><div class="spinner"></div></div>`;
   const [resP,resC]=await Promise.all([api("getPrecios"),api("getCatalogo")]);
   if(!resP.ok||!resC.ok) return;
   S.precios=resP.precios;
-  if(silencioso) return;
   const tamanos=(resC.tamanos||[]).filter(t=>t.activo).map(t=>t.nombre);
   const getP=t=>{const p=resP.precios.find(p=>p.tamano===t);return p?p.precio:0;};
   L("precios-content").innerHTML=tamanos.map(tamano=>`
