@@ -18,7 +18,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,500;0,700&family=DM+Sans:wght@300;400;500&display=swap">
 <link rel="stylesheet" media="print" onload="this.media='all'" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-<link rel="stylesheet" href="styles.css?v=20260905">
+<link rel="stylesheet" href="styles.css?v=20260905b">
 <style>
 .rep-map-num{background:transparent;border:none;box-shadow:none;color:#fff;font-weight:700;font-size:11px;text-shadow:0 0 3px rgba(0,0,0,.8)}
 .rep-tarta-row{display:flex;align-items:center;background:var(--warm);border-radius:10px;padding:8px 12px;margin-bottom:6px;font-size:13px}
@@ -125,25 +125,9 @@
         </div>
         <div id="aviso-tipo-op" style="display:none;font-size:12px;padding:8px 12px;border-radius:8px;margin-bottom:12px"></div>
         <div id="venta-fields">
-          <div class="venta-grid">
-            <div class="form-group" style="margin-bottom:0">
-              <label class="form-label">Canal</label>
-              <select class="form-select" id="venta-canal" onchange="onCanalChange()"></select>
-            </div>
-            <div class="form-group" style="margin-bottom:0">
-              <label class="form-label">Método de pago</label>
-              <select class="form-select" id="venta-metodo"></select>
-            </div>
-          </div>
-          <!-- v7.2 — Pago dividido: un mismo ticket cobrado con varios métodos -->
-          <div id="pago-dividido-box" style="margin-top:8px">
-            <button type="button" class="btn-outline" id="btn-dividir-pago" onclick="togglePagoDividido()" style="width:auto;margin-top:0;font-size:12px;padding:8px 14px">💳 Dividir el pago</button>
-            <div id="pago-split" style="display:none;margin-top:10px;background:rgba(200,96,42,.06);border:1px dashed var(--accent);border-radius:10px;padding:12px">
-              <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Pago dividido</div>
-              <div id="pago-split-filas"></div>
-              <button type="button" class="btn-outline" id="btn-agregar-pago" onclick="agregarPago()" style="width:auto;font-size:12px;padding:7px 12px;margin-top:4px">+ Agregar método</button>
-              <div id="pago-split-estado" style="font-size:12px;margin-top:10px"></div>
-            </div>
+          <div class="form-group" style="margin-bottom:14px">
+            <label class="form-label">Canal</label>
+            <select class="form-select" id="venta-canal" onchange="onCanalChange()"></select>
           </div>
           <!-- Aviso precio especial por canal -->
           <div id="canal-precio-aviso" style="display:none;font-size:12px;padding:8px 12px;border-radius:8px;margin-top:6px;background:rgba(134,189,173,.15);color:var(--success)"></div>
@@ -226,6 +210,24 @@
             <div id="envio-total-label" style="font-size:11px;color:rgba(255,255,255,.6);display:none"></div>
           </div>
           <span class="total-num" id="total-num">$0</span>
+        </div>
+        <!-- PAGO — despues del carrito: primero se arma el pedido y hasta entonces se cobra -->
+        <div id="pago-section">
+          <div class="separador"></div>
+          <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Pago</div>
+          <div style="display:flex;gap:8px;margin-bottom:14px">
+            <button type="button" class="tipo-op-btn active" id="modo-pago-uno" onclick="setModoPago('uno')">Un solo método</button>
+            <button type="button" class="tipo-op-btn" id="modo-pago-dividido" onclick="setModoPago('dividido')">💳 Dividir el pago</button>
+          </div>
+          <div class="form-group" id="metodo-pago-group" style="margin-bottom:0">
+            <label class="form-label">Método de pago</label>
+            <select class="form-select" id="venta-metodo"></select>
+          </div>
+          <div id="pago-split" style="display:none;background:rgba(200,96,42,.06);border:1px dashed var(--accent);border-radius:10px;padding:12px">
+            <div id="pago-split-filas"></div>
+            <button type="button" class="btn-outline" id="btn-agregar-pago" onclick="agregarPago()" style="width:auto;font-size:12px;padding:7px 12px;margin-top:4px">+ Agregar método</button>
+            <div id="pago-split-estado" style="font-size:12px;margin-top:10px"></div>
+          </div>
         </div>
         <div class="separador"></div>
         <div id="cliente-section">
@@ -1787,16 +1789,16 @@
   </div>
 </div>
 <div class="toast" id="toast"></div>
-<script defer src="app.js?v=20260905"></script>
-<script defer src="reparto.js?v=20260905"></script>
-<script defer src="caja.js?v=20260905"></script>
-<script defer src="arranque.js?v=20260905"></script>
+<script defer src="app.js?v=20260905b"></script>
+<script defer src="reparto.js?v=20260905b"></script>
+<script defer src="caja.js?v=20260905b"></script>
+<script defer src="arranque.js?v=20260905b"></script>
 <!-- Librerias de terceros AL FINAL: si un CDN se cuelga, la app ya arranco sin ellas.
      leaflet_despues.js deshace el choque entre la L de Leaflet y la L() de la app. -->
 <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script defer src="leaflet_despues.js?v=20260905"></script>
+<script defer src="leaflet_despues.js?v=20260905b"></script>
 <script>
 /* v6.3 — Anti doble-tap (2026-07-03): bloquea 5s los botones de accion al tocarlos,
    para que la lentitud del backend no provoque envios dobles ni errores fantasma.
