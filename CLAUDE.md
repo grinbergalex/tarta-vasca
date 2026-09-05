@@ -136,10 +136,22 @@ Arreglos a "a veces no entra / tarda mucho en poder usarlo":
   desfasado de la hoja (que es dinero).
 - **`cajaEstado` no calcula el esperado para quien no lo ve** (Vendedora/Mixto): se
   calculaba y se tiraba, y esa llamada es justo la que traba el arranque.
-- **Frontend con `defer`** en todos los `<script>`. Chart.js (205 KB) y Leaflet (147 KB)
-  eran síncronos en el `head` y dejaban la pantalla EN BLANCO hasta que respondieran los
-  dos CDN; ninguno hace falta para vender. `lf_capture.js` existe porque un `<script>`
-  inline no se puede diferir y corriendo en línea guardaría `undefined` en `window._LF`.
+- **Ningún recurso de terceros bloquea la app (v7.2).** Chart.js (205 KB) y Leaflet
+  (147 KB) eran `<script>` síncronos en el `head`: la pantalla se quedaba EN BLANCO
+  hasta que respondieran los dos CDN. Ahora cargan **al final del body, después de
+  `app.js`**, y las dos hojas de estilo de terceros van con `media="print"` +
+  `onload="this.media='all'"`. Lo único bloqueante es `styles.css`, que es propio.
+  Dos archivos nuevos sostienen el orden:
+  - `arranque.js` — llama a `arrancarApp()`. Va después de `caja.js` (porque
+    `iniciarApp()` consulta `cajaGateInicial`) y **antes** de los CDN. Antes esto
+    colgaba de `DOMContentLoaded`, que espera a *todos* los scripts diferidos: con un
+    CDN colgado la sesión guardada no se restauraba nunca.
+  - `leaflet_despues.js` — Leaflet publica su objeto en `window.L` y la app tiene su
+    propia `L()` (getElementById). Al cargar Leaflet **después** de `app.js` la pisa,
+    así que aquí se guarda en `window._LF` y `noConflict()` devuelve `window.L` a la
+    app. Si Leaflet no llegó, `_LF` queda sin definir y `reparto.js` lo detecta solo.
+  Verificado contra un servidor que acepta la conexión y nunca responde: con los tres
+  CDN colgados se puede iniciar sesión, vender y ver stock; solo faltan gráficas y mapa.
 - **Timeout en `api()`** (25 s lecturas, 60 s escrituras). Antes no había ninguno: un
   Apps Script atorado dejaba el fetch colgado para siempre, sin error y sin salida.
 

@@ -1183,14 +1183,17 @@ function recalcularPreciosPaquetesEnCarrito() {
   }
   if (cambio) { toast("Precios de paquetes recalculados para nuevo canal"); renderCarrito(); }
 }
-document.addEventListener("DOMContentLoaded", () => {
+// v7.2 — Lo llama arranque.js, que carga despues de caja.js y antes que los CDN.
+// Colgaba de DOMContentLoaded, y ese evento espera a TODOS los scripts diferidos:
+// con un CDN colgado la sesion guardada no se restauraba nunca.
+function arrancarApp() {
   _restaurarSesion();
   const sel = L("venta-canal");
   if (sel) sel.addEventListener("change", () => {
     if (S.modoItem !== "suelto") setModoItem(S.modoItem);
     recalcularPreciosPaquetesEnCarrito();
   });
-});
+}
 let _ventasHist = [];
 async function cargarVentas(){
   L("ventas-list").innerHTML=`<div class="loading"><div class="spinner"></div></div>`;
