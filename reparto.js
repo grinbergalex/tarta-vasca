@@ -109,8 +109,9 @@ async function repVerificarDir(){
     var m=L("rep-cap-mapa"); if(m) m.style.display="none";
   }
 }
-function repShowPin(contId, lat, lon, label){
+async function repShowPin(contId, lat, lon, label){
   var cont=L(contId); if(!cont) return;
+  await asegurarLeaflet();   // v7.3: Leaflet se baja aqui, no al abrir la app
   var LF=window._LF; if(!LF||!LF.map){ cont.style.display="none"; return; }
   cont.style.display="block";
   if(repMaps[contId]){ try{ repMaps[contId].remove(); }catch(e){} repMaps[contId]=null; }
@@ -273,9 +274,10 @@ function repRenderRutas(){
 var repMaps={};
 var REP_COLORES=["#C8602A","#2E5C4A","#1976D2","#C9A84C","#9C27B0","#E91E63","#00897B","#5D4037"];
 // Pintor genérico reutilizable. legs = [{label, pts:[{lat,lon,popup}]}]
-function repPaintMap(contId, leyId, legs){
+async function repPaintMap(contId, leyId, legs){
   var cont=L(contId); if(!cont) return;
   var ley=leyId?L(leyId):null;
+  await asegurarLeaflet();   // v7.3: Leaflet se baja aqui, no al abrir la app
   var LF=window._LF||(typeof window.L==="object"?window.L:null);
   if(!LF||!LF.map){ cont.style.display="none"; if(ley) ley.style.display="none"; if(typeof toast==="function") toast("No se pudo cargar el mapa (Leaflet). Revisa tu conexión.","error"); return; }
   var hay=(legs||[]).some(function(lg){ return (lg.pts||[]).some(function(p){return p.lat&&p.lon;}); });

@@ -1789,16 +1789,17 @@
   </div>
 </div>
 <div class="toast" id="toast"></div>
-<script defer src="app.js?v=20260905b"></script>
-<script defer src="reparto.js?v=20260905b"></script>
-<script defer src="caja.js?v=20260905b"></script>
-<script defer src="arranque.js?v=20260905b"></script>
-<!-- Librerias de terceros AL FINAL: si un CDN se cuelga, la app ya arranco sin ellas.
-     leaflet_despues.js deshace el choque entre la L de Leaflet y la L() de la app. -->
-<script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script defer src="leaflet_despues.js?v=20260905b"></script>
+<script defer src="app.js?v=20260916"></script>
+<script defer src="reparto.js?v=20260916"></script>
+<script defer src="caja.js?v=20260916"></script>
+<script defer src="arranque.js?v=20260916"></script>
+<!-- v7.3 — Las librerias de terceros YA NO SE PIDEN AQUI. Chart.js (200 KB), su
+     plugin de etiquetas (13 KB) y Leaflet (144 KB) eran la mitad del peso que
+     bajaba la tablet en cada carga y ninguna hace falta para vender. Ahora las
+     baja `asegurarChart()` / `asegurarLeaflet()` (app.js) la primera vez que se
+     dibuja una grafica o un mapa. leaflet_despues.js se borro: su arreglo del
+     choque entre la L de Leaflet y la L() de la app vive dentro de
+     `asegurarLeaflet()`. -->
 <script>
 /* v6.3 — Anti doble-tap (2026-07-03): bloquea 5s los botones de accion al tocarlos,
    para que la lentitud del backend no provoque envios dobles ni errores fantasma.

@@ -212,8 +212,31 @@ Arreglos a "a veces no entra / tarda mucho en poder usarlo":
     propia `L()` (getElementById). Al cargar Leaflet **después** de `app.js` la pisa,
     así que aquí se guarda en `window._LF` y `noConflict()` devuelve `window.L` a la
     app. Si Leaflet no llegó, `_LF` queda sin definir y `reparto.js` lo detecta solo.
+    ⚠️ **Este archivo ya no existe** — lo reemplazó `asegurarLeaflet()` en la v7.3.
   Verificado contra un servidor que acepta la conexión y nunca responde: con los tres
   CDN colgados se puede iniciar sesión, vender y ver stock; solo faltan gráficas y mapa.
+
+## v7.3 — Las librerías de terceros solo cuando se usan (16-sep-2026)
+
+La v7.2 logró que un CDN colgado no dejara la pantalla en blanco, pero Chart.js
+(200 KB), su plugin de etiquetas (13 KB) y Leaflet (144 KB) **se seguían bajando
+siempre**: eran 111 de los 215 KB comprimidos que baja la tablet en cada carga —
+la mitad del peso— aunque la vendedora solo abriera la pantalla de venta.
+
+- **`asegurarChart()` y `asegurarLeaflet()`** (`app.js`, junto a `toast`) inyectan
+  el `<script>` la primera vez que hace falta. `_libs` guarda la **promesa**, así que
+  dos llamadas seguidas comparten una sola descarga; si falla se borra la entrada
+  para que el siguiente intento vuelva a probar.
+- **Puntos de uso** (son todos): `renderPiesSeccion`, `_renderGraficaLineaPeriodo` y
+  `_renderGraficaLineaUtilPeriodo` para Chart; `repShowPin` y `repPaintMap` para
+  Leaflet. Las cinco se volvieron `async` y esperan a la librería antes de dibujar.
+  Ningún llamador usaba su valor de retorno, por eso el cambio es seguro.
+- **`leaflet_despues.js` se borró**: el `noConflict()` que deshace el choque entre la
+  `L` de Leaflet y la `L()` de la app vive ahora dentro de `asegurarLeaflet()`.
+- **La hoja de estilo de Leaflet se quedó en el `<head>`** (con `media="print"`): son
+  2 KB y traerla bajo demanda arriesga que el mapa se pinte un instante sin estilos.
+- Si un CDN se cae, el comportamiento es el mismo que en v7.2: la app entera funciona
+  y solo esa gráfica o ese mapa avisan que no se pudieron cargar.
 - **Timeout en `api()`** (25 s lecturas, 60 s escrituras). Antes no había ninguno: un
   Apps Script atorado dejaba el fetch colgado para siempre, sin error y sin salida.
 

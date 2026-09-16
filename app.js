@@ -98,6 +98,70 @@ function toast(msg, tipo="success") {
   el.classList.add("show");
   setTimeout(()=>el.classList.remove("show"), 3200);
 }
+// ============================================================
+// v7.3 — Librerias de terceros, solo cuando se necesitan (16-sep-2026)
+// ============================================================
+// Chart.js (200 KB) + su plugin de etiquetas (13 KB) y Leaflet (144 KB) son la
+// MITAD del peso que baja la tablet en cada carga, y ninguna hace falta para
+// vender: Chart.js es de las graficas de reportes y Leaflet del mapa de reparto.
+// En v7.2 se movieron al final del body para que un CDN colgado no dejara la
+// pantalla en blanco — eso lo arreglo, pero se seguian bajando SIEMPRE, aunque
+// la vendedora solo abriera la pantalla de venta. Ahora se piden la primera vez
+// que se dibuja una grafica o un mapa, y el que nunca los abre nunca los baja.
+//
+// _libs guarda la promesa, no el resultado: dos llamadas seguidas (entrar a
+// reportes y tocar un chip enseguida) comparten la misma descarga en vez de
+// pedirla dos veces. Si falla se borra la entrada, para que el siguiente intento
+// vuelva a probar en lugar de quedarse con la promesa rechazada.
+const _libs = {};
+function _cargarScript(url) {
+  if (_libs[url]) return _libs[url];
+  _libs[url] = new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = url;
+    s.onload = () => resolve(true);
+    s.onerror = () => { delete _libs[url]; reject(new Error("No se pudo cargar " + url)); };
+    document.head.appendChild(s);
+  });
+  return _libs[url];
+}
+const CDN_CHART        = "https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js";
+const CDN_CHART_LABELS = "https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0";
+const CDN_LEAFLET      = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js";
+// El plugin de etiquetas se publica solo en window.ChartDataLabels y las graficas
+// lo pasan a mano en `plugins:`, asi que basta con que llegue despues de Chart.
+async function asegurarChart() {
+  if (window.Chart) return true;
+  try {
+    await _cargarScript(CDN_CHART);
+    await _cargarScript(CDN_CHART_LABELS);
+    return true;
+  } catch (e) {
+    toast("No se pudieron cargar las graficas. Revisa tu conexion.", "error");
+    return false;
+  }
+}
+// Leaflet publica su objeto en window.L y la app tiene su propia L()
+// (getElementById), asi que al cargar despues se la pisa. Este es el mismo
+// arreglo que hacia leaflet_despues.js cuando Leaflet venia dentro del HTML.
+// La hoja de estilo de Leaflet sigue en el <head>: son 2 KB y traerla aqui
+// arriesga que el mapa se pinte un instante sin estilos.
+async function asegurarLeaflet() {
+  if (window._LF) return true;
+  try {
+    await _cargarScript(CDN_LEAFLET);
+    const LF = window.L;
+    if (LF && typeof LF.map === "function") {
+      window._LF = LF;
+      if (typeof LF.noConflict === "function") window.L = LF.noConflict();
+    }
+  } catch (e) { /* lo reporta quien llama: esconde el mapa y avisa */ }
+  // Red de seguridad: la app entera depende de L(). Si quedo pisada, se restaura.
+  if (typeof window.L !== "function") {
+    window.L = function (id) { return document.getElementById(id); };
+  }
+  return !!window._LF;
+}
 function convertirUnidad(cantidad, unidadReceta, unidadInsumo) {
   const ur = (unidadReceta || "").toLowerCase().trim();
   const ui = (unidadInsumo  || "").toLowerCase().trim();
@@ -3647,9 +3711,10 @@ function renderPiesSeccion(secId) {
     <div style="position:relative;width:100%;height:280px"><canvas id="${canvasId}"></canvas></div>
     <div style="font-size:11px;color:var(--muted);margin-top:6px;text-align:center">Click en una rebanada para ver el siguiente nivel</div>
   `;
-  setTimeout(() => {
+  setTimeout(async () => {
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
+    if (!await asegurarChart()) return;   // v7.3: Chart.js se baja aqui, no al abrir la app
     const labels = grupos.map(g => g.key);
     const data = grupos.map(g => g.piezas);
     const colores = labels.map(lbl => _colorParaValor(dimSel, lbl));
@@ -4058,9 +4123,10 @@ function renderReportePeriodo() {
   }, 50);
 }
 let _chartLineaPeriodo = null;
-function _renderGraficaLineaPeriodo(ventas) {
+async function _renderGraficaLineaPeriodo(ventas) {
   const ctx = L("grafica-linea-periodo");
   if (!ctx) return;
+  if (!await asegurarChart()) return;   // v7.3: Chart.js se baja aqui, no al abrir la app
   let ini, fin;
   if (S.periodoActual.preset === "custom") {
     const d = L("periodo-desde").value, h = L("periodo-hasta").value;
@@ -5143,9 +5209,10 @@ function renderUtilPeriodo() {
     _tarjetaResumenUtilidad("🍰 Polanco",       _resumenUtilidad(enrPolanco.ventasEnriquecidas), "var(--accent)");
 }
 let _chartLineaUtilPeriodo = null;
-function _renderGraficaLineaUtilPeriodo(ventasBruto) {
+async function _renderGraficaLineaUtilPeriodo(ventasBruto) {
   const ctx = L("grafica-linea-utilperiodo");
   if (!ctx) return;
+  if (!await asegurarChart()) return;   // v7.3: Chart.js se baja aqui, no al abrir la app
   let ini, fin;
   if (S.utilperiodoActual.preset === "custom") {
     const d = L("utilperiodo-desde").value, h = L("utilperiodo-hasta").value;
