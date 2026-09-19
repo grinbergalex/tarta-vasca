@@ -293,6 +293,18 @@ function _chequeoSesion(res){
   return res;
 }
 
+// v7.4 — Revisar mensajes y alertas del encabezado cada 10 min (eran 2). Cada revision son
+// dos llamadas a un backend que tarda 1.4-2.7 s, y a los 2 min eran ~480 al dia peleando con
+// las ventas. Abrir la bandeja siempre refresca, asi que nadie ve mensajes viejos por esto.
+const MENSAJES_REVISION_MS = 10 * 60 * 1000;
+let _relojMensajes = null;
+function programarRevisionMensajes() {
+  // Salir y volver a entrar sin recargar llama otra vez a iniciarApp: sin este clear los
+  // relojes se apilaban y cada inicio de sesion sumaba otra ronda de llamadas.
+  if (_relojMensajes) clearInterval(_relojMensajes);
+  // Con la app en segundo plano (pantalla apagada, otra app) no se consulta: nadie ve el badge.
+  _relojMensajes = setInterval(() => { if (!document.hidden) cargarMensajesHeader(); }, MENSAJES_REVISION_MS);
+}
 function iniciarApp() {
   L("login-screen").style.display="none";
   L("app").style.display="flex";
@@ -303,7 +315,7 @@ function iniciarApp() {
   // Los mensajes y alertas del encabezado no estorban para vender: se piden ya que
   // la app quedo utilizable, no compitiendo con la carga inicial.
   setTimeout(cargarMensajesHeader, 6000);
-  setInterval(cargarMensajesHeader, 120000);
+  programarRevisionMensajes();
   // v7 — si la tienda está cerrada, llevar al operador (no-admin) al flujo de apertura.
   if (typeof cajaGateInicial === "function") setTimeout(cajaGateInicial, 800);
 }

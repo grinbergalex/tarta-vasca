@@ -240,6 +240,20 @@ la mitad del peso— aunque la vendedora solo abriera la pantalla de venta.
 - **Timeout en `api()`** (25 s lecturas, 60 s escrituras). Antes no había ninguno: un
   Apps Script atorado dejaba el fetch colgado para siempre, sin error y sin salida.
 
+## v7.4 — Menos consultas de fondo (18-sep-2026)
+
+- **Mensajes y alertas del encabezado cada 10 min, no cada 2** (`MENSAJES_REVISION_MS`).
+  Eran dos llamadas por revisión, ~480 al día, compitiendo con las ventas por un backend
+  que tarda 1.4-2.7 s por llamada. Abrir la bandeja (`toggleBandeja`) sigue refrescando
+  al momento.
+- **No se consulta con la app en segundo plano** (`document.hidden`).
+- **Los relojes ya no se apilan.** Salir y volver a entrar sin recargar llamaba otra vez a
+  `iniciarApp()` y sumaba otro `setInterval`; en una tablet compartida cada cambio de
+  usuario multiplicaba las consultas. `programarRevisionMensajes()` limpia el anterior.
+- **Pendiente a propósito: el token sigue en la URL de las lecturas.** Sacarlo obliga a
+  mandar las lecturas por POST, y un POST a Apps Script cuesta un segundo viaje (302):
+  cada lectura se volvería más lenta. Hacerlo solo junto con un cambio de backend pensado.
+
 ## v7.2 — Pago dividido (5-sep-2026)
 
 Un mismo ticket cobrado con varios métodos (p. ej. $300 en efectivo y $200 con tarjeta).
