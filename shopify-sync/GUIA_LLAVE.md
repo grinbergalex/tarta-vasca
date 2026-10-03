@@ -11,6 +11,7 @@ contraseña: **no se manda por chat ni correo**, se pega directo en Google.
 3. En la versión de la app, en **Access scopes / Permisos**, marca:
    - `read_products`, `write_products`
    - `read_publications`, `write_publications`
+   - `read_orders` (para que las ventas de la página entren al sistema)
 4. **Release / Publicar** esa versión.
 5. **Install / Instalar** la app en la tienda **La Tarta Vasca** y acepta los permisos.
 6. En **Settings / Configuración** de la app copia el **Client ID** y el **Client secret**.
