@@ -7,9 +7,18 @@
 // Diseño: NO se escribe directo en las hojas. El pedido se traduce al mismo
 // cuerpo que manda la app de sucursales a registrarVenta() del POS (backend/
 // 08_inventario_ventas.js), para reusar lo que esa puerta ya garantiza:
-// descuento de stock por lotes, Inv_Ledger, historial del cliente, auditoría y
-// anti-duplicados por opId ("SHOPIFY-#1048": registrar dos veces el mismo
-// pedido no duplica la venta).
+// Inv_Ledger, historial del cliente, auditoría y anti-duplicados por opId
+// ("SHOPIFY-#1048": registrar dos veces el mismo pedido no duplica la venta).
+//
+// Entra como RESERVA pagada, no como venta: las tartas en línea se hornean para
+// el día de entrega, así que al llegar el pedido todavía no hay stock que
+// descontar. El día de la entrega la sucursal la convierte en venta desde la
+// app (convertirReservaAVenta, 13_reservas_rutas.js) y ahí se descuenta.
+// Efecto conocido: al registrarla el POS intenta apartar stock físico, no hay,
+// y deja una nota RESERVA_SIN_STOCK en Auditoría. Es esperado para estas.
+//
+// Lo registra el usuario "shopify" del POS (rol Vendedor, Cuajimalpa) con el
+// método de pago "Shopify" (comisión 3% en la hoja Comisiones).
 //
 // Fase actual: SOLO REVISAR. revisarVentasShopify() lee los pedidos y manda
 // por correo cómo se registraría cada uno, sin llamar al POS.
@@ -20,7 +29,8 @@
 const SUCURSAL_TIENDA_EN_LINEA = "Cuajimalpa";   // la sucursal de Shopify es Av Noche de Paz 14, Cuajimalpa
 const CANAL_DOMICILIO = "Domicilio";
 const CANAL_RECOGER = "Tienda";
-const METODO_PAGO_SHOPIFY = "Tarjeta";
+const METODO_PAGO_SHOPIFY = "Shopify";
+const TIPO_OPERACION = "reserva";
 const PREFIJO_OPERACION = "SHOPIFY-";
 const DIAS_A_REVISAR = 30;
 
@@ -75,6 +85,8 @@ function traducirPedido_(pedido, hoja) {
   const nombre = pedido.customer ? [pedido.customer.firstName, pedido.customer.lastName].filter(Boolean).join(" ")
     : (pedido.shippingAddress ? pedido.shippingAddress.name : "");
   const telefono = pedido.phone || (pedido.shippingAddress ? pedido.shippingAddress.phone : "") || "";
+  const envio = pedido.shippingLine ? Number(pedido.shippingLine.originalPriceSet.shopMoney.amount) : 0;
+  const totalProductos = items.reduce((s, i) => s + i.precioUnitario * i.cantidad, 0);
 
   return {
     pedido: pedido.name,
@@ -83,11 +95,13 @@ function traducirPedido_(pedido, hoja) {
     problemas: problemas,
     venta: {
       opId: PREFIJO_OPERACION + pedido.name,
+      tipoOp: TIPO_OPERACION,
+      anticipo: totalProductos + envio,   // ya pagado completo en Shopify
       sucursal: SUCURSAL_TIENDA_EN_LINEA,
       canal: esDomicilio ? CANAL_DOMICILIO : CANAL_RECOGER,
       metodoPago: METODO_PAGO_SHOPIFY,
       items: items,
-      envio: pedido.shippingLine ? Number(pedido.shippingLine.originalPriceSet.shopMoney.amount) : 0,
+      envio: envio,
       fechaEntrega: fechaEntregaISO_(atributos["Local delivery date"] || atributos["Pickup date"]),
       cliente: { nombre: nombre || "Cliente Shopify " + pedido.name, telefono: telefono, email: pedido.email || "" },
       motivo: "Pedido en línea " + pedido.name
@@ -127,7 +141,8 @@ function redactarReporteVentas_(traducidos) {
       " · " + productos + (v.envio ? " · envío $" + v.envio : "") + (t.problemas.length ? "  → NO: " + t.problemas.join("; ") : "");
   };
   const si = traducidos.filter(t => t.registrable), no = traducidos.filter(t => !t.registrable);
-  return "VENTAS DE SHOPIFY → SISTEMA (solo revisar: no se registró nada)\n\n" +
+  return "VENTAS DE SHOPIFY → SISTEMA (solo revisar: no se registró nada)\n" +
+    "Entrarían como RESERVAS pagadas (método Shopify); la sucursal las convierte en venta el día de la entrega.\n\n" +
     "Se registrarían (" + si.length + ")\n" + (si.map(linea).join("\n") || "  —") + "\n\n" +
     "No se registrarían (" + no.length + ")\n" + (no.map(linea).join("\n") || "  —") + "\n";
 }

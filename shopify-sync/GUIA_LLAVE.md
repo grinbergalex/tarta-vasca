@@ -46,3 +46,26 @@ pasa (p. ej. la hoja se lee casi vacía), el **freno de seguridad** no cambia na
 y te manda un correo 🛑.
 
 **Para apagarlo:** cambia `MODO` a `REVISAR`, o ejecuta **desinstalarDisparadores**.
+
+## E. Preparar el sistema de sucursales para las ventas de la página
+
+Los pedidos de Shopify van a entrar al sistema como **reservas pagadas** (método
+"Shopify"). El día de la entrega se convierten en venta desde **Ventas → Apartados**,
+igual que cualquier apartado.
+
+1. **Usuario "shopify"** (lo hace la dueña en la app de sucursales):
+   **⚙️ Admin → Usuarios** → nuevo usuario `shopify`, rol **Vendedor**, sucursal
+   **Cuajimalpa**, con una contraseña que tú elijas.
+   Luego, en el sincronizador (**⚙️ Configuración del proyecto → Propiedades**):
+   - `POS_USUARIO` → `shopify`
+   - `POS_PASSWORD` → la contraseña que elegiste (la pegas tú; no se manda por chat)
+2. **Comisión 3% de Shopify**: la pantalla de Comisiones de la app no trae
+   "Shopify" en su lista, así que se agrega directo en la hoja
+   **Tarta Vasca — Sistema → pestaña Comisiones**, un renglón nuevo al final:
+   - Columna A: `Shopify`
+   - Columna B: `-0.03`
+   - Columna C: la fecha de hoy
+
+> Detalle conocido: al convertir el apartado en venta, la app pone el canal
+> "Mostrador". El método "Shopify" sí se conserva. Si se quiere conservar
+> "Domicilio", es un cambio pequeño en la app de sucursales (pendiente).
