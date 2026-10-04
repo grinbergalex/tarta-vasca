@@ -28,7 +28,8 @@ const ID_HOJA_SISTEMA = "1If_QmZL89krnRfX2DlJaHSp9VD7FE2fO766pd-rvcyI";
 const URL_TIENDA = "https://latartavasca.com";
 const TIENDA_MYSHOPIFY = "17g081-gu.myshopify.com";
 const VERSION_API = "2025-07";
-const NOMBRE_PUBLICACION_TIENDA = "Tienda online";
+// El canal se llama distinto según el idioma de quien consulta la API.
+const NOMBRES_PUBLICACION_TIENDA = ["tienda online", "online store"];
 
 // Tamaños que se venden en linea. Otros "tamaños" de la hoja (Paquete de 6,
 // AGUA) no son tartas por tamaño y no se suben.
@@ -244,11 +245,10 @@ function aplicar_(plan, token, resultado) {
 
   plan.crear.forEach(c => intentar("Creado en borrador (falta foto): " + c.sabor, () => crearSabor_(token, c)));
 
-  const publicacionTienda = plan.publicar.length ? idPublicacionTienda_(token) : null;
   plan.publicar.forEach(p => intentar("Publicado: " + p.producto.titulo, () => {
     cambiarEstado_(token, p.producto.id, "ACTIVE");
     mutar_(token, "mutation Publicar($id: ID!, $input: [PublicationInput!]!) { publishablePublish(id: $id, input: $input) { userErrors { field message } } }",
-      { id: p.producto.id, input: [{ publicationId: publicacionTienda }] }, "publishablePublish");
+      { id: p.producto.id, input: [{ publicationId: idPublicacionTienda_(token) }] }, "publishablePublish");
   }));
 
   plan.esconder.forEach(e => intentar("Escondido (no está en la hoja): " + e.producto.titulo, () => cambiarEstado_(token, e.producto.id, "DRAFT")));
@@ -274,10 +274,13 @@ function cambiarEstado_(token, id, estado) {
     { product: { id: id, status: estado } }, "productUpdate");
 }
 
+let idPublicacionTiendaMemo_ = null;
 function idPublicacionTienda_(token) {
-  const publicaciones = llamarShopify_(token, "query { publications(first: 10) { nodes { id name } } }", {}).publications.nodes;
-  const tienda = publicaciones.filter(p => p.name === NOMBRE_PUBLICACION_TIENDA)[0];
-  if (!tienda) throw new Error("No encontré el canal '" + NOMBRE_PUBLICACION_TIENDA + "'");
+  if (idPublicacionTiendaMemo_) return idPublicacionTiendaMemo_;
+  const publicaciones = llamarShopify_(token, "query { publications(first: 20) { nodes { id name } } }", {}).publications.nodes;
+  const tienda = publicaciones.filter(p => NOMBRES_PUBLICACION_TIENDA.indexOf(String(p.name).trim().toLowerCase()) !== -1)[0];
+  if (!tienda) throw new Error("No encontré el canal de la tienda en línea. Canales que veo: " + publicaciones.map(p => p.name).join(", "));
+  idPublicacionTiendaMemo_ = tienda.id;
   return tienda.id;
 }
 
