@@ -50,8 +50,8 @@ function leerPedidosAdmin_(token, dias) {
   const desde = new Date(Date.now() - dias * 24 * 60 * 60 * 1000).toISOString();
   const consulta = "query Pedidos($q: String, $cursor: String) { orders(first: 50, after: $cursor, query: $q, sortKey: CREATED_AT) { " +
     "pageInfo { hasNextPage endCursor } nodes { name createdAt cancelledAt test displayFinancialStatus " +
-    "shippingLine { title originalPriceSet { shopMoney { amount } } } customer { firstName lastName } " +
-    "shippingAddress { name phone zip } phone email customAttributes { key value } " +
+    "shippingLine { title originalPriceSet { shopMoney { amount } } } " +
+    "shippingAddress { name phone zip } billingAddress { name phone } phone email customAttributes { key value } " +
     "lineItems(first: 20) { nodes { title variantTitle quantity discountedUnitPriceSet { shopMoney { amount } } } } } } }";
   const pedidos = [];
   let cursor = null;
@@ -82,9 +82,10 @@ function traducirPedido_(pedido, hoja) {
     return { sabor: sabor, tamano: tamano, cantidad: li.quantity, precioUnitario: Number(li.discountedUnitPriceSet.shopMoney.amount) };
   });
 
-  const nombre = pedido.customer ? [pedido.customer.firstName, pedido.customer.lastName].filter(Boolean).join(" ")
-    : (pedido.shippingAddress ? pedido.shippingAddress.name : "");
-  const telefono = pedido.phone || (pedido.shippingAddress ? pedido.shippingAddress.phone : "") || "";
+  // Sin read_customers: el nombre y el teléfono salen de las direcciones del pedido.
+  const envioA = pedido.shippingAddress || {}, cobroA = pedido.billingAddress || {};
+  const nombre = envioA.name || cobroA.name || "";
+  const telefono = pedido.phone || envioA.phone || cobroA.phone || "";
   const envio = pedido.shippingLine ? Number(pedido.shippingLine.originalPriceSet.shopMoney.amount) : 0;
   const totalProductos = items.reduce((s, i) => s + i.precioUnitario * i.cantidad, 0);
 
