@@ -908,7 +908,7 @@ function setTipoOp(tipo, btn){
     clienteSection.style.display = "block";
     btnConfirmar.textContent = "Confirmar venta ✓";
     btnConfirmar.style.background = "";
-    L("modo-item-row").style.display = "flex";
+    L("modo-item-row").style.display = "none";   // oct-2026: ya no se venden paquetes de 3 y 4
   } else if(tipo === "regalo"){
     L("modo-item-row").style.display = "none";
     L("paquete-box").style.display = "none";
@@ -948,7 +948,7 @@ function setTipoOp(tipo, btn){
 }
 // === Precios Rappi por tamaño (el cliente paga el precio de la app de Rappi, no el de mostrador) ===
 // Editar aquí si Rappi cambia sus precios. Aplica al seleccionar canal "Rappi".
-const RAPPI_PRECIOS = { "Individual": 240, "Mediana": 420, "Grande": 750 };
+const RAPPI_PRECIOS = { "Individual": 260, "Mediana": 450, "Grande": 780 };
 function precioCanal(sabor, tamano, canal){
   if(canal === "Rappi" && RAPPI_PRECIOS[tamano] != null) return RAPPI_PRECIOS[tamano];
   let p = getPrecioActualLocal(sabor, tamano);

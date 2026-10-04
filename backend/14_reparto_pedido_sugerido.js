@@ -693,9 +693,9 @@ var existentes = {};
 for(var i=1;i<d.length;i++){ if(d[i][0]) existentes[d[i][0]] = true; }
 var ahora = new Date().toISOString();
 var zonas = [
-["ZNV-50","$50 (Poniente)","Bosques de las Lomas, Interlomas, Tecamachalco, Santa Fe, Cuajimalpa, Lomas de Chapultepec, Bosque Real, Lomas Country Club, Herradura",50,true,ahora],
-["ZNV-80","$80 (Centro)","Polanco, Las Aguilas, Irrigacion, Condesa, Roma, Napoles, Narvarte, Del Valle, Pedregal",80,true,ahora],
-["ZNV-100","$100 (Lejano)","Satelite, Coyoacan, Reforma Centro (hasta el Angel)",100,true,ahora],
+["ZNV-50","$60 (Poniente)","Bosques de las Lomas, Interlomas, Tecamachalco, Santa Fe, Cuajimalpa, Lomas de Chapultepec, Bosque Real, Lomas Country Club, Herradura",60,true,ahora],
+["ZNV-80","$90 (Centro)","Polanco, Las Aguilas, Irrigacion, Condesa, Roma, Napoles, Narvarte, Del Valle, Pedregal",90,true,ahora],
+["ZNV-100","$120 (Lejano)","Satelite, Coyoacan, Reforma Centro (hasta el Angel)",120,true,ahora],
 ["ZNV-150","$150 (Muy lejano)","Zonas muy lejanas / fuera de la cobertura habitual (mas de ~25 km de Cuajimalpa)",150,true,ahora]
 ];
 zonas.forEach(function(z){ if(!existentes[z[0]]) h.appendRow(z); });

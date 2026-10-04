@@ -252,7 +252,7 @@ function getPrecioActual(ss, sabor, tamano, canal) {
 // para que cualquier resolución server-side de precio Rappi sea consistente con el front
 // y NUNCA aplique la vieja regla de +$20 ni los precios base de la hoja Precios.
 if (canal === "Rappi") {
-const RAPPI_PRECIOS = { "Individual": 240, "Mediana": 420, "Grande": 750 };
+const RAPPI_PRECIOS = { "Individual": 260, "Mediana": 450, "Grande": 780 };
 if (RAPPI_PRECIOS[tamano] != null) return RAPPI_PRECIOS[tamano];
 }
 const datos = ss.getSheetByName("Precios").getDataRange().getValues();
