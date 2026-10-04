@@ -64,9 +64,12 @@ function sincronizar() {
   return sincronizar_({ aplicar: modo === "APLICAR", correoSiempre: false });
 }
 
+// Instala los dos relojes: catálogo (sincronizar) y pedidos (registrarPedidosShopify,
+// que no registra nada mientras VENTAS_MODO no sea UNO o APLICAR).
 function instalarCadaQuinceMinutos() {
   desinstalarDisparadores();
   ScriptApp.newTrigger("sincronizar").timeBased().everyMinutes(15).create();
+  ScriptApp.newTrigger("registrarPedidosShopify").timeBased().everyMinutes(15).create();
 }
 
 function desinstalarDisparadores() {
