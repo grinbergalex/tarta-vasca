@@ -1,8 +1,9 @@
 // ============================================================================
 // v7.6 — TIENDA EN LÍNEA: disponibilidad para el calendario del carrito (Shopify)
 // Acción PÚBLICA (sin token): la consulta el carrito de latartavasca.com.
-// No expone cantidades: solo qué sabor+tamaño se puede recoger HOY en cada
-// sucursal (disponible >= RECOGER_MIN_PIEZAS_MISMO_DIA) y las reglas del
+// No expone el inventario: solo qué sabor+tamaño se puede recoger HOY en cada
+// sucursal (disponible >= RECOGER_MIN_PIEZAS_MISMO_DIA), cuántas como máximo
+// (dejando la pieza de reserva) y las reglas del
 // calendario (horarios, preparación, corte). El cálculo de fechas vive en el
 // tema de Shopify; aquí solo la verdad del inventario y la configuración.
 // Cache 30 s, invalidado al instante por cualquier movimiento (_invLedger).
@@ -26,7 +27,9 @@ function tiendaDisponibilidad() {
   return respuesta;
 }
 
-// { "Cuajimalpa": ["Oreo|Grande", ...], "Polanco": [...] } — solo lo que alcanza el mínimo.
+// { "Cuajimalpa": [{ k:"Oreo|Grande", max:2 }, ...], "Polanco": [...] }
+// Solo lo que alcanza el mínimo. max = cuántas se pueden llevar hoy dejando
+// en sucursal la pieza de reserva (disponible − (mínimo − 1)).
 function _tiendaListasHoy(ss) {
   const disponible = _tiendaDisponiblePorSku(ss);
   const listas = {};
@@ -34,7 +37,10 @@ function _tiendaListasHoy(ss) {
   Object.keys(disponible).forEach(function (clave) {
     const partes = clave.split("|");
     const suc = partes[2];
-    if (listas[suc] && disponible[clave] >= RECOGER_MIN_PIEZAS_MISMO_DIA) listas[suc].push(partes[0] + "|" + partes[1]);
+    const disp = disponible[clave];
+    if (listas[suc] && disp >= RECOGER_MIN_PIEZAS_MISMO_DIA) {
+      listas[suc].push({ k: partes[0] + "|" + partes[1], max: disp - (RECOGER_MIN_PIEZAS_MISMO_DIA - 1) });
+    }
   });
   return listas;
 }
