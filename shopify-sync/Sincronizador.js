@@ -64,12 +64,16 @@ function sincronizar() {
   return sincronizar_({ aplicar: modo === "APLICAR", correoSiempre: false });
 }
 
-// Instala los dos relojes: catálogo (sincronizar) y pedidos (registrarPedidosShopify,
-// que no registra nada mientras VENTAS_MODO no sea UNO o APLICAR).
-function instalarCadaQuinceMinutos() {
+// Instala los dos relojes: catálogo cada 15 min (sincronizar) y pedidos cada 5 min
+// (registrarPedidosShopify, que no registra nada mientras VENTAS_MODO no sea UNO o
+// APLICAR). Los pedidos van más seguido porque un pedido "para hoy" aparta las
+// piezas en la sucursal hasta que entra al sistema.
+const MINUTOS_CATALOGO = 15;
+const MINUTOS_PEDIDOS = 5;
+function instalarDisparadores() {
   desinstalarDisparadores();
-  ScriptApp.newTrigger("sincronizar").timeBased().everyMinutes(15).create();
-  ScriptApp.newTrigger("registrarPedidosShopify").timeBased().everyMinutes(15).create();
+  ScriptApp.newTrigger("sincronizar").timeBased().everyMinutes(MINUTOS_CATALOGO).create();
+  ScriptApp.newTrigger("registrarPedidosShopify").timeBased().everyMinutes(MINUTOS_PEDIDOS).create();
 }
 
 function desinstalarDisparadores() {

@@ -39,7 +39,7 @@ contraseña: **no se manda por chat ni correo**, se pega directo en Google.
 ## D. Encenderlo (solo cuando la prueba C salga bien)
 
 1. En **Propiedades**: agrega `MODO` → `APLICAR`.
-2. En el editor elige **instalarCadaQuinceMinutos** → **▷ Ejecutar** (una vez).
+2. En el editor elige **instalarDisparadores** → **▷ Ejecutar** (una vez; vuelve a correrlo si cambian los minutos).
 
 Desde ese momento, cada 15 minutos la página se iguala a la hoja. Si algo raro
 pasa (p. ej. la hoja se lee casi vacía), el **freno de seguridad** no cambia nada

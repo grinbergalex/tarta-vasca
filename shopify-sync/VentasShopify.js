@@ -81,7 +81,10 @@ function traducirPedido_(pedido, hoja) {
   const problemas = [];
   const atributos = (pedido.customAttributes || []).reduce((acc, a) => { acc[a.key] = a.value; return acc; }, {});
   const esDomicilio = atributos["Checkout channel"] === "DELIVERY";
-  const sucursal = esDomicilio ? SUCURSAL_ENVIOS : sucursalDeRecoleccion_(pedido.shippingLine ? pedido.shippingLine.title : "");
+  // La sucursal que eligió el cliente en el calendario del carrito ("Location") manda;
+  // el punto de recolección del pago solo se usa en pedidos de antes del calendario.
+  const lugarElegido = atributos["Location"] || (pedido.shippingLine ? pedido.shippingLine.title : "");
+  const sucursal = esDomicilio ? SUCURSAL_ENVIOS : sucursalDeRecoleccion_(lugarElegido);
 
   if (pedido.test) problemas.push("es un pedido de prueba");
   if (pedido.cancelledAt) problemas.push("está cancelado");
