@@ -88,6 +88,7 @@ function despachar(body) {
 const accion = body.accion;
 if (accion === "login") return login(body);
 if (accion === "logout") return logout(body);
+if (accion === "tiendaDisponibilidad") return tiendaDisponibilidad();  // v7.6 — pública: calendario del carrito de Shopify
 const sesion = validarToken(body.token);
 if (!sesion.ok) return { ok: false, error: "Sesión inválida o expirada. Vuelve a iniciar sesión." };
 switch (accion) {

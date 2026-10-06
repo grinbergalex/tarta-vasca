@@ -108,6 +108,17 @@ const HORARIOS_SUCURSAL = {
 "Polanco":    [{abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}],
 "Cuajimalpa": [{abre:"10:00",cierra:"14:30"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"14:30"}]
 };
+// v7.6 — Tienda en línea: recolección en sucursal (calendario del carrito de Shopify).
+// Horario en que el cliente puede RECOGER (no es el de caja). Índice 0=Domingo; null = no se recoge ese día.
+const RECOGER_HORARIOS = {
+"Cuajimalpa": [{abre:"09:00",cierra:"15:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"15:00"}],
+"Polanco":    [null, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, null]
+};
+const RECOGER_MIN_PIEZAS_MISMO_DIA = 2;  // con menos piezas en sucursal, la tarta se pide para después
+const RECOGER_DIAS_PREPARACION = 1;      // días que tarda una tarta sobre pedido
+const RECOGER_HORA_CORTE = "17:00";      // pedidos sobre pedido después de esta hora suman un día más
+const RECOGER_INTERVALO_MIN = 60;        // tamaño de cada horario que elige el cliente
+const RECOGER_DIAS_A_MOSTRAR = 14;       // hasta cuántos días adelante se puede reservar
 function getHorarioHoy(sucursal, fecha) {
 fecha = fecha || new Date();
 const cfg = HORARIOS_SUCURSAL[sucursal];
