@@ -59,9 +59,16 @@
     }).catch(function () { estado.productos[handle] = null; return null; });
   }
 
-  function tamanoDe(item) {
+  // Tamaño tal como lo ve el cliente en la tienda.
+  function tamanoVisible(item) {
     var opcion = (item.options_with_values || []).filter(function (o) { return /tama/i.test(o.name); })[0];
     return opcion ? opcion.value : item.variant_title;
+  }
+
+  // Tamaño con el nombre que usa el sistema: allá "Chica" se llama "Individual".
+  function tamanoDe(item) {
+    var nombre = tamanoVisible(item);
+    return nombre === "Chica" ? "Individual" : nombre;
   }
 
   // ---------- Fechas (todo en hora de la Ciudad de México) -------------------
@@ -101,7 +108,7 @@
       var sabor = estado.productos[item.handle];
       var sku = sabor + "|" + tamanoDe(item);
       var maxHoy = hoy[sku] || 0;
-      return { item: item, nombre: item.product_title + " " + tamanoDe(item), listaHoy: regla.mismoDia && !!sabor && item.quantity <= maxHoy, maxHoy: maxHoy };
+      return { item: item, nombre: item.product_title + " " + tamanoVisible(item), listaHoy: regla.mismoDia && !!sabor && item.quantity <= maxHoy, maxHoy: maxHoy };
     });
   }
 
