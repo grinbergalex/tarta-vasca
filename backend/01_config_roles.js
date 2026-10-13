@@ -111,7 +111,7 @@ const HORARIOS_SUCURSAL = {
 // v7.6 — Tienda en línea: recolección en sucursal (calendario del carrito de Shopify).
 // Horario en que el cliente puede RECOGER (no es el de caja). Índice 0=Domingo; null = no se recoge ese día.
 const RECOGER_HORARIOS = {
-"Cuajimalpa": [{abre:"09:00",cierra:"15:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"15:00"}],
+"Cuajimalpa": [{abre:"10:00",cierra:"15:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"10:00",cierra:"15:00"}],
 "Polanco":    [{abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}]
 };
 const RECOGER_MIN_PIEZAS_MISMO_DIA = 2;  // con menos piezas en sucursal, la tarta se pide para después
