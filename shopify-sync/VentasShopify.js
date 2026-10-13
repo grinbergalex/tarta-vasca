@@ -64,7 +64,7 @@ function leerPedidosAdmin_(token, dias) {
     "pageInfo { hasNextPage endCursor } nodes { name createdAt cancelledAt test displayFinancialStatus " +
     "shippingLine { title originalPriceSet { shopMoney { amount } } } " +
     "shippingAddress { name phone zip } billingAddress { name phone } phone email customAttributes { key value } " +
-    "lineItems(first: 20) { nodes { title variantTitle quantity discountedUnitPriceSet { shopMoney { amount } } } } } } }";
+    "lineItems(first: 20) { nodes { title variantTitle quantity product { tags } discountedUnitPriceSet { shopMoney { amount } } } } } } }";
   const pedidos = [];
   let cursor = null;
   do {
@@ -91,8 +91,9 @@ function traducirPedido_(pedido, hoja) {
   if (pedido.displayFinancialStatus !== "PAID") problemas.push("no está pagado (" + pedido.displayFinancialStatus + ")");
 
   const items = pedido.lineItems.nodes.map(li => {
-    const sabor = saborDeProducto_(li.title, hoja.sabores);
-    const tamano = TAMANOS_EN_LINEA.indexOf(li.variantTitle) !== -1 ? li.variantTitle : null;
+    const sabor = saborDeLinea_(li, hoja.sabores);
+    const tamanoInterno = tamanoDeVariante_(li.variantTitle);
+    const tamano = TAMANOS_EN_LINEA.indexOf(tamanoInterno) !== -1 ? tamanoInterno : null;
     if (!sabor) problemas.push("no reconozco el sabor de \"" + li.title + "\"");
     if (!tamano) problemas.push("no reconozco el tamaño \"" + li.variantTitle + "\" de " + li.title);
     return { sabor: sabor, tamano: tamano, cantidad: li.quantity, precioUnitario: Number(li.discountedUnitPriceSet.shopMoney.amount) };
@@ -146,6 +147,17 @@ function fechaEntregaISO_(texto) {
 // palabras contenidas en el titulo ("Queso & Frutos Rojos" -> Frutos Rojos,
 // no Queso). La etiqueta sabor:<nombre> del sincronizador no viaja en el
 // pedido, por eso se empata por nombre.
+// El sabor sale primero de la etiqueta "sabor:<nombre>" del producto (no cambia
+// aunque se renombre el producto en la tienda); si no hay, se busca por el titulo.
+function saborDeLinea_(linea, sabores) {
+  const etiquetas = (linea.product && linea.product.tags) || [];
+  const porEtiqueta = etiquetas
+    .filter(t => t.indexOf(PREFIJO_ETIQUETA_SABOR) === 0)
+    .map(t => t.slice(PREFIJO_ETIQUETA_SABOR.length))
+    .filter(sabor => sabores.indexOf(sabor) !== -1)[0];
+  return porEtiqueta || saborDeProducto_(linea.title, sabores);
+}
+
 function saborDeProducto_(titulo, sabores) {
   const palabrasTitulo = palabrasClave_(titulo);
   let mejor = null, masPalabras = 0;

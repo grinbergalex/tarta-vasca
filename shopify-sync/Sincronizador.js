@@ -36,6 +36,21 @@ const NOMBRES_PUBLICACION_TIENDA = ["tienda online", "online store"];
 const TAMANOS_EN_LINEA = ["Individual", "Mediana", "Grande"];
 const NOMBRE_OPCION_TAMANO = "tamaño";
 
+// El sistema (hoja, POS, inventario) sigue llamando "Individual" al tamaño
+// chico; en la tienda el cliente lo ve como "Chica". Aquí se traduce en las dos
+// direcciones, y al leer se aceptan ambos nombres para poder renombrar las
+// variantes en Shopify sin dejar de sincronizar ni de registrar pedidos.
+const NOMBRE_EN_TIENDA = { Individual: "Chica" };
+
+function tituloEnTienda_(tamano) {
+  return NOMBRE_EN_TIENDA[tamano] || tamano;
+}
+
+function tamanoDeVariante_(titulo) {
+  const interno = Object.keys(NOMBRE_EN_TIENDA).filter(t => NOMBRE_EN_TIENDA[t] === titulo)[0];
+  return interno || titulo;
+}
+
 // Renglones tipo "Sabor" en la hoja que no son tartas.
 const NO_SON_TARTAS = ["VELAS", "AGUA"];
 
@@ -46,8 +61,8 @@ const LIMITES = { esconder: 3, crear: 5, precios: 30 };
 
 const DESCRIPCION_TAMANOS =
   "<div style=\"background-color: #f7efe6; padding: 14px 18px; border-radius: 10px; font-family: 'Georgia', serif; color: #5a4634; line-height: 1.7;\">" +
-  "<strong>Tamaños y porciones</strong><br><strong>Individual:</strong> 12 cm de diámetro · 1 a 2 porciones<br>" +
-  "<strong>Mediana:</strong> 20 cm de diámetro · 4 a 5 porciones<br><strong>Grande:</strong> 25 cm de diámetro · 10 a 12 porciones</div>";
+  "<strong>Tamaños y porciones</strong><br><strong>Chica:</strong> 13 cm · 500 g · 2 porciones<br>" +
+  "<strong>Mediana:</strong> 18 cm · 900 g · 4 a 5 rebanadas<br><strong>Grande:</strong> 24 cm · 1.9 kg · 10 a 12 rebanadas</div>";
 
 const PALABRAS_DE_RELLENO = ["tarta", "vasca", "de", "&", "y"];
 
@@ -148,7 +163,7 @@ function leerProductosAdmin_(token) {
     const pagina = llamarShopify_(token, consulta, { cursor: cursor }).products;
     pagina.nodes.forEach(p => productos.push({
       id: p.id, titulo: p.title, estado: p.status, etiquetas: p.tags, tieneFoto: !!p.featuredMedia, esTarjetaRegalo: p.isGiftCard,
-      variantes: p.variants.nodes.reduce((acc, v) => { acc[v.title] = { id: v.id, precio: Number(v.price) }; return acc; }, {})
+      variantes: p.variants.nodes.reduce((acc, v) => { acc[tamanoDeVariante_(v.title)] = { id: v.id, precio: Number(v.price) }; return acc; }, {})
     }));
     cursor = pagina.pageInfo.hasNextPage ? pagina.pageInfo.endCursor : null;
   } while (cursor);
@@ -161,7 +176,7 @@ function leerProductosPublicos_() {
   if (respuesta.getResponseCode() !== 200) throw new Error("No se pudo leer la tienda: HTTP " + respuesta.getResponseCode());
   return JSON.parse(respuesta.getContentText()).products.map(p => ({
     id: null, titulo: p.title, estado: "ACTIVE", etiquetas: p.tags || [], tieneFoto: p.images.length > 0, esTarjetaRegalo: false,
-    variantes: p.variants.reduce((acc, v) => { acc[v.title] = { id: null, precio: Number(v.price) }; return acc; }, {})
+    variantes: p.variants.reduce((acc, v) => { acc[tamanoDeVariante_(v.title)] = { id: null, precio: Number(v.price) }; return acc; }, {})
   }));
 }
 
@@ -270,8 +285,8 @@ function crearSabor_(token, c) {
       status: "DRAFT",
       tags: [PREFIJO_ETIQUETA_SABOR + c.sabor, ETIQUETA_PENDIENTE_FOTO],
       descriptionHtml: DESCRIPCION_TAMANOS,
-      productOptions: [{ name: NOMBRE_OPCION_TAMANO, values: tamanos.map(t => ({ name: t })) }],
-      variants: tamanos.map(t => ({ optionValues: [{ optionName: NOMBRE_OPCION_TAMANO, name: t }], price: c.precios[t].toFixed(2), inventoryPolicy: "CONTINUE" }))
+      productOptions: [{ name: NOMBRE_OPCION_TAMANO, values: tamanos.map(t => ({ name: tituloEnTienda_(t) })) }],
+      variants: tamanos.map(t => ({ optionValues: [{ optionName: NOMBRE_OPCION_TAMANO, name: tituloEnTienda_(t) }], price: c.precios[t].toFixed(2), inventoryPolicy: "CONTINUE" }))
     }
   }, "productSet");
 }
