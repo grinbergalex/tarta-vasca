@@ -25,9 +25,9 @@
 <script>
   (function () {
     var barra = document.getElementById('tv-barra');
-    var form = document.querySelector('form[id^="product-form-"]');
-    if (!barra || !form) return;
-    var boton = form.querySelector('[name="add"]');
+    // El botón de compra; hay otros formularios "product-form-…" (p. ej. pagos a meses) sin botón.
+    var boton = document.querySelector('product-form .product-form__submit[name="add"]');
+    if (!barra) return;
     var detalle = document.getElementById('tv-barra-detalle');
     var btn = document.getElementById('tv-barra-btn');
     if (!boton) return;
