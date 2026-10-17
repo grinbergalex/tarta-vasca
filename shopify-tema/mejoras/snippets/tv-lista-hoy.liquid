@@ -1,0 +1,38 @@
+{% comment %}
+  Prende la etiqueta "Lista hoy" (.tv-hoy[data-sabor]) de las tarjetas cuyo sabor tiene,
+  en alguna sucursal y algún tamaño, piezas para llevarse hoy según el inventario en vivo
+  del sistema (misma consulta que el calendario del carrito). Se incluye una vez por página.
+{% endcomment %}
+<script>
+  (function () {
+    if (window.tvListaHoy) return;
+    window.tvListaHoy = true;
+    var API = 'https://script.google.com/macros/s/AKfycbxJfDX3lwu5AE9GDA1WGZ3_MP3AAGPsCz54CdzS_cnE9zxQArN1zLmjnZixwc2A13eF/exec';
+    function normal(t) { return String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim(); }
+    function pintar(d) {
+      var conHoy = {};
+      Object.keys(d.hoy || {}).forEach(function (suc) {
+        (d.hoy[suc] || []).forEach(function (sku) { conHoy[normal(String(sku.k || sku).split('|')[0])] = true; });
+      });
+      document.querySelectorAll('.tv-hoy[data-sabor]').forEach(function (e) {
+        e.hidden = !conHoy[normal(e.getAttribute('data-sabor'))];
+      });
+    }
+    function cargar() {
+      try {
+        var g = JSON.parse(sessionStorage.getItem('tv_disp') || 'null');
+        if (g && Date.now() - g.t < 30000) return pintar(g.d);
+      } catch (e) {}
+      fetch(API + '?data=' + encodeURIComponent(JSON.stringify({ accion: 'tiendaDisponibilidad' })), { redirect: 'follow' })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (!d || !d.ok) return;
+          d._recibido = Date.now();
+          try { sessionStorage.setItem('tv_disp', JSON.stringify({ t: Date.now(), d: d })); } catch (e) {}
+          pintar(d);
+        })
+        .catch(function () {});
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', cargar); else cargar();
+  })();
+</script>

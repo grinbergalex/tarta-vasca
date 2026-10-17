@@ -1,0 +1,63 @@
+{% comment %}
+  Barra fija de compra en el celular (página de producto): aparece cuando el botón principal
+  sale de la pantalla. Muestra nombre, tamaño y precio de lo elegido, y su botón usa el mismo
+  formulario del producto (mismo tamaño y cantidad).
+{% endcomment %}
+<style>
+  .tv-barra { display: none; }
+  @media screen and (max-width: 749px) {
+    .tv-barra { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; align-items: center; gap: 1rem; padding: 1rem 1.4rem calc(1rem + env(safe-area-inset-bottom)); background: var(--tv-papel, #f6f3ee); border-top: 1px solid #d9d4cb; box-shadow: 0 -4px 14px rgba(47,53,47,.08); transform: translateY(110%); transition: transform .25s ease; }
+    .tv-barra.tv-barra--on { transform: translateY(0); }
+    .tv-barra__info { flex: 1; min-width: 0; line-height: 1.2; }
+    .tv-barra__nombre { display: block; font-family: var(--tv-serif); font-size: 1.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--tv-tinta); }
+    .tv-barra__detalle { font-size: 1.2rem; color: #606060; }
+    .tv-barra__btn { flex: 0 0 auto; padding: 1.3rem 1.6rem; background: var(--tv-dorado); border: 1px solid var(--tv-dorado); color: var(--tv-tinta); text-transform: uppercase; letter-spacing: .12em; font-size: 1.15rem; font-weight: 500; font-family: inherit; cursor: pointer; }
+    .tv-barra__btn[disabled] { opacity: .5; }
+  }
+</style>
+<div class="tv-barra" id="tv-barra" aria-hidden="true">
+  <div class="tv-barra__info">
+    <span class="tv-barra__nombre">{{ product.title | remove: 'Tarta Vasca de ' | remove: 'Tarta vasca de ' | remove: 'Tarta Vasca ' }}</span>
+    <span class="tv-barra__detalle" id="tv-barra-detalle"></span>
+  </div>
+  <button type="button" class="tv-barra__btn" id="tv-barra-btn" tabindex="-1">Agregar a la bolsa</button>
+</div>
+<script>
+  (function () {
+    var barra = document.getElementById('tv-barra');
+    var form = document.querySelector('form[id^="product-form-"]');
+    if (!barra || !form) return;
+    var boton = form.querySelector('[name="add"]');
+    var detalle = document.getElementById('tv-barra-detalle');
+    var btn = document.getElementById('tv-barra-btn');
+    if (!boton) return;
+
+    function actualizar() {
+      var precio = document.querySelector('.product .price-item--regular, .product .price-item--sale');
+      var tam = document.querySelector('.product variant-selects input:checked, .product-form__input input:checked');
+      var txtTam = tam ? (tam.value === 'Individual' ? 'Chica' : tam.value) : '';
+      detalle.textContent = [txtTam, precio ? precio.textContent.trim().replace(/\s*MXN$/, '') : ''].filter(Boolean).join(' · ');
+      btn.disabled = boton.disabled;
+    }
+    function mostrar(si) {
+      barra.classList.toggle('tv-barra--on', si);
+      barra.setAttribute('aria-hidden', si ? 'false' : 'true');
+      btn.tabIndex = si ? 0 : -1;
+      document.body.classList.toggle('tv-barra-visible', si);
+    }
+    new IntersectionObserver(function (e) {
+      var fuera = !e[0].isIntersecting && e[0].boundingClientRect.top < 0;
+      actualizar();
+      mostrar(fuera);
+    }).observe(boton);
+    btn.addEventListener('click', function () { boton.click(); });
+    document.addEventListener('change', function (e) { if (e.target.closest('variant-selects, .product-form__input')) setTimeout(actualizar, 300); });
+    actualizar();
+  })();
+</script>
+{% schema %}
+{
+  "name": "Barra de compra (celular)",
+  "settings": []
+}
+{% endschema %}

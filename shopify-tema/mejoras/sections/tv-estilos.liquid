@@ -1,0 +1,74 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&family=Mrs+Saint+Delafield&display=swap">
+<style>
+  /* Tarta Vasca · base editorial: tipografía, botones y detalles de la marca */
+  :root {
+    --tv-hueso: #e8e4e0; --tv-avena: #d5d0c0; --tv-cebada: #b2aa92; --tv-salvia: #a8b4a4;
+    --tv-verde: #889c90; --tv-militar: #788078; --tv-dorado: #dcbc70; --tv-dorado-txt: #8e7432;
+    --tv-tinta: #2f352f; --tv-papel: #f6f3ee; --tv-blanco: #fcfbf9;
+    --tv-serif: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+    --tv-sans: 'Jost', 'Helvetica Neue', Arial, sans-serif;
+    --tv-firma: 'Mrs Saint Delafield', 'Brush Script MT', cursive;
+    --font-heading-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+    --font-body-family: 'Jost', 'Helvetica Neue', Arial, sans-serif;
+    --font-heading-style: normal;
+    --font-heading-weight: 300;
+    --font-body-weight: 300;
+  }
+  body { font-family: var(--tv-sans); font-weight: 300; }
+  h1, h2, h3, h4, .h0, .h1, .h2, .h3, .h4 { font-family: var(--tv-serif); letter-spacing: 0; font-weight: 300; }
+  :where([class*="tv-"]) img { height: auto; }
+  .header__heading-logo-wrapper img { mix-blend-mode: multiply; }
+  .tv-firma { font-family: var(--tv-firma); font-weight: 400; letter-spacing: 0; line-height: 1; }
+  .tv-etiqueta { font-size: 1.1rem; letter-spacing: .2em; text-transform: uppercase; font-weight: 500; color: var(--tv-dorado-txt); }
+  .announcement-bar__message { font-size: 1.1rem; text-transform: uppercase; letter-spacing: .14em; }
+  .header__menu-item, .list-menu__item--link { text-transform: uppercase; letter-spacing: .12em; font-size: 1.2rem; }
+  .button, .shopify-challenge__button, .customer button { text-transform: uppercase; letter-spacing: .14em; font-size: 1.2rem; font-weight: 500; }
+  .card__heading { font-family: var(--tv-serif); font-size: 1.9rem; font-weight: 400; }
+  .price { font-family: var(--tv-serif); }
+  .product__title h1 { font-weight: 300; }
+  .tv-seccion { padding-block: 5.6rem; }
+
+  /* Mejoras 16-oct */
+  /* El aviso de Shopify "listo en 24 horas" contradice el calendario del carrito: se oculta. */
+  pickup-availability, pickup-availability-drawer { display: none !important; }
+  /* Estrellas junto al título del producto */
+  .product__info-container .product__text b { color: var(--tv-dorado-txt); letter-spacing: .08em; font-weight: 400; }
+  /* Etiqueta "Lista hoy" en las tarjetas (se prende con el inventario en vivo) */
+  .tv-hoy { position: absolute; right: 0; top: 1rem; z-index: 2; background: var(--tv-tinta); color: var(--tv-papel); font-size: 1rem; letter-spacing: .14em; text-transform: uppercase; padding: .5rem 1rem; }
+  .tv-hoy[hidden] { display: none; }
+  /* Título de la portada: es texto grande, no el título principal de la página */
+  .tv-hero__titulo { font-family: var(--tv-serif); font-weight: 300; letter-spacing: 0; }
+
+  @media screen and (max-width: 749px) {
+    .tv-seccion { padding-block: 3.6rem; }
+    /* En el celular la compra va primero: se esconden la portada grande y la rejilla repetida. */
+    .tv-hero, .tv-ah, .tv-bh, .tv-cr { display: none !important; }
+    /* WhatsApp más chico y por encima de la barra de compra */
+    #chat-bubble.whatsapp-widget { transform: scale(.78); transform-origin: bottom right; transition: transform .2s; }
+    body.tv-barra-visible #chat-bubble.whatsapp-widget { transform: translateY(-7.2rem) scale(.78); }
+  }
+</style>
+<script>
+  /* El botón de compra dice "Agregar a la bolsa" en todo el sitio. */
+  (function () {
+    var TEXTO = 'Agregar a la bolsa';
+    if (window.variantStrings) window.variantStrings.addToCart = TEXTO;
+    function renombrar() {
+      document.querySelectorAll('.product-form__submit span:not(.loading__spinner)').forEach(function (s) {
+        if (/carrito/i.test(s.textContent)) s.textContent = TEXTO;
+      });
+    }
+    document.addEventListener('DOMContentLoaded', function () {
+      if (window.variantStrings) window.variantStrings.addToCart = TEXTO;
+      renombrar();
+    });
+  })();
+</script>
+{% schema %}
+{
+  "name": "Estilos Tarta Vasca",
+  "settings": []
+}
+{% endschema %}

@@ -1,0 +1,88 @@
+<style>
+  .tv-cr { --cr-bg: var(--tv-blanco); --cr-fg: var(--tv-tinta); --cr-mut: #606060; --cr-line: #d9d4cb; padding: 4rem 1.6rem; background: var(--cr-bg); color: var(--cr-fg); }
+  .tv-cr--oscuro { --cr-bg: var(--tv-tinta); --cr-fg: var(--tv-papel); --cr-mut: #b9bdb5; --cr-line: #4a524a; }
+  .tv-cr--hueso { --cr-bg: var(--tv-hueso); }
+  .tv-cr__in { max-width: 124rem; margin: 0 auto; }
+  .tv-cr h2 { text-align: center; font-size: 3.6rem; margin: 0 0 .4rem; color: var(--cr-fg); }
+  .tv-cr__sub { text-align: center; color: var(--cr-mut); margin: 0 0 2.6rem; font-size: 1.4rem; }
+  .tv-cr__grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 2.4rem 1.2rem; }
+  .tv-cr__card { display: flex; flex-direction: column; }
+  .tv-cr__img { position: relative; display: block; aspect-ratio: 4 / 5; background: var(--tv-avena); overflow: hidden; margin-bottom: 1rem; }
+  .tv-cr__img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: opacity .35s; }
+  .tv-cr__img img + img { opacity: 0; }
+  @media (hover: hover) { .tv-cr__img:hover img + img { opacity: 1; } }
+  .tv-cr__etq { position: absolute; left: 0; top: 1rem; z-index: 2; background: var(--tv-dorado); color: var(--tv-tinta); font-size: 1rem; letter-spacing: .14em; text-transform: uppercase; padding: .5rem 1rem; }
+  .tv-cr__nombre { font-family: var(--tv-serif); font-size: 2.2rem; line-height: 1.1; text-decoration: none; color: var(--cr-fg); display: block; }
+  .tv-cr__gancho { font-size: 1.25rem; color: var(--cr-mut); margin: .3rem 0 1rem; line-height: 1.35; min-height: 3.4rem; }
+  .tv-cr__tam { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; border: 0; padding: 0; margin: 0 0 .6rem; }
+  .tv-cr__tam label { cursor: pointer; }
+  .tv-cr__tam input { position: absolute; opacity: 0; pointer-events: none; }
+  .tv-cr__tam span { display: block; text-align: center; border: 1px solid var(--cr-line); padding: .7rem .2rem; font-size: 1.2rem; line-height: 1.25; }
+  .tv-cr__tam small { display: block; font-family: var(--tv-serif); font-size: 1.6rem; }
+  .tv-cr__tam input:checked + span { border-color: var(--cr-fg); background: var(--cr-fg); color: var(--cr-bg); }
+  .tv-cr__tam input:focus-visible + span { outline: 2px solid var(--tv-dorado); outline-offset: 2px; }
+  .tv-cr__tam input:disabled + span { opacity: .4; text-decoration: line-through; }
+  .tv-cr__desc { font-size: 1.2rem; color: var(--cr-mut); margin: 0 0 1rem; min-height: 1.8rem; }
+  .tv-cr__btn { margin-top: auto; width: 100%; padding: 1.3rem 1rem; background: var(--tv-dorado); border: 1px solid var(--tv-dorado); color: var(--tv-tinta); text-transform: uppercase; letter-spacing: .14em; font-size: 1.2rem; font-weight: 500; cursor: pointer; font-family: inherit; }
+  .tv-cr__btn:hover { filter: brightness(.95); }
+  @media screen and (min-width: 750px) { .tv-cr { padding: 7rem 3rem; } .tv-cr h2 { font-size: 5rem; } .tv-cr__grid { grid-template-columns: repeat(4, 1fr); gap: 4rem 2.4rem; } }
+</style>
+<section class="tv-cr tv-cr--{{ section.settings.estilo }}" id="tarta"><div class="tv-cr__in">
+  <h2>{{ section.settings.titulo }}</h2>
+  <p class="tv-cr__sub">{{ section.settings.subtitulo }}</p>
+  <div class="tv-cr__grid">
+    {%- assign handles = section.settings.orden | split: ',' -%}
+    {%- for h in handles limit: section.settings.cuantos -%}
+      {%- assign h_limpio = h | strip -%}
+      {%- assign producto = all_products[h_limpio] -%}
+      {%- if producto.title == blank -%}{%- continue -%}{%- endif -%}
+      {%- assign tamanos = producto.variants | sort: 'price' -%}
+      {%- assign sabor = '' -%}
+      {%- for t in producto.tags -%}{%- if t contains 'sabor:' -%}{%- assign sabor = t | remove_first: 'sabor:' -%}{%- endif -%}{%- endfor -%}
+      <form class="tv-cr__card" action="{{ routes.cart_add_url }}" method="post">
+        <a class="tv-cr__img" href="{{ producto.url }}" aria-label="{{ producto.title | escape }}">
+          {%- if producto.handle contains 'pumpkin' -%}<span class="tv-cr__etq">Temporada</span>{%- endif -%}
+          {%- if sabor != blank -%}<span class="tv-hoy" data-sabor="{{ sabor | escape }}" hidden>Lista hoy</span>{%- endif -%}
+          {%- if producto.media[0] -%}<img src="{{ producto.media[0] | image_url: width: 640 }}" alt="{{ producto.media[0].alt | escape }}" loading="lazy" width="640" height="800">{%- endif -%}
+          {%- if producto.media[1] -%}<img src="{{ producto.media[1] | image_url: width: 640 }}" alt="" loading="lazy" width="640" height="800">{%- endif -%}
+        </a>
+        <a class="tv-cr__nombre" href="{{ producto.url }}">{{ producto.title | remove: 'Tarta Vasca de ' | remove: 'Tarta vasca de ' | remove: 'Tarta Vasca ' | remove: 'Tarta ' | replace: 'Queso & Frutos Rojos', 'Frutos rojos' | replace: 'Queso', 'Tradicional' | capitalize }}</a>
+        <p class="tv-cr__gancho">{{ producto.description | strip_html | split: '. ' | first | truncate: 70 }}</p>
+        <fieldset class="tv-cr__tam"><legend class="visually-hidden">Tamaño</legend>
+          {%- for v in tamanos -%}
+            {%- case v.title -%}
+              {%- when 'Chica' or 'Individual' -%}{%- assign d = '13 cm · 2 porciones' -%}
+              {%- when 'Mediana' -%}{%- assign d = '18 cm · 4 a 5 rebanadas' -%}
+              {%- when 'Grande' -%}{%- assign d = '24 cm · 10 a 12 rebanadas' -%}
+              {%- else -%}{%- assign d = '' -%}
+            {%- endcase -%}
+            <label><input type="radio" name="id" value="{{ v.id }}" data-desc="{{ d }}" {% if v.title == 'Mediana' %}checked{% endif %} {% unless v.available %}disabled{% endunless %}><span>{% if v.title == 'Individual' %}Chica{% else %}{{ v.title }}{% endif %}<small>{{ v.price | money_without_trailing_zeros }}</small></span></label>
+          {%- endfor -%}
+        </fieldset>
+        <p class="tv-cr__desc">18 cm · 4 a 5 rebanadas</p>
+        <button class="tv-cr__btn" type="submit">Agregar a la bolsa</button>
+      </form>
+    {%- endfor -%}
+  </div>
+</div></section>
+<script>
+  document.querySelectorAll('.tv-cr__card').forEach(function (f) {
+    var d = f.querySelector('.tv-cr__desc');
+    function pon() { var c = f.querySelector('input:checked'); d.textContent = c ? c.dataset.desc : ''; }
+    f.addEventListener('change', pon); pon();
+  });
+</script>
+{% render 'tv-lista-hoy' %}
+{% schema %}
+{
+  "name": "Compra rápida",
+  "settings": [
+    { "type": "text", "id": "titulo", "label": "Título", "default": "Elige tu tarta" },
+    { "type": "text", "id": "subtitulo", "label": "Subtítulo", "default": "7 sabores · 3 tamaños · desde $240" },
+    { "type": "textarea", "id": "orden", "label": "Orden de las tartas (handles separados por coma)", "default": "tarta-vasca-de-queso,tarta-vasca-de-lotus,tarta-vasca-de-pistache,tarta-vasca-guayabrie,tarta-vasca-de-queso-frutos-rojos,tarta-vasca-de-oreo,tarta-vasca-de-pumpkin-spice" },
+    { "type": "select", "id": "estilo", "label": "Estilo", "default": "claro", "options": [{ "value": "claro", "label": "Claro" }, { "value": "hueso", "label": "Hueso" }, { "value": "oscuro", "label": "Oscuro" }] },
+    { "type": "range", "id": "cuantos", "label": "Cuántas tartas mostrar", "min": 4, "max": 12, "step": 1, "default": 8 }
+  ],
+  "presets": [{ "name": "Compra rápida" }]
+}
+{% endschema %}

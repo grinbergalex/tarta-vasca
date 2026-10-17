@@ -1,0 +1,90 @@
+<style>
+  .tv-cm { display: none; }
+  @media screen and (max-width: 749px) {
+    .tv-cm { display: block; background: var(--tv-hueso); padding: 1.4rem 0 2.4rem; }
+    .tv-cm__top { padding: 0 1.6rem; text-align: center; }
+    .tv-cm__top .tv-firma { font-size: 2.4rem; color: var(--tv-militar); display: block; }
+    .tv-cm__top h1 { font-size: 3rem; line-height: 1.04; margin: .2rem 0 1rem; }
+    .tv-cm__pasos { display: grid; grid-template-columns: repeat(3, 1fr); gap: .6rem; margin: 0 0 1rem; font-size: 1.15rem; line-height: 1.3; }
+    .tv-cm__pasos b { display: block; font-family: var(--tv-serif); font-size: 2rem; font-weight: 400; color: var(--tv-militar); line-height: 1; margin-bottom: .2rem; }
+    .tv-cm__hint { text-align: right; font-size: 1.1rem; letter-spacing: .1em; text-transform: uppercase; color: #606060; padding: 0 1.6rem .6rem; margin: 0; }
+    .tv-cm__riel { display: flex; gap: 1.2rem; overflow-x: auto; scroll-snap-type: x mandatory; padding: 0 1.6rem .6rem; scroll-padding-left: 1.6rem; scrollbar-width: none; }
+    .tv-cm__riel::-webkit-scrollbar { display: none; }
+    .tv-cm__card { flex: 0 0 78vw; max-width: 31rem; scroll-snap-align: start; background: var(--tv-blanco); padding-bottom: 1.2rem; display: flex; flex-direction: column; }
+    .tv-cm__img { display: block; position: relative; aspect-ratio: 16 / 10; overflow: hidden; background: var(--tv-avena); }
+    .tv-cm__img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .tv-cm__etq { position: absolute; left: 0; top: 1rem; z-index: 2; background: var(--tv-dorado); color: var(--tv-tinta); font-size: 1rem; letter-spacing: .14em; text-transform: uppercase; padding: .5rem 1rem; }
+    .tv-cm__in { padding: 1rem 1.2rem 0; display: flex; flex-direction: column; flex: 1; }
+    .tv-cm__nombre { font-family: var(--tv-serif); font-size: 2.2rem; line-height: 1.1; color: var(--tv-tinta); text-decoration: none; }
+    .tv-cm__gancho { margin: .2rem 0 .8rem; font-size: 1.2rem; color: #606060; line-height: 1.3; min-height: 3.2rem; }
+    .tv-cm__tam { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; border: 0; padding: 0; margin: 0 0 .5rem; }
+    .tv-cm__tam label { cursor: pointer; }
+    .tv-cm__tam input { position: absolute; opacity: 0; pointer-events: none; }
+    .tv-cm__tam span { display: block; text-align: center; border: 1px solid #d9d4cb; padding: .6rem .2rem; font-size: 1.15rem; line-height: 1.25; }
+    .tv-cm__tam small { display: block; font-family: var(--tv-serif); font-size: 1.6rem; }
+    .tv-cm__tam input:checked + span { border-color: var(--tv-tinta); background: var(--tv-tinta); color: var(--tv-papel); }
+    .tv-cm__desc { margin: 0 0 .9rem; font-size: 1.15rem; color: #606060; min-height: 1.6rem; }
+    .tv-cm__btn { margin-top: auto; width: 100%; padding: 1.3rem 1rem; background: var(--tv-dorado); border: 1px solid var(--tv-dorado); color: var(--tv-tinta); text-transform: uppercase; letter-spacing: .14em; font-size: 1.2rem; font-weight: 500; cursor: pointer; font-family: inherit; }
+  }
+</style>
+<section class="tv-cm" id="tarta-movil">
+  <div class="tv-cm__top">
+    <span class="tv-firma">Suavidad en cada bocado</span>
+    <h1>Tartas vascas totalmente artesanales</h1>
+    <div class="tv-cm__pasos"><div><b>1</b>Elige sabor y tamaño</div><div><b>2</b>Agrega a la bolsa</div><div><b>3</b>Elige día y hora</div></div>
+  </div>
+  <p class="tv-cm__hint">Desliza para ver los sabores →</p>
+  <div class="tv-cm__riel">
+    {%- assign handles = section.settings.orden | split: ',' -%}
+    {%- for h in handles limit: section.settings.cuantos -%}
+      {%- assign h_limpio = h | strip -%}
+      {%- assign producto = all_products[h_limpio] -%}
+      {%- if producto.title == blank -%}{%- continue -%}{%- endif -%}
+      {%- assign tamanos = producto.variants | sort: 'price' -%}
+      {%- assign sabor = '' -%}
+      {%- for t in producto.tags -%}{%- if t contains 'sabor:' -%}{%- assign sabor = t | remove_first: 'sabor:' -%}{%- endif -%}{%- endfor -%}
+      <form class="tv-cm__card" action="{{ routes.cart_add_url }}" method="post">
+        <a class="tv-cm__img" href="{{ producto.url }}" aria-label="{{ producto.title | escape }}">
+          {%- if producto.handle contains 'pumpkin' -%}<span class="tv-cm__etq">Temporada</span>{%- endif -%}
+          {%- if sabor != blank -%}<span class="tv-hoy" data-sabor="{{ sabor | escape }}" hidden>Lista hoy</span>{%- endif -%}
+          {%- if producto.media[0] -%}<img src="{{ producto.media[0] | image_url: width: 600 }}" alt="{{ producto.media[0].alt | escape }}" loading="{% if forloop.first %}eager{% else %}lazy{% endif %}" width="600" height="375">{%- endif -%}
+        </a>
+        <div class="tv-cm__in">
+          <a class="tv-cm__nombre" href="{{ producto.url }}">{{ producto.title | remove: 'Tarta Vasca de ' | remove: 'Tarta vasca de ' | remove: 'Tarta Vasca ' | remove: 'Tarta ' | replace: 'Queso & Frutos Rojos', 'Frutos rojos' | replace: 'Queso', 'Tradicional' | capitalize }}</a>
+          <p class="tv-cm__gancho">{{ producto.description | strip_html | split: '. ' | first | truncate: 60 }}</p>
+          <fieldset class="tv-cm__tam"><legend class="visually-hidden">Tamaño</legend>
+            {%- for v in tamanos -%}
+              {%- case v.title -%}
+                {%- when 'Chica' or 'Individual' -%}{%- assign d = '13 cm · 2 porciones' -%}
+                {%- when 'Mediana' -%}{%- assign d = '18 cm · 4 a 5 rebanadas' -%}
+                {%- when 'Grande' -%}{%- assign d = '24 cm · 10 a 12 rebanadas' -%}
+                {%- else -%}{%- assign d = '' -%}
+              {%- endcase -%}
+              <label><input type="radio" name="id" value="{{ v.id }}" data-desc="{{ d }}" {% if v.title == 'Mediana' %}checked{% endif %} {% unless v.available %}disabled{% endunless %}><span>{% if v.title == 'Individual' %}Chica{% else %}{{ v.title }}{% endif %}<small>{{ v.price | money_without_trailing_zeros }}</small></span></label>
+            {%- endfor -%}
+          </fieldset>
+          <p class="tv-cm__desc">18 cm · 4 a 5 rebanadas</p>
+          <button class="tv-cm__btn" type="submit">Agregar a la bolsa</button>
+        </div>
+      </form>
+    {%- endfor -%}
+  </div>
+</section>
+<script>
+  document.querySelectorAll('.tv-cm__card').forEach(function (f) {
+    var d = f.querySelector('.tv-cm__desc');
+    function pon() { var c = f.querySelector('input:checked'); d.textContent = c ? c.dataset.desc : ''; }
+    f.addEventListener('change', pon); pon();
+  });
+</script>
+{% render 'tv-lista-hoy' %}
+{% schema %}
+{
+  "name": "Compra en el celular",
+  "settings": [
+    { "type": "textarea", "id": "orden", "label": "Orden de las tartas (handles separados por coma)", "default": "tarta-vasca-de-queso,tarta-vasca-de-lotus,tarta-vasca-de-pistache,tarta-vasca-guayabrie,tarta-vasca-de-queso-frutos-rojos,tarta-vasca-de-oreo,tarta-vasca-de-pumpkin-spice" },
+    { "type": "range", "id": "cuantos", "label": "Cuántas tartas mostrar", "min": 4, "max": 12, "step": 1, "default": 8 }
+  ],
+  "presets": [{ "name": "Compra en el celular" }]
+}
+{% endschema %}
