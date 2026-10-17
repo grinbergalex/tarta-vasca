@@ -45,11 +45,17 @@
       btn.tabIndex = si ? 0 : -1;
       document.body.classList.toggle('tv-barra-visible', si);
     }
-    new IntersectionObserver(function (e) {
-      var fuera = !e[0].isIntersecting && e[0].boundingClientRect.top < 0;
-      actualizar();
+    // La barra aparece cuando el botón principal ya quedó arriba, fuera de la pantalla.
+    var pendiente = false;
+    function revisar() {
+      pendiente = false;
+      var fuera = boton.getBoundingClientRect().bottom < 0;
+      if (fuera) actualizar();
       mostrar(fuera);
-    }).observe(boton);
+    }
+    window.addEventListener('scroll', function () {
+      if (!pendiente) { pendiente = true; setTimeout(revisar, 80); }
+    }, { passive: true });
     btn.addEventListener('click', function () { boton.click(); });
     document.addEventListener('change', function (e) { if (e.target.closest('variant-selects, .product-form__input')) setTimeout(actualizar, 300); });
     actualizar();
