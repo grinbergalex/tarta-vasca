@@ -107,6 +107,16 @@ Solo lee: no toca el repo ni el proyecto de Apps Script.
 
 ## Reglas duras
 
+- **Antes de cualquier `clasp push`, baja la versión viva y compárala con el repo** (receta de
+  "Cómo saber qué está desplegado"). Solo publica si lo único distinto es lo que quieres subir. El
+  19-oct-2026 producción (v124) traía el calendario del carrito de Shopify
+  (`17_tienda_en_linea.js`) subido desde la rama `calendario-tienda`, que no estaba en `main`: un
+  push desde `main` lo habría borrado. Todo lo que se publique desde otra rama se junta con `main`
+  el mismo día; `main` es la única rama de despliegue.
+- **No anular reservas de Shopify desde la pantalla de Movimientos todavía.** `eliminarMovimiento`
+  repone stock cuando el canal de la fila no es "Reservado", y esas reservas vienen con
+  `tipo_op = Reservado` pero canal Tienda o Domicilio: sumaría piezas que nunca se descontaron.
+  Está anotado como tarea; mientras tanto se limpian con scripts como `101` y `102`.
 - **No reintroducir `recalcularUtilidades()` en rutas de escritura.** Se movió
   a un trigger cada 10 min (v6.5) porque reconstruía todo el reporte dentro de
   cada venta sosteniendo el lock global — causaba lentitud y errores de
@@ -311,6 +321,11 @@ La cocina pasó de Cuajimalpa a Bosques; Cuajimalpa quedó como punto de venta.
 - El stock de Cuajimalpa **no se movió**: Bosques arranca en cero. Pasos del día del cambio
   en `backend/100_migracion_cocina_bosques.js`. Cerrar rutas abiertas antes de desplegar.
 - Direcciones de recibo: llave `negocio_direccion_bosques` en Configuración.
+- Scripts de una sola vez de la puesta en marcha: `100_migracion_cocina_bosques.js` (diagnóstico y
+  reasignación de cocineros), `101_limpiar_apartados_fantasma_polanco.js` y
+  `102_anular_reserva_vencida_cuajimalpa.js` (ya corridos el 19-oct; abortan solos si se repiten).
+- Pendientes: el sincronizador de Shopify (`shopify-sync`) sigue mandando los envíos a domicilio como
+  reservas en Cuajimalpa (`SUCURSAL_ENVIOS`); cambiarlo a Bosques exige un usuario del POS para Bosques.
 
 ## Legacy / pendientes
 
