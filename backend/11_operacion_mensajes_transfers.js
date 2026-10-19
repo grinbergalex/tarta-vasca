@@ -69,8 +69,12 @@ const urgente=stock===0;
 alertas.push({tipo:"bajo",urgente,sucursal,sabor,tamano,stock,minimo,maximo,mensaje:`${urgente?"⛔":"⚠️"} ${sabor} ${tamano} en ${sucursal}: ${stock} uds (mínimo: ${minimo})`});
 const producir=maximo>0?maximo-stock:minimo*2;
 sugerencias.push({tipo:"produccion",sucursal,sabor,tamano,mensaje:`Producir ${producir} ${sabor} ${tamano} para ${sucursal}`});
-const otraSuc=sucursal==="Cuajimalpa"?"Polanco":"Cuajimalpa", kOtra=`${otraSuc}|${sabor}|${tamano}`, stockOtra=stockMap[kOtra]||0, limOtra=_getLimite(lim,otraSuc,sabor,tamano);
+// Un punto de venta se surte de la cocina; la cocina, de cualquier punto con excedente.
+const posiblesOrigenes=sucursal===SUCURSAL_COCINA?SUCURSALES_PUNTO_VENTA:[SUCURSAL_COCINA];
+posiblesOrigenes.forEach(otraSuc=>{
+const kOtra=`${otraSuc}|${sabor}|${tamano}`, stockOtra=stockMap[kOtra]||0, limOtra=_getLimite(lim,otraSuc,sabor,tamano);
 if(limOtra&&stockOtra>limOtra.maximo&&limOtra.maximo>0){const excedente=stockOtra-limOtra.maximo,transferir=Math.min(excedente,minimo-stock);if(transferir>0)sugerencias.push({tipo:"transferencia",de:otraSuc,a:sucursal,sabor,tamano,cantidad:transferir,mensaje:`Transferir ${transferir} ${sabor} ${tamano} de ${otraSuc} → ${sucursal}`});}
+});
 }
 if(maximo>0&&stock>maximo) alertas.push({tipo:"excedente",sucursal,sabor,tamano,stock,minimo,maximo,mensaje:`📦 ${sabor} ${tamano} en ${sucursal}: ${stock} uds (máximo: ${maximo})`});
 }
@@ -108,10 +112,21 @@ let h=ss.getSheetByName("Transferencias");
 if(!h){h=ss.insertSheet("Transferencias");h.setTabColor("#2E86C1");const headers=["ID","Sabor","Tamaño","Cantidad","Estado","Fecha Solicitud","Fecha Confirmación","Solicitado Por","Confirmado Por","Notas"];const r=h.getRange(1,1,1,headers.length);r.setValues([headers]);r.setBackground("#2E4756");r.setFontColor("#FFFFFF");r.setFontWeight("bold");h.setFrozenRows(1);h.setColumnWidth(1,160);h.setColumnWidth(2,160);h.setColumnWidth(10,220);}
 return h;
 }
+// Columna (1-based) de la hoja Transferencias por nombre de encabezado; la crea si falta.
+// "origen"/"destino" nacen con v8: las filas viejas no las tienen (ver _origenDestinoTransferencia).
+function _colTransferencias(h, nombre) {
+const lc=h.getLastColumn(), i=h.getRange(1,1,1,lc).getValues()[0].indexOf(nombre);
+if(i!==-1) return i+1;
+h.getRange(1,lc+1).setValue(nombre).setBackground("#2E4756").setFontColor("#FFFFFF").setFontWeight("bold");
+return lc+1;
+}
 function registrarTransferencia(body, sesion) {
 requierePuedeTransferir(sesion);
 const sabor=body.sabor, tamano=body.tamano, cantidad=Number(body.cantidad);
+const origen=body.origen||SUCURSAL_COCINA, destino=body.destino||SUCURSALES_PUNTO_VENTA[1];
 if(!sabor||!tamano||!cantidad||cantidad<=0) return {ok:false,error:"Faltan datos de la transferencia."};
+if(SUCURSALES.indexOf(origen)===-1||SUCURSALES.indexOf(destino)===-1) return {ok:false,error:"Sucursal invalida en la transferencia."};
+if(origen===destino) return {ok:false,error:"El origen y el destino son la misma sucursal."};
 const lock=LockService.getScriptLock();
 try{ lock.waitLock(30000); }catch(e){ return {ok:false,error:"El sistema esta ocupado, intenta de nuevo."}; }
 try{
@@ -119,11 +134,14 @@ try{
   const _opDup=_opYaRegistrada(_opId);
   if(_opDup) return _opDup;
   const ss=SpreadsheetApp.getActiveSpreadsheet(), ahora=new Date().toISOString(), id="TRF-"+Date.now();
-  invTransferir(ss,sabor,tamano,cantidad,id,sesion.usuario,body.notas||"");
+  invTransferir(ss,sabor,tamano,cantidad,id,sesion.usuario,body.notas||"",origen,destino);
   const h=ensureHojaTransferencias(ss);
   h.appendRow([id,sabor,tamano,cantidad,"completada",ahora,ahora,sesion.usuario,sesion.usuario,body.notas||""]);
-  registrarAuditoria(sesion.usuario,sesion.rol,"TRANSFERENCIA",`${cantidad}x ${sabor} ${tamano} Cuajimalpa -> Polanco`);
-  const _resOk={ok:true,mensaje:`✅ ${cantidad} ${sabor} ${tamano} movidos a Polanco.`,id};
+  const filaNueva=h.getLastRow();
+  h.getRange(filaNueva,_colTransferencias(h,"origen")).setValue(origen);
+  h.getRange(filaNueva,_colTransferencias(h,"destino")).setValue(destino);
+  registrarAuditoria(sesion.usuario,sesion.rol,"TRANSFERENCIA",`${cantidad}x ${sabor} ${tamano} ${origen} -> ${destino}`);
+  const _resOk={ok:true,mensaje:`✅ ${cantidad} ${sabor} ${tamano} movidos a ${destino}.`,id};
   _opRegistrar(_opId,_resOk);
   return _resOk;
 }catch(err){ return {ok:false,error:String(err&&err.message?err.message:err)}; }
@@ -139,7 +157,7 @@ const _iniT=Math.max(2,_lrT-300+1);
 const datos=_lrT<2?[]:h.getRange(_iniT,1,_lrT-_iniT+1,_lcT).getValues();
 const headers = h.getRange(1, 1, 1, _lcT).getValues()[0];
 const idxEstadoAnul = headers.indexOf("estado_anul");
-for(let i=datos.length-1;i>=0;i--){const r=datos[i];if(!r[0])continue;if(idxEstadoAnul!==-1&&r[idxEstadoAnul]==="ANULADO")continue;transferencias.push({id:r[0],sabor:r[1],tamano:r[2],cantidad:Number(r[3]),estado:r[4],fechaSolicitud: r[5] instanceof Date ? Utilities.formatDate(r[5], TZ_MX, "yyyy-MM-dd'T'HH:mm:ss") : r[5],fechaConfirmacion: r[6] instanceof Date ? Utilities.formatDate(r[6], TZ_MX, "yyyy-MM-dd'T'HH:mm:ss") : r[6],solicitadoPor:r[7],confirmadoPor:r[8],notas:r[9]});if(transferencias.length>=100)break;}
+for(let i=datos.length-1;i>=0;i--){const r=datos[i];if(!r[0])continue;if(idxEstadoAnul!==-1&&r[idxEstadoAnul]==="ANULADO")continue;const ruta=_origenDestinoTransferencia(headers,r);transferencias.push({id:r[0],sabor:r[1],tamano:r[2],cantidad:Number(r[3]),origen:ruta.origen,destino:ruta.destino,estado:r[4],fechaSolicitud: r[5] instanceof Date ? Utilities.formatDate(r[5], TZ_MX, "yyyy-MM-dd'T'HH:mm:ss") : r[5],fechaConfirmacion: r[6] instanceof Date ? Utilities.formatDate(r[6], TZ_MX, "yyyy-MM-dd'T'HH:mm:ss") : r[6],solicitadoPor:r[7],confirmadoPor:r[8],notas:r[9]});if(transferencias.length>=100)break;}
 return {ok:true,transferencias};
 }
 function confirmarTransferencia(body, sesion) {

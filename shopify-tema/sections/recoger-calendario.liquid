@@ -1,0 +1,12 @@
+{%- unless cart == empty -%}
+  <div class="page-width">
+    {% render 'recoger-calendario' %}
+  </div>
+{%- endunless -%}
+
+{% schema %}
+{
+  "name": "Calendario de recolección",
+  "settings": []
+}
+{% endschema %}

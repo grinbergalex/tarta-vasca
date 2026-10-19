@@ -44,7 +44,7 @@ fila_idx: _iniM + i,
 id: String(fila[0]),
 fecha: Utilities.formatDate(fecha, TZ_MX, "yyyy-MM-dd'T'HH:mm:ss"),  // FIX-TZ: enviar CDMX
 usuario: usuarioFila,
-detalle: _construirDetalle(t, fila),
+detalle: _construirDetalle(t, fila, _hdrsM),
 monto_o_cantidad: _extraerMontoCantidad(t, fila),
 estado: estado || "Activo"
 });
@@ -187,15 +187,16 @@ if (!h) return { ok: false, error: `Hoja "${hoja}" no existe.` };
     
       if (hoja === "Transferencias") {
         var _sb=dataFila[1], _tm=dataFila[2], _ct=Number(dataFila[3])||0;
+        var _ruta=_origenDestinoTransferencia(headersFinales, dataFila);
         if(_ct>0){
           try{
-            var _disp=invDisponible(ss,_sb,_tm,"Polanco");
+            var _disp=invDisponible(ss,_sb,_tm,_ruta.destino);
             var _rev=Math.min(_ct,_disp);
             if(_rev>0){
-              invDescontar(ss,_sb,_tm,"Polanco",_rev,id,sesion.usuario,"Anulacion transferencia","TRANSFER_ANUL");
-              invProducir(ss,_sb,_tm,"Cuajimalpa",_rev,id,sesion.usuario,"Anulacion transferencia (regreso a Cuajimalpa)");
+              invDescontar(ss,_sb,_tm,_ruta.destino,_rev,id,sesion.usuario,"Anulacion transferencia","TRANSFER_ANUL");
+              invProducir(ss,_sb,_tm,_ruta.origen,_rev,id,sesion.usuario,"Anulacion transferencia (regreso a "+_ruta.origen+")");
             }
-            if(_rev<_ct) fallasReposicion.push(_sb+" "+_tm+": solo se regresaron "+_rev+" de "+_ct+" (Polanco ya no tenia el resto)");
+            if(_rev<_ct) fallasReposicion.push(_sb+" "+_tm+": solo se regresaron "+_rev+" de "+_ct+" ("+_ruta.destino+" ya no tenia el resto)");
           }catch(e){ fallasReposicion.push(_sb+" "+_tm+": "+e.message); }
         }
       }
@@ -287,7 +288,16 @@ if (hoja === "Inventario") return fila[9] || "";
 if (hoja === "Transferencias") return fila[4] || "";
 return "";
 }
-function _construirDetalle(hoja, fila) {
+// Origen y destino de una fila de Transferencias. Las filas anteriores a v8 no tienen
+// esas columnas: eran siempre Cuajimalpa -> Polanco.
+function _origenDestinoTransferencia(headers, fila) {
+const iO = headers ? headers.indexOf("origen") : -1, iD = headers ? headers.indexOf("destino") : -1;
+return {
+origen: (iO !== -1 && fila[iO]) || SUCURSAL_LEGADO_ORIGEN_TRANSFER,
+destino: (iD !== -1 && fila[iD]) || SUCURSAL_LEGADO_DESTINO_TRANSFER
+};
+}
+function _construirDetalle(hoja, fila, headers) {
 if (hoja === "Ventas") {
 // [idVenta, fecha, usuario, sucursal, sabor, tamano, cantidad, precio, subtotal, canal, metodoPago, ...]
 return `${fila[6] || ""}× ${fila[4] || ""} ${fila[5] || ""} · ${fila[9] || ""} (${fila[3] || ""})`;
@@ -298,7 +308,7 @@ return `Carga ${fila[4] || ""}× ${fila[1] || ""} ${fila[2] || ""} (${fila[3] ||
 }
 if (hoja === "Transferencias") {
 // [ID, Sabor, Tamaño, Cantidad, Estado, Fecha Solicitud, ...]
-return `${fila[3] || ""}× ${fila[1] || ""} ${fila[2] || ""} → Polanco`;
+return `${fila[3] || ""}× ${fila[1] || ""} ${fila[2] || ""} → ${_origenDestinoTransferencia(headers, fila).destino}`;
 }
 return "";
 }

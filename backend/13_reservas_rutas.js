@@ -109,7 +109,7 @@ return eliminarMovimiento({ hoja:"Ventas", id:idVenta, motivo:motivo||"Reserva l
 // Endpoint helper: sucursales que el usuario puede operar
 function getSucursalesUsuario(body, sesion) {
 const permisos = getPermisos(sesion.rol);
-if (permisos.puedeVerAmbas) return { ok: true, sucursales: ["Polanco", "Cuajimalpa"] };
+if (permisos.puedeVerAmbas) return { ok: true, sucursales: SUCURSALES.slice() };
 return { ok: true, sucursales: [getSucursalUsuario(sesion.usuario)] };
 }
 

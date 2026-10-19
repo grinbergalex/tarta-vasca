@@ -25,6 +25,7 @@ function configurarCatalogo() {
   }
 
   // Sucursales
+  hCat.appendRow(["Sucursal", "Bosques",    "TRUE", ahora, ahora]);
   hCat.appendRow(["Sucursal", "Cuajimalpa", "TRUE", ahora, ahora]);
   hCat.appendRow(["Sucursal", "Polanco",    "TRUE", ahora, ahora]);
 

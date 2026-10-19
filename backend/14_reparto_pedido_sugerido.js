@@ -2,7 +2,7 @@
 // ████████████████████████████████████████████████████████████████████████████████
 // █   ESTADO DE RESULTADOS (P&L vivo) — v4.5.13  ·  agregado 29-may-2026          █
 // ████████████████████████████████████████████████████████████████████████████████
-// Estado de resultados en tiempo real: Consolidado + Polanco + Cuajimalpa.
+// Estado de resultados en tiempo real: Consolidado + una columna por sucursal (SUCURSALES).
 //  - periodo: "YYYY-MM" (default = mes en curso, zona MX)
 //  - Ingresos = ventas reales (tipo_op "Venta", canal != "Merma"), netas de comisión
 //    canal/método (mismos criterios que el reporte 💎 Utilidad por período).
@@ -79,7 +79,7 @@ const idxTipoOp = headersV.indexOf("tipo_op");
 const idxAnul   = headersV.indexOf("estado_anul");
 const idxPagos  = headersV.indexOf("pagos");
 function blank() { return { ingresoBruto: 0, comision: 0, costoVar: 0, mermaRegaloCosto: 0, unidades: 0, ops: {}, sabor: {}, tamano: {} }; }
-const acc = { Polanco: blank(), Cuajimalpa: blank() };
+const acc = {}; SUCURSALES.forEach(function (s) { acc[s] = blank(); });
 const grupos = {}; // idVenta -> { sucursal, canal, metodo, ingreso, lines:[] }
 for (let i = 1; i < datosV.length; i++) {
 const r = datosV[i];
@@ -130,8 +130,8 @@ addBreak(a.tamano, ln.tamano, ingNeto, ln.costoLinea, ln.cant);
 // costos fijos por mes según vigencia (100% por mes, sin prorrateo)
 const mesesRango = [];
 { let yy = da, mm = dm; for (let k = 0; k < nMeses; k++) { mesesRango.push(yy + "-" + ("0" + mm).slice(-2)); mm++; if (mm > 12) { mm = 1; yy++; } } }
-const fijRecMensual = { Polanco: 0, Cuajimalpa: 0 };  // recurrentes (monto por mes)
-const fijExtra      = { Polanco: 0, Cuajimalpa: 0 };  // extraordinarios que caen dentro del rango
+const fijRecMensual = {}, fijExtra = {};  // recurrentes (monto por mes) / extraordinarios dentro del rango
+SUCURSALES.forEach(function (s) { fijRecMensual[s] = 0; fijExtra[s] = 0; });
 _gastosActivosMensual(ss).forEach(function (g) {
 const apl = String(g.vigencia || "").trim();
 const esMes = /^\d{4}-\d{2}$/.test(apl);
@@ -140,9 +140,8 @@ if (esMes) { if (mesesRango.indexOf(apl) !== -1) target = fijExtra; }
 else target = fijRecMensual;
 if (!target) return;  // gasto de un mes que no está en el rango -> se ignora
 const s = String(g.sucursal || "").trim();
-if (s === "Polanco")         target.Polanco    += g.montoMensual;
-else if (s === "Cuajimalpa") target.Cuajimalpa += g.montoMensual;
-else { target.Polanco += g.montoMensual / 2; target.Cuajimalpa += g.montoMensual / 2; }
+if (SUCURSALES.indexOf(s) !== -1) target[s] += g.montoMensual;
+else SUCURSALES.forEach(function (suc) { target[suc] += g.montoMensual / SUCURSALES.length; });  // "Ambas": se reparte en partes iguales
 });
 function ordenarBreak(map) {
 return Object.keys(map).map(function (k) {
@@ -178,6 +177,12 @@ ops: ops, unidades: a.unidades, ticketProm: ticketProm, ventaEquilibrio: ventaEq
 porSabor: ordenarBreak(a.sabor), porTamano: ordenarBreak(a.tamano)
 };
 }
+function sumaPorSucursal(mapa) { return SUCURSALES.reduce(function (t, suc) { return t + mapa[suc]; }, 0); }
+function armarPorSucursal() {
+const out = {};
+SUCURSALES.forEach(function (suc) { out[suc] = armarCol(acc[suc], fijRecMensual[suc], fijExtra[suc]); });
+return out;
+}
 function mergeMap(dst, src) {
 Object.keys(src).forEach(function (k) {
 if (!dst[k]) dst[k] = { ingreso: 0, costo: 0, unidades: 0 };
@@ -185,7 +190,7 @@ dst[k].ingreso += src[k].ingreso; dst[k].costo += src[k].costo; dst[k].unidades 
 });
 }
 const accCons = blank();
-["Polanco", "Cuajimalpa"].forEach(function (s) {
+SUCURSALES.forEach(function (s) {
 const a = acc[s];
 accCons.ingresoBruto += a.ingresoBruto; accCons.comision += a.comision;
 accCons.costoVar += a.costoVar; accCons.mermaRegaloCosto += a.mermaRegaloCosto;
@@ -196,8 +201,8 @@ mergeMap(accCons.sabor, a.sabor); mergeMap(accCons.tamano, a.tamano);
 return {
 ok: true,
 desde: desde, hasta: hasta, nMeses: nMeses,
-consolidado: armarCol(accCons, fijRecMensual.Polanco + fijRecMensual.Cuajimalpa, fijExtra.Polanco + fijExtra.Cuajimalpa),
-sucursales: { Polanco: armarCol(acc.Polanco, fijRecMensual.Polanco, fijExtra.Polanco), Cuajimalpa: armarCol(acc.Cuajimalpa, fijRecMensual.Cuajimalpa, fijExtra.Cuajimalpa) },
+consolidado: armarCol(accCons, sumaPorSucursal(fijRecMensual), sumaPorSucursal(fijExtra)),
+sucursales: armarPorSucursal(),
 generado: Utilities.formatDate(hoy, tz, "yyyy-MM-dd HH:mm")
 };
 }
@@ -212,7 +217,7 @@ generado: Utilities.formatDate(hoy, tz, "yyyy-MM-dd HH:mm")
 //  - Excluye ventas de RUTA (esas se planean según pedidos de clientes) y mermas/regalos/reservas
 //    (la base es la misma que el "potencial": tipo_op = Venta).
 //  - Sugerido = promedio del potencial × 1.15, redondeado HACIA ARRIBA.
-const _HORAS_APERTURA_PS = { "Cuajimalpa": { abre: 9, cierra: 18 }, "Polanco": { abre: 11, cierra: 19 } };
+const _HORAS_APERTURA_PS = { "Bosques": { abre: 9, cierra: 18 }, "Cuajimalpa": { abre: 9, cierra: 18 }, "Polanco": { abre: 11, cierra: 19 } };
 const _DIAS_ES = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
 function _dowFromStr(fechaStr) { // fechaStr "yyyy-MM-dd" -> 0=Dom..6=Sab
 const p = fechaStr.split("-"); return new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2])).getDay();
@@ -251,7 +256,7 @@ if (isNaN(fd.getTime())) continue;
 const fechaStr = Utilities.formatDate(fd, tz, "yyyy-MM-dd");
 if (fechaStr >= targetStr) continue;               // solo días anteriores al objetivo
 const suc = r[3], sabor = r[4], tamano = r[5];
-if (suc !== "Polanco" && suc !== "Cuajimalpa") continue;
+if (SUCURSALES.indexOf(suc) === -1) continue;
 const cant = Number(r[6]) || 0;
 const hora = Number(Utilities.formatDate(fd, tz, "H")) || 0;
 const k = suc + "|" + sabor + "|" + tamano;
@@ -297,7 +302,7 @@ const PESO_M1_EN_M2 = 0.20;
 const BUFFER2 = 0.10;
 const diasMismoDia = []; // [t-7, t-14, t-21, t-28]
 for (let _w = 1; _w <= 4; _w++) diasMismoDia.push(_ymd(new Date(_tBase.getFullYear(), _tBase.getMonth(), _tBase.getDate() - 7 * _w)));
-const sucursales = { Polanco: [], Cuajimalpa: [] };
+const sucursales = {}; SUCURSALES.forEach(function (s) { sucursales[s] = []; });
 Object.keys(perSku).forEach(function (k) {
 const parts = k.split("|"); const suc = parts[0], sabor = parts[1], tamano = parts[2];
 if (N === 0) return;
@@ -323,21 +328,18 @@ const sugerido2 = Math.ceil(base2 * (1 + BUFFER2));
 if (sugerido >= 1 || sugerido2 >= 1) sucursales[suc].push({ sabor: sabor, tamano: tamano, promPotencial: Number(prom.toFixed(1)), sugerido: sugerido, sugerido2: sugerido2 });
 });
 const ordenTam = { "Individual": 1, "Mediana": 2, "Grande": 3 };
-["Polanco", "Cuajimalpa"].forEach(function (s) {
+SUCURSALES.forEach(function (s) {
 sucursales[s].sort(function (a, b) {
 const ta = ordenTam[a.tamano] || 9, tb = ordenTam[b.tamano] || 9;
 if (ta !== tb) return ta - tb;
 return b.sugerido - a.sugerido;
 });
 });
-const totalSugerido = {
-Polanco: sucursales.Polanco.reduce(function (s, x) { return s + x.sugerido; }, 0),
-Cuajimalpa: sucursales.Cuajimalpa.reduce(function (s, x) { return s + x.sugerido; }, 0)
-};
-const totalSugerido2 = {
-Polanco: sucursales.Polanco.reduce(function (s, x) { return s + (x.sugerido2 || 0); }, 0),
-Cuajimalpa: sucursales.Cuajimalpa.reduce(function (s, x) { return s + (x.sugerido2 || 0); }, 0)
-};
+const totalSugerido = {}, totalSugerido2 = {};
+SUCURSALES.forEach(function (s) {
+totalSugerido[s]  = sucursales[s].reduce(function (t, x) { return t + x.sugerido; }, 0);
+totalSugerido2[s] = sucursales[s].reduce(function (t, x) { return t + (x.sugerido2 || 0); }, 0);
+});
 return {
 ok: true,
 fecha: targetStr,
@@ -366,8 +368,9 @@ MÓDULO REPARTO A DOMICILIO (integrado) — corre repartoSetup() una vez tras de
 // -------- Parámetros (ajustables) --------
 var REP_PARAMS = { capTartas: 13, jornadaMin: 360, horaInicio: 8.560, minServicio: 10,
 velKmh: 18, factorVial: 1.35, choferes: 3 };
-var REP_DEPOT  = { nombre: "Cocina Cuajimalpa", lat: 19.3587, lon: -99.2960,
-dir: "Cuajimalpa de Morelos, Ciudad de México" };
+// ⚠ Coordenadas aproximadas de Bosques de las Lomas — ajusta lat/lon a la direccion exacta de la cocina.
+var REP_DEPOT  = { nombre: "Cocina "+SUCURSAL_COCINA, lat: 19.3950, lon: -99.2540,
+dir: "Bosques de las Lomas, Cuajimalpa, Ciudad de México" };
 var REP_PRECIO_TARTA = 650; // respaldo si el pedido no trae monto
 // (punto 2) Local Tarta Vasca Polanco como parada opcional en la ruta.
 // ⚠ Coordenadas aproximadas de Polanco — ajusta lat/lon a la dirección exacta del local.
@@ -609,9 +612,9 @@ precioUnitario: (Number(it.precio)>0 ? Number(it.precio) : ((Number(s.monto)/(Nu
 lineas = [{ sabor:(s.sabor||_repSaborDeDetalle(s.detalle)||"Frutos Rojos"), tamano:(s.tamano||"Mediana"),
 cantidad: Number(s.tartas)||1, precioUnitario: (Number(s.monto)/(Number(s.tartas)||1))||REP_PRECIO_TARTA }];
 }
-lineas.forEach(function(_ln){ try{ invLiberar(ss,_ln.sabor,_ln.tamano,"Cuajimalpa",Number(_ln.cantidad)||1,"ruta",(r.id||"ruta"),sesion.usuario); }catch(_e){ try{ registrarAuditoria(sesion.usuario,sesion.rol,"LIBERA_FAIL","Ruta "+(r.id||"?")+" | "+_ln.sabor+" "+_ln.tamano+": "+(_e&&_e.message?_e.message:_e)); }catch(_e2){} } });
+lineas.forEach(function(_ln){ try{ invLiberar(ss,_ln.sabor,_ln.tamano,SUCURSAL_COCINA,Number(_ln.cantidad)||1,"ruta",(r.id||"ruta"),sesion.usuario); }catch(_e){ try{ registrarAuditoria(sesion.usuario,sesion.rol,"LIBERA_FAIL","Ruta "+(r.id||"?")+" | "+_ln.sabor+" "+_ln.tamano+": "+(_e&&_e.message?_e.message:_e)); }catch(_e2){} } });
 var resV = registrarVenta({ items:lineas, canal:"Ruta", metodoPago: s.formaPago||"Efectivo", envio: Number(s.envio)||0,
-cliente:{ nombre:s.cliente||"Cliente ruta", telefono:s.tel||"" }, sucursal:"Cuajimalpa" }, sesion);
+cliente:{ nombre:s.cliente||"Cliente ruta", telefono:s.tel||"" }, sucursal:SUCURSAL_COCINA }, sesion);
 if(resV && resV.ok){ s.ventaId = resV.idVenta || resV.id || "OK"; } else { errores.push((s.cliente||s.id)+": "+(resV&&resV.error||"error")); }
 }
 }); });
@@ -693,10 +696,10 @@ var existentes = {};
 for(var i=1;i<d.length;i++){ if(d[i][0]) existentes[d[i][0]] = true; }
 var ahora = new Date().toISOString();
 var zonas = [
-["ZNV-50","$50 (Poniente)","Bosques de las Lomas, Interlomas, Tecamachalco, Santa Fe, Cuajimalpa, Lomas de Chapultepec, Bosque Real, Lomas Country Club, Herradura",50,true,ahora],
-["ZNV-80","$80 (Centro)","Polanco, Las Aguilas, Irrigacion, Condesa, Roma, Napoles, Narvarte, Del Valle, Pedregal",80,true,ahora],
-["ZNV-100","$100 (Lejano)","Satelite, Coyoacan, Reforma Centro (hasta el Angel)",100,true,ahora],
-["ZNV-150","$150 (Muy lejano)","Zonas muy lejanas / fuera de la cobertura habitual (mas de ~25 km de Cuajimalpa)",150,true,ahora]
+["ZNV-50","$60 (Poniente)","Bosques de las Lomas, Interlomas, Tecamachalco, Santa Fe, Cuajimalpa, Lomas de Chapultepec, Bosque Real, Lomas Country Club, Herradura",60,true,ahora],
+["ZNV-80","$90 (Centro)","Polanco, Las Aguilas, Irrigacion, Condesa, Roma, Napoles, Narvarte, Del Valle, Pedregal",90,true,ahora],
+["ZNV-100","$120 (Lejano)","Satelite, Coyoacan, Reforma Centro (hasta el Angel)",120,true,ahora],
+["ZNV-150","$150 (Muy lejano)","Zonas muy lejanas / fuera de la cobertura habitual (mas de ~25 km de la cocina)",150,true,ahora]
 ];
 zonas.forEach(function(z){ if(!existentes[z[0]]) h.appendRow(z); });
 }
@@ -712,7 +715,7 @@ var its = p.items || [];
 for (var j=0;j<its.length;j++){
 var it = its[j];
 if(!it || !it.sabor || !it.tamano) continue;
-ensure("Cuajimalpa|"+it.sabor+"|"+it.tamano).ruta += (Number(it.cantidad)||0);
+ensure(SUCURSAL_COCINA+"|"+it.sabor+"|"+it.tamano).ruta += (Number(it.cantidad)||0);
 }
 }
 } catch(e){}
@@ -745,7 +748,7 @@ var its = p.items || [];
 for (var j=0;j<its.length;j++){
 var it = its[j];
 if(!it || !it.sabor || !it.tamano) continue;
-var k = "Cuajimalpa|"+it.sabor+"|"+it.tamano;
+var k = SUCURSAL_COCINA+"|"+it.sabor+"|"+it.tamano;
 out[k] = (out[k]||0) + (Number(it.cantidad)||0);
 }
 }

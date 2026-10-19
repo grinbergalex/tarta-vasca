@@ -1,7 +1,11 @@
 # Tarta Vasca — POS/ERP
 
-Sistema de punto de venta e inventario para una pastelería con 2 sucursales
-(Cuajimalpa y Nápoles): ventas, producción, stock, recetas/costos, rutas de
+Sistema de punto de venta e inventario para una pastelería con 3 sucursales:
+**Bosques** (la cocina: produce, transfiere, sale a reparto y también vende),
+**Cuajimalpa** y **Polanco** (solo punto de venta, se surten por transferencia
+desde Bosques). La lista vive en `SUCURSALES` / `SUCURSAL_COCINA`
+(`backend/01_config_roles.js`) y se espeja en `app.js` (`SUCURSALES`, `SUC_COCINA`).
+Funciones: ventas, producción, stock, recetas/costos, rutas de
 reparto, reportes financieros, usuarios con roles.
 
 ## Arquitectura
@@ -291,6 +295,22 @@ Un mismo ticket cobrado con varios métodos (p. ej. $300 en efectivo y $200 con 
   que cualquier refresco (agregar al carrito, recargar catálogo) podía dejar el control a
   medias. Si algo más vuelve a tocar esos `style.display`, vuelve el mismo bug.
 - Se probó primero en `/pruebas/` (ver `pruebas/LEEME.md`) antes de subirlo.
+
+## v8 — Cocina Bosques (oct-2026)
+
+La cocina pasó de Cuajimalpa a Bosques; Cuajimalpa quedó como punto de venta.
+
+- `altaProduccion` solo acepta `SUCURSAL_COCINA`. Rutas, reservas de ruta y ventas de ruta
+  usan la cocina; `REP_DEPOT` (14) y `HORARIOS_SUCURSAL` (01) llevan coordenadas/horario
+  **aproximados de Bosques: confirmar**.
+- `registrarTransferencia` recibe `origen` y `destino` (por defecto cocina → punto de venta). Se
+  guardan en columnas `origen`/`destino` de la hoja Transferencias (se crean solas); las filas
+  anteriores a v8 se leen como Cuajimalpa → Polanco (`_origenDestinoTransferencia`).
+- `getCatalogo` agrega solo la fila `Sucursal / Bosques` al Catálogo si falta.
+- Gastos "Ambas" se reparten entre las 3 sucursales (antes ÷2).
+- El stock de Cuajimalpa **no se movió**: Bosques arranca en cero. Pasos del día del cambio
+  en `backend/100_migracion_cocina_bosques.js`. Cerrar rutas abiertas antes de desplegar.
+- Direcciones de recibo: llave `negocio_direccion_bosques` en Configuración.
 
 ## Legacy / pendientes
 

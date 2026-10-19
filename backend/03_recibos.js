@@ -2,7 +2,7 @@
 // RECIBOS DIGITALES (PDF a Drive + link para WhatsApp) — 2026-06-28
 // Encabezado configurable en la hoja "Configuración" (Parámetro/Valor):
 //   negocio_nombre, negocio_telefono, negocio_instagram,
-//   negocio_direccion_cuajimalpa, negocio_direccion_polanco
+//   negocio_direccion_bosques, negocio_direccion_cuajimalpa, negocio_direccion_polanco
 // ============================================================================
 function _cfgVal(ss, clave, def){
   try{ var h=ss.getSheetByName("Configuración"); if(!h) return def; var d=h.getDataRange().getValues();

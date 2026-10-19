@@ -225,7 +225,7 @@ async function repPlanear(k){ var fecha=L("rep-fecha").value;
 function repAllStops(r){ return r.choferes.reduce(function(a,c){return a.concat(c.stops);},[]); }
 function repEfEsperado(r){ return repAllStops(r).filter(function(s){return s.resultado==="entregada"&&!s.pagadoPrevio&&s.formaPago==="Efectivo";}).reduce(function(a,s){return a+(+s.monto||0);},0); }
 function repTotMetodo(r){ var t={Tarjeta:0,Efectivo:0,Transferencia:0,Prepago:0}; repAllStops(r).filter(function(s){return s.resultado==="entregada";}).forEach(function(s){ if(s.pagadoPrevio)t.Prepago+=(+s.monto||0); else t[s.formaPago]=(t[s.formaPago]||0)+(+s.monto||0); }); return t; }
-function repMapsUrl(c){ var o=encodeURIComponent("Cuajimalpa de Morelos, Ciudad de México");
+function repMapsUrl(c){ var o=encodeURIComponent("Bosques de las Lomas, Cuajimalpa, Ciudad de México");
   var wp=c.stops.map(function(s){return encodeURIComponent(s.dir||s.zona);}).join("%7C");
   return "https://www.google.com/maps/dir/?api=1&origin="+o+"&destination="+o+"&waypoints="+wp+"&travelmode=driving"; }
 /* ===== Rutas (admin) ===== */
@@ -284,11 +284,11 @@ async function repPaintMap(contId, leyId, legs){
   if(repMaps[contId]){ try{ repMaps[contId].remove(); }catch(e){} repMaps[contId]=null; }
   if(!hay){ cont.style.display="none"; if(ley) ley.style.display="none"; return; }
   cont.style.display="block";
-  var depot=(REP.depot&&REP.depot.lat)?[Number(REP.depot.lat),Number(REP.depot.lon)]:[19.3587,-99.2960];
+  var depot=(REP.depot&&REP.depot.lat)?[Number(REP.depot.lat),Number(REP.depot.lon)]:[19.3950,-99.2540];
   var map=LF.map(cont).setView(depot,12); repMaps[contId]=map;
   LF.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"}).addTo(map);
   var bounds=[depot];
-  LF.circleMarker(depot,{radius:9,color:"#7A1F2B",fillColor:"#7A1F2B",fillOpacity:1,weight:2}).addTo(map).bindPopup("🏠 <b>Cocina Cuajimalpa</b> (salida y regreso)");
+  LF.circleMarker(depot,{radius:9,color:"#7A1F2B",fillColor:"#7A1F2B",fillOpacity:1,weight:2}).addTo(map).bindPopup("🏠 <b>Cocina Bosques</b> (salida y regreso)");
   var leyenda=[];
   (legs||[]).forEach(function(lg,li){
     var col=REP_COLORES[li%REP_COLORES.length];
@@ -306,7 +306,7 @@ async function repPaintMap(contId, leyId, legs){
   });
   if(ley){
     ley.style.display="flex";
-    ley.innerHTML = "<span style='display:inline-flex;align-items:center;gap:6px'><span style='width:12px;height:12px;border-radius:50%;background:#7A1F2B;display:inline-block'></span>Cocina Cuajimalpa</span>"+
+    ley.innerHTML = "<span style='display:inline-flex;align-items:center;gap:6px'><span style='width:12px;height:12px;border-radius:50%;background:#7A1F2B;display:inline-block'></span>Cocina Bosques</span>"+
       leyenda.map(function(e){ return "<span style='display:inline-flex;align-items:center;gap:6px'><span style='width:18px;height:4px;border-radius:2px;background:"+e.col+";display:inline-block'></span>"+e.txt+"</span>"; }).join("");
   }
   setTimeout(function(){ try{ map.invalidateSize(); if(bounds.length>1) map.fitBounds(bounds,{padding:[30,30]}); }catch(e){} },250);
@@ -393,7 +393,7 @@ function repRenderInv(){
   if(filtro==="todo"||filtro==="ruta"){
     html+="<div style='background:rgba(122,31,43,.06);border-left:3px solid #7a1f2b;border-radius:8px;padding:10px 12px;margin-bottom:8px'>"+
       "<div style='font-weight:700;color:#7a1f2b;margin-bottom:4px'>🚚 Tartas para envío (ruta) — "+ruta+" en total</div>"+
-      "<div style='font-size:11px;color:#888;margin-bottom:6px'>Se cocinan el <b>día anterior</b> a su entrega, así no compiten con la demanda de mostrador (sobre todo Cuajimalpa).</div>";
+      "<div style='font-size:11px;color:#888;margin-bottom:6px'>Se cocinan el <b>día anterior</b> a su entrega, así no compiten con la demanda de mostrador (sobre todo en los puntos de venta).</div>";
     if(!fechas.length){ html+="<div style='font-size:12px;color:#888'>Sin tartas comprometidas a ruta.</div>"; }
     else { html+=fechas.map(function(f){ var d=repDias(hoy,f);
         var coc=new Date(new Date(f+'T00:00:00').getTime()-86400000);
@@ -474,7 +474,7 @@ function repDocs(id){
   var html="<html><head><meta charset='utf-8'><title>Hojas de ruta "+r.fecha+"</title><style>body{font-family:sans-serif}.hoja{padding:24px;page-break-after:always}.hoja:last-child{page-break-after:auto}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #ccc;padding:6px}th{background:#f3ece8}@media print{button{display:none}}</style></head><body><button onclick='window.print()'>Imprimir / PDF</button>";
   r.choferes.forEach(function(c){
     var nom=(c.nombre&&c.nombre.trim())?c.nombre.trim():("Chofer "+c.idx);
-    html+="<section class='hoja'><h2>🍰 Tarta Vasca — Hoja de ruta</h2><div>Fecha: <b>"+r.fecha+"</b> · Chofer: <b>"+nom+"</b> · Salida: Cocina Cuajimalpa · Canal: Ruta</div><table><tr><th>#</th><th>Cliente</th><th>Dirección / referencia</th><th>Contacto</th><th>Tartas</th><th>Monto</th><th>Envío</th><th>Total</th><th>Pago</th><th>¿Pagó?</th></tr>";
+    html+="<section class='hoja'><h2>🍰 Tarta Vasca — Hoja de ruta</h2><div>Fecha: <b>"+r.fecha+"</b> · Chofer: <b>"+nom+"</b> · Salida: Cocina Bosques · Canal: Ruta</div><table><tr><th>#</th><th>Cliente</th><th>Dirección / referencia</th><th>Contacto</th><th>Tartas</th><th>Monto</th><th>Envío</th><th>Total</th><th>Pago</th><th>¿Pagó?</th></tr>";
     c.stops.forEach(function(s,i){
       var dirCol = s.dir + (s.referencia?"<br><i>Ref: "+s.referencia+"</i>":"") + (s.instruccion?"<br><i>"+s.instruccion+"</i>":"");
       html+="<tr><td>"+(i+1)+"</td><td>"+s.cliente+"</td><td>"+dirCol+"</td><td>"+(s.tel||"—")+"</td><td>"+(s.detalle||s.tartas)+"</td><td>$"+s.monto+"</td><td>$"+(Number(s.envio)||0)+"</td><td>$"+((Number(s.monto)||0)+(Number(s.envio)||0))+"</td><td>"+s.formaPago+"</td><td>"+(s.pagadoPrevio?"Prepagado":(s.resultado==="entregada"?"Cobrado":"Pendiente"))+"</td></tr>";

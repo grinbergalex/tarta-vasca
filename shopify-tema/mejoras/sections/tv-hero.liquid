@@ -1,0 +1,60 @@
+<style>
+  .tv-hero { position: relative; background: var(--tv-salvia); color: var(--tv-tinta); }
+  .tv-hero__media { position: relative; aspect-ratio: 4 / 5; background: var(--tv-verde); overflow: hidden; }
+  .tv-hero__media img, .tv-hero__media video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .tv-hero__media::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(47,53,47,.72), rgba(47,53,47,0) 55%); }
+  .tv-hero__txt { position: absolute; z-index: 2; left: 2rem; right: 2rem; bottom: 2.4rem; color: #fff; }
+  .tv-hero__txt .tv-firma { font-size: 4rem; color: var(--tv-dorado); display: block; }
+  .tv-hero__txt .tv-hero__titulo { font-size: 4.2rem; line-height: 1.02; margin: .4rem 0 1.4rem; color: #fff; }
+  .tv-hero__sub { display: none; }
+  .tv-hero__btns { display: flex; gap: 1rem; flex-wrap: wrap; }
+  .tv-btn { display: inline-block; padding: 1.4rem 2.2rem; border: 1px solid currentColor; text-transform: uppercase; letter-spacing: .14em; font-size: 1.2rem; font-weight: 500; text-decoration: none; }
+  .tv-btn--oro { background: var(--tv-dorado); border-color: var(--tv-dorado); color: var(--tv-tinta); }
+  .tv-btn--claro { color: #fff; }
+  .tv-btn--oscuro { color: var(--tv-tinta); }
+  @media screen and (min-width: 750px) {
+    .tv-hero { display: grid; grid-template-columns: 1fr 1fr; height: clamp(56rem, calc(100svh - 17rem), 78rem); }
+    .tv-hero__media { aspect-ratio: auto; order: 2; height: 100%; }
+    .tv-hero__media img, .tv-hero__media video { position: absolute; inset: 0; }
+    .tv-hero__media::after { display: none; }
+    .tv-hero__txt { position: static; order: 1; align-self: center; padding: 6rem 7rem; color: var(--tv-tinta); }
+    .tv-hero__txt .tv-firma { color: var(--tv-militar); font-size: 5.4rem; }
+    .tv-hero__txt .tv-hero__titulo { color: var(--tv-tinta); font-size: 7rem; }
+    .tv-hero__sub { display: block; font-size: 1.7rem; max-width: 40rem; margin: 0 0 2.4rem; }
+    .tv-btn--claro { color: var(--tv-tinta); }
+  }
+</style>
+<section class="tv-hero">
+  <div class="tv-hero__media">
+    {%- if section.settings.video != blank -%}
+      {{ section.settings.video | video_tag: image_size: '720x', autoplay: true, loop: true, muted: true, controls: false, playsinline: true }}
+    {%- else -%}
+      <img src="{{ 'tv-portada-manos.jpg' | file_url }}" alt="Cuatro tartas sostenidas sobre platos blancos" width="720" height="1280" fetchpriority="high">
+    {%- endif -%}
+  </div>
+  <div class="tv-hero__txt">
+    <span class="tv-firma">{{ section.settings.firma }}</span>
+    {%- comment -%} El título principal (h1) de la página vive en "Compra en el celular"; aquí es texto grande. {%- endcomment -%}
+    <p class="tv-hero__titulo">{{ section.settings.titulo }}</p>
+    <p class="tv-hero__sub">{{ section.settings.subtitulo }}</p>
+    <div class="tv-hero__btns">
+      <a class="tv-btn tv-btn--oro" href="{{ section.settings.enlace_principal | default: '#tarta' }}">{{ section.settings.boton_principal }}</a>
+      <a class="tv-btn tv-btn--claro" href="https://wa.me/525588039327">{{ section.settings.boton_whatsapp }}</a>
+    </div>
+  </div>
+</section>
+{% schema %}
+{
+  "name": "Portada Tarta Vasca",
+  "settings": [
+    { "type": "text", "id": "firma", "label": "Lema (letra de firma)", "default": "Suavidad en cada bocado" },
+    { "type": "text", "id": "titulo", "label": "Título", "default": "Tartas vascas hechas a mano" },
+    { "type": "textarea", "id": "subtitulo", "label": "Texto (solo escritorio)", "default": "Quesos de origen español y francés, y un dulce que acompaña el sabor sin esconderlo." },
+    { "type": "text", "id": "boton_principal", "label": "Botón principal", "default": "Elegir mi tarta" },
+    { "type": "url", "id": "enlace_principal", "label": "Enlace del botón principal" },
+    { "type": "text", "id": "boton_whatsapp", "label": "Botón de WhatsApp", "default": "Pedir por WhatsApp" },
+    { "type": "video", "id": "video", "label": "Video de fondo (opcional)" }
+  ],
+  "presets": [{ "name": "Portada Tarta Vasca" }]
+}
+{% endschema %}

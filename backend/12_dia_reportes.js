@@ -106,7 +106,7 @@ return { ok: false, error: `${sucursal} no tiene día abierto hoy.` };
 function getDiaActual(body, sesion) {
 const sucursal = body.sucursal || sesion.sucursal;
 if (!sucursal || sucursal === "Ambas") {
-return { ok: true, dias: [_getDiaSucursal("Polanco"), _getDiaSucursal("Cuajimalpa")]};
+return { ok: true, dias: SUCURSALES.map(_getDiaSucursal)};
 }
 return { ok: true, dia: _getDiaSucursal(sucursal) };
 }
@@ -165,7 +165,7 @@ const ss = SpreadsheetApp.getActiveSpreadsheet();
 const hInv = ss.getSheetByName("Inventario");
 const datos = hInv.getDataRange().getValues();
 const hoy = new Date();
-const sucursales = sucursal === "Ambas" ? ["Polanco", "Cuajimalpa"] : [sucursal];
+const sucursales = sucursal === "Ambas" ? SUCURSALES.slice() : [sucursal];
 const porSuc = {};
 sucursales.forEach(s => porSuc[s] = {});
 for (let i = 1; i < datos.length; i++) {
@@ -215,7 +215,7 @@ if (sesion.rol !== "Owner" && u !== "rebeca" && u !== "rebe") {
 throw new Error("Acceso reservado a Owner y Rebeca.");
 }
 const fechaStr = body.fecha || Utilities.formatDate(new Date(), TZ_MX, "yyyy-MM-dd");
-const sucursales = body.sucursal && body.sucursal !== "Ambas" ? [body.sucursal] : ["Polanco", "Cuajimalpa"];
+const sucursales = body.sucursal && body.sucursal !== "Ambas" ? [body.sucursal] : SUCURSALES.slice();
 const ss = SpreadsheetApp.getActiveSpreadsheet();
 const hDia = ss.getSheetByName("Dia_Operacion");
 const hV = ss.getSheetByName("Ventas");
@@ -307,7 +307,7 @@ const fechaStr = body.fecha || Utilities.formatDate(new Date(), TZ_MX, "yyyy-MM-
 const ss = SpreadsheetApp.getActiveSpreadsheet();
 const hV = ss.getSheetByName("Ventas");
 const datosV = hV.getDataRange().getValues();
-const porHora = { Polanco: {}, Cuajimalpa: {}, Total: {} };
+const porHora = { Bosques: {}, Polanco: {}, Cuajimalpa: {}, Total: {} };
 const porSabor = {};
 const porTamano = {};
 const porCanal = {};

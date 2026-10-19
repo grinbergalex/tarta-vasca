@@ -103,11 +103,33 @@ const TZ_MX = "America/Mexico_City";
 const METODOS_PAGO = ["Efectivo", "Tarjeta", "Transferencia"];
 const METODO_MIXTO = "Mixto";
 const PAGO_TOLERANCIA = 0.5;   // pesos: margen de redondeo al cuadrar el desglose
+// v8 — Cocina Bosques. UNICA fuente de verdad de las sucursales.
+// Bosques es la cocina: ahi se produce, de ahi salen las transferencias y las rutas
+// de reparto, y tambien vende. Cuajimalpa y Polanco son solo punto de venta: reciben
+// stock por transferencia desde la cocina. Mantener el mismo orden en app.js (SUCURSALES).
+const SUCURSAL_COCINA = "Bosques";
+const SUCURSALES_PUNTO_VENTA = ["Cuajimalpa", "Polanco"];
+const SUCURSALES = [SUCURSAL_COCINA].concat(SUCURSALES_PUNTO_VENTA);
+const SUCURSAL_LEGADO_ORIGEN_TRANSFER = "Cuajimalpa";  // antes de v8 la cocina era Cuajimalpa
+const SUCURSAL_LEGADO_DESTINO_TRANSFER = "Polanco";    // y lo unico transferible iba a Polanco
 // v4.4 — Horarios por sucursal por día (0=Domingo). 24h format.
 const HORARIOS_SUCURSAL = {
-"Polanco":    [{abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}],
+// ⚠ Horario de Bosques por confirmar con Rebe (se dejo igual que el de entre semana de Cuajimalpa).
+"Bosques":    [{abre:"09:00",cierra:"14:30"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"14:30"}],
+"Polanco":   [{abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}],
 "Cuajimalpa": [{abre:"10:00",cierra:"14:30"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"14:30"}]
 };
+// v7.6 — Tienda en línea: recolección en sucursal (calendario del carrito de Shopify).
+// Horario en que el cliente puede RECOGER (no es el de caja). Índice 0=Domingo; null = no se recoge ese día.
+const RECOGER_HORARIOS = {
+"Cuajimalpa": [{abre:"10:00",cierra:"15:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"10:00",cierra:"15:00"}],
+"Polanco":    [{abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}]
+};
+const RECOGER_MIN_PIEZAS_MISMO_DIA = 2;  // con menos piezas en sucursal, la tarta se pide para después
+const RECOGER_DIAS_PREPARACION = 1;      // días que tarda una tarta sobre pedido
+const RECOGER_HORA_CORTE = "17:00";      // pedidos sobre pedido después de esta hora suman un día más
+const RECOGER_INTERVALO_MIN = 60;        // tamaño de cada horario que elige el cliente
+const RECOGER_DIAS_A_MOSTRAR = 14;       // hasta cuántos días adelante se puede reservar
 function getHorarioHoy(sucursal, fecha) {
 fecha = fecha || new Date();
 const cfg = HORARIOS_SUCURSAL[sucursal];

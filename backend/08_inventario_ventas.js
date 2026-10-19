@@ -51,6 +51,7 @@ function altaProduccion(body, sesion) {
 requierePuedeProducir(sesion);
 const { sabor, tamano, sucursal, cantidad } = body;
 if (!sabor || !tamano || !sucursal || !cantidad || cantidad <= 0) return { ok:false, error:"Faltan datos requeridos." };
+if (sucursal !== SUCURSAL_COCINA) return { ok:false, error:"Solo se produce en la cocina ("+SUCURSAL_COCINA+"). Para surtir otra sucursal usa una transferencia." };
 const lock=LockService.getScriptLock(); try{lock.waitLock(30000);}catch(e){return{ok:false,error:"El sistema esta ocupado, intenta de nuevo."};}
 try{
   const _opId=String(body.opId||"").trim();
@@ -206,7 +207,7 @@ return { ok: false, error: "Tu rol no permite aplicar descuentos. Pídeselo al O
 const permisos = getPermisos(sesion.rol);
 let sucursal;
 if (permisos.puedeVerAmbas && body.sucursal) sucursal = body.sucursal;
-else if (permisos.puedeVerAmbas) { sucursal = getSucursalUsuario(sesion.usuario); if (sucursal === "Ambas") sucursal = "Cuajimalpa"; }
+else if (permisos.puedeVerAmbas) { sucursal = getSucursalUsuario(sesion.usuario); if (sucursal === "Ambas") sucursal = SUCURSAL_COCINA; }
 else sucursal = getSucursalUsuario(sesion.usuario);
 // ============================================================
 // SECCIÓN CRÍTICA — LockService garantiza serialización entre sesiones
@@ -376,7 +377,7 @@ if (!p.puedeProducir && !p.puedeTransferir && !p.esAdmin) throw new Error("Tu ro
 const { items, sucursal: sucBody, motivo } = body;
 if (!items || items.length === 0) return { ok: false, error: "Agrega al menos un producto." };
 if (!motivo || !motivo.trim()) return { ok: false, error: "El motivo es obligatorio." };
-const sucursal = p.puedeVerAmbas ? (sucBody || "Cuajimalpa") : getSucursalUsuario(sesion.usuario);
+const sucursal = p.puedeVerAmbas ? (sucBody || SUCURSAL_COCINA) : getSucursalUsuario(sesion.usuario);
 // Normalizar items
 const itemsNorm = items.map(i => ({
 sabor: String(i.sabor || "").trim(),
