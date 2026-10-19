@@ -1488,11 +1488,17 @@
     <!-- TRANSFERENCIAS -->
     <div id="tab-transferencias" class="tab-pane" style="display:none">
       <div class="card">
-        <div class="card-title">Transferencias desde la cocina</div>
-        <div class="card-sub">Lo que se produce siempre queda en la cocina (<span class="nombre-cocina">Bosques</span>). Registra aquí lo que sale hacia otro punto de venta.</div>
-        <div style="margin-bottom:8px">
-          <label class="form-label">Destino</label>
-          <select class="mini-select" id="trf-destino" style="width:100%" onchange="actualizarStockTrf()"></select>
+        <div class="card-title">Transferencias entre sucursales</div>
+        <div class="card-sub">Lo que se produce siempre queda en la cocina (Bosques). Registra aquí lo que se mueve de una sucursal a otra.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <div>
+            <label class="form-label">Origen</label>
+            <select class="mini-select" id="trf-origen" style="width:100%" onchange="onCambioOrigenTrf()"></select>
+          </div>
+          <div>
+            <label class="form-label">Destino</label>
+            <select class="mini-select" id="trf-destino" style="width:100%" onchange="actualizarStockTrf()"></select>
+          </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 80px;gap:8px;align-items:end;margin-bottom:8px">
           <div>
@@ -1514,7 +1520,7 @@
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
             <div style="background:var(--warm);border-radius:10px;padding:10px 14px;text-align:center">
               <div style="font-size:22px;font-weight:700;color:var(--ink)" id="trf-stock-origen">0</div>
-              <div style="font-size:11px;color:var(--muted)">En <span class="nombre-cocina">Bosques</span></div>
+              <div style="font-size:11px;color:var(--muted)">En <span id="trf-nombre-origen">origen</span></div>
             </div>
             <div style="background:var(--warm);border-radius:10px;padding:10px 14px;text-align:center">
               <div style="font-size:22px;font-weight:700;color:var(--accent)" id="trf-stock-destino">0</div>
@@ -1797,7 +1803,7 @@
   </div>
 </div>
 <div class="toast" id="toast"></div>
-<script defer src="app.js?v=20261019"></script>
+<script defer src="app.js?v=20261020"></script>
 <script defer src="reparto.js?v=20261019"></script>
 <script defer src="caja.js?v=20260916"></script>
 <script defer src="arranque.js?v=20260916"></script>
