@@ -2294,10 +2294,26 @@ function aplicarSugerenciaTransferencia(sabor,tamano,cantidad){
   irAPane("transferencias");
   setTimeout(()=>{ L("trf-sabor").value=sabor; L("trf-tamano").value=tamano; L("trf-cantidad").value=cantidad; },400);
 }
+// Origen elegido en Transferencias (por defecto la cocina) y destinos posibles: cualquiera menos el origen.
+function origenTrf(){ return L("trf-origen")?.value || SUC_COCINA; }
+function poblarOrigenDestinoTrf(){
+  const selOrigen = L("trf-origen"), selDestino = L("trf-destino");
+  if(selOrigen && !selOrigen.options.length) selOrigen.innerHTML = SUCURSALES.map(s=>`<option>${s}</option>`).join("");
+  if(!selDestino) return;
+  const destinoActual = selDestino.value;
+  const destinos = SUCURSALES.filter(s => s !== origenTrf());
+  selDestino.innerHTML = destinos.map(s=>`<option>${s}</option>`).join("");
+  if(destinos.includes(destinoActual)) selDestino.value = destinoActual;
+}
+function onCambioOrigenTrf(){
+  poblarOrigenDestinoTrf();
+  poblarSelectoresTransferencia();
+  actualizarStockTrf();
+}
 function onCambioSaborTrf(){
   const stock = S.stock || [];
   const sabor = L("trf-sabor").value;
-  const enCocina = stock.filter(s => s.sucursal === SUC_COCINA && !s.vencido && s.cantActual > 0 && s.sabor === sabor);
+  const enCocina = stock.filter(s => s.sucursal === origenTrf() && !s.vencido && s.cantActual > 0 && s.sabor === sabor);
   const tamanosValidos = [...new Set(enCocina.map(s => s.tamano))];
   const selTamano = L("trf-tamano");
   const tamActual = selTamano.value;
@@ -2314,12 +2330,14 @@ function actualizarStockTrf(){
     L("trf-stock-preview").style.display="none"; return;
   }
   const stock  = S.stock||[];
-  const destino = L("trf-destino")?.value || SUCURSALES_VENTA[0];
+  const origen = origenTrf();
+  const destino = L("trf-destino")?.value || SUCURSALES.find(s => s !== origen);
   const stockDe = suc => stock.filter(s=>s.sabor===sabor&&s.tamano===tamano&&s.sucursal===suc&&!s.vencido).reduce((s,i)=>s+i.cantActual,0);
-  const enCocina = stockDe(SUC_COCINA);
+  const enCocina = stockDe(origen);
   L("trf-stock-origen").textContent  = enCocina;
   L("trf-stock-destino").textContent = stockDe(destino);
   L("trf-nombre-destino").textContent = destino;
+  L("trf-nombre-origen").textContent = origen;
   L("trf-stock-origen").style.color  = enCocina===0?"var(--danger)":enCocina<=3?"var(--warning)":"var(--ink)";
   L("trf-stock-preview").style.display = "block";
   if(selCant){
@@ -2327,7 +2345,7 @@ function actualizarStockTrf(){
       selCant.innerHTML = Array.from({length:enCocina},(_,i)=>i+1).map(n=>`<option value="${n}">${n}</option>`).join("");
       selCant.disabled = false;
     } else {
-      selCant.innerHTML = '<option value="">Sin stock en '+SUC_COCINA+'</option>';
+      selCant.innerHTML = '<option value="">Sin stock en '+origen+'</option>';
       selCant.disabled = true;
     }
   }
@@ -2345,15 +2363,14 @@ async function cargarTransferencias(){
 }
 function poblarSelectoresTransferencia(){
   const stock = S.stock || [];
-  const enCocina = stock.filter(s => s.sucursal === SUC_COCINA && !s.vencido && s.cantActual > 0);
+  const enCocina = stock.filter(s => s.sucursal === origenTrf() && !s.vencido && s.cantActual > 0);
   const saboresValidos = [...new Set(enCocina.map(s => s.sabor))];
   const tamanosValidos = [...new Set(enCocina.map(s => s.tamano))];
-  const selDestino = L("trf-destino");
-  if(selDestino && !selDestino.options.length) selDestino.innerHTML = SUCURSALES_VENTA.map(s=>`<option>${s}</option>`).join("");
+  poblarOrigenDestinoTrf();
   const selSabor = L("trf-sabor");
   const selTamano = L("trf-tamano");
   if(saboresValidos.length === 0){
-    selSabor.innerHTML = '<option value="">— Sin stock en '+SUC_COCINA+' —</option>';
+    selSabor.innerHTML = '<option value="">— Sin stock en '+origenTrf()+' —</option>';
     selTamano.innerHTML = '<option value="">—</option>';
     selSabor.disabled = true; selTamano.disabled = true;
     return;
@@ -2387,8 +2404,9 @@ async function solicitarTransferencia(){
   const cantidad=parseInt(L("trf-cantidad")?.value)||0, notas=L("trf-notas")?.value.trim()||"";
   if(!sabor||!tamano||cantidad<=0){ toast("Completa sabor, tamaño y cantidad","error"); return; }
   const btn=L("btn-trf"); btn.disabled=true; btn.textContent="Registrando...";
-  const destino=L("trf-destino")?.value||SUCURSALES_VENTA[0];
-  const res=await api("registrarTransferencia",{sabor,tamano,cantidad,notas,origen:SUC_COCINA,destino,opId:opIdNuevo()});
+  const origen=origenTrf(), destino=L("trf-destino")?.value;
+  if(!destino){ toast("Elige el destino","error"); return; }
+  const res=await api("registrarTransferencia",{sabor,tamano,cantidad,notas,origen,destino,opId:opIdNuevo()});
   btn.disabled=false; btn.textContent="REGISTRAR TRANSFERENCIA";
   if(res.ok){ toast(res.mensaje); L("trf-cantidad").value=""; L("trf-notas").value=""; await cargarStock(); cargarTransferencias(); cargarMensajesHeader(); }
   else toast(res.error,"error");
