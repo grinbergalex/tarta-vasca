@@ -278,7 +278,7 @@
       <div id="ruta-tab-nueva" class="costos-section active">
       <div class="card">
         <div class="card-title">🚚 Nueva ruta</div>
-        <div class="card-sub">Planea entregas a domicilio. Cada parada se registra como venta con la fecha de la ruta. Sucursal de salida: <strong>Cuajimalpa</strong>.</div>
+        <div class="card-sub">Planea entregas a domicilio. Cada parada se registra como venta con la fecha de la ruta. Sucursal de salida: <strong>Bosques</strong> (cocina).</div>
         <div style="background:rgba(200,96,42,.06);border:1px dashed var(--accent);border-radius:10px;padding:14px;margin-bottom:14px">
           <label class="form-label">📅 Fecha en que se ejecuta esta ruta</label>
           <input class="form-input" type="date" id="ruta-fecha" style="max-width:200px">
@@ -346,7 +346,7 @@
   </div>
   <div class="card" style="margin-top:10px">
     <div class="card-title">Capturar pedido</div>
-    <div class="card-sub">Sale de cocina Cuajimalpa. Se cocina sobre pedido — no descuenta stock.</div>
+    <div class="card-sub">Sale de la cocina Bosques. Se cocina sobre pedido — no descuenta stock.</div>
     <!-- Cliente -->
     <div class="add-item-row" style="margin-bottom:10px">
       <div class="form-group" style="margin-bottom:0"><label class="form-label">Cliente *</label><input class="form-input" id="rep-cli" placeholder="Nombre del cliente"></div>
@@ -489,7 +489,7 @@
           <b>Ejemplo del nivel de detalle ideal:</b><br>
           <b>Sección:</b> Ventas · <b>Pestaña:</b> Reportes · <b>Sub-pestaña:</b> Por período<br>
           <b>Qué pasó:</b> Filtré "Mayo" y la gráfica quedó en blanco; el total de arriba sí decía $48,000 pero la gráfica no pintó nada.<br>
-          <b>Qué debió pasar:</b> La gráfica debería mostrar las líneas de Cuajimalpa, Polanco y Ruta de mayo.<br>
+          <b>Qué debió pasar:</b> La gráfica debería mostrar las líneas de Bosques, Cuajimalpa, Polanco y Ruta de mayo.<br>
           <b>Ejemplo:</b> Pasó hoy ~13:00, usuario de Dulce, tablet de Polanco. Recargué y siguió igual.<br>
           📷 Adjunté el pantallazo de la pantalla en blanco.
         </div>
@@ -516,7 +516,7 @@
     <div id="tab-produccion" class="tab-pane" style="display:none">
       <div class="card">
         <div class="card-title">Cargar producción</div>
-        <div class="card-sub">Alta de pasteles producidos hoy en cocina (Cuajimalpa)</div>
+        <div class="card-sub">Alta de pasteles producidos hoy en la cocina (Bosques)</div>
         <div class="form-group"><label class="form-label">Sabor</label><select class="form-select" id="prod-sabor"></select></div>
         <div class="form-group"><label class="form-label">Tamaño</label><select class="form-select" id="prod-tamano"></select></div>
         <div class="form-group"><label class="form-label">Cantidad</label><input class="form-input" type="number" id="prod-cantidad" min="1" value="1"></div>
@@ -904,6 +904,7 @@
             <div style="font-weight:700;font-size:15px;margin-bottom:8px">4. Horarios de apertura usados</div>
             <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:6px">
               <tr><td style="padding:6px 8px;background:var(--warm);font-weight:600">Sucursal</td><td style="padding:6px 8px;background:var(--warm);font-weight:600">Apertura</td><td style="padding:6px 8px;background:var(--warm);font-weight:600">Cierre</td><td style="padding:6px 8px;background:var(--warm);font-weight:600">Horas</td></tr>
+              <tr><td style="padding:6px 8px;border-top:1px solid var(--warm)">Bosques</td><td style="padding:6px 8px;border-top:1px solid var(--warm)">9:00</td><td style="padding:6px 8px;border-top:1px solid var(--warm)">18:00</td><td style="padding:6px 8px;border-top:1px solid var(--warm)">9 hrs</td></tr>
               <tr><td style="padding:6px 8px;border-top:1px solid var(--warm)">Cuajimalpa</td><td style="padding:6px 8px;border-top:1px solid var(--warm)">9:00</td><td style="padding:6px 8px;border-top:1px solid var(--warm)">18:00</td><td style="padding:6px 8px;border-top:1px solid var(--warm)">9 hrs</td></tr>
               <tr><td style="padding:6px 8px;border-top:1px solid var(--warm)">Polanco</td><td style="padding:6px 8px;border-top:1px solid var(--warm)">11:00</td><td style="padding:6px 8px;border-top:1px solid var(--warm)">19:00</td><td style="padding:6px 8px;border-top:1px solid var(--warm)">8 hrs</td></tr>
             </table>
@@ -1232,7 +1233,7 @@
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
               <div>
                 <label class="form-label">Concepto *</label>
-                <input class="mini-input" id="g-concepto" placeholder="Renta local Cuajimalpa" style="width:100%">
+                <input class="mini-input" id="g-concepto" placeholder="Renta local Polanco" style="width:100%">
               </div>
               <div>
                 <label class="form-label">Tipo *</label>
@@ -1260,6 +1261,7 @@
                 <label class="form-label">Sucursal</label>
                 <select class="mini-select" id="g-sucursal" style="width:100%">
                   <option value="Ambas">Ambas</option>
+                  <option value="Bosques">Bosques</option>
                   <option value="Cuajimalpa">Cuajimalpa</option>
                   <option value="Polanco">Polanco</option>
                 </select>
@@ -1461,7 +1463,11 @@
           <span id="tbl-config-arrow" style="color:var(--muted);font-size:18px">▼</span>
         </div>
         <div id="tbl-config-body" style="display:none;margin-top:14px">
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:12px">
+            <div>
+              <label class="form-label">Meta Bosques (medianas equiv.)</label>
+              <input class="mini-input" id="tbl-meta-bosques" type="number" placeholder="0" style="width:100%">
+            </div>
             <div>
               <label class="form-label">Meta Cuajimalpa (medianas equiv.)</label>
               <input class="mini-input" id="tbl-meta-cuaji" type="number" placeholder="1000" style="width:100%">
@@ -1486,8 +1492,12 @@
     <!-- TRANSFERENCIAS -->
     <div id="tab-transferencias" class="tab-pane" style="display:none">
       <div class="card">
-        <div class="card-title">Transferencias a Polanco</div>
-        <div class="card-sub">Lo que se produce siempre queda en Cuajimalpa. Registra aquí lo que sale hacia Polanco.</div>
+        <div class="card-title">Transferencias desde la cocina</div>
+        <div class="card-sub">Lo que se produce siempre queda en la cocina (<span class="nombre-cocina">Bosques</span>). Registra aquí lo que sale hacia otro punto de venta.</div>
+        <div style="margin-bottom:8px">
+          <label class="form-label">Destino</label>
+          <select class="mini-select" id="trf-destino" style="width:100%" onchange="actualizarStockTrf()"></select>
+        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 80px;gap:8px;align-items:end;margin-bottom:8px">
           <div>
             <label class="form-label">Sabor</label>
@@ -1507,12 +1517,12 @@
         <div id="trf-stock-preview" style="display:none;margin-bottom:10px">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
             <div style="background:var(--warm);border-radius:10px;padding:10px 14px;text-align:center">
-              <div style="font-size:22px;font-weight:700;color:var(--ink)" id="trf-stock-cuaji">0</div>
-              <div style="font-size:11px;color:var(--muted)">En Cuajimalpa</div>
+              <div style="font-size:22px;font-weight:700;color:var(--ink)" id="trf-stock-origen">0</div>
+              <div style="font-size:11px;color:var(--muted)">En <span class="nombre-cocina">Bosques</span></div>
             </div>
             <div style="background:var(--warm);border-radius:10px;padding:10px 14px;text-align:center">
-              <div style="font-size:22px;font-weight:700;color:var(--accent)" id="trf-stock-polanco">0</div>
-              <div style="font-size:11px;color:var(--muted)">En Polanco</div>
+              <div style="font-size:22px;font-weight:700;color:var(--accent)" id="trf-stock-destino">0</div>
+              <div style="font-size:11px;color:var(--muted)">En <span id="trf-nombre-destino">destino</span></div>
             </div>
           </div>
         </div>
@@ -1520,7 +1530,7 @@
           <label class="form-label">Notas (opcional)</label>
           <input class="mini-input" id="trf-notas" placeholder="Ej: Para evento del sábado" style="width:100%">
         </div>
-        <button class="btn-main btn-green" onclick="solicitarTransferencia()" id="btn-trf" style="margin-bottom:16px">MOVER A POLANCO →</button>
+        <button class="btn-main btn-green" onclick="solicitarTransferencia()" id="btn-trf" style="margin-bottom:16px">MOVER AL DESTINO →</button>
         <div style="font-weight:600;font-size:13px;margin-bottom:8px;color:var(--muted)">Historial</div>
         <div id="trf-lista"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
       </div>
@@ -1564,6 +1574,7 @@
             <div>
               <label class="form-label">Sucursal</label>
               <select class="mini-select" id="lim-sucursal" style="width:100%">
+                <option value="Bosques">Bosques</option>
                 <option value="Cuajimalpa">Cuajimalpa</option>
                 <option value="Polanco">Polanco</option>
               </select>
@@ -1678,7 +1689,7 @@
       </select>
       <div id="nu-rol-info" style="font-size:11px;color:var(--muted);margin-top:4px;font-style:italic">El vendedor solo verá Stock y Nueva venta de su sucursal.</div>
     </div>
-    <div class="form-group"><label class="form-label">Sucursal</label><select class="form-select" id="nu-sucursal"><option value="Cuajimalpa">Cuajimalpa</option><option value="Polanco">Polanco</option><option value="Ambas">Ambas</option></select></div>
+    <div class="form-group"><label class="form-label">Sucursal</label><select class="form-select" id="nu-sucursal"><option value="Bosques">Bosques</option><option value="Cuajimalpa">Cuajimalpa</option><option value="Polanco">Polanco</option><option value="Ambas">Ambas</option></select></div>
     <button class="btn-main" id="btn-guardar-usuario">Crear usuario</button>
     <button class="btn-outline" onclick="document.getElementById('modal-nuevo-usuario').classList.remove('show')">Cancelar</button>
   </div>
@@ -1708,6 +1719,7 @@
     <div class="form-group">
       <label class="form-label">Sucursal</label>
       <select class="form-select" id="edu-sucursal">
+        <option value="Bosques">Bosques</option>
         <option value="Cuajimalpa">Cuajimalpa</option>
         <option value="Polanco">Polanco</option>
         <option value="Ambas">Ambas</option>
@@ -1789,8 +1801,8 @@
   </div>
 </div>
 <div class="toast" id="toast"></div>
-<script defer src="app.js?v=20260918"></script>
-<script defer src="reparto.js?v=20260916"></script>
+<script defer src="app.js?v=20261019"></script>
+<script defer src="reparto.js?v=20261019"></script>
 <script defer src="caja.js?v=20260916"></script>
 <script defer src="arranque.js?v=20260916"></script>
 <!-- v7.3 — Las librerias de terceros YA NO SE PIDEN AQUI. Chart.js (200 KB), su

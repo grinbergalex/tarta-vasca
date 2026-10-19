@@ -103,9 +103,20 @@ const TZ_MX = "America/Mexico_City";
 const METODOS_PAGO = ["Efectivo", "Tarjeta", "Transferencia"];
 const METODO_MIXTO = "Mixto";
 const PAGO_TOLERANCIA = 0.5;   // pesos: margen de redondeo al cuadrar el desglose
+// v8 — Cocina Bosques. UNICA fuente de verdad de las sucursales.
+// Bosques es la cocina: ahi se produce, de ahi salen las transferencias y las rutas
+// de reparto, y tambien vende. Cuajimalpa y Polanco son solo punto de venta: reciben
+// stock por transferencia desde la cocina. Mantener el mismo orden en app.js (SUCURSALES).
+const SUCURSAL_COCINA = "Bosques";
+const SUCURSALES_PUNTO_VENTA = ["Cuajimalpa", "Polanco"];
+const SUCURSALES = [SUCURSAL_COCINA].concat(SUCURSALES_PUNTO_VENTA);
+const SUCURSAL_LEGADO_ORIGEN_TRANSFER = "Cuajimalpa";  // antes de v8 la cocina era Cuajimalpa
+const SUCURSAL_LEGADO_DESTINO_TRANSFER = "Polanco";    // y lo unico transferible iba a Polanco
 // v4.4 — Horarios por sucursal por día (0=Domingo). 24h format.
 const HORARIOS_SUCURSAL = {
-"Polanco":    [{abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}],
+// ⚠ Horario de Bosques por confirmar con Rebe (se dejo igual que el de entre semana de Cuajimalpa).
+"Bosques":    [{abre:"09:00",cierra:"14:30"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"14:30"}],
+"Polanco":   [{abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}],
 "Cuajimalpa": [{abre:"10:00",cierra:"14:30"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"14:30"}]
 };
 function getHorarioHoy(sucursal, fecha) {

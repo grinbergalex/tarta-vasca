@@ -135,6 +135,13 @@ else if (tipo==="Sucursal") sucursales.push(item);
 else if (tipo==="Canal") canales.push(item);
 }
 if (canales.length === 0) { sembrarCanales(ss); return getCatalogo(sesion); }
+// v8: una sucursal nueva (Bosques) aparece sola en el Catálogo; sin esto los selects no la ofrecen.
+const _faltantes = SUCURSALES.filter(n => !sucursales.some(s => s.nombre === n));
+if (_faltantes.length) {
+const _ahoraCat = new Date().toISOString();
+_faltantes.forEach(n => hoja.appendRow(["Sucursal", n, "TRUE", _ahoraCat, _ahoraCat]));
+return getCatalogo(sesion);
+}
 // Dedup de canales por nombre: el Catálogo acumuló filas "Canal" repetidas por re-siembra,
 // lo que hacía que el menú las listara varias veces. Conserva la primera aparición.
 const _cv = {};
@@ -304,7 +311,7 @@ return "TV_" + Math.abs(hash).toString(16).toUpperCase();
 function getSucursalUsuario(usuario) {
 const datos = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Usuarios").getDataRange().getValues();
 for (let i = 1; i < datos.length; i++) if (datos[i][0]===usuario) return datos[i][3];
-return "Cuajimalpa";
+return SUCURSAL_COCINA;
 }
 function _registrarAuditoria(ss, sesion, accion, detalles) {
 registrarAuditoria(sesion.usuario, sesion.rol, accion, detalles);

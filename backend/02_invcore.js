@@ -103,13 +103,16 @@ function invEntregarReserva(ss, sabor,tamano,suc, cant, tipo, ref, usuario){
   _invLedger(ss,"ENTREGA_"+tipo.toUpperCase(),sabor,tamano,suc,lotes.join(", "),-(cant-restTot), tipo==="ruta"?-(cant-restRes):0, tipo==="apartado"?-(cant-restRes):0, s.total,s.resRuta,s.resApartado,ref,usuario,"Entrega "+tipo);
   return { lotes: lotes.join(", ") };
 }
-// TRANSFERIR Cuajimalpa -> Polanco (inmediata, atomica)
-function invTransferir(ss, sabor,tamano, cant, ref, usuario, notas){
+// TRANSFERIR origen -> destino (inmediata, atomica). Por defecto: de la cocina a otra sucursal.
+function invTransferir(ss, sabor,tamano, cant, ref, usuario, notas, origen, destino){
   if(cant<=0) throw new Error("Cantidad invalida.");
-  var dispC=invSaldos(ss,sabor,tamano,"Cuajimalpa").disponible;
-  if(dispC<cant) throw new Error("Disponible insuficiente en Cuajimalpa: hay "+dispC+" de "+sabor+" "+tamano);
-  invDescontar(ss,sabor,tamano,"Cuajimalpa",cant,ref,usuario,"Transferencia -> Polanco","TRANSFER_OUT");
-  invProducir(ss,sabor,tamano,"Polanco",cant,ref,usuario,"Transferencia desde Cuajimalpa"+(notas?": "+notas:""));
+  origen=origen||SUCURSAL_COCINA;
+  if(SUCURSALES.indexOf(origen)===-1||SUCURSALES.indexOf(destino)===-1) throw new Error("Sucursal invalida en la transferencia.");
+  if(origen===destino) throw new Error("El origen y el destino son la misma sucursal.");
+  var dispO=invSaldos(ss,sabor,tamano,origen).disponible;
+  if(dispO<cant) throw new Error("Disponible insuficiente en "+origen+": hay "+dispO+" de "+sabor+" "+tamano);
+  invDescontar(ss,sabor,tamano,origen,cant,ref,usuario,"Transferencia -> "+destino,"TRANSFER_OUT");
+  invProducir(ss,sabor,tamano,destino,cant,ref,usuario,"Transferencia desde "+origen+(notas?": "+notas:""));
 }
 // AJUSTAR (nivelacion conteo fisico): fija total al conteo, audita antes/despues/diff
 function invAjustar(ss, sabor,tamano,suc, conteo, usuario, motivo){
@@ -199,7 +202,7 @@ function migrarReservasFisicas(){
   try{ var peds=_repLeerPedidos(ss);
     for(var p=0;p<peds.length;p++){ var pe=peds[p]; if(pe.estado!=="base"&&pe.estado!=="planeado")continue;
       var its=[]; try{ its=JSON.parse(pe.items||"[]"); }catch(e2){ its=[]; }
-      for(var k=0;k<its.length;k++){ try{ invReservar(ss,its[k].sabor,its[k].tamano,"Cuajimalpa",Number(its[k].cantidad)||1,"ruta","MIGRA","migracion"); }catch(e3){} }
+      for(var k=0;k<its.length;k++){ try{ invReservar(ss,its[k].sabor,its[k].tamano,SUCURSAL_COCINA,Number(its[k].cantidad)||1,"ruta","MIGRA","migracion"); }catch(e3){} }
     }
   }catch(e){}
   SpreadsheetApp.flush();

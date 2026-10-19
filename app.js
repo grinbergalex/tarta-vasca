@@ -4,6 +4,13 @@ const LECTURA = ["getCatalogo","getStock","getPrecios","getUsuarios","getAuditor
 // v7.1 — Estas seis son de solo lectura pero iban por POST, y un POST a Apps Script
 // contesta 302 y obliga al navegador a repetir la peticion. Por GET van en un viaje.
 "bootstrap","getComisionesConfig","getCanalPrecios","getMensajes","getAlertas","getMisPermisos"];
+// v8 — Cocina Bosques. Mismo orden y nombres que SUCURSALES en backend/01_config_roles.js.
+// Bosques es la cocina (produce, transfiere, sale a reparto) y tambien vende;
+// Cuajimalpa y Polanco son solo punto de venta.
+const SUC_COCINA = "Bosques";
+const SUCURSALES = [SUC_COCINA, "Cuajimalpa", "Polanco"];
+const SUCURSALES_VENTA = SUCURSALES.filter(s => s !== SUC_COCINA);
+const SUC_COLOR = { "Bosques": "var(--accent)", "Cuajimalpa": "var(--green)", "Polanco": "var(--accent)" };
 let S = {
   token:null, usuario:null, rol:null, sucursal:null, permisos:null,
   catalogo:null, precios:null, stock:null,
@@ -498,14 +505,14 @@ async function cargarAjusteInv(){
   const sel = L("ajuste-suc");
   if(sel && !sel.dataset.pob){
     const sucs = ((S.catalogo&&S.catalogo.sucursales)||[]).filter(s=>s.activo).map(s=>s.nombre);
-    const list = sucs.length?sucs:["Cuajimalpa","Polanco"];
+    const list = sucs.length?sucs:SUCURSALES;
     sel.innerHTML = list.map(s=>'<option value="'+s+'">'+s+'</option>').join("");
     sel.dataset.pob = "1";
   }
   await refrescarAjusteInv();
 }
 async function refrescarAjusteInv(){
-  const suc = (L("ajuste-suc")&&L("ajuste-suc").value) || "Cuajimalpa";
+  const suc = (L("ajuste-suc")&&L("ajuste-suc").value) || SUC_COCINA;
   const tb = L("ajuste-tbody");
   if(tb) tb.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:14px">Cargando...</td></tr>';
   const res = await api("getStock",{sucursal:suc});
@@ -539,7 +546,7 @@ function _ajusteDelta(i){
   el.style.color = d===0 ? "var(--muted)" : (d<0 ? "var(--danger)" : "var(--accent)");
 }
 async function aplicarAjusteInv(){
-  const suc = (L("ajuste-suc")&&L("ajuste-suc").value) || "Cuajimalpa";
+  const suc = (L("ajuste-suc")&&L("ajuste-suc").value) || SUC_COCINA;
   const rows = S._ajusteRows||[];
   const ajustes = [];
   rows.forEach((r,i)=>{
@@ -787,7 +794,7 @@ function renderStock(){
   if(f.length===0){L("stock-content").innerHTML=`<div class="empty-state"><div class="empty-icon">📦</div><div>Sin stock disponible</div></div>`;return;}
   const puedeAmbas = getPermisos().puedeVerAmbas || getPermisos().puedeVerStockAmbas;
   const sucsRender = puedeAmbas
-    ? (S.filtroSuc ? [S.filtroSuc] : ["Cuajimalpa","Polanco"])
+    ? (S.filtroSuc ? [S.filtroSuc] : SUCURSALES)
     : [S.sucursal];
   let html = "";
   sucsRender.forEach(suc => {
@@ -795,7 +802,7 @@ function renderStock(){
     const totalSuc = stockSuc.reduce((t, s) => t + Number(s.cantActual||0), 0);
     const reservadoSuc = stockSuc.reduce((t, s) => t + Number(s.reservado||0), 0);
     const netoSuc = stockSuc.reduce((t, s) => t + Number(s.disponibleNeto!=null ? s.disponibleNeto : s.cantActual||0), 0);
-    const color = suc === "Cuajimalpa" ? "var(--green)" : "var(--accent)";
+    const color = SUC_COLOR[suc] || "var(--accent)";
     html += `<div class="card" style="margin-bottom:12px;border-left:4px solid ${color};overflow-x:auto">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px">
         <div style="font-weight:700;font-size:15px;color:${color}">📍 ${suc}</div>
@@ -1197,7 +1204,7 @@ L("btn-cargar-prod").addEventListener("click",async()=>{
   const sabor=L("prod-sabor").value,tamano=L("prod-tamano").value,cantidad=parseInt(L("prod-cantidad").value);
   if(!sabor||!tamano||cantidad<1){toast("Completa todos los campos","error");return;}
   const btn=L("btn-cargar-prod");btn.disabled=true;btn.textContent="Cargando...";
-  const res=await api("altaProduccion",{sabor,tamano,sucursal:"Cuajimalpa",cantidad,opId:opIdNuevo()});
+  const res=await api("altaProduccion",{sabor,tamano,sucursal:SUC_COCINA,cantidad,opId:opIdNuevo()});
   if(res.ok){
     toast(res.mensaje);
     L("prod-cantidad").value="1";
@@ -2290,8 +2297,8 @@ function aplicarSugerenciaTransferencia(sabor,tamano,cantidad){
 function onCambioSaborTrf(){
   const stock = S.stock || [];
   const sabor = L("trf-sabor").value;
-  const enCuaji = stock.filter(s => s.sucursal === "Cuajimalpa" && !s.vencido && s.cantActual > 0 && s.sabor === sabor);
-  const tamanosValidos = [...new Set(enCuaji.map(s => s.tamano))];
+  const enCocina = stock.filter(s => s.sucursal === SUC_COCINA && !s.vencido && s.cantActual > 0 && s.sabor === sabor);
+  const tamanosValidos = [...new Set(enCocina.map(s => s.tamano))];
   const selTamano = L("trf-tamano");
   const tamActual = selTamano.value;
   selTamano.innerHTML = tamanosValidos.map(t => `<option>${t}</option>`).join("");
@@ -2307,18 +2314,20 @@ function actualizarStockTrf(){
     L("trf-stock-preview").style.display="none"; return;
   }
   const stock  = S.stock||[];
-  const cuaji  = stock.filter(s=>s.sabor===sabor&&s.tamano===tamano&&s.sucursal==="Cuajimalpa"&&!s.vencido).reduce((s,i)=>s+i.cantActual,0);
-  const polanco= stock.filter(s=>s.sabor===sabor&&s.tamano===tamano&&s.sucursal==="Polanco"&&!s.vencido).reduce((s,i)=>s+i.cantActual,0);
-  L("trf-stock-cuaji").textContent   = cuaji;
-  L("trf-stock-polanco").textContent = polanco;
-  L("trf-stock-cuaji").style.color   = cuaji===0?"var(--danger)":cuaji<=3?"var(--warning)":"var(--ink)";
+  const destino = L("trf-destino")?.value || SUCURSALES_VENTA[0];
+  const stockDe = suc => stock.filter(s=>s.sabor===sabor&&s.tamano===tamano&&s.sucursal===suc&&!s.vencido).reduce((s,i)=>s+i.cantActual,0);
+  const enCocina = stockDe(SUC_COCINA);
+  L("trf-stock-origen").textContent  = enCocina;
+  L("trf-stock-destino").textContent = stockDe(destino);
+  L("trf-nombre-destino").textContent = destino;
+  L("trf-stock-origen").style.color  = enCocina===0?"var(--danger)":enCocina<=3?"var(--warning)":"var(--ink)";
   L("trf-stock-preview").style.display = "block";
   if(selCant){
-    if(cuaji > 0){
-      selCant.innerHTML = Array.from({length:cuaji},(_,i)=>i+1).map(n=>`<option value="${n}">${n}</option>`).join("");
+    if(enCocina > 0){
+      selCant.innerHTML = Array.from({length:enCocina},(_,i)=>i+1).map(n=>`<option value="${n}">${n}</option>`).join("");
       selCant.disabled = false;
     } else {
-      selCant.innerHTML = '<option value="">Sin stock en Cuajimalpa</option>';
+      selCant.innerHTML = '<option value="">Sin stock en '+SUC_COCINA+'</option>';
       selCant.disabled = true;
     }
   }
@@ -2336,13 +2345,15 @@ async function cargarTransferencias(){
 }
 function poblarSelectoresTransferencia(){
   const stock = S.stock || [];
-  const enCuaji = stock.filter(s => s.sucursal === "Cuajimalpa" && !s.vencido && s.cantActual > 0);
-  const saboresValidos = [...new Set(enCuaji.map(s => s.sabor))];
-  const tamanosValidos = [...new Set(enCuaji.map(s => s.tamano))];
+  const enCocina = stock.filter(s => s.sucursal === SUC_COCINA && !s.vencido && s.cantActual > 0);
+  const saboresValidos = [...new Set(enCocina.map(s => s.sabor))];
+  const tamanosValidos = [...new Set(enCocina.map(s => s.tamano))];
+  const selDestino = L("trf-destino");
+  if(selDestino && !selDestino.options.length) selDestino.innerHTML = SUCURSALES_VENTA.map(s=>`<option>${s}</option>`).join("");
   const selSabor = L("trf-sabor");
   const selTamano = L("trf-tamano");
   if(saboresValidos.length === 0){
-    selSabor.innerHTML = '<option value="">— Sin stock en Cuajimalpa —</option>';
+    selSabor.innerHTML = '<option value="">— Sin stock en '+SUC_COCINA+' —</option>';
     selTamano.innerHTML = '<option value="">—</option>';
     selSabor.disabled = true; selTamano.disabled = true;
     return;
@@ -2353,7 +2364,7 @@ function poblarSelectoresTransferencia(){
   selSabor.innerHTML = saboresValidos.map(s => `<option>${s}</option>`).join("");
   if(saboresValidos.includes(sabActual)) selSabor.value = sabActual;
   const sabSel = selSabor.value;
-  const tamanosParaSabor = [...new Set(enCuaji.filter(s => s.sabor === sabSel).map(s => s.tamano))];
+  const tamanosParaSabor = [...new Set(enCocina.filter(s => s.sabor === sabSel).map(s => s.tamano))];
   selTamano.innerHTML = tamanosParaSabor.map(t => `<option>${t}</option>`).join("");
   if(tamanosParaSabor.includes(tamActual)) selTamano.value = tamActual;
 }
@@ -2365,7 +2376,7 @@ function renderTransferenciasList(){
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
         <div>
           <span style="font-weight:700">${t.cantidad}× ${t.sabor} ${t.tamano}</span>
-          <span style="margin-left:8px;font-size:11px;font-weight:600;color:var(--success)">✅ MOVIDO A POLANCO</span>
+          <span style="margin-left:8px;font-size:11px;font-weight:600;color:var(--success)">✅ ${t.origen?t.origen+" → ":"MOVIDO A "}${t.destino||"Polanco"}</span>
         </div>
       </div>
       <div style="font-size:12px;color:var(--muted)">${t.fechaSolicitud?t.fechaSolicitud.substring(0,16).replace("T"," "):""}${t.solicitadoPor?" · por "+t.solicitadoPor:""}${t.notas?" · "+t.notas:""}</div>
@@ -2376,13 +2387,14 @@ async function solicitarTransferencia(){
   const cantidad=parseInt(L("trf-cantidad")?.value)||0, notas=L("trf-notas")?.value.trim()||"";
   if(!sabor||!tamano||cantidad<=0){ toast("Completa sabor, tamaño y cantidad","error"); return; }
   const btn=L("btn-trf"); btn.disabled=true; btn.textContent="Registrando...";
-  const res=await api("registrarTransferencia",{sabor,tamano,cantidad,notas,opId:opIdNuevo()});
+  const destino=L("trf-destino")?.value||SUCURSALES_VENTA[0];
+  const res=await api("registrarTransferencia",{sabor,tamano,cantidad,notas,origen:SUC_COCINA,destino,opId:opIdNuevo()});
   btn.disabled=false; btn.textContent="REGISTRAR TRANSFERENCIA";
   if(res.ok){ toast(res.mensaje); L("trf-cantidad").value=""; L("trf-notas").value=""; await cargarStock(); cargarTransferencias(); cargarMensajesHeader(); }
   else toast(res.error,"error");
 }
 async function confirmarTrf(id){
-  if(!confirm("¿Confirmar recepción en Polanco? Esto moverá el stock.")) return;
+  if(!confirm("¿Confirmar la recepción? Esto moverá el stock.")) return;
   const res=await api("confirmarTransferencia",{id});
   if(res.ok){ toast(res.mensaje); cargarTransferencias(); cargarMensajesHeader(); }
   else toast(res.error,"error");
@@ -2460,23 +2472,20 @@ function renderGastosList(){
   const recurrentes = gastos.filter(g=>!esMesEsp(g));
   const extraord    = gastos.filter(esMesEsp);
   const totalMensual = recurrentes.reduce((s,g) => s + montoMensual(g), 0);
-  const totalCuaji = recurrentes.filter(g=>g.sucursal==="Cuajimalpa"||g.sucursal==="Ambas")
-    .reduce((s,g) => s + (g.sucursal==="Ambas" ? montoMensual(g)*0.5 : montoMensual(g)), 0);
-  const totalPolanco = recurrentes.filter(g=>g.sucursal==="Polanco"||g.sucursal==="Ambas")
-    .reduce((s,g) => s + (g.sucursal==="Ambas" ? montoMensual(g)*0.5 : montoMensual(g)), 0);
+  // "Ambas" (gasto compartido) se reparte en partes iguales entre todas las sucursales.
+  const totalDe = suc => recurrentes.filter(g=>g.sucursal===suc||g.sucursal==="Ambas")
+    .reduce((s,g) => s + (g.sucursal==="Ambas" ? montoMensual(g)/SUCURSALES.length : montoMensual(g)), 0);
+  const tarjetasSuc = SUCURSALES.map(suc => `
+        <div style="flex:1;min-width:140px;text-align:center;padding:10px;background:var(--bg);border-radius:8px">
+          <div style="font-size:18px;font-weight:700;color:var(--accent)">${fmtMXN(totalDe(suc))}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">${suc}</div>
+        </div>`).join("");
   const extraTxt = extraord.length ? `<div style="font-size:11px;color:var(--muted);margin-top:8px">+ ${extraord.length} gasto(s) extraordinario(s) de un mes específico (se suman solo en su mes dentro del Estado de resultados).</div>` : "";
   const resumenHTML = `
     <div style="margin-top:16px;padding:14px 16px;background:var(--card);border-radius:12px;border:1px solid var(--border)">
       <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:10px;text-transform:uppercase">Resumen mensual recurrente</div>
       <div style="display:flex;gap:12px;flex-wrap:wrap">
-        <div style="flex:1;min-width:140px;text-align:center;padding:10px;background:var(--bg);border-radius:8px">
-          <div style="font-size:18px;font-weight:700;color:var(--accent)">${fmtMXN(totalCuaji)}</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:2px">Cuajimalpa</div>
-        </div>
-        <div style="flex:1;min-width:140px;text-align:center;padding:10px;background:var(--bg);border-radius:8px">
-          <div style="font-size:18px;font-weight:700;color:var(--accent)">${fmtMXN(totalPolanco)}</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:2px">Polanco</div>
-        </div>
+${tarjetasSuc}
         <div style="flex:1;min-width:140px;text-align:center;padding:10px;background:var(--ink);border-radius:8px">
           <div style="font-size:18px;font-weight:700;color:#fff">${fmtMXN(totalMensual)}</div>
           <div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:2px">Total empresa</div>
@@ -2972,7 +2981,7 @@ function getMetas() {
   const mes  = parseInt(L("tbl-mes")?.value)  || new Date().getMonth()+1;
   const anio = parseInt(L("tbl-anio")?.value) || new Date().getFullYear();
   const key  = `metas_${mes}_${anio}`;
-  return S[key] || { cuaji: 0, polanco: 0, ruta: 0 };
+  return S[key] || { bosques: 0, cuaji: 0, polanco: 0, ruta: 0 };
 }
 async function cargarMetas(mes, anio) {
   const key = `metas_${mes}_${anio}`;
@@ -2981,12 +2990,12 @@ async function cargarMetas(mes, anio) {
     if (res && res.ok) {
       const objs = (res.objetivos || []).filter(o => o.activo !== false && Number(o.mes) === Number(mes) && Number(o.anio) === Number(anio));
       const find = suc => { const o = objs.find(x => x.sucursal === suc); return o ? (Number(o.metaTotal) || 0) : 0; };
-      S[key] = { cuaji: find("Cuajimalpa"), polanco: find("Polanco"), ruta: find("Ruta") };
+      S[key] = { bosques: find("Bosques"), cuaji: find("Cuajimalpa"), polanco: find("Polanco"), ruta: find("Ruta") };
     } else if (!S[key]) {
-      S[key] = { cuaji: 0, polanco: 0, ruta: 0 };
+      S[key] = { bosques: 0, cuaji: 0, polanco: 0, ruta: 0 };
     }
   } catch (e) {
-    if (!S[key]) S[key] = { cuaji: 0, polanco: 0, ruta: 0 };
+    if (!S[key]) S[key] = { bosques: 0, cuaji: 0, polanco: 0, ruta: 0 };
   }
   return S[key];
 }
@@ -2994,15 +3003,17 @@ async function guardarMetasTablero() {
   const mes   = parseInt(L("tbl-mes")?.value)  || new Date().getMonth()+1;
   const anio  = parseInt(L("tbl-anio")?.value) || new Date().getFullYear();
   const key   = `metas_${mes}_${anio}`;
+  const bosques = parseFloat(L("tbl-meta-bosques")?.value) || 0;
   const cuaji   = parseFloat(L("tbl-meta-cuaji")?.value)   || 0;
   const polanco = parseFloat(L("tbl-meta-polanco")?.value) || 0;
   const ruta    = parseFloat(L("tbl-meta-ruta")?.value)    || 0;
   try {
+    await api("saveObjetivo", { id:"OBJ-"+anio+"-"+mes+"-Bosques",    nombre:"Meta "+mes+"/"+anio+" Bosques",    sucursal:"Bosques",    mes, anio, metaTotal:bosques });
     await api("saveObjetivo", { id:"OBJ-"+anio+"-"+mes+"-Cuajimalpa", nombre:"Meta "+mes+"/"+anio+" Cuajimalpa", sucursal:"Cuajimalpa", mes, anio, metaTotal:cuaji });
     await api("saveObjetivo", { id:"OBJ-"+anio+"-"+mes+"-Polanco",    nombre:"Meta "+mes+"/"+anio+" Polanco",    sucursal:"Polanco",    mes, anio, metaTotal:polanco });
     await api("saveObjetivo", { id:"OBJ-"+anio+"-"+mes+"-Ruta",       nombre:"Meta "+mes+"/"+anio+" Ruta",       sucursal:"Ruta",       mes, anio, metaTotal:ruta });
   } catch(e) {}
-  S[key] = { cuaji, polanco, ruta };
+  S[key] = { bosques, cuaji, polanco, ruta };
   toast("✅ Metas guardadas");
   renderTablero();
 }
@@ -3018,6 +3029,7 @@ async function toggleObjetivosConfig() {
     const key  = `metas_${mes}_${anio}`;
     if (!S[key]) { await cargarMetas(mes, anio); }
     const metas = getMetas();
+    if (L("tbl-meta-bosques")) L("tbl-meta-bosques").value = metas.bosques;
     if (L("tbl-meta-cuaji"))   L("tbl-meta-cuaji").value   = metas.cuaji;
     if (L("tbl-meta-polanco")) L("tbl-meta-polanco").value = metas.polanco;
     if (L("tbl-meta-ruta"))    L("tbl-meta-ruta").value    = metas.ruta;
@@ -3078,6 +3090,7 @@ async function renderTablero() {
   // Prorrateo por días: cada semana del mes pesa según sus días (sem 1-3 = 7 días; sem 4 = el resto).
   const _diasSemana = esSemana ? (semana < 4 ? 7 : Math.max(1, _diasMes - 21)) : _diasMes;
   const factorMeta = _diasSemana / _diasMes;
+  const metasBosquesEfectiva = (metas.bosques || 0) * factorMeta;
   const metasCuajiEfectiva   = metas.cuaji   * factorMeta;
   const metasPolancoEfectiva = metas.polanco * factorMeta;
   const metasRutaEfectiva    = (metas.ruta || 0) * factorMeta;
@@ -3095,13 +3108,15 @@ async function renderTablero() {
     return { total, desglose };
   }
   const vRuta    = ventas.filter(v => v.canal === "Ruta");
+  const vBosques = ventas.filter(v => v.sucursal === "Bosques" && v.canal !== "Ruta");
   const vCuaji   = ventas.filter(v => v.sucursal === "Cuajimalpa" && v.canal !== "Ruta");
   const vPolanco = ventas.filter(v => v.sucursal === "Polanco");
+  const resBosques = calcEquiv(vBosques);
   const resCuaji   = calcEquiv(vCuaji);
   const resPolanco = calcEquiv(vPolanco);
   const resRuta    = calcEquiv(vRuta);
-  const totalEquiv = resCuaji.total + resPolanco.total + resRuta.total;
-  const metaTotal  = metasCuajiEfectiva + metasPolancoEfectiva + metasRutaEfectiva;
+  const totalEquiv = resBosques.total + resCuaji.total + resPolanco.total + resRuta.total;
+  const metaTotal  = metasBosquesEfectiva + metasCuajiEfectiva + metasPolancoEfectiva + metasRutaEfectiva;
   const periodoLabel = esSemana ? `Semana ${semana} · ${MESES[mes]} ${anio}` : `${MESES[mes]} ${anio}`;
   function barraHTML(pct, color) {
     const w = Math.min(100, pct);
@@ -3161,12 +3176,14 @@ async function renderTablero() {
       <div style="font-size:13px;opacity:.7;margin-bottom:8px">medianas equivalentes</div>
       ${barraHTML(pctTotal, "#86BDAD")}
       <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:13px;opacity:.8">
+        <span>Bosques: ${resBosques.total.toFixed(1)}</span>
         <span>Cuajimalpa: ${resCuaji.total.toFixed(1)}</span>
         <span>Polanco: ${resPolanco.total.toFixed(1)}</span>
         <span>Ruta: ${resRuta.total.toFixed(1)}</span>
       </div>
     </div>`;
   contenido.innerHTML = totalHTML +
+    tarjetaSucursal("Bosques",    resBosques, metasBosquesEfectiva, "#86BDAD") +
     tarjetaSucursal("Cuajimalpa", resCuaji,   metasCuajiEfectiva,   "#86BDAD") +
     tarjetaSucursal("Polanco",    resPolanco, metasPolancoEfectiva, "#86BDAD") +
     tarjetaSucursal("Ruta",       resRuta,    metasRutaEfectiva,    "#C8602A");
@@ -3396,7 +3413,7 @@ function setPivotModo(modo) {
     if (subPer && subPer.classList.contains("active")) renderReportePeriodo();
   }
 }
-function _bloquePivotsReporte(ventasTotal, vCuaji, vPolanco) {
+function _bloquePivotsReporte(ventasTotal, vBosques, vCuaji, vPolanco) {
   const modo = S.pivotModo || "unidades";
   const card = (titulo, color, secId, ventas) => `<div class="card" style="margin-bottom:12px;border-left:4px solid ${color}">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px">
@@ -3408,6 +3425,7 @@ function _bloquePivotsReporte(ventasTotal, vCuaji, vPolanco) {
   return `<div style="height:6px;background:linear-gradient(90deg,transparent,var(--border),transparent);border-radius:3px;margin:18px 0"></div>
     <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.1em;margin-bottom:10px;text-transform:uppercase;text-align:center">Tabla sabor × tamaño</div>
     ${card("🏢 Total empresa", "var(--accent)", "total", ventasTotal)}
+    ${card("🍰 Bosques (cocina)", "var(--accent)", "bosques", vBosques)}
     ${card("🍰 Cuajimalpa", "var(--green)", "cuaji", vCuaji)}
     ${card("🍰 Polanco", "var(--accent)", "polanco", vPolanco)}`;
 }
@@ -3470,29 +3488,33 @@ function renderReporte() {
     L("reporte-content").innerHTML = `<div class="card"><div class="empty-state"><div class="empty-icon">📊</div><div>Sin ventas hoy${(S.reporteFiltros.sabores.length || S.reporteFiltros.tamanos.length || S.reporteFiltros.canales.length) ? ' (con los filtros aplicados)' : ''}</div></div></div>`;
     return;
   }
+  const vBosques = ventasHoy.filter(v => v.sucursal === "Bosques" && v.canal !== "Ruta");
   const vCuaji = ventasHoy.filter(v => v.sucursal === "Cuajimalpa" && v.canal !== "Ruta");
   const vPolanco = ventasHoy.filter(v => v.sucursal === "Polanco");
   const vRuta = ventasHoy.filter(v => v.canal === "Ruta");
   const total = _resumenVentas(ventasHoy);
+  const bosques = _resumenVentas(vBosques);
   const cuaji = _resumenVentas(vCuaji);
   const polanco = _resumenVentas(vPolanco);
   const ruta = _resumenVentas(vRuta);
-  S.ventasPorSeccion = { total: ventasHoy, cuaji: vCuaji, polanco: vPolanco, ruta: vRuta };
+  S.ventasPorSeccion = { total: ventasHoy, bosques: vBosques, cuaji: vCuaji, polanco: vPolanco, ruta: vRuta };
   L("reporte-content").innerHTML =
     _tarjetaResumen("🏢 Total empresa", total, "var(--accent)", "total", ventasHoy) +
+    _tarjetaResumen("🍰 Bosques (cocina)", bosques, "var(--accent)", "bosques", vBosques) +
     _tarjetaResumen("🍰 Cuajimalpa", cuaji, "var(--green)", "cuaji", vCuaji) +
     _tarjetaResumen("🍰 Polanco", polanco, "var(--accent)", "polanco", vPolanco) +
     _tarjetaResumen("🚚 Ruta", ruta, "#C8602A", "ruta", vRuta) +
     _chipsPivotModo() +
-    _bloquePivotsReporte(ventasHoy, vCuaji, vPolanco) +
+    _bloquePivotsReporte(ventasHoy, vBosques, vCuaji, vPolanco) +
     `<div style="height:6px;background:linear-gradient(90deg,transparent,var(--border),transparent);border-radius:3px;margin:18px 0"></div>` +
     `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.1em;margin-bottom:10px;text-transform:uppercase;text-align:center">Análisis gráfico (drill-down)</div>` +
     _tarjetaPie("Total empresa", "var(--accent)", "total") +
+    _tarjetaPie("Bosques", "var(--accent)", "bosques") +
     _tarjetaPie("Cuajimalpa", "var(--green)", "cuaji") +
     _tarjetaPie("Polanco", "var(--accent)", "polanco") +
     _tarjetaPie("Ruta", "#C8602A", "ruta");
   setTimeout(() => {
-    ["total", "cuaji", "polanco", "ruta"].forEach(secId => renderPiesSeccion(secId));
+    ["total", "bosques", "cuaji", "polanco", "ruta"].forEach(secId => renderPiesSeccion(secId));
   }, 50);
 }
 const DIMENSIONES = {
@@ -3522,7 +3544,7 @@ function _hashColor(s) {
   for (let i = 0; i < s.length; i++) h = ((h << 5) - h) + s.charCodeAt(i) | 0;
   return COLORES_PIE[Math.abs(h) % COLORES_PIE.length];
 }
-if (!S.pieEstado) S.pieEstado = { total: [], cuaji: [], polanco: [], ruta: [] };
+if (!S.pieEstado) S.pieEstado = { total: [], bosques: [], cuaji: [], polanco: [], ruta: [] };
 function setReporteTab(tab) {
   document.querySelectorAll("#tab-reporte > .costos-tabs > .costos-tab").forEach(t =>
     t.classList.toggle("active", t.getAttribute("onclick") === `setReporteTab('${tab}')`));
@@ -3555,7 +3577,7 @@ async function cargarEstadoResultados(){
 function setEstadoDim(dim){ _estadoDim=dim; renderEstadoResultados(); }
 function renderEstadoResultados(){
   const res=_estadoData; if(!res) return;
-  const cols=[["Consolidado",res.consolidado],["Polanco",res.sucursales.Polanco],["Cuajimalpa",res.sucursales.Cuajimalpa]];
+  const cols=[["Consolidado",res.consolidado]].concat(SUCURSALES.map(suc=>[suc,res.sucursales[suc]]));
   const pct=v=>(v==null||isNaN(v))?"—":(v.toFixed(1)+"%");
   const row=(label,key,opts={})=>{
     const tds=cols.map(([n,d])=>{
@@ -3647,12 +3669,12 @@ async function cargarPedidoSugerido(){
   };
   const dia=res.diaSemana.toLowerCase();
   const modoTxt = `promedio ponderado de 7 días (del ${dia} de la semana pasada al día previo al objetivo)`;
-  const cols=[["Polanco",res.sucursales.Polanco],["Cuajimalpa",res.sucursales.Cuajimalpa]];
+  const cols=SUCURSALES.map(suc=>[suc,res.sucursales[suc]]);
   const html=`
     <div class="card">
       <div style="font-size:14px;margin-bottom:4px"><strong>${res.diaSemana} ${res.fecha}</strong> · cocinada sugerida</div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Base: ${modoTxt} · +${res.bufferPct}% · ${(res.diasUsados||[]).map((d,i)=>`${d} (${Math.round((res.pesos&&res.pesos[i]!=null?res.pesos[i]:0)*100)}%)`).join(" · ")||"—"}</div>
-      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px">
         ${cols.map(([loc,arr])=>`<div style="background:var(--warm);border-radius:10px;padding:12px">
           <div style="font-weight:700;margin-bottom:8px">${loc} · <span style="color:var(--accent)">A: ${res.totalSugerido[loc]}</span> · <span style="color:var(--success)">B: ${res.totalSugerido2?res.totalSugerido2[loc]:0}</span> pzas</div>
           ${tabla(loc,arr)}
@@ -3868,7 +3890,7 @@ function renderStockHora() {
   const saboresAll = (S.catalogo?.sabores || []).filter(s => s.activo).map(s => s.nombre);
   const tamanos = f.tamanos.length ? tamanosAll.filter(t => f.tamanos.includes(t)) : tamanosAll;
   const sabores = f.sabores.length ? saboresAll.filter(s => f.sabores.includes(s)) : saboresAll;
-  const sucursales = ["Cuajimalpa", "Polanco"];
+  const sucursales = SUCURSALES;
   const stockActual = {};
   (S.stock || []).forEach(s => {
     if (s.vencido || s.cantActual <= 0) return;
@@ -3903,14 +3925,14 @@ function renderStockHora() {
   const horas = [];
   for (let h = STOCK_HORA_RANGO.inicio; h <= horaFinMostrar; h++) horas.push(h);
   let html = "";
-  ["Total", "Cuajimalpa", "Polanco"].forEach(loc => {
+  ["Total", ...SUCURSALES].forEach(loc => {
     html += _renderTablaStockHora(loc, sabores, tamanos, horas, stockInicial, ventasPorHora, ventasTotal);
   });
   if (!html) html = '<div class="card"><div class="empty-state"><div class="empty-icon">📦</div><div>Sin datos para mostrar</div></div></div>';
   L("stockhora-content").innerHTML = html;
 }
 function _renderTablaStockHora(loc, sabores, tamanos, horas, stockInicial, ventasPorHora, ventasTotal) {
-  const sucursales = loc === "Total" ? ["Cuajimalpa", "Polanco"] : [loc];
+  const sucursales = loc === "Total" ? SUCURSALES : [loc];
   ventasTotal = ventasTotal || {};
   const _ventasDelDia = (sab, tam) => sucursales.reduce((s, suc) => s + (ventasTotal[`${suc}|${sab}|${tam}`] || 0), 0);
   const tamanosOrden = [...tamanos].sort((a, b) => {
@@ -3929,7 +3951,7 @@ function _renderTablaStockHora(loc, sabores, tamanos, horas, stockInicial, venta
     if (hayDatos) break;
   }
   if (!hayDatos) return "";
-  const color = loc === "Total" ? "var(--accent)" : (loc === "Cuajimalpa" ? "var(--green)" : "var(--accent)");
+  const color = loc === "Total" ? "var(--accent)" : (SUC_COLOR[loc] || "var(--accent)");
   let h = `<div class="card" style="margin-bottom:14px;overflow-x:auto">
     <div style="font-weight:700;font-size:16px;color:${color};margin-bottom:10px">📦 ${loc}</div>
     <table style="width:100%;border-collapse:collapse;font-size:11px;min-width:600px">
@@ -4108,30 +4130,34 @@ function renderReportePeriodo() {
     L("periodo-content").innerHTML = '<div class="card"><div class="empty-state"><div class="empty-icon">📊</div><div>Sin ventas en este período</div></div></div>';
     return;
   }
+  const vBosques = ventas.filter(v => v.sucursal === "Bosques" && v.canal !== "Ruta");
   const vCuaji = ventas.filter(v => v.sucursal === "Cuajimalpa" && v.canal !== "Ruta");
   const vPolanco = ventas.filter(v => v.sucursal === "Polanco");
   const vRuta = ventas.filter(v => v.canal === "Ruta");
   const total = _resumenVentas(ventas);
+  const bosques = _resumenVentas(vBosques);
   const cuaji = _resumenVentas(vCuaji);
   const polanco = _resumenVentas(vPolanco);
   const ruta = _resumenVentas(vRuta);
-  S.ventasPorSeccion = { total: ventas, cuaji: vCuaji, polanco: vPolanco, ruta: vRuta };
-  S.pieEstado = { total: [], cuaji: [], polanco: [], ruta: [] };
+  S.ventasPorSeccion = { total: ventas, bosques: vBosques, cuaji: vCuaji, polanco: vPolanco, ruta: vRuta };
+  S.pieEstado = { total: [], bosques: [], cuaji: [], polanco: [], ruta: [] };
   L("periodo-content").innerHTML =
     _tarjetaResumen("🏢 Total empresa", total, "var(--accent)", "total", ventas) +
+    _tarjetaResumen("🍰 Bosques (cocina)", bosques, "var(--accent)", "bosques", vBosques) +
     _tarjetaResumen("🍰 Cuajimalpa", cuaji, "var(--green)", "cuaji", vCuaji) +
     _tarjetaResumen("🍰 Polanco", polanco, "var(--accent)", "polanco", vPolanco) +
     _tarjetaResumen("🚚 Ruta", ruta, "#C8602A", "ruta", vRuta) +
     _chipsPivotModo() +
-    _bloquePivotsReporte(ventas, vCuaji, vPolanco) +
+    _bloquePivotsReporte(ventas, vBosques, vCuaji, vPolanco) +
     `<div style="height:6px;background:linear-gradient(90deg,transparent,var(--border),transparent);border-radius:3px;margin:18px 0"></div>` +
     `<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.1em;margin-bottom:10px;text-transform:uppercase;text-align:center">Análisis gráfico (drill-down)</div>` +
     _tarjetaPie("Total empresa", "var(--accent)", "total") +
+    _tarjetaPie("Bosques", "var(--accent)", "bosques") +
     _tarjetaPie("Cuajimalpa", "var(--green)", "cuaji") +
     _tarjetaPie("Polanco", "var(--accent)", "polanco") +
     _tarjetaPie("Ruta", "#C8602A", "ruta");
   setTimeout(() => {
-    ["total", "cuaji", "polanco", "ruta"].forEach(secId => renderPiesSeccion(secId));
+    ["total", "bosques", "cuaji", "polanco", "ruta"].forEach(secId => renderPiesSeccion(secId));
   }, 50);
 }
 let _chartLineaPeriodo = null;
@@ -4156,7 +4182,7 @@ async function _renderGraficaLineaPeriodo(ventas) {
     cur.setDate(cur.getDate() + 1);
   }
   const acc = {};
-  dias.forEach(d => acc[d] = { total: 0, cuaji: 0, polanco: 0, ruta: 0, totalU: 0, cuajiU: 0, polancoU: 0, rutaU: 0 });
+  dias.forEach(d => acc[d] = { total: 0, bosques: 0, cuaji: 0, polanco: 0, ruta: 0, totalU: 0, bosquesU: 0, cuajiU: 0, polancoU: 0, rutaU: 0 });
   ventas.forEach(v => {
     const fechaStr = String(v.fecha).substring(0, 10);
     if (!acc[fechaStr]) return;
@@ -4164,30 +4190,35 @@ async function _renderGraficaLineaPeriodo(ventas) {
     const uds = Number(v.cantidad) || 0;
     acc[fechaStr].total += monto; acc[fechaStr].totalU += uds;
     if (v.canal === "Ruta") { acc[fechaStr].ruta += monto; acc[fechaStr].rutaU += uds; }
+    else if (v.sucursal === "Bosques") { acc[fechaStr].bosques += monto; acc[fechaStr].bosquesU += uds; }
     else if (v.sucursal === "Cuajimalpa") { acc[fechaStr].cuaji += monto; acc[fechaStr].cuajiU += uds; }
     else if (v.sucursal === "Polanco") { acc[fechaStr].polanco += monto; acc[fechaStr].polancoU += uds; }
   });
   let totales = dias.map(d => acc[d].total);
+  let bosquess = dias.map(d => acc[d].bosques);
   let cuajis = dias.map(d => acc[d].cuaji);
   let polancos = dias.map(d => acc[d].polanco);
   let rutas = dias.map(d => acc[d].ruta);
   let totalesU = dias.map(d => acc[d].totalU);
+  let bosquesU = dias.map(d => acc[d].bosquesU);
   let cuajisU = dias.map(d => acc[d].cuajiU);
   let polancosU = dias.map(d => acc[d].polancoU);
   let rutasU = dias.map(d => acc[d].rutaU);
   if (S.periodoActual.modoLinea === "acumulado") {
-    let sT = 0, sC = 0, sP = 0, sR = 0;
+    let sT = 0, sB = 0, sC = 0, sP = 0, sR = 0;
     totales = totales.map(x => sT += x);
+    bosquess = bosquess.map(x => sB += x);
     cuajis = cuajis.map(x => sC += x);
     polancos = polancos.map(x => sP += x);
     rutas = rutas.map(x => sR += x);
-    let sTu = 0, sCu = 0, sPu = 0, sRu = 0;
+    let sTu = 0, sBu = 0, sCu = 0, sPu = 0, sRu = 0;
     totalesU = totalesU.map(x => sTu += x);
+    bosquesU = bosquesU.map(x => sBu += x);
     cuajisU = cuajisU.map(x => sCu += x);
     polancosU = polancosU.map(x => sPu += x);
     rutasU = rutasU.map(x => sRu += x);
   }
-  const unidadesPorLabel = { "Total": totalesU, "Cuajimalpa": cuajisU, "Polanco": polancosU, "Ruta": rutasU };
+  const unidadesPorLabel = { "Total": totalesU, "Bosques": bosquesU, "Cuajimalpa": cuajisU, "Polanco": polancosU, "Ruta": rutasU };
   if (_chartLineaPeriodo) { try { _chartLineaPeriodo.destroy(); } catch(e) {} }
   _chartLineaPeriodo = new Chart(ctx, {
     type: "line",
@@ -4195,6 +4226,7 @@ async function _renderGraficaLineaPeriodo(ventas) {
       labels: dias.map(d => { const p = d.split('-'); return p[2] + '-' + p[1]; }),
       datasets: [
         { label: "Total", data: totales, borderColor: "#C8602A", backgroundColor: "rgba(200,96,42,.1)", tension: 0.3, fill: false, borderWidth: 3 },
+        { label: "Bosques", data: bosquess, borderColor: "#8B5A2B", backgroundColor: "rgba(139,90,43,.1)", tension: 0.3, fill: false, borderWidth: 2 },
         { label: "Cuajimalpa", data: cuajis, borderColor: "#2E5C4A", backgroundColor: "rgba(46,92,74,.1)", tension: 0.3, fill: false, borderWidth: 2 },
         { label: "Polanco", data: polancos, borderColor: "#1976D2", backgroundColor: "rgba(25,118,210,.1)", tension: 0.3, fill: false, borderWidth: 2 },
         { label: "Ruta", data: rutas, borderColor: "#C8602A", backgroundColor: "rgba(200,96,42,.1)", tension: 0.3, fill: false, borderWidth: 2 },
@@ -4231,11 +4263,11 @@ async function iniciarRuta() {
 }
 function poblarSelectoresRuta() {
   if (!S.stock || !S.catalogo) return;
-  const stockCuaji = (S.stock || []).filter(s => s.sucursal === "Cuajimalpa" && s.cantActual > 0);
-  const sabores = [...new Set(stockCuaji.map(s => s.sabor))].sort();
+  const stockCocina = (S.stock || []).filter(s => s.sucursal === SUC_COCINA && s.cantActual > 0);
+  const sabores = [...new Set(stockCocina.map(s => s.sabor))].sort();
   const selS = L("ruta-tarta-sabor");
   if (sabores.length === 0) {
-    selS.innerHTML = '<option value="">— Sin stock en Cuajimalpa —</option>';
+    selS.innerHTML = '<option value="">— Sin stock en '+SUC_COCINA+' —</option>';
     selS.disabled = true;
     L("ruta-tarta-tamano").innerHTML = '<option value="">—</option>';
     L("ruta-tarta-tamano").disabled = true;
@@ -4251,7 +4283,7 @@ function onRutaSaborChange() {
   if (!S.stock) return;
   const sabor = L("ruta-tarta-sabor")?.value;
   if (!sabor) return;
-  const stockSab = (S.stock || []).filter(s => s.sucursal === "Cuajimalpa" && s.sabor === sabor && s.cantActual > 0);
+  const stockSab = (S.stock || []).filter(s => s.sucursal === SUC_COCINA && s.sabor === sabor && s.cantActual > 0);
   const tamanos = [...new Set(stockSab.map(s => s.tamano))];
   const selT = L("ruta-tarta-tamano");
   if (tamanos.length === 0) {
@@ -4273,7 +4305,7 @@ function onRutaTamanoChange() {
     L("ruta-tarta-disp").innerHTML = "";
     return;
   }
-  const enStock = (S.stock || []).filter(s => s.sucursal === "Cuajimalpa" && s.sabor === sabor && s.tamano === tamano && s.cantActual > 0).reduce((a, s) => a + s.cantActual, 0);
+  const enStock = (S.stock || []).filter(s => s.sucursal === SUC_COCINA && s.sabor === sabor && s.tamano === tamano && s.cantActual > 0).reduce((a, s) => a + s.cantActual, 0);
   const enParadasYaAgregadas = (S.ruta.paradas || []).reduce((a, p) => a + (p.items || []).filter(i => i.sabor === sabor && i.tamano === tamano).reduce((b, i) => b + i.cantidad, 0), 0);
   const enParadaActual = (S.ruta.tartasActuales || []).filter(t => t.sabor === sabor && t.tamano === tamano).reduce((a, t) => a + t.cantidad, 0);
   const disp = Math.max(0, enStock - enParadasYaAgregadas - enParadaActual);
@@ -4384,7 +4416,7 @@ async function confirmarRuta() {
     try {
       const res = await api("registrarVenta", {
         items, canal: "Domicilio", metodoPago: "Por definir",
-        sucursal: "Cuajimalpa", cliente, tipoOp: "venta",
+        sucursal: SUC_COCINA, cliente, tipoOp: "venta",
         motivo: rutaId,
         fechaPersonalizada, opId: opIdNuevo()
       });
@@ -4583,6 +4615,7 @@ async function archivarRutaUI(rutaId) {
   await cargarRutasAbiertas();
 }
 const HORAS_APERTURA = {
+  "Bosques":    { abre: 9, cierra: 18 },
   "Cuajimalpa": { abre: 9, cierra: 18 },
   "Polanco":    { abre: 11, cierra: 19 }
 };
@@ -4720,8 +4753,8 @@ function renderOportunidad() {
     return `<table style="width:100%;border-collapse:collapse;font-size:12px">${head}${body}</table>`;
   }
   let html = headerInfo;
-  ["Cuajimalpa", "Polanco"].forEach(suc => {
-    const color = suc === "Cuajimalpa" ? "var(--green)" : "var(--accent)";
+  SUCURSALES.forEach(suc => {
+    const color = SUC_COLOR[suc] || "var(--accent)";
     if (modo === "facet_tamano" || modo === "facet_sabor") {
       const datosSuc = base.filter(r => r.sucursal === suc);
       if (datosSuc.length === 0) return;
@@ -4877,7 +4910,7 @@ function renderConciliacion() {
     return;
   }
   const agg = {};
-  const sucs = ["Cuajimalpa", "Polanco"];
+  const sucs = SUCURSALES;
   const initSuc = () => { const o = {}; METODOS_CONCI.forEach(m => o[m] = { monto:0, tickets:new Set(), piezas:0 }); return o; };
   const total = initSuc();
   sucs.forEach(suc => agg[suc] = initSuc());
@@ -4927,8 +4960,7 @@ function renderConciliacion() {
   let html = `<div style="background:rgba(46,92,74,.08);border-left:3px solid var(--green);padding:8px 12px;border-radius:6px;font-size:12px;color:var(--ink);margin-bottom:12px">📅 Período: <strong>${labelRango}</strong> · ${ventas.length} ventas</div>`;
   const blocks = [
     { titulo: "🏢 Total empresa", color: "var(--accent)", data: total },
-    { titulo: "🍰 Cuajimalpa",    color: "var(--green)",  data: agg["Cuajimalpa"] },
-    { titulo: "🍰 Polanco",       color: "var(--accent)", data: agg["Polanco"] }
+    ...SUCURSALES.map(suc => ({ titulo: "🍰 " + suc, color: SUC_COLOR[suc], data: agg[suc] }))
   ];
   blocks.forEach(b => {
     const sumaMonto = METODOS_CONCI.reduce((s, m) => s + b.data[m].monto, 0);
@@ -5122,15 +5154,14 @@ function renderUtilDiario() {
     return;
   }
   const enrTotal   = _enriquecerUtilidad(ventasHoyBruto);
-  const enrCuaji   = _enriquecerUtilidad(ventasHoyBruto.filter(v => v.sucursal === "Cuajimalpa"));
-  const enrPolanco = _enriquecerUtilidad(ventasHoyBruto.filter(v => v.sucursal === "Polanco"));
+  const enrSuc = {};
+  SUCURSALES.forEach(suc => { enrSuc[suc] = _enriquecerUtilidad(ventasHoyBruto.filter(v => v.sucursal === suc)); });
   const aviso = enrTotal.sinReceta > 0
     ? `<div style="background:rgba(231,126,34,.1);border-left:3px solid var(--warning);padding:8px 12px;border-radius:6px;font-size:12px;color:var(--ink);margin-bottom:12px">⚠️ <strong>${enrTotal.sinReceta}</strong> línea(s) de venta sin receta cargada — excluidas del cálculo. Cárgalas en Costos › Recetas para que cuenten.</div>`
     : "";
   L("utildiario-content").innerHTML = aviso +
     _tarjetaResumenUtilidad("🏢 Total empresa", _resumenUtilidad(enrTotal.ventasEnriquecidas),   "var(--accent)") +
-    _tarjetaResumenUtilidad("🍰 Cuajimalpa",    _resumenUtilidad(enrCuaji.ventasEnriquecidas),   "var(--green)") +
-    _tarjetaResumenUtilidad("🍰 Polanco",       _resumenUtilidad(enrPolanco.ventasEnriquecidas), "var(--accent)");
+    SUCURSALES.map(suc => _tarjetaResumenUtilidad("🍰 " + suc, _resumenUtilidad(enrSuc[suc].ventasEnriquecidas), SUC_COLOR[suc])).join("");
 }
 function _renderFiltrosUtilPeriodo() {
   const sabores = (S.catalogo?.sabores || []).filter(s => s.activo).map(s => s.nombre);
@@ -5210,15 +5241,14 @@ function renderUtilPeriodo() {
     return;
   }
   const enrTotal   = _enriquecerUtilidad(ventasBruto);
-  const enrCuaji   = _enriquecerUtilidad(ventasBruto.filter(v => v.sucursal === "Cuajimalpa"));
-  const enrPolanco = _enriquecerUtilidad(ventasBruto.filter(v => v.sucursal === "Polanco"));
+  const enrSuc = {};
+  SUCURSALES.forEach(suc => { enrSuc[suc] = _enriquecerUtilidad(ventasBruto.filter(v => v.sucursal === suc)); });
   const aviso = enrTotal.sinReceta > 0
     ? `<div style="background:rgba(231,126,34,.1);border-left:3px solid var(--warning);padding:8px 12px;border-radius:6px;font-size:12px;color:var(--ink);margin-bottom:12px">⚠️ <strong>${enrTotal.sinReceta}</strong> línea(s) de venta sin receta cargada — excluidas del cálculo.</div>`
     : "";
   L("utilperiodo-content").innerHTML = aviso +
     _tarjetaResumenUtilidad("🏢 Total empresa", _resumenUtilidad(enrTotal.ventasEnriquecidas),   "var(--accent)") +
-    _tarjetaResumenUtilidad("🍰 Cuajimalpa",    _resumenUtilidad(enrCuaji.ventasEnriquecidas),   "var(--green)") +
-    _tarjetaResumenUtilidad("🍰 Polanco",       _resumenUtilidad(enrPolanco.ventasEnriquecidas), "var(--accent)");
+    SUCURSALES.map(suc => _tarjetaResumenUtilidad("🍰 " + suc, _resumenUtilidad(enrSuc[suc].ventasEnriquecidas), SUC_COLOR[suc])).join("");
 }
 let _chartLineaUtilPeriodo = null;
 async function _renderGraficaLineaUtilPeriodo(ventasBruto) {
@@ -5240,20 +5270,23 @@ async function _renderGraficaLineaUtilPeriodo(ventasBruto) {
   while (cur <= fin) { dias.push(_fmtFecha(cur)); cur.setDate(cur.getDate() + 1); }
   const enr = _enriquecerUtilidad(ventasBruto);
   const acc = {};
-  dias.forEach(d => acc[d] = { total: 0, cuaji: 0, polanco: 0 });
+  dias.forEach(d => acc[d] = { total: 0, bosques: 0, cuaji: 0, polanco: 0 });
   enr.ventasEnriquecidas.forEach(v => {
     const fechaStr = String(v.fecha).substring(0, 10);
     if (!acc[fechaStr]) return;
     acc[fechaStr].total += v.utilidad;
-    if (v.sucursal === "Cuajimalpa")   acc[fechaStr].cuaji   += v.utilidad;
+    if (v.sucursal === "Bosques")      acc[fechaStr].bosques += v.utilidad;
+    else if (v.sucursal === "Cuajimalpa") acc[fechaStr].cuaji   += v.utilidad;
     else if (v.sucursal === "Polanco") acc[fechaStr].polanco += v.utilidad;
   });
   let totales  = dias.map(d => acc[d].total);
+  let bosquess = dias.map(d => acc[d].bosques);
   let cuajis   = dias.map(d => acc[d].cuaji);
   let polancos = dias.map(d => acc[d].polanco);
   if (S.utilperiodoActual.modoLinea === "acumulado") {
-    let sT = 0, sC = 0, sP = 0;
+    let sT = 0, sB = 0, sC = 0, sP = 0;
     totales  = totales.map(x  => sT += x);
+    bosquess = bosquess.map(x => sB += x);
     cuajis   = cuajis.map(x   => sC += x);
     polancos = polancos.map(x => sP += x);
   }
@@ -5264,6 +5297,7 @@ async function _renderGraficaLineaUtilPeriodo(ventasBruto) {
       labels: dias.map(d => { const p = d.split('-'); return p[2] + '-' + p[1]; }),
       datasets: [
         { label: "Total",      data: totales,  borderColor: "#C8602A", backgroundColor: "rgba(200,96,42,.1)", tension: 0.3, fill: false, borderWidth: 3 },
+        { label: "Bosques",    data: bosquess, borderColor: "#8B5A2B", backgroundColor: "rgba(139,90,43,.1)",  tension: 0.3, fill: false, borderWidth: 2 },
         { label: "Cuajimalpa", data: cuajis,   borderColor: "#2E5C4A", backgroundColor: "rgba(46,92,74,.1)",  tension: 0.3, fill: false, borderWidth: 2 },
         { label: "Polanco",    data: polancos, borderColor: "#1976D2", backgroundColor: "rgba(25,118,210,.1)", tension: 0.3, fill: false, borderWidth: 2 }
       ]

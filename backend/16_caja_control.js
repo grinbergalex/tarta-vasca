@@ -25,7 +25,7 @@
 // =================================================================================
 
 // Sucursales del negocio (fuente única: coincide con getSucursalesUsuario / InvCore).
-var CAJA_SUCURSALES = ["Cuajimalpa", "Polanco"];
+var CAJA_SUCURSALES = SUCURSALES.slice();
 // Categorías de retiro. "Otro" exige texto libre en `motivo`. Agregar aquí escala sin tocar lógica.
 var CAJA_CATEGORIAS_RETIRO = ["Recolección de efectivo", "Pago de sueldo", "Pago de bono", "Compra / gasto", "Otro"];
 
@@ -538,7 +538,7 @@ function cajaEstado(body, sesion) {
 function cajaAbrir(body, sesion) {
   requierePermiso(sesion, "cajaOperar", "Tu rol no permite operar la caja.");
   var sucursal = _cajaResolverSucursal(body, sesion);
-  if (!sucursal) return { ok: false, error: "Especifica una sucursal (Cuajimalpa o Polanco)." };
+  if (!sucursal) return { ok: false, error: "Especifica una sucursal ("+SUCURSALES.join(", ")+")." };
   if (CAJA_SUCURSALES.indexOf(sucursal) === -1) return { ok: false, error: "Sucursal inválida." };
   var fisico = Number(body.efectivoFisico);
   if (isNaN(fisico) || fisico < 0) return { ok: false, error: "Captura el efectivo físico en caja (número válido)." };
