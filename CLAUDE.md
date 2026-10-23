@@ -311,8 +311,9 @@ Un mismo ticket cobrado con varios métodos (p. ej. $300 en efectivo y $200 con 
 La cocina pasó de Cuajimalpa a Bosques; Cuajimalpa quedó como punto de venta.
 
 - `altaProduccion` solo acepta `SUCURSAL_COCINA`. Rutas, reservas de ruta y ventas de ruta
-  usan la cocina; `REP_DEPOT` (14) y `HORARIOS_SUCURSAL` (01) llevan coordenadas/horario
-  **aproximados de Bosques: confirmar**.
+  usan la cocina; `REP_DEPOT` (14) lleva las coordenadas **aproximadas de Bosques: confirmar**.
+  Los horarios de atención (`HORARIOS_SUCURSAL`, 01) ya son los reales (oct-2026) y son la
+  única fuente: `RECOGER_HORARIOS` (recolección en la tienda en línea) los lee de ahí.
 - `registrarTransferencia` recibe `origen` y `destino` (por defecto cocina → punto de venta). Se
   guardan en columnas `origen`/`destino` de la hoja Transferencias (se crean solas); las filas
   anteriores a v8 se leen como Cuajimalpa → Polanco (`_origenDestinoTransferencia`).

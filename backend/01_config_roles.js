@@ -112,18 +112,24 @@ const SUCURSALES_PUNTO_VENTA = ["Cuajimalpa", "Polanco"];
 const SUCURSALES = [SUCURSAL_COCINA].concat(SUCURSALES_PUNTO_VENTA);
 const SUCURSAL_LEGADO_ORIGEN_TRANSFER = "Cuajimalpa";  // antes de v8 la cocina era Cuajimalpa
 const SUCURSAL_LEGADO_DESTINO_TRANSFER = "Polanco";    // y lo unico transferible iba a Polanco
-// v4.4 — Horarios por sucursal por día (0=Domingo). 24h format.
+// Horarios de atención a clientes por sucursal, por día (0=Domingo). 24h format; null = cerrado.
+// UNICA fuente de verdad: la caja, el cierre automático, los reportes del día y la
+// recolección de la tienda en línea leen de aquí.
+const HORARIO_ENTRE_SEMANA = { abre: "09:00", cierra: "18:00" };
+const HORARIO_SABADO_COCINA = { abre: "09:00", cierra: "15:00" };
+const HORARIO_DOMINGO_CUAJIMALPA = { abre: "11:00", cierra: "15:00" };
+const HORARIO_POLANCO = { abre: "11:00", cierra: "19:00" };
+const HORARIO_CERRADO = { abre: "00:00", cierra: "00:00", cerrado: true };  // lo que ve el código en un día sin atención
 const HORARIOS_SUCURSAL = {
-// ⚠ Horario de Bosques por confirmar con Rebe (se dejo igual que el de entre semana de Cuajimalpa).
-"Bosques":    [{abre:"09:00",cierra:"14:30"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"14:30"}],
-"Polanco":   [{abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}],
-"Cuajimalpa": [{abre:"10:00",cierra:"14:30"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"14:30"}]
+"Bosques":    [null, HORARIO_ENTRE_SEMANA, HORARIO_ENTRE_SEMANA, HORARIO_ENTRE_SEMANA, HORARIO_ENTRE_SEMANA, HORARIO_ENTRE_SEMANA, HORARIO_SABADO_COCINA],
+"Cuajimalpa": [HORARIO_DOMINGO_CUAJIMALPA, HORARIO_ENTRE_SEMANA, HORARIO_ENTRE_SEMANA, HORARIO_ENTRE_SEMANA, HORARIO_ENTRE_SEMANA, HORARIO_ENTRE_SEMANA, HORARIO_SABADO_COCINA],
+"Polanco":    [HORARIO_POLANCO, HORARIO_POLANCO, HORARIO_POLANCO, HORARIO_POLANCO, HORARIO_POLANCO, HORARIO_POLANCO, HORARIO_POLANCO]
 };
 // v7.6 — Tienda en línea: recolección en sucursal (calendario del carrito de Shopify).
-// Horario en que el cliente puede RECOGER (no es el de caja). Índice 0=Domingo; null = no se recoge ese día.
+// Es el mismo horario de atención (HORARIOS_SUCURSAL); solo las sucursales donde se recoge.
 const RECOGER_HORARIOS = {
-"Cuajimalpa": [{abre:"10:00",cierra:"15:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"09:00",cierra:"18:00"}, {abre:"10:00",cierra:"15:00"}],
-"Polanco":    [{abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}, {abre:"11:00",cierra:"19:00"}]
+"Cuajimalpa": HORARIOS_SUCURSAL["Cuajimalpa"],
+"Polanco":    HORARIOS_SUCURSAL["Polanco"]
 };
 const RECOGER_MIN_PIEZAS_MISMO_DIA = 2;  // con menos piezas en sucursal, la tarta se pide para después
 const RECOGER_DIAS_PREPARACION = 1;      // días que tarda una tarta sobre pedido
@@ -133,7 +139,8 @@ const RECOGER_DIAS_A_MOSTRAR = 14;       // hasta cuántos días adelante se pue
 function getHorarioHoy(sucursal, fecha) {
 fecha = fecha || new Date();
 const cfg = HORARIOS_SUCURSAL[sucursal];
-return cfg ? cfg[fecha.getDay()] : { abre: "10:00", cierra: "19:00" };
+if (!cfg) return { abre: "10:00", cierra: "19:00" };
+return cfg[fecha.getDay()] || HORARIO_CERRADO;
 }
 function calcMontoMensual(monto, frecuencia) {
 if (frecuencia === "Semanal") return monto * FACTOR_SEMANAS_MES;
