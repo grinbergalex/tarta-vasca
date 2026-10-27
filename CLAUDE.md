@@ -328,6 +328,48 @@ La cocina pasó de Cuajimalpa a Bosques; Cuajimalpa quedó como punto de venta.
 - Pendientes: el sincronizador de Shopify (`shopify-sync`) sigue mandando los envíos a domicilio como
   reservas en Cuajimalpa (`SUCURSAL_ENVIOS`); cambiarlo a Bosques exige un usuario del POS para Bosques.
 
+## v9 — Bot de Instagram y pedidos con seguimiento (oct-2026, rama `feat/bot-instagram-cerebro`)
+
+⚠️ **Aún NO está en producción.** Se probó solo en el proyecto de pruebas. Antes de `clasp push`: comparar la
+versión viva contra el repo (regla dura de arriba).
+
+- **Bot**: `18_bot_conversacion.js` (cerebro con IA y herramientas), `18_bot_chat.html` (chat de pruebas) y
+  `103_setup_bot_manual.js` (una vez: pestaña `Bot_Manual`, la guía de marca que edita el equipo). Acciones
+  públicas protegidas con `BOT_TOKEN`: `botConversar` y `botRespuesta` (ManyChat se rinde a ~8 s: la primera llamada
+  se corta pero el servidor termina, y `botRespuesta` espera hasta `BOT_SONDEO_MAX_SEGUNDOS` y devuelve la misma
+  respuesta las veces que se pida). La API key de Anthropic va en Propiedades del script, nunca en el código.
+- **Interruptor `BOT_PEDIDOS_ACTIVOS`** (01): apagado, el bot solo consulta y manda a los canales de pedido.
+- **Un pedido es una reserva de la hoja Ventas** (`tipo_op = Reservado`) venga de donde venga (bot, Shopify,
+  teléfono, mostrador); `registrarVenta` ya aparta el inventario (`res_apartado`). `19_pedidos_seguimiento.js` agrega
+  columnas que se crean solas (`referencia` TV-MMDD-NN, `estado_pedido`, `contacto_seguimiento`, `origen_pedido`) y las
+  acciones `pedidoConfirmar`, `pedidoEntregar` (= `convertirReservaAVenta`) y `pedidoNoRecogido`.
+- ⚠️ **`pedidoNoRecogido` NO usa `eliminarMovimiento`**: esa función repone stock si el canal de la fila no es
+  "Reservado", y estas reservas traen canal Tienda o Domicilio (suma piezas que nunca se descontaron). Libera con
+  `invLiberar` y marca `ANULADO` directo. Quedan en la hoja `Pedidos_No_Recogidos` (lista de la campaña).
+- **Regla de no recogido**: el día de la entrega, al CERRAR la sucursal, lo que debió recogerse y no llegó se libera (`pedido_gracia_dias` suma días de espera). **Reporte diario** `pedidosRevisionDiaria` (21:00; instalar una vez con `instalarRevisionDiariaPedidos()`): lista los
+  apartados vencidos y, por defecto, los marca solos y libera las tartas (`pedido_auto_no_recogido = NO` solo los lista). Solo recolección en sucursal.
+- **Claves de Configuración** (las llena el equipo; vacías, el bot no inventa nada): `pedido_datos_transferencia`,
+  `pedido_politica_no_recoger`, `pedido_auto_no_recogido`, `pedido_gracia_dias`, `bot_correo_avisos`.
+- **Avisos por WhatsApp** (`20_whatsapp_avisos.js`): API oficial de Meta con una plantilla aprobada de dos variables
+  (`aviso_equipo_tarta_vasca`). Sin claves no hace nada. Las claves van en Propiedades del script (`WHATSAPP_TOKEN`,
+  `WHATSAPP_PHONE_ID`), nunca en el código; los destinatarios en Configuración (`aviso_whatsapp_numeros`). Un aviso que
+  falla nunca tira el pedido: `_botAvisar` lo atrapa. Solo probado con la API simulada: falta el alta en Meta.
+- **Quién gestiona un pedido** (`_pedidoPuedeGestionar`): todos lo ven; lo confirma el punto de venta de ESA sucursal
+  (para recoger) o quien hace las rutas, rol Chofer (a domicilio). Dueña y Administradora pueden con todo. Entregar y
+  "no llegó" no los hace el Chofer hoy.
+- **Recordatorio** `pedidosRecordatorioSinConfirmar` (`instalarRecordatorioPedidos()`, cada `pedido_recordatorio_horas`,
+  por defecto 2, de 9 a 20 h): lista lo que llegó hoy y nadie confirmó, a todo el equipo y, por WhatsApp, a los números
+  de `aviso_whatsapp_resumen` (la Dueña).
+- **SIGUIENTE ETAPA (pedido de Alex, 27-oct-2026): mandar el recibo al cliente cuando el chofer marque el pedido como
+  entregado.** Para eso el Chofer tiene que poder anotar "entregado" (hoy `pedidoEntregar` exige `puedeVender`, que el
+  Chofer no tiene, y `_pedidoPuedeGestionar` lo excluye con `permitirChofer = false`), y al entregar el sistema debe generar
+  el recibo (ya existe en `03_recibos.js`) y enviarlo al cliente por su canal de seguimiento (WhatsApp con plantilla
+  aprobada, o Instagram dentro de la ventana de 24 h).
+- **Pendiente**: la pantalla de Apartados y la producción de mañana (`getApartados`, `getProduccionManana`) solo ven
+  canal "Apartado", así que no muestran los pedidos del bot ni de Shopify; botones en el POS para confirmar, entregar y
+  marcar no recogido; aviso por WhatsApp al +52 55 8803 9327; datos de la transferencia; regla de no recogido; envíos por
+  círculos de distancia (propuesta en `propuesta-radios-envio.pdf`).
+
 ## Legacy / pendientes
 
 - `cargaInv 17.js`, `ventasmasivoCuaji17.js`, `limpiar apartados.js`:

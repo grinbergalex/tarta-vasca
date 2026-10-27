@@ -144,6 +144,34 @@ const BOT_MAX_MENSAJES_HISTORIAL = 30;      // mensajes de la conversación que 
 const BOT_HISTORIAL_SEGUNDOS = 21600;       // 6 h: la conversación se olvida sola
 const BOT_MAX_TURNOS_POR_CONVERSACION = 60; // tope para cuidar el gasto de IA
 const BOT_MAX_CARACTERES_MENSAJE = 1000;
+// --- Pedidos con seguimiento (v9) -------------------------------------------------
+const PEDIDO_PREFIJO_REFERENCIA = "TV";
+const PEDIDO_COLUMNAS = ["referencia", "estado_pedido", "contacto_seguimiento", "origen_pedido"];  // se crean solas en Ventas
+const PEDIDO_ESTADO = { APARTADO: "APARTADO", POR_CONFIRMAR: "POR CONFIRMAR", CONFIRMADO: "CONFIRMADO", ENTREGADO: "ENTREGADO", NO_RECOGIDO: "NO RECOGIDO", CANCELADO: "CANCELADO" };
+const PEDIDO_MOTIVO_NO_RECOGIDO = "Cliente no llegó";
+const PEDIDO_HOJA_NO_RECOGIDOS = "Pedidos_No_Recogidos";   // lista de trabajo de la campaña de recuperación
+const PEDIDO_CANALES_RECOGER = ["Tienda", "Apartado", "Reservado"];   // canales con recolección en sucursal (Domicilio va por ruta)
+const PEDIDO_HORA_REVISION = 21;                           // hora del reporte diario (después de cerrar todas las sucursales)
+const PEDIDO_RECORDATORIO_DESDE = 9;                       // el recordatorio de pedidos sin confirmar solo sale entre estas horas
+const PEDIDO_RECORDATORIO_HASTA = 20;
+const PEDIDO_RECORDATORIO_HORAS_DEFECTO = 2;
+const PEDIDO_CLAVE_RECORDATORIO_HORAS = "pedido_recordatorio_horas";
+// Claves de la hoja Configuración (las edita el equipo; si están vacías el bot no inventa nada):
+const PEDIDO_CLAVE_TRANSFERENCIA = "pedido_datos_transferencia";   // banco, titular, CLABE e indicaciones de la transferencia
+const PEDIDO_CLAVE_POLITICA = "pedido_politica_no_recoger";        // qué pasa si el cliente no pasa por su pedido
+const PEDIDO_CLAVE_AUTO_NO_RECOGIDO = "pedido_auto_no_recogido";   // "SI" = el reporte diario marca solo los vencidos
+const PEDIDO_CLAVE_GRACIA_DIAS = "pedido_gracia_dias";             // días después de la fecha de entrega antes de darlo por no recogido
+// --- Avisos por WhatsApp (v9, ver 20_whatsapp_avisos.js) ---
+const WHATSAPP_VERSION_API = "v21.0";
+const WHATSAPP_IDIOMA = "es_MX";
+const WHATSAPP_PLANTILLA_DEFECTO = "aviso_equipo_tarta_vasca";
+const WHATSAPP_CLAVE_NUMEROS = "aviso_whatsapp_numeros";
+const WHATSAPP_CLAVE_PLANTILLA = "aviso_whatsapp_plantilla";
+const WHATSAPP_CLAVE_RESUMEN = "aviso_whatsapp_resumen";   // números que reciben además el resumen de pendientes (la Dueña)
+const WHATSAPP_MAX_DETALLE = 700;      // las variables de una plantilla no pueden pasar de ~1000 caracteres en total
+const BOT_NOMBRE = "";                      // nombre con el que se presenta el bot (pendiente de definir con Rebeca); vacío = sin nombre
+const BOT_PEDIDOS_ACTIVOS = true;         // encendido en la rama de pruebas: el bot toma pedidos; false = solo consulta
+const BOT_HERRAMIENTAS_DE_PEDIDO = ["cotizar_pedido", "crear_pedido", "consultar_pedido"];
 const BOT_MAX_PIEZAS_POR_PEDIDO = 12;       // más que esto pasa con una persona (eventos, regalos corporativos)
 const BOT_USUARIO = "bot-instagram";
 const BOT_ROL = "Admin_Ventas";             // sesión interna (nunca sale por el API): permite elegir la sucursal al reservar
@@ -167,6 +195,8 @@ const BOT_CANAL_RECOGER = "Tienda";
 const BOT_CANAL_DOMICILIO = "Domicilio";
 const BOT_CACHE_INFO_SEGUNDOS = 600;        // páginas y menú de Shopify
 const BOT_CACHE_MENU_SEGUNDOS = 60;         // el menú ya calculado (un cambio de precio llega al bot en menos de 1 min)
+const BOT_SONDEO_MAX_SEGUNDOS = 7;           // cuánto puede esperar botRespuesta a que la respuesta esté lista (ManyChat corta a ~8 s)
+const BOT_SONDEO_PASO_MS = 500;
 const BOT_RESULTADO_SEGUNDOS = 600;         // cuánto se guarda la respuesta lista para que ManyChat la recoja
 // Dónde están las sucursales (el horario sale de HORARIOS_SUCURSAL). ⚠ La dirección de Bosques salió
 // de un mensaje de mayo-2026: confirmar con Rebe.

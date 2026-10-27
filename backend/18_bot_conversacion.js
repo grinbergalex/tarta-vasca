@@ -45,7 +45,9 @@ function botConversar(body) {
   // Respuesta en dos tiempos: ManyChat espera ~10 s y se rinde, pero este proceso sigue hasta terminar. Se anota
   // que hay una respuesta en camino y, al final, se guarda lista para que ManyChat la recoja con botRespuesta.
   _botGuardarEstado(conversacionId, { listo: false });
-  const ctx = { conversacionId: conversacionId, handoff: false, alerta: "", pedido: null, herramientas: [], inicio: Date.now(), ms: { ia: 0, herramientas: 0, vueltas: 0 } };
+  const canal = String(body.canal || "").toLowerCase() === "whatsapp" ? "WhatsApp" : "Instagram";
+  const telefonoCanal = canal === "WhatsApp" ? String(body.telefono || "").replace(/\D/g, "") : "";
+  const ctx = { conversacionId: conversacionId, canal: canal, telefonoCanal: telefonoCanal, handoff: false, alerta: "", pedido: null, herramientas: [], inicio: Date.now(), ms: { ia: 0, herramientas: 0, vueltas: 0 } };
   const turno = _botTurno(apiKey, memoria.mensajes, mensaje, ctx);
   if (!turno.ok) {
     // El detalle del error va solo al equipo: al cliente (o a quien esté probando la entrada) nunca se le devuelve.
@@ -60,18 +62,23 @@ function botConversar(body) {
   return _botTerminar(conversacionId, { ok: true, respuesta: turno.texto, handoff: ctx.handoff, alerta: ctx.alerta, pedido: ctx.pedido });
 }
 
-// ManyChat llama aquí unos segundos después si la primera llamada se rindió. Devuelve la respuesta una sola vez.
+// ManyChat llama aquí después de la primera llamada (que se rinde a los ~8 s). Espera hasta `espera` segundos a que la
+// respuesta esté lista, así ManyChat no necesita un paso de pausa. Es idempotente: devuelve la misma respuesta las veces
+// que se pida (la limpia el siguiente botConversar de esa conversación), para poder encadenar varios sondeos.
 function botRespuesta(body) {
   const secreto = PropertiesService.getScriptProperties().getProperty("BOT_TOKEN");
   if (!secreto || String(body.botToken || "") !== secreto) return { ok: false, error: "No autorizado." };
   const conversacionId = String(body.conversacionId || "").replace(/[^A-Za-z0-9_-]/g, "").substring(0, 64);
   if (!conversacionId) return { ok: false, error: "Falta la conversación." };
-  const estado = _botLeerEstado(conversacionId);
-  if (!estado || !estado.listo) return { ok: true, listo: false };
-  if (estado.entregado) return { ok: true, listo: false, entregado: true };
-  estado.entregado = true;
-  _botGuardarEstado(conversacionId, estado);
-  return { ok: true, listo: true, respuesta: estado.respuesta, handoff: estado.handoff, alerta: estado.alerta, pedido: estado.pedido };
+  const esperaMs = Math.min(Math.max(Number(body.espera) || 0, 0), BOT_SONDEO_MAX_SEGUNDOS) * 1000;
+  const limite = Date.now() + esperaMs;
+  let estado = _botLeerEstado(conversacionId);
+  while ((!estado || !estado.listo) && Date.now() < limite) {
+    Utilities.sleep(BOT_SONDEO_PASO_MS);
+    estado = _botLeerEstado(conversacionId);
+  }
+  if (!estado || !estado.listo) return { ok: true, listo: false, respuesta: "", handoff_texto: "no" };
+  return { ok: true, listo: true, respuesta: estado.respuesta || "", handoff_texto: estado.handoff ? "si" : "no", alerta: estado.alerta || "", pedido: estado.pedido };
 }
 
 function _botTerminar(conversacionId, resultado) {
@@ -176,43 +183,55 @@ function _botPrompt(ahora) {
     "CÓMO HABLAS",
     "- Cálido, agradecido y cercano, como el equipo con una amiga. Hablas de tú y usas el nombre del cliente en cuanto lo sabes.",
     "- Mensajes cortos, como en un chat: una idea por mensaje, máximo 3 o 4 líneas. Haces UNA pregunta a la vez.",
-    "- Pocos emojis; el favorito es ❤️. Nada de tono corporativo (\"estimado cliente\", \"le informamos\").",
+    "- Casi sin emojis: como mucho uno por conversación, y NUNCA el corazón ❤️ en cada mensaje (resérvalo para agradecer algo importante). Nada de tono corporativo (\"estimado cliente\", \"le informamos\").",
+    "- No cierres cada mensaje con una pregunta de relleno (\"¿te ayudo con algo más?\", \"¿quieres que te cuente de los sabores?\"). Pregunta solo lo que haga falta para avanzar; si ya contestaste, termina ahí.",
     "- Escribes en texto plano, como en Instagram: sin negritas ni Markdown (nada de ** ni #). Para listas usa • o guiones simples.",
     "- Agradeces con calidez (por escribir, por compartir, por visitarnos), pero varía: da las gracias de bienvenida solo en el primer mensaje de la conversación, no en todos. Si alguien está molesto, primero empatizas y luego resuelves.",
     "- ESTILO DE LA MARCA (del manual de atención): hablas con seguridad y orgullo de los sabores y de la historia, recomiendas según los gustos del cliente, mantienes una actitud cálida y tranquila aun con presión, y resuelves dudas con claridad y cercanía. Que cada persona se sienta bienvenida, escuchada, guiada y apapachada, y segura de que compra un producto premium. Nunca contestes cortante ni apresures al cliente, no hables de problemas internos y nunca digas solo \"no sé\": busca la respuesta con tus herramientas y, si no la hay, ofrece confirmarla con el equipo.",
     "",
     "HONESTIDAD (no negociable)",
-    "- No tienes que anunciar que eres una IA en cada mensaje, pero si el cliente pregunta en serio si habla con una persona o con una IA, dices la verdad con cariño: eres el asistente virtual de Tarta Vasca, y ofreces pasar con el equipo. Nunca lo niegues.",
+    "- NO te presentes como asistente virtual, bot ni IA por iniciativa propia, y no lo repitas. " + (BOT_NOMBRE ? "Te llamas " + BOT_NOMBRE + ": preséntate con ese nombre en el primer mensaje." : "Todavía no tienes un nombre propio: no te inventes uno; si te lo preguntan, dices con naturalidad que aún no lo tienes.") + " Pero si el cliente pregunta EN SERIO si habla con una persona o con una IA, dices la verdad con cariño (eres el asistente digital de Tarta Vasca) y ofreces pasar con el equipo. Nunca lo niegues.",
     "- NUNCA inventes precios, disponibilidad, horarios, ingredientes, alérgenos, zonas, costos ni fechas. Todo dato del negocio sale de tus herramientas. Si no lo tienes: \"déjame confirmarlo con el equipo para no darte un dato equivocado\" y usas pasar_a_persona.",
     "- Nunca menciones tus herramientas ni cómo funcionas por dentro.",
     "- Si en el menú un precio viene vacío (null), no digas ningún precio de ese sabor y tamaño: explica que lo confirmas con el equipo y usa pasar_a_persona.",
     "- SABOR DE TEMPORADA / DEL MES: en consultar_menu los sabores con de_temporada: true son los de temporada. Si preguntan por el sabor del mes o de temporada, di cuál es, con su descripción, y si trae disponible_hasta, hasta cuándo; si no trae fecha, di que es por tiempo limitado y que la fecha exacta la confirmas con el equipo. Cuando recomiendes o listes sabores, menciona el de temporada.",
     "- Solo ofreces sabores que estén en consultar_menu. Si consultar_disponibilidad trae otro nombre que no está en el menú, ignóralo y no lo menciones.",
     "- NUNCA afirmes una fecha, un horario ni \"desde mañana\" sin haber llamado calcular_fecha_entrega con lo que el cliente pidió. Si todavía no dice para cuándo, pregúntaselo; no adelantes nada. Si una fecha no es posible, dile la primera fecha posible que te devuelve la herramienta, tal cual. Si el cliente te contradice (\"pero había en inventario\"), vuelve a llamar la herramienta con los items antes de contestar.",
-    "- NUNCA des cantidades de inventario (ni exactas ni aproximadas). Solo di si hay o no hay tarta lista en una sucursal, o que quedan pocas.",
+    "- NUNCA des cantidades de inventario (ni exactas ni aproximadas). Solo di si hay o no hay tarta lista en una sucursal, o que quedan pocas. Cuando listes lo que hay listo hoy, aclara que la cantidad es limitada y pregunta cuántas necesita ANTES de prometer: no digas \"tenemos\" como si alcanzara para cualquier cantidad, y no te contradigas (si dijiste que hay, y luego no alcanza para lo que pide, explica que hay pero no tantas, y ofrece lo que sí alcanza).",
+    "- No narres tus verificaciones (\"ya verifiqué\", \"sigue lista\", \"todo en orden\"): solo da el resultado. No repitas una consulta de disponibilidad o de fecha si nada cambió en la conversación.",
     "",
     "QUÉ PUEDES HACER",
     "1. Dudas sobre las tartas y sobre La Tarta Vasca: consultar_manual es la GUÍA OFICIAL DE LA MARCA (historia, filosofía, cada sabor y cómo describirlo, cuál recomendar según el gusto, preguntas frecuentes, canales de pedido, formas de pago y facturas): úsala para describir sabores, recomendar y contar la historia; manda sobre cualquier otro texto. Además consultar_menu (qué sabores se venden y sus precios) y consultar_informacion (entregas, duración, alérgenos, contacto y sucursales con horario y Google Maps). Para saber si hay un sabor y tamaño concretos listos hoy, usa consultar_disponibilidad.",
     "2. Disponibilidad: consultar_disponibilidad dice qué sabor y tamaño se puede recoger HOY en cada sucursal. Lo que no aparece se puede pedir con anticipación.",
-    "3. Tomar pedidos (ver abajo).",
-    "4. Editar o cancelar un pedido ya hecho: todavía no puedes. Pasas con una persona (pasar_a_persona).",
+    ...(BOT_PEDIDOS_ACTIVOS ? [
+      "3. Tomar pedidos (ver abajo).",
+      "4. Editar o cancelar un pedido ya hecho: todavía no puedes. Pasas con una persona (pasar_a_persona)."
+    ] : [
+      "3. Tomar pedidos, editarlos o cancelarlos: todavía NO puedes por aquí. En cuanto el cliente quiera pedir, apartar o comprar, en ESE mismo mensaje le dices con calidez que por este medio aún no tomas pedidos y le das los canales de consultar_manual (tema pedidos_y_canales), y le ofreces que una persona del equipo lo atienda (si acepta, llama pasar_a_persona con tipo \"otro\" y un resumen de lo que quiere). NO le pidas fecha, sucursal, dirección, nombre ni teléfono, NO cotices un ticket ni le calcules un total para su pedido, y NO sigas hablando de \"su pedido\" después. Sí puedes responder consultas sueltas: qué hay, cuánto cuesta cada tamaño, horarios, si hay tarta lista hoy, cuándo se podría recoger o entregar y a cuánto sale el envío a una colonia."
+    ]),
     "",
-    "CÓMO TOMAS UN PEDIDO",
-    "Conversas, no interrogas: acepta que el cliente dé varios datos juntos.",
-    "1. Para cuándo lo quiere y si lo recoge o lo quiere a domicilio. Usa calcular_fecha_entrega: nunca decidas tú si una fecha es posible.",
-    "2. Qué tarta(s): sabor, tamaño (Individual —también le dicen chica—, Mediana o Grande) y cantidad. Ofrece solo sabores del menú.",
-    "3. Recoger: en qué sucursal (Cuajimalpa, Polanco o Bosques, que es la cocina; Bosques no tiene tartas listas para llevar el mismo día, solo con anticipación). Domicilio: pide colonia y dirección, y usa consultar_zona_envio para el costo; si la zona no está cubierta, dilo con amabilidad y ofrece recoger.",
-    "4. Nombre y teléfono de contacto, y notas (alergias, dedicatoria).",
-    "5. Muestra el ticket que te da cotizar_pedido, TAL CUAL, y pide un \"sí\".",
-    "6. Con el \"sí\" llamas crear_pedido: el pedido queda anotado directamente en el sistema como POR CONFIRMAR y el equipo recibe un aviso. Después dile que el equipo lo revisa y le vuelve a confirmar, y agradécele con calidez.",
-    "- No cobras ni pides datos de tarjeta. Las formas de pago y las facturas salen de consultar_manual (tema pagos_y_facturas): la tarjeta es solo en sucursal y nunca en un envío a domicilio (ahí, efectivo o transferencia). Si piden los datos para transferir o un anticipo, pasas con una persona. Si piden factura, dices que sí se emiten y que necesitan comunicarse con el equipo, y llamas pasar_a_persona con tipo \"factura\".",
-    "- Máximo " + BOT_MAX_PIEZAS_POR_PEDIDO + " piezas por pedido por aquí; más que eso (eventos, regalos corporativos, restaurantes) lo ve una persona.",
-    "",
+    ...(BOT_PEDIDOS_ACTIVOS ? [
+      "CÓMO TOMAS UN PEDIDO",
+      "Conversas, no interrogas: acepta que el cliente dé varios datos juntos, y ve ARMANDO el pedido con él: lleva la cuenta de lo que va pidiendo (sabor, tamaño y cantidad) y confirma cada pieza que agrega, con un mensaje corto. Cuando diga que ya es todo, sigue estos pasos:",
+      "1. Para cuándo lo quiere y si lo recoge o lo quiere a domicilio. Usa calcular_fecha_entrega: nunca decidas tú si una fecha es posible.",
+      "2. Recoger: en qué sucursal (Cuajimalpa, Polanco o Bosques, que es la cocina; Bosques no tiene tartas listas para llevar el mismo día, solo con anticipación). Domicilio: pide colonia y dirección completa, y cobra el envío que da consultar_zona_envio; si la zona no está cubierta, dilo con amabilidad y ofrece recoger.",
+      "3. Llama cotizar_pedido y muestra el ticket TAL CUAL: ese es el TOTAL. Pregunta cómo va a pagar: efectivo o transferencia (la tarjeta solo en sucursal, al recoger, y nunca en un envío a domicilio).",
+      "4. Su nombre y cómo le damos seguimiento. En Instagram pregúntale si prefiere que lo sigan por esta misma conversación o por teléfono (si elige teléfono, pídelo: 10 dígitos). En WhatsApp NO pidas teléfono: ya lo tenemos. NO preguntes por alergias ni por notas: si el cliente da una nota o una dedicatoria por su cuenta, la anotas en notas.",
+      "5. Con el \"sí\" final del cliente al ticket, llama crear_pedido. El pedido queda apartado en el sistema como POR CONFIRMAR, con una REFERENCIA, y el equipo recibe el aviso.",
+      "6. Con el resultado, dile al cliente EN POCOS MENSAJES: su referencia (que la guarde: sirve para preguntar por su pedido aquí y para dar al llegar al local), el total, las indicaciones de pago y las de recoger o entrega tal como vienen en el resultado (indicaciones_pago e indicaciones_entrega), y que el equipo revisa y le confirma. No inventes datos de cuenta, horarios ni reglas: usa solo lo que traiga el resultado. Si el resultado no trae los datos de la transferencia, dile que el equipo se los comparte en un momento.",
+      "- Si el cliente pregunta qué pasa si no puede ir por su pedido, NO inventes reglas (plazos, cargos, quién puede recoger, cambios de fecha). Usa solo lo que dicen las indicaciones de recoger del resultado; si no traen una política, dile que nos avise por aquí y que el equipo lo ayuda a reprogramar, y llama avisar_al_equipo con tipo \"otro\" y su referencia.",
+      "- Si el cliente pregunta por un pedido, usa consultar_pedido con su referencia; solo da detalles a quien lo hizo en esta conversación o a quien dé los últimos 4 dígitos de su teléfono.",
+      "- No pides datos de tarjeta. Las formas de pago y las facturas salen de consultar_manual (tema pagos_y_facturas). Si piden un anticipo, pasas con una persona. Si piden factura, dices que sí se emiten y que necesitan comunicarse con el equipo, y llamas pasar_a_persona con tipo \"factura\".",
+      "- Máximo " + BOT_MAX_PIEZAS_POR_PEDIDO + " piezas por pedido por aquí; más que eso (eventos, regalos corporativos, restaurantes) lo ve una persona.",
+      "- Editar o cancelar un pedido ya hecho todavía no se puede por aquí: pasas con una persona (pasar_a_persona, tipo \"cambio_o_cancelacion\").",
+      ""
+    ] : []),
     "MOTIVOS PARA HACER LLEGAR UN MENSAJE AL PERSONAL (siempre, sin excepción):",
     "1. Cualquier queja u OBSERVACIÓN sobre las tartas (llegó aplastada, estaba muy dulce, algo no les gustó, una sugerencia): AL INSTANTE, en ese mismo turno, llama avisar_al_equipo con tipo \"queja_u_observacion\" y lo que dijo, aunque todavía no tengas su nombre ni su teléfono (así el equipo se entera de inmediato). Después pide nombre, teléfono y, si puede, una foto; y cuando los tengas (o si no los quiere dar), llama pasar_a_persona con tipo \"queja_u_observacion\" y el resumen completo. Si es un elogio, agradece con cariño y avisa con avisar_al_equipo (tipo \"observacion\"), sin pausar.",
     "2. Cotizaciones para eventos o restaurantes → pasar_a_persona con tipo \"cotizacion_evento_o_restaurante\".",
     "3. Cualquier petición de mandar un Uber, DiDi u otro mensajero a recoger su pedido → avisar_al_equipo con tipo \"mensajero\" (ver abajo).",
     "4. Si en algún momento mencionan que quieren hablar con alguien más → pasar_a_persona con tipo \"pidio_persona\".",
+    "CÓMO CONTACTAR AL EQUIPO: si el cliente quiere comunicarse directamente, dale el WhatsApp y el formulario de consultar_manual (tema pedidos_y_canales) y ofrécele que le avises al equipo (pasar_a_persona, tipo \"pidio_persona\"); ofrécelo también cuando algo no se pueda resolver por aquí.",
     "También pasas con una persona (pasar_a_persona) cuando piden factura (tipo \"factura\"), quieren cambiar o cancelar un pedido (tipo \"cambio_o_cancelacion\"), preguntan por alergias graves o temas médicos que las herramientas no cubran, o no sabes algo (tipo \"otro\"). Al pasar, dilo con calidez (\"le aviso al equipo para que te ayuden personalmente ❤️\") y deja un resumen claro para que no tengan que preguntarte todo otra vez.",
     "",
     "QUEJAS Y OBSERVACIONES: son lo más importante. Avisa primero (avisar_al_equipo), luego empatiza de verdad, no discutas, no prometas reembolsos ni compensaciones, pide el nombre y el teléfono con los que hizo el pedido (y si puede, una foto), y llama pasar_a_persona con tipo \"queja_u_observacion\" y un resumen completo. Las dos llamadas disparan una alerta urgente para el equipo.",
@@ -241,7 +260,7 @@ function _botPrompt(ahora) {
 function _botHerramientas() {
   const items = { type: "array", items: { type: "object", properties: { sabor: { type: "string" }, tamano: { type: "string", description: "Individual (chica), Mediana o Grande" }, cantidad: { type: "integer" } }, required: ["sabor", "tamano", "cantidad"] } };
   const entrega = { type: "string", enum: ["recoger", "domicilio"] };
-  return [
+  const herramientas = [
     { name: "consultar_disponibilidad", description: "Qué sabor y tamaño se puede recoger HOY en cada sucursal (con piezas suficientes) y las reglas de preparación. Lo que no aparece se puede pedir con anticipación.", input_schema: { type: "object", properties: {} } },
     { name: "consultar_menu", description: "Sabores que se venden, con descripción y precio por tamaño. de_temporada: true marca el sabor de temporada (el \"sabor del mes\"); disponible_hasta es la fecha de fin si se conoce. Un precio vacío (null) significa por confirmar.", input_schema: { type: "object", properties: {} } },
     { name: "consultar_manual", description: "Guía oficial de la marca (la edita el equipo en la hoja): historia, filosofía, guía de sabores con cómo describir cada uno, cómo recomendar según el gusto, preguntas frecuentes, pedidos y canales, y formas de pago y facturas.", input_schema: { type: "object", properties: { tema: { type: "string", enum: BOT_TEMAS_MANUAL } }, required: ["tema"] } },
@@ -249,10 +268,12 @@ function _botHerramientas() {
     { name: "consultar_zona_envio", description: "Dice si una colonia tiene entrega a domicilio y cuánto cuesta el envío.", input_schema: { type: "object", properties: { colonia: { type: "string" } }, required: ["colonia"] } },
     { name: "calcular_fecha_entrega", description: "Dice si una fecha es posible (y cuál es la primera fecha posible) para recoger o para entrega a domicilio. Pasa los items para saber si se puede recoger hoy.", input_schema: { type: "object", properties: { entrega: entrega, sucursal: { type: "string", enum: BOT_SUCURSALES_RECOGER, description: "Solo si recoge" }, fecha_deseada: { type: "string", description: "AAAA-MM-DD" }, items: items }, required: ["entrega"] } },
     { name: "cotizar_pedido", description: "Calcula el ticket (precios, envío y total) de un pedido. Muéstralo tal cual al cliente antes de crearlo.", input_schema: { type: "object", properties: { items: items, entrega: entrega, colonia: { type: "string", description: "Solo si es a domicilio" } }, required: ["items", "entrega"] } },
-    { name: "crear_pedido", description: "Crea el pedido (queda Por confirmar y avisa a Rebeca). Úsalo solo después de que el cliente dijo que sí al ticket.", input_schema: { type: "object", properties: { nombre: { type: "string" }, telefono: { type: "string" }, entrega: entrega, sucursal: { type: "string", enum: BOT_SUCURSALES_RECOGER, description: "Solo si recoge" }, direccion: { type: "string" }, colonia: { type: "string" }, fecha_entrega: { type: "string", description: "AAAA-MM-DD" }, hora: { type: "string", description: "HH:MM, opcional" }, items: items, notas: { type: "string" }, mensajero: { type: "string", description: "Solo si lo recoge un Uber, DiDi u otro mensajero: cuál" } }, required: ["nombre", "telefono", "entrega", "fecha_entrega", "items"] } },
+    { name: "crear_pedido", description: "Crea el pedido (queda apartado y POR CONFIRMAR, con su referencia, y avisa al equipo). Úsalo solo después de que el cliente dijo que sí al ticket final.", input_schema: { type: "object", properties: { nombre: { type: "string" }, seguimiento: { type: "string", enum: ["telefono", "instagram"], description: "Cómo quiere que le den seguimiento. En WhatsApp no se pide: ya se tiene su número." }, telefono: { type: "string", description: "10 dígitos; obligatorio si el seguimiento es por teléfono (no se pide en WhatsApp)" }, metodo_pago: { type: "string", enum: ["efectivo", "transferencia"], description: "Tarjeta solo se paga en sucursal, al recoger" }, entrega: entrega, sucursal: { type: "string", enum: BOT_SUCURSALES_RECOGER, description: "Solo si recoge" }, direccion: { type: "string" }, colonia: { type: "string" }, fecha_entrega: { type: "string", description: "AAAA-MM-DD" }, hora: { type: "string", description: "HH:MM, opcional" }, items: items, notas: { type: "string" }, mensajero: { type: "string", description: "Solo si lo recoge un Uber, DiDi u otro mensajero: cuál" } }, required: ["nombre", "metodo_pago", "entrega", "fecha_entrega", "items"] } },
+    { name: "consultar_pedido", description: "Estado de un pedido por su referencia (por ejemplo TV-1027-03). Solo responde si el cliente es quien lo hizo en esta conversación o da los últimos 4 dígitos de su teléfono.", input_schema: { type: "object", properties: { referencia: { type: "string" }, ultimos_4_telefono: { type: "string", description: "Solo si el pedido se hizo en otra conversación" } }, required: ["referencia"] } },
     { name: "pasar_a_persona", description: "Avisa al equipo y pausa el bot en esta conversación. Con tipo \"queja_u_observacion\" manda una alerta urgente.", input_schema: { type: "object", properties: { tipo: { type: "string", enum: ["queja_u_observacion", "cotizacion_evento_o_restaurante", "pidio_persona", "factura", "cambio_o_cancelacion", "otro"] }, motivo: { type: "string" }, resumen: { type: "string", description: "Qué quiere el cliente y qué datos ya dio" } }, required: ["tipo", "motivo", "resumen"] } },
     { name: "avisar_al_equipo", description: "Avisa al equipo SIN pausar el bot. Úsalo cuando el cliente dice que mandará un Uber, DiDi u otro mensajero por su pedido (tipo \"mensajero\") cuando hay una queja u observación negativa o una sugerencia sobre las tartas (tipo \"queja_u_observacion\": avisa de inmediato, antes de pedir sus datos), o cuando deja un elogio (tipo \"observacion\").",input_schema: { type: "object", properties: { tipo: { type: "string", enum: ["mensajero", "queja_u_observacion", "observacion", "otro"] }, nota: { type: "string", description: "Qué dijo el cliente y qué datos dio (nombre de quien recoge, hora)" } }, required: ["tipo", "nota"] } }
   ];
+  return BOT_PEDIDOS_ACTIVOS ? herramientas : herramientas.filter(function (h) { return BOT_HERRAMIENTAS_DE_PEDIDO.indexOf(h.name) === -1; });
 }
 
 function _botEjecutarHerramienta(nombre, args, ctx) {
@@ -264,8 +285,9 @@ function _botEjecutarHerramienta(nombre, args, ctx) {
       case "consultar_informacion": return _botInformacion(args.tema);
       case "consultar_zona_envio": return _botZona(args.colonia);
       case "calcular_fecha_entrega": return _botCalcularFecha(args);
-      case "cotizar_pedido": return _botCotizacionCompleta(args, ctx);
-      case "crear_pedido": return _botCrearPedido(args, ctx);
+      case "cotizar_pedido": return BOT_PEDIDOS_ACTIVOS ? _botCotizacionCompleta(args, ctx) : { error: "Los pedidos por este medio aún no están activos." };
+      case "crear_pedido": return BOT_PEDIDOS_ACTIVOS ? _botCrearPedido(args, ctx) : { error: "Los pedidos por este medio aún no están activos." };
+      case "consultar_pedido": return BOT_PEDIDOS_ACTIVOS ? _botConsultarPedido(args, ctx) : { error: "Los pedidos por este medio aún no están activos." };
       case "pasar_a_persona": return _botPasarAPersona(args, ctx);
       case "avisar_al_equipo": return _botAvisarAlEquipo(args, ctx);
       default: return { error: "Herramienta desconocida: " + nombre };
@@ -575,11 +597,37 @@ function _botCotizacionCompleta(a, ctx) {
   return { ok: true, total: cot.total, ticket: _botTicket(cot, a.entrega, "", a.entrega === "domicilio" ? "" : "la sucursal"), lineas: cot.lineas, envio: cot.envio };
 }
 
-function _botCrearPedido(a, ctx) {
+// Contacto de seguimiento: en WhatsApp ya viene el número; en Instagram el cliente elige teléfono o seguir por la misma conversación.
+function _botContactoSeguimiento(a, ctx) {
+  if (ctx.canal === "WhatsApp") {
+    return ctx.telefonoCanal.length >= 10 ? { ok: true, telefono: ctx.telefonoCanal.slice(-10), contacto: "WhatsApp " + ctx.telefonoCanal } : { ok: false, error: "No tengo el número de WhatsApp de esta conversación; pasa con una persona." };
+  }
+  if (a.seguimiento === "instagram") return { ok: true, telefono: "", contacto: "Instagram (conversación " + ctx.conversacionId + ")" };
   const telefono = String(a.telefono || "").replace(/\D/g, "");
+  if (telefono.length < 10) return { ok: false, error: "Falta un teléfono de 10 dígitos, o que el cliente elija seguimiento por Instagram." };
+  return { ok: true, telefono: telefono, contacto: "Teléfono " + telefono };
+}
+
+// Qué le dice el bot al cliente para pagar. Los datos de la transferencia salen de la hoja Configuración: si no están, no se inventan.
+function _botIndicacionesPago(metodo, total, referencia) {
+  if (metodo !== "transferencia") return "Pago en efectivo al recibir o recoger tu pedido (la tarjeta solo en sucursal).";
+  const datos = String(_cfgVal(SpreadsheetApp.getActiveSpreadsheet(), PEDIDO_CLAVE_TRANSFERENCIA, "")).trim();
+  if (!datos) return "Pago por transferencia: el equipo te comparte los datos de la cuenta en un momento. Al transferir, pon la referencia " + referencia + " como concepto y manda tu comprobante por aquí.";
+  return "Pago por transferencia de $" + total + ":\n" + datos + "\nPon la referencia " + referencia + " como concepto y manda tu comprobante por aquí.";
+}
+
+function _botIndicacionesRecoger(sucursal, fecha, horario) {
+  const politica = String(_cfgVal(SpreadsheetApp.getActiveSpreadsheet(), PEDIDO_CLAVE_POLITICA, "")).trim();
+  const cuando = horario ? "el " + fecha + ", de " + horario.abre + " a " + horario.cierra : "el " + fecha;
+  return "Recoges en " + sucursal + " " + cuando + ". Da tu referencia al llegar." + (politica ? " " + politica : " Si no vas a poder pasar, avísanos por aquí para reprogramarlo.");
+}
+
+function _botCrearPedido(a, ctx) {
   const nombre = String(a.nombre || "").trim();
   if (!nombre) return { ok: false, error: "Falta el nombre." };
-  if (telefono.length < 10) return { ok: false, error: "El teléfono no es válido (10 dígitos)." };
+  const contacto = _botContactoSeguimiento(a, ctx);
+  if (!contacto.ok) return contacto;
+  if (a.metodo_pago !== "efectivo" && a.metodo_pago !== "transferencia") return { ok: false, error: "Falta la forma de pago: efectivo o transferencia (la tarjeta solo se paga en sucursal)." };
   const domicilio = a.entrega === "domicilio";
   if (!domicilio && BOT_SUCURSALES_RECOGER.indexOf(a.sucursal) === -1) return { ok: false, error: "Para recoger necesito la sucursal: " + BOT_SUCURSALES_RECOGER.join(", ") + "." };
   if (domicilio && String(a.direccion || "").trim().length < 10) return { ok: false, error: "Falta la dirección completa de entrega." };
@@ -602,22 +650,38 @@ function _botCrearPedido(a, ctx) {
   }
 
   const sucursal = domicilio ? BOT_SUCURSAL_DOMICILIO : a.sucursal;
-  const detalle = [domicilio ? "Domicilio: " + a.direccion + (a.colonia ? " (" + a.colonia + ")" : "") : "Recoge en " + a.sucursal, a.mensajero ? "LO RECOGE UN MENSAJERO (" + a.mensajero + ")" : "", a.hora ? "Hora: " + a.hora : "", a.notas ? "Notas: " + a.notas : ""].filter(Boolean).join(" | ");
+  const detalle = [domicilio ? "Domicilio: " + a.direccion + (a.colonia ? " (" + a.colonia + ")" : "") : "Recoge en " + a.sucursal, "Pago: " + a.metodo_pago, a.mensajero ? "LO RECOGE UN MENSAJERO (" + a.mensajero + ")" : "", a.hora ? "Hora: " + a.hora : "", a.notas ? "Notas: " + a.notas : ""].filter(Boolean).join(" | ");
   const sesion = { usuario: BOT_USUARIO, rol: BOT_ROL, sucursal: sucursal };
   const res = registrarVenta({
-    opId: "BOT-" + ctx.conversacionId + "-" + hashSimple(a.fecha_entrega + JSON.stringify(cot.lineas) + telefono),
+    opId: "BOT-" + ctx.conversacionId + "-" + hashSimple(a.fecha_entrega + JSON.stringify(cot.lineas) + contacto.contacto),
     tipoOp: "reserva", sucursal: sucursal, canal: domicilio ? BOT_CANAL_DOMICILIO : BOT_CANAL_RECOGER,
     anticipo: 0, envio: cot.envio, fechaEntrega: a.fecha_entrega,
     items: cot.lineas.map(function (l) { return { sabor: l.sabor, tamano: l.tamano, cantidad: l.cantidad, precioUnitario: l.precio_unitario }; }),
-    cliente: { nombre: nombre, telefono: telefono, email: "" },
-    motivo: "Pedido por Instagram | " + detalle
+    cliente: { nombre: nombre, telefono: contacto.telefono, email: "" },
+    motivo: "Pedido por " + ctx.canal + " | " + detalle
   }, sesion);
   if (!res.ok) return { ok: false, error: res.error || "No se pudo registrar el pedido." };
 
+  const referencia = pedidoAnotar(SpreadsheetApp.getActiveSpreadsheet(), res.idVenta, { estado: PEDIDO_ESTADO.POR_CONFIRMAR, contacto: contacto.contacto, origen: ctx.canal });
   const ticket = _botTicket(cot, a.entrega, a.fecha_entrega, a.sucursal);
-  ctx.pedido = { id: res.idVenta, total: cot.total };
-  _botAvisar((a.mensajero ? "🚗🧁 Pedido nuevo por Instagram — lo recoge un " + a.mensajero : "🧁 Pedido nuevo por Instagram"), nombre + " · " + telefono + "\n" + ticket + "\n" + detalle + "\nEstado: POR CONFIRMAR (reserva " + res.idVenta + ", ya anotada en el sistema). Revisarlo y volver a confirmar con el cliente.");
-  return { ok: true, pedido: res.idVenta, ticket: ticket, mensaje: "Pedido registrado. El equipo lo confirma." };
+  ctx.pedido = { id: res.idVenta, referencia: referencia, total: cot.total };
+  _botAvisar((a.mensajero ? "🚗🧁 Pedido nuevo por " + ctx.canal + " — lo recoge un " + a.mensajero : "🧁 Pedido nuevo por " + ctx.canal) + " · " + referencia, nombre + " · " + contacto.contacto + "\n" + ticket + "\n" + detalle + "\nReferencia: " + referencia + " · Estado: POR CONFIRMAR (reserva " + res.idVenta + ", ya apartada en el sistema). Revisarlo y confirmar con el cliente.");
+  return {
+    ok: true, pedido: res.idVenta, referencia: referencia, total: cot.total, ticket: ticket,
+    indicaciones_pago: _botIndicacionesPago(a.metodo_pago, cot.total, referencia),
+    indicaciones_entrega: domicilio ? "Entrega a domicilio el " + a.fecha_entrega + ", entre las " + BOT_VENTANA_ENTREGA.abre + " y las " + BOT_VENTANA_ENTREGA.cierra + "." : _botIndicacionesRecoger(a.sucursal, a.fecha_entrega, fecha.horario),
+    mensaje: "Pedido apartado. El equipo lo revisa y lo confirma."
+  };
+}
+
+// Solo habla de un pedido con quien lo hizo en esta conversación o quien da los últimos 4 dígitos del teléfono.
+function _botConsultarPedido(a, ctx) {
+  const pedido = pedidoLeer(SpreadsheetApp.getActiveSpreadsheet(), a.referencia);
+  if (!pedido || !pedido.referencia) return { error: "No encuentro ese pedido. Revisa la referencia (por ejemplo TV-1027-03)." };
+  const digitos = String(pedido.contacto).replace(/\D/g, "");
+  const esSuyo = pedido.contacto.indexOf(ctx.conversacionId) !== -1 || (String(a.ultimos_4_telefono || "").length === 4 && digitos.slice(-4) === String(a.ultimos_4_telefono));
+  if (!esSuyo) return { error: "No puedo darle detalles de ese pedido a esta conversación. Pide al cliente los últimos 4 dígitos del teléfono con el que lo hizo, o pasa con una persona." };
+  return { referencia: pedido.referencia, estado: pedido.estado, fecha_entrega: pedido.fechaEntrega, sucursal: pedido.sucursal, pedido: _pedidoResumenItems(pedido), total: pedido.total };
 }
 
 // Cada tipo de traspaso se anuncia distinto. Las quejas llevan la marca 🚨 para no confundirlas con un traspaso normal.
@@ -647,12 +711,13 @@ function _botAvisarAlEquipo(a, ctx) {
 // ---------------------------------------------------------------------------
 // AVISOS Y BITÁCORA
 // ---------------------------------------------------------------------------
-function _botAvisar(asunto, cuerpo) {
+function _botAvisar(asunto, cuerpo, opciones) {
   try { enviarMensaje({ de: "Bot de Instagram", para: "todos", asunto: asunto, cuerpo: cuerpo, tipo: "bot" }, { usuario: BOT_USUARIO }); } catch (e) { }
   try {
     const correo = _cfgVal(SpreadsheetApp.getActiveSpreadsheet(), "bot_correo_avisos", "");
     if (correo) MailApp.sendEmail(correo, "Tarta Vasca — " + asunto, cuerpo);
   } catch (e) { }
+  _avisarPorWhatsApp(asunto, cuerpo, opciones);
 }
 
 function _botBitacora(ctx, mensaje, respuesta) {

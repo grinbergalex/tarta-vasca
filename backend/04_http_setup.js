@@ -198,6 +198,9 @@ case "getApartados":            return getApartados(body, sesion);              
 case "registrarApartado":       return registrarVenta(body, sesion);                  // Adecuacion 2 (extiende reserva)
 case "convertirReservaAVenta":  return convertirReservaAVenta(body, sesion);          // NUEVO v4.4b
 case "liberarReserva":          return liberarReserva(body, sesion);                  // NUEVO v4.4b
+case "pedidoConfirmar":         return pedidoConfirmar(body, sesion);                 // v9 — el equipo confirma un pedido apartado
+case "pedidoEntregar":          return pedidoEntregar(body, sesion);                  // v9 — ya se entregó: reserva -> venta, baja el inventario
+case "pedidoNoRecogido":        return pedidoNoRecogido(body, sesion);                // v9 — cliente no llegó: libera el apartado y lo manda a la campaña
 case "getSucursalesUsuario":    return getSucursalesUsuario(body, sesion);            // NUEVO v4.4b
 // ===== REPARTO A DOMICILIO =====
 case "repartoEstado":        return repartoEstado(body, sesion);
