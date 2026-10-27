@@ -146,6 +146,8 @@ const BOT_MAX_TURNOS_POR_CONVERSACION = 60; // tope para cuidar el gasto de IA
 const BOT_MAX_CARACTERES_MENSAJE = 1000;
 // --- Pedidos con seguimiento (v9) -------------------------------------------------
 const PEDIDO_PREFIJO_REFERENCIA = "TV";
+const PEDIDO_PROPIEDAD_CONSECUTIVO = "PEDIDO_REF_";      // propiedad del script con el último consecutivo del día
+const PEDIDO_VENTANA_FILAS = 200;                        // un pedido recién creado se busca solo en las últimas filas de Ventas
 const PEDIDO_COLUMNAS = ["referencia", "estado_pedido", "contacto_seguimiento", "origen_pedido"];  // se crean solas en Ventas
 const PEDIDO_ESTADO = { APARTADO: "APARTADO", POR_CONFIRMAR: "POR CONFIRMAR", CONFIRMADO: "CONFIRMADO", ENTREGADO: "ENTREGADO", NO_RECOGIDO: "NO RECOGIDO", CANCELADO: "CANCELADO" };
 const PEDIDO_MOTIVO_NO_RECOGIDO = "Cliente no llegó";
@@ -169,6 +171,8 @@ const WHATSAPP_CLAVE_NUMEROS = "aviso_whatsapp_numeros";
 const WHATSAPP_CLAVE_PLANTILLA = "aviso_whatsapp_plantilla";
 const WHATSAPP_CLAVE_RESUMEN = "aviso_whatsapp_resumen";   // números que reciben además el resumen de pendientes (la Dueña)
 const WHATSAPP_MAX_DETALLE = 700;      // las variables de una plantilla no pueden pasar de ~1000 caracteres en total
+const BOT_DIAS_COMPLETOS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+const BOT_MESES_NOMBRE = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 const BOT_NOMBRE = "";                      // nombre con el que se presenta el bot (pendiente de definir con Rebeca); vacío = sin nombre
 const BOT_PEDIDOS_ACTIVOS = true;         // encendido en la rama de pruebas: el bot toma pedidos; false = solo consulta
 const BOT_HERRAMIENTAS_DE_PEDIDO = ["cotizar_pedido", "crear_pedido", "consultar_pedido"];
@@ -194,6 +198,7 @@ const BOT_ETIQUETA_TEMPORADA_HASTA = "temporada-hasta:"; // etiqueta opcional de
 const BOT_CANAL_RECOGER = "Tienda";
 const BOT_CANAL_DOMICILIO = "Domicilio";
 const BOT_CACHE_INFO_SEGUNDOS = 600;        // páginas y menú de Shopify
+const BOT_CACHE_FECHA_SEGUNDOS = 300;        // la fecha ya validada en la conversación se reutiliza al crear el pedido
 const BOT_CACHE_MENU_SEGUNDOS = 60;         // el menú ya calculado (un cambio de precio llega al bot en menos de 1 min)
 const BOT_SONDEO_MAX_SEGUNDOS = 7;           // cuánto puede esperar botRespuesta a que la respuesta esté lista (ManyChat corta a ~8 s)
 const BOT_SONDEO_PASO_MS = 500;

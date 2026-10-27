@@ -14,9 +14,14 @@
 // y estas reservas traen canal Tienda o Domicilio (ver CLAUDE.md).
 // ============================================================================
 
+// Una sola lectura del encabezado; solo escribe si falta alguna columna (antes eran ocho lecturas por llamada).
 function _pedidoAsegurarColumnas(ss) {
-  PEDIDO_COLUMNAS.forEach(function (c) { _ensureColVentas(ss, c); });
-  ["estado_anul", "anulado_por", "anulado_fecha", "anulado_motivo"].forEach(function (c) { _ensureColVentas(ss, c); });
+  const hoja = ss.getSheetByName("Ventas");
+  if (!hoja) return;
+  const ultimaCol = hoja.getLastColumn();
+  const encabezado = hoja.getRange(1, 1, 1, ultimaCol).getValues()[0];
+  const faltan = PEDIDO_COLUMNAS.concat(["estado_anul", "anulado_por", "anulado_fecha", "anulado_motivo"]).filter(function (c) { return encabezado.indexOf(c) === -1; });
+  if (faltan.length) hoja.getRange(1, ultimaCol + 1, 1, faltan.length).setValues([faltan]);
 }
 
 function _pedidoIndices(hoja) {
@@ -29,14 +34,40 @@ function _pedidoIndices(hoja) {
 function _pedidoTexto(v) { return v instanceof Date ? Utilities.formatDate(v, TZ_MX, "yyyy-MM-dd") : String(v == null ? "" : v); }
 
 // Referencia del día: TV-MMDD-NN (NN = consecutivo de los pedidos de ese día). Corta y fácil de decir en el mostrador.
+// El consecutivo vive en una propiedad del script: la hoja Ventas ya pasa de 10 mil filas y leerla entera tardaba segundos.
+// Solo la primera vez del día se lee la columna de referencias para no repetir una que ya exista.
 function _pedidoSiguienteReferencia(hoja, idx, ahora) {
-  const prefijo = PEDIDO_PREFIJO_REFERENCIA + "-" + Utilities.formatDate(ahora, TZ_MX, "MMdd") + "-";
-  const usadas = {};
-  if (idx.referencia !== -1 && hoja.getLastRow() > 1) {
-    hoja.getRange(2, idx.referencia + 1, hoja.getLastRow() - 1, 1).getValues().forEach(function (f) { if (String(f[0]).indexOf(prefijo) === 0) usadas[f[0]] = true; });
+  const dia = Utilities.formatDate(ahora, TZ_MX, "MMdd");
+  const prefijo = PEDIDO_PREFIJO_REFERENCIA + "-" + dia + "-";
+  const props = PropertiesService.getScriptProperties();
+  const clave = PEDIDO_PROPIEDAD_CONSECUTIVO + dia;
+  let n = Number(props.getProperty(clave)) || 0;
+  if (!n) {
+    Object.keys(props.getProperties()).forEach(function (k) { if (k.indexOf(PEDIDO_PROPIEDAD_CONSECUTIVO) === 0) props.deleteProperty(k); });
+    if (idx.referencia !== -1 && hoja.getLastRow() > 1) {
+      hoja.getRange(2, idx.referencia + 1, hoja.getLastRow() - 1, 1).getValues().forEach(function (f) {
+        if (String(f[0]).indexOf(prefijo) === 0) n = Math.max(n, Number(String(f[0]).slice(prefijo.length)) || 0);
+      });
+    }
   }
-  const n = Object.keys(usadas).length + 1;
+  n += 1;
+  props.setProperty(clave, String(n));
   return prefijo + ("0" + n).slice(-2);
+}
+
+// Filas (número de fila, base 1) de un pedido. Un pedido recién creado está al final de la hoja: se busca solo en las
+// últimas filas y, si no aparece, en toda la columna A.
+function _pedidoFilasDe(hoja, idVenta) {
+  const ultima = hoja.getLastRow();
+  if (ultima < 2) return [];
+  const buscar = function (desde, cuantas) {
+    const filas = [];
+    hoja.getRange(desde, 1, cuantas, 1).getValues().forEach(function (f, i) { if (String(f[0]) === String(idVenta)) filas.push(desde + i); });
+    return filas;
+  };
+  const cuantas = Math.min(ultima - 1, PEDIDO_VENTANA_FILAS);
+  const recientes = buscar(ultima - cuantas + 1, cuantas);
+  return recientes.length ? recientes : buscar(2, ultima - 1);
 }
 
 // Anota referencia, estado, contacto y origen en TODAS las filas del pedido. Devuelve la referencia.
@@ -47,18 +78,24 @@ function pedidoAnotar(ss, idVenta, datos) {
   try {
     const hoja = ss.getSheetByName("Ventas");
     const idx = _pedidoIndices(hoja);
-    const valores = hoja.getDataRange().getValues();
-    const filas = [];
-    for (let i = 1; i < valores.length; i++) if (String(valores[i][0]) === String(idVenta)) filas.push(i + 1);
+    const filas = _pedidoFilasDe(hoja, idVenta);
     if (!filas.length) return "";
-    const existente = valores[filas[0] - 1][idx.referencia];
+    const existente = String(hoja.getRange(filas[0], idx.referencia + 1).getValue() || "");
     const referencia = existente || _pedidoSiguienteReferencia(hoja, idx, new Date());
-    filas.forEach(function (f) {
-      hoja.getRange(f, idx.referencia + 1).setValue(referencia);
-      if (datos.estado) hoja.getRange(f, idx.estado_pedido + 1).setValue(datos.estado);
-      if (datos.contacto != null) hoja.getRange(f, idx.contacto_seguimiento + 1).setValue(datos.contacto);
-      if (datos.origen) hoja.getRange(f, idx.origen_pedido + 1).setValue(datos.origen);
-    });
+    const contiguas = idx.estado_pedido === idx.referencia + 1 && idx.contacto_seguimiento === idx.referencia + 2 && idx.origen_pedido === idx.referencia + 3;
+    if (contiguas && datos.estado && datos.contacto != null && datos.origen) {
+      const valores = filas.map(function () { return [referencia, datos.estado, datos.contacto, datos.origen]; });
+      const primera = filas[0], seguidas = filas.every(function (f, i) { return f === primera + i; });
+      if (seguidas) hoja.getRange(primera, idx.referencia + 1, filas.length, 4).setValues(valores);
+      else filas.forEach(function (f, i) { hoja.getRange(f, idx.referencia + 1, 1, 4).setValues([valores[i]]); });
+    } else {
+      filas.forEach(function (f) {
+        hoja.getRange(f, idx.referencia + 1).setValue(referencia);
+        if (datos.estado) hoja.getRange(f, idx.estado_pedido + 1).setValue(datos.estado);
+        if (datos.contacto != null) hoja.getRange(f, idx.contacto_seguimiento + 1).setValue(datos.contacto);
+        if (datos.origen) hoja.getRange(f, idx.origen_pedido + 1).setValue(datos.origen);
+      });
+    }
     return referencia;
   } finally { try { lock.releaseLock(); } catch (e) { } }
 }

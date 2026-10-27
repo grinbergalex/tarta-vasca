@@ -119,13 +119,33 @@ function _botTurno(apiKey, historial, mensaje, ctx) {
     const usos = r.data.content.filter(function (b) { return b.type === "tool_use"; });
     if (r.data.stop_reason !== "tool_use" || !usos.length) return { ok: true, texto: _botTexto(r.data.content) };
     const t1 = Date.now();
-    mensajes.push({ role: "user", content: usos.map(function (uso) {
+    const resultados = usos.map(function (uso) {
       ctx.herramientas.push(uso.name);
-      return { type: "tool_result", tool_use_id: uso.id, content: JSON.stringify(_botEjecutarHerramienta(uso.name, uso.input || {}, ctx)) };
-    }) });
+      return { uso: uso, salida: _botEjecutarHerramienta(uso.name, uso.input || {}, ctx) };
+    });
     ctx.ms.herramientas += Date.now() - t1;
+    // Pedido creado: el mensaje de confirmación lo arma el sistema (cifras exactas, siempre completo) y se ahorra una
+    // llamada a la IA, que son ~5 s y ManyChat solo espera unos segundos.
+    const creado = resultados.filter(function (x) { return x.uso.name === "crear_pedido" && x.salida && x.salida.ok; })[0];
+    if (creado) return { ok: true, texto: _botMensajeConfirmacion(creado.uso.input || {}, creado.salida, ctx) };
+    mensajes.push({ role: "user", content: resultados.map(function (x) {
+      return { type: "tool_result", tool_use_id: x.uso.id, content: JSON.stringify(x.salida) };
+    }) });
   }
   return { ok: false, error: "Demasiadas vueltas de herramientas." };
+}
+
+function _botMensajeConfirmacion(a, r, ctx) {
+  const nombre = String(a.nombre || "").trim().split(/\s+/)[0];
+  const seguimiento = ctx.canal === "WhatsApp" ? "por este mismo chat" : (a.seguimiento === "instagram" ? "por esta misma conversación" : "por teléfono, al número que nos diste");
+  return [
+    "Listo" + (nombre ? ", " + nombre : "") + ", tu pedido quedó apartado. Gracias por tu pedido.",
+    "Tu referencia es " + r.referencia + ": guárdala para preguntar por tu pedido aquí y para darla al llegar.",
+    "Total: $" + r.total,
+    r.indicaciones_entrega,
+    r.indicaciones_pago,
+    "El equipo revisa tu pedido y te confirma " + seguimiento + "."
+  ].filter(Boolean).join("\n\n");
 }
 
 function _botLlamarClaude(apiKey, system, mensajes) {
@@ -218,7 +238,7 @@ function _botPrompt(ahora) {
       "3. Llama cotizar_pedido y muestra el ticket TAL CUAL: ese es el TOTAL. Pregunta cómo va a pagar: efectivo o transferencia (la tarjeta solo en sucursal, al recoger, y nunca en un envío a domicilio).",
       "4. Su nombre y cómo le damos seguimiento. En Instagram pregúntale si prefiere que lo sigan por esta misma conversación o por teléfono (si elige teléfono, pídelo: 10 dígitos). En WhatsApp NO pidas teléfono: ya lo tenemos. NO preguntes por alergias ni por notas: si el cliente da una nota o una dedicatoria por su cuenta, la anotas en notas.",
       "5. Con el \"sí\" final del cliente al ticket, llama crear_pedido. El pedido queda apartado en el sistema como POR CONFIRMAR, con una REFERENCIA, y el equipo recibe el aviso.",
-      "6. Con el resultado, dile al cliente EN POCOS MENSAJES: su referencia (que la guarde: sirve para preguntar por su pedido aquí y para dar al llegar al local), el total, las indicaciones de pago y las de recoger o entrega tal como vienen en el resultado (indicaciones_pago e indicaciones_entrega), y que el equipo revisa y le confirma. No inventes datos de cuenta, horarios ni reglas: usa solo lo que traiga el resultado. Si el resultado no trae los datos de la transferencia, dile que el equipo se los comparte en un momento.",
+      "6. Cuando crear_pedido sale bien, el SISTEMA le manda al cliente el mensaje de confirmación por ti (referencia, total, pago, recoger y seguimiento): no lo repitas. Si crear_pedido falla, explícale con calidez qué falta o qué cambiar. Lo que debe incluir ese mensaje, por si lo necesitas EN POCOS MENSAJES: su referencia (que la guarde: sirve para preguntar por su pedido aquí y para dar al llegar al local), el total, las indicaciones de pago y las de recoger o entrega tal como vienen en el resultado (indicaciones_pago e indicaciones_entrega), y que el equipo revisa y le confirma. No inventes datos de cuenta, horarios ni reglas: usa solo lo que traiga el resultado. Si el resultado no trae los datos de la transferencia, dile que el equipo se los comparte en un momento.",
       "- Si el cliente pregunta qué pasa si no puede ir por su pedido, NO inventes reglas (plazos, cargos, quién puede recoger, cambios de fecha). Usa solo lo que dicen las indicaciones de recoger del resultado; si no traen una política, dile que nos avise por aquí y que el equipo lo ayuda a reprogramar, y llama avisar_al_equipo con tipo \"otro\" y su referencia.",
       "- Si el cliente pregunta por un pedido, usa consultar_pedido con su referencia; solo da detalles a quien lo hizo en esta conversación o a quien dé los últimos 4 dígitos de su teléfono.",
       "- No pides datos de tarjeta. Las formas de pago y las facturas salen de consultar_manual (tema pagos_y_facturas). Si piden un anticipo, pasas con una persona. Si piden factura, dices que sí se emiten y que necesitan comunicarse con el equipo, y llamas pasar_a_persona con tipo \"factura\".",
@@ -284,7 +304,7 @@ function _botEjecutarHerramienta(nombre, args, ctx) {
       case "consultar_manual": return _botManual(args.tema);
       case "consultar_informacion": return _botInformacion(args.tema);
       case "consultar_zona_envio": return _botZona(args.colonia);
-      case "calcular_fecha_entrega": return _botCalcularFecha(args);
+      case "calcular_fecha_entrega": return _botCalcularFechaMemo(args, ctx.conversacionId, false);
       case "cotizar_pedido": return BOT_PEDIDOS_ACTIVOS ? _botCotizacionCompleta(args, ctx) : { error: "Los pedidos por este medio aún no están activos." };
       case "crear_pedido": return BOT_PEDIDOS_ACTIVOS ? _botCrearPedido(args, ctx) : { error: "Los pedidos por este medio aún no están activos." };
       case "consultar_pedido": return BOT_PEDIDOS_ACTIVOS ? _botConsultarPedido(args, ctx) : { error: "Los pedidos por este medio aún no están activos." };
@@ -541,6 +561,21 @@ function _botCalcularFecha(a) {
   });
 }
 
+// Al crear el pedido se vuelve a validar la fecha, y eso cuesta 1.5 a 3 s (lee inventario). Si en esta conversación ya se
+// validó exactamente lo mismo hace pocos minutos y salió válido, se reutiliza: si entre tanto se acabó la tarta,
+// registrarVenta la rechaza igual al apartarla, así que no se arriesga nada.
+function _botCalcularFechaMemo(a, conversacionId, soloLeerSiValida) {
+  const items = (a.items || []).map(function (i) { return i.sabor + "|" + i.tamano + "|" + i.cantidad; }).sort().join(";");
+  const clave = "bot_fecha_" + hashSimple(conversacionId + "#" + a.entrega + "#" + a.sucursal + "#" + a.fecha_deseada + "#" + items);
+  try {
+    const guardado = CacheService.getScriptCache().get(clave);
+    if (guardado && soloLeerSiValida) { const r = JSON.parse(guardado); if (r.valida) return r; }
+  } catch (e) { }
+  const resultado = _botCalcularFecha(a);
+  try { if (resultado && resultado.valida) CacheService.getScriptCache().put(clave, JSON.stringify(resultado), BOT_CACHE_FECHA_SEGUNDOS); } catch (e) { }
+  return resultado;
+}
+
 // ---------------------------------------------------------------------------
 // COTIZACIÓN Y PEDIDO
 // ---------------------------------------------------------------------------
@@ -616,9 +651,18 @@ function _botIndicacionesPago(metodo, total, referencia) {
   return "Pago por transferencia de $" + total + ":\n" + datos + "\nPon la referencia " + referencia + " como concepto y manda tu comprobante por aquí.";
 }
 
+// 2026-10-30 -> "viernes 30 de octubre"
+function _botFechaLegible(iso) {
+  const p = String(iso || "").split("-");
+  if (p.length !== 3) return String(iso || "");
+  const d = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]), 12, 0, 0);
+  return BOT_DIAS_COMPLETOS[d.getDay()] + " " + Number(p[2]) + " de " + BOT_MESES_NOMBRE[Number(p[1]) - 1];
+}
+
 function _botIndicacionesRecoger(sucursal, fecha, horario) {
   const politica = String(_cfgVal(SpreadsheetApp.getActiveSpreadsheet(), PEDIDO_CLAVE_POLITICA, "")).trim();
-  const cuando = horario ? "el " + fecha + ", de " + horario.abre + " a " + horario.cierra : "el " + fecha;
+  const dia = _botFechaLegible(fecha);
+  const cuando = horario ? "el " + dia + ", de " + horario.abre + " a " + horario.cierra : "el " + dia;
   return "Recoges en " + sucursal + " " + cuando + ". Da tu referencia al llegar." + (politica ? " " + politica : " Si no vas a poder pasar, avísanos por aquí para reprogramarlo.");
 }
 
@@ -643,7 +687,7 @@ function _botCrearPedido(a, ctx) {
   if (_botLeerHuella(ctx.conversacionId) !== _botHuella(cot.lineas, a.entrega)) return { ok: false, error: "Antes de crear el pedido hay que mostrar el ticket con cotizar_pedido y esperar el sí del cliente." };
   const ahora = _botAhora();
   if (!_botDentroDelLimite("bot_pedidos_" + ahora.iso + "_" + Math.floor(ahora.min / 60), 3600, BOT_MAX_PEDIDOS_POR_HORA)) { ctx.handoff = true; return { ok: false, error: "Hay muchos pedidos en este momento; lo ve una persona del equipo." }; }
-  const fecha = _botCalcularFecha({ entrega: a.entrega, sucursal: a.sucursal, fecha_deseada: a.fecha_entrega, items: a.items });
+  const fecha = _botCalcularFechaMemo({ entrega: a.entrega, sucursal: a.sucursal, fecha_deseada: a.fecha_entrega, items: a.items }, ctx.conversacionId, true);
   if (!fecha.valida) return { ok: false, error: fecha.motivo || "La fecha no es posible.", primera_fecha: fecha.primera_fecha };
   if (a.hora && fecha.horario && (_botMinutos(a.hora) < _botMinutos(fecha.horario.abre) || _botMinutos(a.hora) > _botMinutos(fecha.horario.cierra))) {
     return { ok: false, error: "Esa hora queda fuera del horario (" + fecha.horario.abre + " a " + fecha.horario.cierra + ")." };
@@ -669,7 +713,7 @@ function _botCrearPedido(a, ctx) {
   return {
     ok: true, pedido: res.idVenta, referencia: referencia, total: cot.total, ticket: ticket,
     indicaciones_pago: _botIndicacionesPago(a.metodo_pago, cot.total, referencia),
-    indicaciones_entrega: domicilio ? "Entrega a domicilio el " + a.fecha_entrega + ", entre las " + BOT_VENTANA_ENTREGA.abre + " y las " + BOT_VENTANA_ENTREGA.cierra + "." : _botIndicacionesRecoger(a.sucursal, a.fecha_entrega, fecha.horario),
+    indicaciones_entrega: domicilio ? "Entrega a domicilio el " + _botFechaLegible(a.fecha_entrega) + ", entre las " + BOT_VENTANA_ENTREGA.abre + " y las " + BOT_VENTANA_ENTREGA.cierra + "." : _botIndicacionesRecoger(a.sucursal, a.fecha_entrega, fecha.horario),
     mensaje: "Pedido apartado. El equipo lo revisa y lo confirma."
   };
 }

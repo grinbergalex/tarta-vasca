@@ -348,6 +348,11 @@ versión viva contra el repo (regla dura de arriba).
   `invLiberar` y marca `ANULADO` directo. Quedan en la hoja `Pedidos_No_Recogidos` (lista de la campaña).
 - **Regla de no recogido**: el día de la entrega, al CERRAR la sucursal, lo que debió recogerse y no llegó se libera (`pedido_gracia_dias` suma días de espera). **Reporte diario** `pedidosRevisionDiaria` (21:00; instalar una vez con `instalarRevisionDiariaPedidos()`): lista los
   apartados vencidos y, por defecto, los marca solos y libera las tartas (`pedido_auto_no_recogido = NO` solo los lista). Solo recolección en sucursal.
+- **Velocidad del pedido** (ManyChat solo espera ~8 s + un sondeo de 7 s): la hoja Ventas ya pasa de 11 mil filas, así que
+  `pedidoAnotar` busca solo en las últimas `PEDIDO_VENTANA_FILAS`, escribe en bloque y saca el consecutivo de una
+  propiedad del script; `crear_pedido` reutiliza la fecha validada en la conversación (`_botCalcularFechaMemo`); y con
+  `crear_pedido` exitoso el mensaje de confirmación lo arma el sistema (`_botMensajeConfirmacion`) sin otra llamada a la
+  IA. El turno que confirma bajó de 18-35 s a ~9 s. `registrarVenta` (3 s) no se tocó.
 - **Claves de Configuración** (las llena el equipo; vacías, el bot no inventa nada): `pedido_datos_transferencia`,
   `pedido_politica_no_recoger`, `pedido_auto_no_recogido`, `pedido_gracia_dias`, `bot_correo_avisos`.
 - **Avisos por WhatsApp** (`20_whatsapp_avisos.js`): API oficial de Meta con una plantilla aprobada de dos variables
