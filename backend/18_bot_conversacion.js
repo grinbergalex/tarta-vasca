@@ -42,19 +42,47 @@ function botConversar(body) {
   // Tope diario de llamadas a la IA (todas las conversaciones): si alguien inunda el bot, el gasto no se dispara.
   if (!_botDentroDelLimite("bot_dia_" + _botAhora().iso, 86400, BOT_MAX_LLAMADAS_POR_DIA)) return { ok: true, respuesta: BOT_TEXTO_TOPE, handoff: true };
 
-  const ctx = { conversacionId: conversacionId, handoff: false, alerta: "", pedido: null, herramientas: [] };
+  // Respuesta en dos tiempos: ManyChat espera ~10 s y se rinde, pero este proceso sigue hasta terminar. Se anota
+  // que hay una respuesta en camino y, al final, se guarda lista para que ManyChat la recoja con botRespuesta.
+  _botGuardarEstado(conversacionId, { listo: false });
+  const ctx = { conversacionId: conversacionId, handoff: false, alerta: "", pedido: null, herramientas: [], inicio: Date.now(), ms: { ia: 0, herramientas: 0, vueltas: 0 } };
   const turno = _botTurno(apiKey, memoria.mensajes, mensaje, ctx);
   if (!turno.ok) {
     // El detalle del error va solo al equipo: al cliente (o a quien esté probando la entrada) nunca se le devuelve.
     _botAvisar("El bot falló", "Conversación " + conversacionId + ". Error: " + turno.error + ". Último mensaje del cliente: " + mensaje);
-    return { ok: true, respuesta: BOT_TEXTO_FALLA, handoff: true };
+    return _botTerminar(conversacionId, { ok: true, respuesta: BOT_TEXTO_FALLA, handoff: true });
   }
   memoria.mensajes.push({ role: "user", content: mensaje }, { role: "assistant", content: turno.texto });
   memoria.turnos += 1;
   _botGuardarMemoria(conversacionId, memoria);
   _botBitacora(ctx, mensaje, turno.texto);
   // alerta ("queja", "mensajero", ...): para que ManyChat o el equipo lo distingan de un traspaso normal.
-  return { ok: true, respuesta: turno.texto, handoff: ctx.handoff, alerta: ctx.alerta, pedido: ctx.pedido };
+  return _botTerminar(conversacionId, { ok: true, respuesta: turno.texto, handoff: ctx.handoff, alerta: ctx.alerta, pedido: ctx.pedido });
+}
+
+// ManyChat llama aquí unos segundos después si la primera llamada se rindió. Devuelve la respuesta una sola vez.
+function botRespuesta(body) {
+  const secreto = PropertiesService.getScriptProperties().getProperty("BOT_TOKEN");
+  if (!secreto || String(body.botToken || "") !== secreto) return { ok: false, error: "No autorizado." };
+  const conversacionId = String(body.conversacionId || "").replace(/[^A-Za-z0-9_-]/g, "").substring(0, 64);
+  if (!conversacionId) return { ok: false, error: "Falta la conversación." };
+  const estado = _botLeerEstado(conversacionId);
+  if (!estado || !estado.listo) return { ok: true, listo: false };
+  if (estado.entregado) return { ok: true, listo: false, entregado: true };
+  estado.entregado = true;
+  _botGuardarEstado(conversacionId, estado);
+  return { ok: true, listo: true, respuesta: estado.respuesta, handoff: estado.handoff, alerta: estado.alerta, pedido: estado.pedido };
+}
+
+function _botTerminar(conversacionId, resultado) {
+  _botGuardarEstado(conversacionId, Object.assign({ listo: true, entregado: false }, resultado));
+  return resultado;
+}
+function _botGuardarEstado(id, estado) {
+  try { CacheService.getScriptCache().put("bot_res_" + id, JSON.stringify(estado), BOT_RESULTADO_SEGUNDOS); } catch (e) { }
+}
+function _botLeerEstado(id) {
+  try { return JSON.parse(CacheService.getScriptCache().get("bot_res_" + id) || "null"); } catch (e) { return null; }
 }
 
 // El chat web de pruebas (google.script.run) llama a esta función.
@@ -75,15 +103,20 @@ function _botTurno(apiKey, historial, mensaje, ctx) {
   const mensajes = historial.concat([{ role: "user", content: mensaje }]);
   const system = _botPrompt(_botAhora());
   for (let vuelta = 0; vuelta <= BOT_MAX_VUELTAS_HERRAMIENTAS; vuelta++) {
+    const t0 = Date.now();
     const r = _botLlamarClaude(apiKey, system, mensajes);
+    ctx.ms.ia += Date.now() - t0;
+    ctx.ms.vueltas += 1;
     if (!r.ok) return r;
     mensajes.push({ role: "assistant", content: r.data.content });
     const usos = r.data.content.filter(function (b) { return b.type === "tool_use"; });
     if (r.data.stop_reason !== "tool_use" || !usos.length) return { ok: true, texto: _botTexto(r.data.content) };
+    const t1 = Date.now();
     mensajes.push({ role: "user", content: usos.map(function (uso) {
       ctx.herramientas.push(uso.name);
       return { type: "tool_result", tool_use_id: uso.id, content: JSON.stringify(_botEjecutarHerramienta(uso.name, uso.input || {}, ctx)) };
     }) });
+    ctx.ms.herramientas += Date.now() - t1;
   }
   return { ok: false, error: "Demasiadas vueltas de herramientas." };
 }
@@ -334,7 +367,15 @@ function _botTraerPublico(ruta) {
 // HOMOLOGACIÓN: el precio es el de la lista base del sistema (Precios). Si la tienda en línea muestra otro
 // precio para el mismo sabor y tamaño, NO se da ese precio (queda null), se avisa al equipo y el bot pasa la consulta.
 function _botMenu() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  try { const guardado = CacheService.getScriptCache().get("bot_menu"); if (guardado) return JSON.parse(guardado); } catch (e) { }
+  const lista = _botMenuCalcular();
+  try { const texto = JSON.stringify(lista); if (texto.length < 95000) CacheService.getScriptCache().put("bot_menu", texto, BOT_CACHE_MENU_SEGUNDOS); } catch (e) { }
+  return lista;
+}
+
+function _botMenuCalcular() {
+  // La hoja de precios se lee UNA vez (antes eran 21 lecturas, una por sabor y tamaño: de 3 a 5 segundos).
+  const filasPrecios = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Precios").getDataRange().getValues();
   const delSistema = _botSaboresSistema();
   let productos = [];
   try { productos = JSON.parse(_botTraerPublico("/products.json?limit=250")).products || []; } catch (e) { }
@@ -348,7 +389,7 @@ function _botMenu() {
     const sabor = delSistema.filter(function (s) { return _botSinAcentos(s) === _botSinAcentos(bruto); })[0] || bruto;
     const textoCompleto = _botTextoPlano(p.body_html);
     const descripcion = textoCompleto.split(/Elige tu tamaño|Tamaños y porciones/i)[0].replace(/\s+/g, " ").trim();
-    const precios = _botPreciosDe(ss, sabor);
+    const precios = _botPreciosDe(filasPrecios, sabor);
     const enTienda = _botPreciosTienda(p);
     BOT_TAMANOS.forEach(function (t) {
       if (enTienda[t] && enTienda[t] !== precios[t]) { discrepancias.push(sabor + " " + t + ": sistema $" + precios[t] + " vs tienda en línea $" + enTienda[t]); precios[t] = null; }
@@ -363,12 +404,25 @@ function _botMenu() {
   });
   if (discrepancias.length) _botAvisarPreciosDistintos(discrepancias);
   if (lista.length) return lista;
-  return delSistema.map(function (s) { return { sabor: s, descripcion: "", precios: _botPreciosDe(ss, s) }; });
+  return delSistema.map(function (s) { return { sabor: s, descripcion: "", precios: _botPreciosDe(filasPrecios, s) }; });
 }
-function _botPreciosDe(ss, sabor) {
+function _botPreciosDe(filasPrecios, sabor) {
   const precios = {};
-  BOT_TAMANOS.forEach(function (t) { precios[t] = getPrecioActual(ss, sabor, t, "") || null; });
+  BOT_TAMANOS.forEach(function (t) { precios[t] = _botPrecioBase(filasPrecios, sabor, t) || null; });
   return precios;
+}
+// Misma regla que getPrecioActual(…, canal "") pero sobre filas ya leídas: precio base del sabor y tamaño;
+// si no hay, el primer precio base de ese tamaño. Las filas de canal (Rappi, etc.) no cuentan.
+function _botPrecioBase(filasPrecios, sabor, tamano) {
+  let porSabor = 0, porTamano = 0;
+  for (let i = 1; i < filasPrecios.length; i++) {
+    const fila = filasPrecios[i], canal = fila[6] || "";
+    if (canal && canal !== "BASE") continue;
+    const precio = Number(fila[2]) || 0;
+    if (fila[0] === sabor && fila[1] === tamano) porSabor = precio;
+    if (fila[1] === tamano && !porTamano) porTamano = precio;
+  }
+  return porSabor || porTamano;
 }
 function _botPreciosTienda(producto) {
   const precios = {};
@@ -399,7 +453,7 @@ function _botManual(tema) {
 
 function _botInformacion(tema) {
   if (tema === "sucursales") return _botSucursales();
-  const rutas = { entregas_y_preguntas: "/pages/entregas-y-preguntas", preguntas_frecuentes: "/pages/preguntas-frecuentes", historia: "/pages/nuestra-historia", contacto: "/pages/contacto" };
+  const rutas = { entregas_y_preguntas: "/pages/entregas-y-preguntas", preguntas_frecuentes: "/pages/preguntas-frecuentes", historia: "/pages/nuestra-historia", contacto: "/pages/contact" };
   if (!rutas[tema]) return { error: "Tema desconocido." };
   const html = _botTraerPublico(rutas[tema]);
   const contenido = html.match(/<div class="rte[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
@@ -606,7 +660,7 @@ function _botBitacora(ctx, mensaje, respuesta) {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     let hoja = ss.getSheetByName("Bot_Log");
-    if (!hoja) { hoja = ss.insertSheet("Bot_Log"); hoja.appendRow(["fecha", "conversacion", "cliente", "bot", "herramientas", "pedido", "handoff", "alerta"]); hoja.setFrozenRows(1); }
-    hoja.appendRow([new Date(), ctx.conversacionId, mensaje, respuesta, ctx.herramientas.join(", "), ctx.pedido ? ctx.pedido.id : "", ctx.handoff, ctx.alerta]);
+    if (!hoja) { hoja = ss.insertSheet("Bot_Log"); hoja.appendRow(["fecha", "conversacion", "cliente", "bot", "herramientas", "pedido", "handoff", "alerta", "ms_total", "ms_ia", "ms_herramientas", "vueltas_ia"]); hoja.setFrozenRows(1); }
+    hoja.appendRow([new Date(), ctx.conversacionId, mensaje, respuesta, ctx.herramientas.join(", "), ctx.pedido ? ctx.pedido.id : "", ctx.handoff, ctx.alerta, Date.now() - ctx.inicio, ctx.ms.ia, ctx.ms.herramientas, ctx.ms.vueltas]);
   } catch (e) { }
 }

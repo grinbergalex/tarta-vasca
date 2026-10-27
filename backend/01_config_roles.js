@@ -166,6 +166,8 @@ const BOT_ETIQUETA_TEMPORADA_HASTA = "temporada-hasta:"; // etiqueta opcional de
 const BOT_CANAL_RECOGER = "Tienda";
 const BOT_CANAL_DOMICILIO = "Domicilio";
 const BOT_CACHE_INFO_SEGUNDOS = 600;        // páginas y menú de Shopify
+const BOT_CACHE_MENU_SEGUNDOS = 60;         // el menú ya calculado (un cambio de precio llega al bot en menos de 1 min)
+const BOT_RESULTADO_SEGUNDOS = 600;         // cuánto se guarda la respuesta lista para que ManyChat la recoja
 // Dónde están las sucursales (el horario sale de HORARIOS_SUCURSAL). ⚠ La dirección de Bosques salió
 // de un mensaje de mayo-2026: confirmar con Rebe.
 const BOT_SUCURSALES_INFO = {
