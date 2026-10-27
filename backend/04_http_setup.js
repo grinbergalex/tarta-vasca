@@ -75,6 +75,7 @@ return respuesta({ ok: false, error: "Error interno: " + err.message });
 }
 function doGet(e) {
 try {
+if (e && e.parameter && e.parameter.chat) return _botPaginaChat(e.parameter.t);   // v9 — chat web de pruebas del bot
 if (e && e.parameter && e.parameter.data) {
 const body = JSON.parse(e.parameter.data);
 return respuesta(despachar(body));
@@ -89,6 +90,7 @@ const accion = body.accion;
 if (accion === "login") return login(body);
 if (accion === "logout") return logout(body);
 if (accion === "tiendaDisponibilidad") return tiendaDisponibilidad();  // v7.6 — pública: calendario del carrito de Shopify
+if (accion === "botConversar") return botConversar(body);              // v9 — pública pero protegida con BOT_TOKEN (ManyChat y chat de pruebas)
 const sesion = validarToken(body.token);
 if (!sesion.ok) return { ok: false, error: "Sesión inválida o expirada. Vuelve a iniciar sesión." };
 switch (accion) {

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<style>
+  :root { --crema: #faf6ef; --cafe: #3b2a20; --dorado: #b08a4a; --burbuja-bot: #fff; --burbuja-yo: #3b2a20; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--crema); color: var(--cafe); display: flex; flex-direction: column; height: 100vh; }
+  header { padding: 12px 16px; background: #fff; border-bottom: 1px solid #eadfce; font-weight: 600; }
+  header small { display: block; font-weight: 400; color: #8a7a6a; font-size: 12px; }
+  #chat { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+  .burbuja { max-width: 82%; padding: 10px 14px; border-radius: 18px; line-height: 1.4; white-space: pre-wrap; word-wrap: break-word; }
+  .bot { align-self: flex-start; background: var(--burbuja-bot); border: 1px solid #eadfce; border-bottom-left-radius: 4px; }
+  .yo { align-self: flex-end; background: var(--burbuja-yo); color: #fff; border-bottom-right-radius: 4px; }
+  .aviso { align-self: center; font-size: 12px; color: #8a7a6a; background: #f0e8d8; padding: 4px 10px; border-radius: 10px; }
+  form { display: flex; gap: 8px; padding: 10px 12px; background: #fff; border-top: 1px solid #eadfce; }
+  input { flex: 1; font-size: 16px; padding: 10px 14px; border: 1px solid #d9ccb8; border-radius: 22px; outline: none; }
+  button { font-size: 16px; padding: 0 18px; border: 0; border-radius: 22px; background: var(--dorado); color: #fff; cursor: pointer; }
+  button:disabled { opacity: .5; }
+  #nuevo { background: transparent; color: var(--dorado); border: 1px solid var(--dorado); font-size: 12px; padding: 4px 10px; margin-left: 8px; }
+</style>
+</head>
+<body>
+<header>Tarta Vasca — chat de pruebas <button id="nuevo" type="button">Conversación nueva</button>
+  <small>Ambiente de pruebas: lo que se pida aquí no es un pedido real.</small></header>
+<div id="chat"></div>
+<form id="forma"><input id="texto" autocomplete="off" placeholder="Escribe tu mensaje…" autofocus><button id="enviar">Enviar</button></form>
+<script>
+  const TOKEN = <?!= JSON.stringify(token) ?>;
+  const chat = document.getElementById("chat"), forma = document.getElementById("forma"), texto = document.getElementById("texto"), enviar = document.getElementById("enviar");
+  let conversacionId = sessionStorage.getItem("tv_conv") || nuevaConversacion();
+
+  function nuevaConversacion() { const id = "web-" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36); try { sessionStorage.setItem("tv_conv", id); } catch (e) { } return id; }
+  function pintar(clase, contenido) { const d = document.createElement("div"); d.className = "burbuja " + clase; d.textContent = contenido; chat.appendChild(d); chat.scrollTop = chat.scrollHeight; return d; }
+  function aviso(contenido) { const d = document.createElement("div"); d.className = "aviso"; d.textContent = contenido; chat.appendChild(d); chat.scrollTop = chat.scrollHeight; }
+
+  document.getElementById("nuevo").onclick = function () { conversacionId = nuevaConversacion(); chat.innerHTML = ""; aviso("Conversación nueva"); texto.focus(); };
+
+  forma.onsubmit = function (e) {
+    e.preventDefault();
+    const mensaje = texto.value.trim(); if (!mensaje) return;
+    pintar("yo", mensaje); texto.value = ""; enviar.disabled = true;
+    const espera = pintar("bot", "…");
+    google.script.run
+      .withSuccessHandler(function (r) {
+        enviar.disabled = false; espera.remove();
+        if (!r || !r.ok) { pintar("bot", "No pude contestar: " + ((r && r.error) || "error desconocido")); return; }
+        pintar("bot", r.respuesta);
+        if (r.pedido) aviso("Pedido de prueba registrado: " + r.pedido.id + " · total $" + r.pedido.total);
+        if (r.handoff) aviso("El bot pasó la conversación a una persona");
+        texto.focus();
+      })
+      .withFailureHandler(function (err) { enviar.disabled = false; espera.remove(); pintar("bot", "Error de conexión: " + err.message); })
+      .botConversarWeb({ botToken: TOKEN, conversacionId: conversacionId, mensaje: mensaje });
+  };
+  aviso("Escribe como si fueras una clienta. Para empezar de cero, toca «Conversación nueva».");
+</script>
+</body>
+</html>

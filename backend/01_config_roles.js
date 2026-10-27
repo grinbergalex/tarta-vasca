@@ -136,6 +136,43 @@ const RECOGER_DIAS_PREPARACION = 1;      // días que tarda una tarta sobre pedi
 const RECOGER_HORA_CORTE = "17:00";      // pedidos sobre pedido después de esta hora suman un día más
 const RECOGER_INTERVALO_MIN = 60;        // tamaño de cada horario que elige el cliente
 const RECOGER_DIAS_A_MOSTRAR = 14;       // hasta cuántos días adelante se puede reservar
+// v9 — Bot de Instagram (18_bot_conversacion.js). Las reglas de fechas reutilizan RECOGER_*.
+const BOT_MODELO = "claude-sonnet-5-5";
+const BOT_MAX_TOKENS = 1024;
+const BOT_MAX_VUELTAS_HERRAMIENTAS = 6;     // veces que puede pedir herramientas en un solo turno
+const BOT_MAX_MENSAJES_HISTORIAL = 30;      // mensajes de la conversación que recuerda
+const BOT_HISTORIAL_SEGUNDOS = 21600;       // 6 h: la conversación se olvida sola
+const BOT_MAX_TURNOS_POR_CONVERSACION = 60; // tope para cuidar el gasto de IA
+const BOT_MAX_CARACTERES_MENSAJE = 1000;
+const BOT_MAX_PIEZAS_POR_PEDIDO = 12;       // más que esto pasa con una persona (eventos, regalos corporativos)
+const BOT_USUARIO = "bot-instagram";
+const BOT_ROL = "Admin_Ventas";             // sesión interna (nunca sale por el API): permite elegir la sucursal al reservar
+const BOT_SUCURSAL_DOMICILIO = SUCURSAL_COCINA;
+const BOT_DIAS_ENTREGA_DOMICILIO = [2, 3, 4, 5, 6];   // martes a sábado, como dice la página de la tienda
+const BOT_VENTANA_ENTREGA = { abre: "09:00", cierra: "15:00" };
+const BOT_HORA_CORTE_DOMICILIO = "18:00";   // pedidos a domicilio después de esta hora suman un día
+const BOT_MARGEN_MISMO_DIA_MIN = 60;        // para recoger hoy, tiene que faltar al menos esto para cerrar
+const BOT_TIENDA_URL = "https://latartavasca.com";
+const BOT_TAMANOS = ["Individual", "Mediana", "Grande"];
+const BOT_ALIAS_TAMANO = { "chica": "Individual", "individual": "Individual", "mediana": "Mediana", "grande": "Grande" };
+const BOT_SUCURSALES_RECOGER = ["Cuajimalpa", "Polanco", "Bosques"];   // dónde se puede recoger un pedido del bot (horario = HORARIOS_SUCURSAL)
+const BOT_MAX_LLAMADAS_POR_DIA = 1500;      // tope de gasto de IA por día, para todas las conversaciones
+const BOT_MAX_PEDIDOS_POR_HORA = 12;        // contra pedidos falsos en masa
+const BOT_COTIZACION_SEGUNDOS = 3600;       // el ticket mostrado vale una hora para poder crear el pedido
+const BOT_HOJA_MANUAL = "Bot_Manual";                   // pestaña de la hoja con la guía de marca (Tema | Contenido); Rebeca la edita
+const BOT_TEMAS_MANUAL = ["historia", "filosofia", "sabores", "recomendar_sabores", "preguntas_frecuentes", "pedidos_y_canales", "pagos_y_facturas"];
+const BOT_COLECCION_TEMPORADA = "temporada";            // colección de la tienda en línea con el sabor de temporada
+const BOT_ETIQUETA_TEMPORADA_HASTA = "temporada-hasta:"; // etiqueta opcional del producto, ej. temporada-hasta:2026-10-31
+const BOT_CANAL_RECOGER = "Tienda";
+const BOT_CANAL_DOMICILIO = "Domicilio";
+const BOT_CACHE_INFO_SEGUNDOS = 600;        // páginas y menú de Shopify
+// Dónde están las sucursales (el horario sale de HORARIOS_SUCURSAL). ⚠ La dirección de Bosques salió
+// de un mensaje de mayo-2026: confirmar con Rebe.
+const BOT_SUCURSALES_INFO = {
+"Polanco":    { direccion: "Calle Arquímedes 69, Col. Polanco", mapa: "https://maps.app.goo.gl/8SgqYN1heaJwBbSu5" },
+"Cuajimalpa": { direccion: "Av. Noche de Paz 14, local 16B, Col. Granjas Navidad", mapa: "https://maps.app.goo.gl/qHVxeqaJqz8RAETN8" },
+"Bosques":    { direccion: "Av. Stim 1374, Lomas del Chamizal, Cuajimalpa de Morelos", mapa: "https://maps.app.goo.gl/FK1PCmWkxqKNLTYW6" }
+};
 function getHorarioHoy(sucursal, fecha) {
 fecha = fecha || new Date();
 const cfg = HORARIOS_SUCURSAL[sucursal];
