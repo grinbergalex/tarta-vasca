@@ -158,6 +158,13 @@ const PEDIDO_RECORDATORIO_DESDE = 9;                       // el recordatorio de
 const PEDIDO_RECORDATORIO_HASTA = 20;
 const PEDIDO_RECORDATORIO_HORAS_DEFECTO = 2;
 const PEDIDO_CLAVE_RECORDATORIO_HORAS = "pedido_recordatorio_horas";
+// Tablero de pedidos (21_tablero_pedidos.js): pestaña de solo lectura donde caen todos los pedidos de todas las fuentes.
+const TABLERO_HOJA = "Tablero_Pedidos";
+const TABLERO_ENCABEZADO = ["Referencia", "Estado", "Origen", "Cliente", "Contacto", "Pedido", "Total", "Pago", "Entrega", "Sucursal", "Fecha de entrega", "Llegó", "Confirma"];
+const TABLERO_VENTANA_FILAS = 4000;            // solo se lee el final de Ventas: ahí están los pedidos abiertos y los recientes
+const TABLERO_DIAS_CERRADOS = 7;               // cuántos días siguen visibles los entregados y no recogidos
+const TABLERO_MAX_ASIGNACIONES = 15;           // referencias nuevas por corrida (pedidos de Shopify, teléfono o mostrador)
+const TABLERO_MINUTOS_ACTUALIZACION = 5;       // 1, 5, 10, 15 o 30 (lo que permite Apps Script)
 // Claves de la hoja Configuración (las edita el equipo; si están vacías el bot no inventa nada):
 const PEDIDO_CLAVE_TRANSFERENCIA = "pedido_datos_transferencia";   // banco, titular, CLABE e indicaciones de la transferencia
 const PEDIDO_CLAVE_POLITICA = "pedido_politica_no_recoger";        // qué pasa si el cliente no pasa por su pedido
@@ -170,7 +177,15 @@ const WHATSAPP_PLANTILLA_DEFECTO = "aviso_equipo_tarta_vasca";
 const WHATSAPP_CLAVE_NUMEROS = "aviso_whatsapp_numeros";
 const WHATSAPP_CLAVE_PLANTILLA = "aviso_whatsapp_plantilla";
 const WHATSAPP_CLAVE_RESUMEN = "aviso_whatsapp_resumen";   // números que reciben además el resumen de pendientes (la Dueña)
-const WHATSAPP_MAX_DETALLE = 700;      // las variables de una plantilla no pueden pasar de ~1000 caracteres en total
+const PEDIDO_HOJA_AVISOS_HOY = "Avisos_Pedidos_Hoy";      // registro de cada aviso de pedido para hoy: qué se mandó, a quién y si salió
+// --- Avisos por ManyChat (v9, ver 22_manychat_avisos.js): la línea quedó conectada por ManyChat, no por la API directa de Meta ---
+const MANYCHAT_API_URL = "https://api.manychat.com";
+const MANYCHAT_CLAVE_DESTINOS_HOY = "aviso_hoy_manychat";   // quién recibe los pedidos para HOY: "Yessenia:19277176,Rebeca:112452108" (id de contacto en ManyChat)
+const MANYCHAT_CLAVE_FLUJO_AVISO = "manychat_flujo_aviso";  // identificador (ns) del flujo de ManyChat que manda la plantilla aviso_pedido_hoy
+const MANYCHAT_CAMPO_REFERENCIA = "aviso_referencia";       // campos de usuario de ManyChat que llenan las dos variables de la plantilla
+const MANYCHAT_CAMPO_DETALLE = "aviso_detalle";
+const MANYCHAT_MAX_DETALLE = 300;                            // la variable de una plantilla no debe pasar de unos cientos de caracteres
+const WHATSAPP_MAX_DETALLE = 700;     // las variables de una plantilla no pueden pasar de ~1000 caracteres en total
 const BOT_DIAS_COMPLETOS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
 const BOT_MESES_NOMBRE = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 const BOT_NOMBRE = "Maite";                 // nombre con el que se presenta el bot (Alex y Rebeca, 27-oct-2026); vacío = sin nombre
@@ -183,7 +198,8 @@ const BOT_SUCURSAL_DOMICILIO = SUCURSAL_COCINA;
 const BOT_DIAS_ENTREGA_DOMICILIO = [2, 3, 4, 5, 6];   // martes a sábado, como dice la página de la tienda
 const BOT_VENTANA_ENTREGA = { abre: "09:00", cierra: "15:00" };
 const BOT_HORA_CORTE_DOMICILIO = "18:00";   // pedidos a domicilio después de esta hora suman un día
-const BOT_MARGEN_MISMO_DIA_MIN = 60;        // para recoger hoy, tiene que faltar al menos esto para cerrar
+const BOT_MARGEN_HORA_RECOGER_MIN = 60;   // para recoger hoy, la hora elegida tiene que ser al menos esto después de ahora
+const BOT_MARGEN_MISMO_DIA_MIN = 60;       // para recoger hoy, tiene que faltar al menos esto para cerrar
 const BOT_TIENDA_URL = "https://latartavasca.com";
 const BOT_TAMANOS = ["Individual", "Mediana", "Grande"];
 const BOT_ALIAS_TAMANO = { "chica": "Individual", "individual": "Individual", "mediana": "Mediana", "grande": "Grande" };

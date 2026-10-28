@@ -163,6 +163,7 @@ function pedidoConfirmar(body, sesion) {
   if (pedido.estado !== PEDIDO_ESTADO.POR_CONFIRMAR && pedido.estado !== PEDIDO_ESTADO.APARTADO) return { ok: false, error: "Este pedido está " + pedido.estado + ": no se puede confirmar." };
   pedidoAnotar(ss, pedido.idVenta, { estado: PEDIDO_ESTADO.CONFIRMADO });
   registrarAuditoria(sesion.usuario, sesion.rol, "PEDIDO_CONFIRMADO", pedido.referencia + " (" + pedido.idVenta + ")");
+  _tableroRefrescarSiHaceFalta();
   return { ok: true, referencia: pedido.referencia, estado: PEDIDO_ESTADO.CONFIRMADO };
 }
 
@@ -177,12 +178,19 @@ function pedidoEntregar(body, sesion) {
   const res = convertirReservaAVenta({ idVenta: pedido.idVenta, metodoPago: body.metodoPago }, sesion);
   if (!res.ok) return res;
   pedidoAnotar(ss, pedido.idVenta, { estado: PEDIDO_ESTADO.ENTREGADO });
+  _tableroRefrescarSiHaceFalta();
   return { ok: true, referencia: pedido.referencia, estado: PEDIDO_ESTADO.ENTREGADO, total: res.total };
 }
 
 // El cliente no llegó: libera lo apartado (sin reponer stock, porque las reservas nunca lo descontaron),
 // anula el pedido con su motivo y lo deja en la lista de la campaña.
 function pedidoNoRecogido(body, sesion) {
+  const resultado = _pedidoMarcarNoRecogido(body, sesion);
+  if (resultado.ok) _tableroRefrescarSiHaceFalta();
+  return resultado;
+}
+
+function _pedidoMarcarNoRecogido(body, sesion) {
   requierePuedeVender(sesion);
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   _pedidoAsegurarColumnas(ss);
@@ -331,6 +339,34 @@ function pedidosSinConfirmar(ss, hoyIso) {
 function _pedidoLineaPendiente(p) {
   const hora = String(p.creado).substring(11, 16);
   return "• " + p.referencia + " · llegó " + (hora || "hoy") + " · " + _pedidoResumenItems(p) + " · $" + p.total + " · " + (p.cliente || "sin nombre") + " · " + (p.contacto || "sin contacto") + " · " + (String(p.canal) === BOT_CANAL_DOMICILIO ? "domicilio" : "recoge en " + p.sucursal) + " → lo confirma " + _pedidoQuienGestiona(p);
+}
+
+// Un pedido para HOY se avisa al instante por WhatsApp a Yessenia y Rebeca (por ManyChat, ver 22_manychat_avisos.js): ellas
+// llaman a la sucursal, como se hace hoy. Cualquier otro (domicilio o días después) solo se registra.
+// Cada aviso deja huella en Avisos_Pedidos_Hoy.
+function pedidoAvisarSiEsDeHoy(ss, p) {
+  if (p.fechaEntrega !== Utilities.formatDate(new Date(), TZ_MX, "yyyy-MM-dd")) return { enviado: false };
+  const donde = p.domicilio ? "A DOMICILIO: " + p.direccion : "Recoge en " + p.sucursal + (p.hora ? " a las " + p.hora : "");
+  const detalle = [p.cliente, p.contacto, p.resumen + " ($" + p.total + ")", donde].filter(Boolean).join(", ");
+  const aviso = manychatAvisarPedidoHoy(ss, p.referencia, detalle);
+  _pedidoRegistrarAvisoHoy(ss, p.referencia, detalle, aviso);
+  return { enviado: aviso.configurado, destinatarios: aviso.destinatarios.length };
+}
+
+function _pedidoResultadoAviso(aviso) {
+  if (!aviso.configurado) return "NO SE MANDÓ: " + aviso.motivo;
+  return aviso.resultados.map(function (r) { return r.nombre + (r.ok ? " enviado" : " FALLÓ " + r.detalle); }).join(" · ");
+}
+
+function _pedidoRegistrarAvisoHoy(ss, referencia, detalle, aviso) {
+  let hoja = ss.getSheetByName(PEDIDO_HOJA_AVISOS_HOY);
+  if (!hoja) {
+    hoja = ss.insertSheet(PEDIDO_HOJA_AVISOS_HOY);
+    hoja.getRange(1, 1, 1, 5).setValues([["Fecha y hora", "Pedido", "Para", "Detalle", "Resultado"]]).setFontWeight("bold");
+    hoja.setFrozenRows(1);
+  }
+  const para = aviso.destinatarios.map(function (d) { return d.nombre || d.id; }).join(", ");
+  hoja.appendRow([Utilities.formatDate(new Date(), TZ_MX, "yyyy-MM-dd HH:mm"), referencia, para, detalle, _pedidoResultadoAviso(aviso)]);
 }
 
 // Trigger cada pocas horas: solo avisa dentro del horario y solo si hay pedidos de hoy sin confirmar.

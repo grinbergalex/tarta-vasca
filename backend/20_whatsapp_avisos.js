@@ -45,9 +45,11 @@ function _whatsappEnviar(credenciales, payload) {
 }
 
 // Manda el aviso a cada número. Nunca lanza error: un aviso que falla no debe tirar el pedido ni la conversación.
+// opciones: sinWhatsapp (no manda nada), whatsappResumen (suma los números del resumen).
 function _avisarPorWhatsApp(asunto, cuerpo, opciones) {
   const resultados = [];
   try {
+    if (opciones && opciones.sinWhatsapp) return resultados;
     const credenciales = _whatsappCredenciales();
     if (!credenciales) return resultados;
     const ss = SpreadsheetApp.getActiveSpreadsheet();

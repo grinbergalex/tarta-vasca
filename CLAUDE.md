@@ -370,10 +370,58 @@ versión viva contra el repo (regla dura de arriba).
   Chofer no tiene, y `_pedidoPuedeGestionar` lo excluye con `permitirChofer = false`), y al entregar el sistema debe generar
   el recibo (ya existe en `03_recibos.js`) y enviarlo al cliente por su canal de seguimiento (WhatsApp con plantilla
   aprobada, o Instagram dentro de la ventana de 24 h).
+- **DECISIÓN DE REBECA (27-oct-2026): no Telegram ni nada más.** La línea +52 55 8803 9327 es de clientes **y** la interna.
+  Los pedidos caen a un **tablero** (pestaña `Tablero_Pedidos`, `21_tablero_pedidos.js`) donde entran todos: bot, Shopify,
+  teléfono, mostrador y otras fuentes. Es una vista de solo lectura que se reconstruye de la hoja Ventas cada 5 min
+  (`instalarTableroPedidos()`) y al instante al confirmar, entregar o marcar "no llegó". Los pedidos sin referencia
+  (Shopify, teléfono) la reciben ahí; los de Shopify entran como POR CONFIRMAR. Pendiente: importar las "otras fuentes"
+  que se peguen a mano (hoja de entrada → reservas en Ventas).
+- **Avisos al WhatsApp personal de Rebeca y Yessenia, desde la línea de clientes**: requiere conectar la línea con
+  **convivencia** (app Business + API). Meta solo la permite vía un Solution/Tech Provider; ManyChat la ofrece en BETA y
+  falta confirmar México y su artículo de ayuda. Los avisos saldrían por la API de ManyChat o por Meta una vez conectada.
+  Los grupos por API de WhatsApp NO sirven (exigen Cuenta Oficial de Negocio, máximo 8 y no con números de la app).
 - **Pendiente**: la pantalla de Apartados y la producción de mañana (`getApartados`, `getProduccionManana`) solo ven
   canal "Apartado", así que no muestran los pedidos del bot ni de Shopify; botones en el POS para confirmar, entregar y
   marcar no recogido; aviso por WhatsApp al +52 55 8803 9327; datos de la transferencia; regla de no recogido; envíos por
   círculos de distancia (propuesta en `propuesta-radios-envio.pdf`).
+
+### Cómo opera la tienda hoy y cómo lo refleja el sistema (decisiones de Alex, 28-oct-2026)
+
+- **Pedido de hoy para hoy**: hoy Yessenia (administradora) lo cacha porque ella atiende Instagram y WhatsApp, y llama a la
+  sucursal para avisar. El sistema lo replica: al registrarse un apartado con fecha de entrega = hoy, avisa **al instante por
+  WhatsApp a Yessenia y a Rebeca** (`aviso_whatsapp_numeros`), con cliente, pedido, sucursal y hora a la que pasa, y ellas
+  avisan a la tienda. El pedido queda APARTADO y se cierra al marcarlo ENTREGADO: esa es la validación de que se vendió.
+  **Implementado en pruebas (28-oct)**: `pedidoAvisarSiEsDeHoy` (19), llamado desde `_botCrearPedido`. Sale **por ManyChat**
+  (`22_manychat_avisos.js`), no por la API directa de Meta: la línea quedó conectada con convivencia a través de ManyChat
+  (cuenta fb5801453, WABA 461630757038215, portafolio "La tarta vasca", 28-oct) y ManyChat no deja mandar plantillas por la API:
+  se llenan dos campos del contacto (`aviso_referencia`, `aviso_detalle`) y se manda un flujo cuyo único paso es la plantilla
+  **`aviso_pedido_hoy`** (Utility, es_MX, enviada a revisión de Meta el 28-oct). Clave de la API en Propiedades del script
+  (`MANYCHAT_API_TOKEN`); en Configuración: `aviso_hoy_manychat` = `Yessenia:<id>,Rebeca:<id>` (id del contacto en ManyChat, de su
+  URL en Contactos; solo existen si escribieron alguna vez a la línea) y `manychat_flujo_aviso` = ns del flujo. Cada aviso queda
+  en `Avisos_Pedidos_Hoy` (resultado "NO SE MANDÓ: falta …" mientras falte algo). El aviso genérico de pedido nuevo ya no sale
+  por WhatsApp (`sinWhatsapp`). Falta: aprobar la plantilla, crear el flujo en ManyChat, y que lo usen también los pedidos de
+  Shopify/teléfono para hoy (hoy solo el bot). La API de ManyChat no encuentra contactos de WhatsApp por teléfono ni por nombre:
+  por eso se guardan sus ids.
+- **Hora de recoger (28-oct)**: el bot la pide siempre para recoger (`_botValidarHoraRecoger`: HH:MM, dentro del horario de la
+  sucursal ese día y, si es hoy, al menos `BOT_MARGEN_HORA_RECOGER_MIN` después de ahora). A domicilio no se pide hora. Hoy se
+  guarda en el motivo de la fila de Ventas ("Hora: HH:MM") y sale en la confirmación al cliente; falta una columna propia
+  en Ventas/Tablero cuando se construya el libro de pedidos.
+- **Domicilio o días después**: solo se registra en la lista de pedidos (y en Rutas, si es domicilio); no manda avisos.
+  La visibilidad en producción el día de cocinar es solo "subirlo al sistema" por ahora (sin aviso de anticipación):
+  pendiente corregir `getProduccionManana`, que hoy solo ve canal "Apartado".
+- **Lo que no se cerró**: no hay recordatorio por hora de recogida. Al final del día todos los pedidos de hoy sin cerrar
+  pasan por el barrido de las 21:00 → POR REVISAR → autorizan Rebeca o Yessenia por la página de aprobación (nada se cancela solo).
+- **SIGUIENTE ETAPA — seguimiento al cliente** (con teléfono o Instagram del pedido; las ventas de mostrador sin contacto no aplican):
+  - Pedidos **entregados**: al **día siguiente** se pregunta "¿todo bien?, ¿qué le pareció?"; la respuesta (calificación y
+    comentario) se guarda junto al pedido y una mala avisa a Rebeca.
+  - Pedidos **que no llegaron** (cancelados por no recogido): **esa misma noche**, después de que se autoriza la cancelación,
+    alimenta la campaña de recuperación (hoja `Pedidos_No_Recogidos`, ya existe).
+  - Límites de canal: Instagram solo dentro de 24 h del último mensaje del cliente (para entregas de días después casi
+    nunca aplica); WhatsApp fuera de esa ventana exige **plantilla aprobada por Meta** y tiene costo por mensaje.
+- **Libro de diseño** (prueba, datos de ejemplo, no es el real): pestañas Pedidos activos, una por sucursal, Rutas, Finales,
+  Cancelados, Resumen, Bitácora y Configuración. El Estado es un menú desplegable en todas; cambiarlo mueve el pedido y lo anota
+  en la Bitácora; los pedidos para recoger deben traer hora (si falta, se pone roja).
+  Se construiría en pestañas nuevas dentro del Excel que Rebeca decida (el de respuestas del formulario o el Sistema).
 
 ## Legacy / pendientes
 

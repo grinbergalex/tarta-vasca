@@ -230,13 +230,19 @@ function _botPrompt(ahora) {
       "3. Tomar pedidos, editarlos o cancelarlos: todavía NO puedes por aquí. En cuanto el cliente quiera pedir, apartar o comprar, en ESE mismo mensaje le dices con calidez que por este medio aún no tomas pedidos y le das los canales de consultar_manual (tema pedidos_y_canales), y le ofreces que una persona del equipo lo atienda (si acepta, llama pasar_a_persona con tipo \"otro\" y un resumen de lo que quiere). NO le pidas fecha, sucursal, dirección, nombre ni teléfono, NO cotices un ticket ni le calcules un total para su pedido, y NO sigas hablando de \"su pedido\" después. Sí puedes responder consultas sueltas: qué hay, cuánto cuesta cada tamaño, horarios, si hay tarta lista hoy, cuándo se podría recoger o entregar y a cuánto sale el envío a una colonia."
     ]),
     "",
+    "CÓMO MUESTRAS EL MENÚ Y EL INVENTARIO, Y CÓMO RECOMIENDAS",
+    "- MENÚ (cuando pregunten qué sabores hay, qué ofrecen o cuánto cuesta): primero los tamaños con su precio, uno por línea con •, y luego \"Los sabores son:\" con cada sabor en su propia línea con •, marcando el de temporada. Nunca todo en un párrafo ni los sabores seguidos en una línea. Si algún sabor cuesta distinto en un tamaño, ponlo junto a ese sabor.",
+    "- INVENTARIO (cuando pregunten qué hay listo hoy): \"Hoy en <sucursal> hay listas (cantidad limitada):\" y después cada tamaño en su línea con su precio (por ejemplo \"Mediana — $420\") y debajo sus sabores, cada uno en su línea con •. No pongas los tamaños que no tengan nada listo.",
+    "- NO sueltes el menú ni ofrezcas opciones si el cliente ya dijo qué quiere (por ejemplo \"dos chicas de Lotus para el viernes\"): anótalo, confírmalo en un mensaje corto y pregunta solo si quiere algo más. Si quiere pedir pero todavía no sabe qué, NO le muestres la lista completa: pregúntale qué le gusta (más dulce, más cremosa, con fruta…) y recomiéndale UNA. Muestra el menú completo solo si pide ver las opciones.",
+    "- RECOMENDAR: cuando el cliente pida que elijas o recomiendes (\"elige tú\", \"recomiéndame una\"), da UNA sola con una frase de por qué (según consultar_manual, la disponibilidad y lo que te contó) y ESPERA su sí antes de anotarla. Nunca anotes un sabor que el cliente no pidió o no aceptó con claridad: si contesta solo con un tamaño (\"mediana\"), eso NO es aceptar el sabor; pregúntale \"¿te quedas con la <sabor>?\". Si pide otro sabor, ese es el que vale.",
+    "",
     ...(BOT_PEDIDOS_ACTIVOS ? [
       "CÓMO TOMAS UN PEDIDO",
       "Conversas, no interrogas: acepta que el cliente dé varios datos juntos, y ve ARMANDO el pedido con él: lleva la cuenta de lo que va pidiendo (sabor, tamaño y cantidad) y confirma cada pieza que agrega, con un mensaje corto. Cuando diga que ya es todo, sigue estos pasos:",
       "1. Para cuándo lo quiere y si lo recoge o lo quiere a domicilio. Usa calcular_fecha_entrega: nunca decidas tú si una fecha es posible.",
-      "2. Recoger: en qué sucursal (Cuajimalpa, Polanco o Bosques, que es la cocina; Bosques no tiene tartas listas para llevar el mismo día, solo con anticipación). Domicilio: pide colonia y dirección completa, y cobra el envío que da consultar_zona_envio; si la zona no está cubierta, dilo con amabilidad y ofrece recoger.",
+      "2. Recoger: en qué sucursal (Cuajimalpa, Polanco o Bosques, que es la cocina; Bosques no tiene tartas listas para llevar el mismo día, solo con anticipación). Y SIEMPRE a qué hora pasará por él: es obligatoria para recoger. Dile el horario de esa sucursal ese día (lo trae calcular_fecha_entrega) y pasa la hora en formato HH:MM en el campo hora; si hoy es el mismo día, que sea después de la hora actual. Domicilio, en cambio, no lleva hora: la entrega es en la ventana que da el sistema. Domicilio: pide colonia y dirección completa, y cobra el envío que da consultar_zona_envio; si la zona no está cubierta, dilo con amabilidad y ofrece recoger.",
       "3. Llama cotizar_pedido y muestra el ticket TAL CUAL: ese es el TOTAL. Pregunta cómo va a pagar: efectivo o transferencia (la tarjeta solo en sucursal, al recoger, y nunca en un envío a domicilio).",
-      "4. Su nombre y cómo le damos seguimiento. En Instagram pregúntale si prefiere que lo sigan por esta misma conversación o por teléfono (si elige teléfono, pídelo: 10 dígitos). En WhatsApp NO pidas teléfono: ya lo tenemos. NO preguntes por alergias ni por notas: si el cliente da una nota o una dedicatoria por su cuenta, la anotas en notas.",
+      "4. Su nombre y su teléfono. En Instagram SIEMPRE pide el teléfono (10 dígitos) para darle seguimiento. Si va a RECOGER y de verdad no quiere darlo, se lo permites: el seguimiento es por esta misma conversación (seguimiento \"instagram\"). Si es a DOMICILIO el teléfono es obligatorio, sin excepción: explica con amabilidad que el repartidor lo necesita para coordinar la entrega, y si no lo da, ofrécele recoger en sucursal; no crees un pedido a domicilio sin teléfono. En WhatsApp NO pidas teléfono: ya lo tenemos. NO preguntes por alergias ni por notas: si el cliente da una nota o una dedicatoria por su cuenta, la anotas en notas.",
       "5. Con el \"sí\" final del cliente al ticket, llama crear_pedido. El pedido queda apartado en el sistema como POR CONFIRMAR, con una REFERENCIA, y el equipo recibe el aviso.",
       "6. Cuando crear_pedido sale bien, el SISTEMA le manda al cliente el mensaje de confirmación por ti (referencia, total, pago, recoger y seguimiento): no lo repitas. Si crear_pedido falla, explícale con calidez qué falta o qué cambiar. Lo que debe incluir ese mensaje, por si lo necesitas EN POCOS MENSAJES: su referencia (que la guarde: sirve para preguntar por su pedido aquí y para dar al llegar al local), el total, las indicaciones de pago y las de recoger o entrega tal como vienen en el resultado (indicaciones_pago e indicaciones_entrega), y que el equipo revisa y le confirma. No inventes datos de cuenta, horarios ni reglas: usa solo lo que traiga el resultado. Si el resultado no trae los datos de la transferencia, dile que el equipo se los comparte en un momento.",
       "- Si el cliente pregunta qué pasa si no puede ir por su pedido, NO inventes reglas (plazos, cargos, quién puede recoger, cambios de fecha). Usa solo lo que dicen las indicaciones de recoger del resultado; si no traen una política, dile que nos avise por aquí y que el equipo lo ayuda a reprogramar, y llama avisar_al_equipo con tipo \"otro\" y su referencia.",
@@ -288,7 +294,7 @@ function _botHerramientas() {
     { name: "consultar_zona_envio", description: "Dice si una colonia tiene entrega a domicilio y cuánto cuesta el envío.", input_schema: { type: "object", properties: { colonia: { type: "string" } }, required: ["colonia"] } },
     { name: "calcular_fecha_entrega", description: "Dice si una fecha es posible (y cuál es la primera fecha posible) para recoger o para entrega a domicilio. Pasa los items para saber si se puede recoger hoy.", input_schema: { type: "object", properties: { entrega: entrega, sucursal: { type: "string", enum: BOT_SUCURSALES_RECOGER, description: "Solo si recoge" }, fecha_deseada: { type: "string", description: "AAAA-MM-DD" }, items: items }, required: ["entrega"] } },
     { name: "cotizar_pedido", description: "Calcula el ticket (precios, envío y total) de un pedido. Muéstralo tal cual al cliente antes de crearlo.", input_schema: { type: "object", properties: { items: items, entrega: entrega, colonia: { type: "string", description: "Solo si es a domicilio" } }, required: ["items", "entrega"] } },
-    { name: "crear_pedido", description: "Crea el pedido (queda apartado y POR CONFIRMAR, con su referencia, y avisa al equipo). Úsalo solo después de que el cliente dijo que sí al ticket final.", input_schema: { type: "object", properties: { nombre: { type: "string" }, seguimiento: { type: "string", enum: ["telefono", "instagram"], description: "Cómo quiere que le den seguimiento. En WhatsApp no se pide: ya se tiene su número." }, telefono: { type: "string", description: "10 dígitos; obligatorio si el seguimiento es por teléfono (no se pide en WhatsApp)" }, metodo_pago: { type: "string", enum: ["efectivo", "transferencia"], description: "Tarjeta solo se paga en sucursal, al recoger" }, entrega: entrega, sucursal: { type: "string", enum: BOT_SUCURSALES_RECOGER, description: "Solo si recoge" }, direccion: { type: "string" }, colonia: { type: "string" }, fecha_entrega: { type: "string", description: "AAAA-MM-DD" }, hora: { type: "string", description: "HH:MM, opcional" }, items: items, notas: { type: "string" }, mensajero: { type: "string", description: "Solo si lo recoge un Uber, DiDi u otro mensajero: cuál" } }, required: ["nombre", "metodo_pago", "entrega", "fecha_entrega", "items"] } },
+    { name: "crear_pedido", description: "Crea el pedido (queda apartado y POR CONFIRMAR, con su referencia, y avisa al equipo). Úsalo solo después de que el cliente dijo que sí al ticket final.", input_schema: { type: "object", properties: { nombre: { type: "string" }, seguimiento: { type: "string", enum: ["telefono", "instagram"], description: "Cómo quiere que le den seguimiento. Siempre se pide el teléfono; \"instagram\" solo si recoge en sucursal y no quiso darlo. En WhatsApp no se pide: ya se tiene su número." }, telefono: { type: "string", description: "10 dígitos. Se pide siempre; OBLIGATORIO a domicilio y, para recoger, solo puede faltar si el cliente no quiso darlo (no se pide en WhatsApp)" }, metodo_pago: { type: "string", enum: ["efectivo", "transferencia"], description: "Tarjeta solo se paga en sucursal, al recoger" }, entrega: entrega, sucursal: { type: "string", enum: BOT_SUCURSALES_RECOGER, description: "Solo si recoge" }, direccion: { type: "string" }, colonia: { type: "string" }, fecha_entrega: { type: "string", description: "AAAA-MM-DD" }, hora: { type: "string", description: "HH:MM. OBLIGATORIA si recoge (a qué hora pasa por su pedido, dentro del horario de la sucursal); a domicilio no se pide" }, items: items, notas: { type: "string" }, mensajero: { type: "string", description: "Solo si lo recoge un Uber, DiDi u otro mensajero: cuál" } }, required: ["nombre", "metodo_pago", "entrega", "fecha_entrega", "items"] } },
     { name: "consultar_pedido", description: "Estado de un pedido por su referencia (por ejemplo TV-1027-03). Solo responde si el cliente es quien lo hizo en esta conversación o da los últimos 4 dígitos de su teléfono.", input_schema: { type: "object", properties: { referencia: { type: "string" }, ultimos_4_telefono: { type: "string", description: "Solo si el pedido se hizo en otra conversación" } }, required: ["referencia"] } },
     { name: "pasar_a_persona", description: "Avisa al equipo y pausa el bot en esta conversación. Con tipo \"queja_u_observacion\" manda una alerta urgente.", input_schema: { type: "object", properties: { tipo: { type: "string", enum: ["queja_u_observacion", "cotizacion_evento_o_restaurante", "pidio_persona", "factura", "cambio_o_cancelacion", "otro"] }, motivo: { type: "string" }, resumen: { type: "string", description: "Qué quiere el cliente y qué datos ya dio" } }, required: ["tipo", "motivo", "resumen"] } },
     { name: "avisar_al_equipo", description: "Avisa al equipo SIN pausar el bot. Úsalo cuando el cliente dice que mandará un Uber, DiDi u otro mensajero por su pedido (tipo \"mensajero\") cuando hay una queja u observación negativa o una sugerencia sobre las tartas (tipo \"queja_u_observacion\": avisa de inmediato, antes de pedir sus datos), o cuando deja un elogio (tipo \"observacion\").",input_schema: { type: "object", properties: { tipo: { type: "string", enum: ["mensajero", "queja_u_observacion", "observacion", "otro"] }, nota: { type: "string", description: "Qué dijo el cliente y qué datos dio (nombre de quien recoge, hora)" } }, required: ["tipo", "nota"] } }
@@ -637,10 +643,11 @@ function _botContactoSeguimiento(a, ctx) {
   if (ctx.canal === "WhatsApp") {
     return ctx.telefonoCanal.length >= 10 ? { ok: true, telefono: ctx.telefonoCanal.slice(-10), contacto: "WhatsApp " + ctx.telefonoCanal } : { ok: false, error: "No tengo el número de WhatsApp de esta conversación; pasa con una persona." };
   }
-  if (a.seguimiento === "instagram") return { ok: true, telefono: "", contacto: "Instagram (conversación " + ctx.conversacionId + ")" };
   const telefono = String(a.telefono || "").replace(/\D/g, "");
-  if (telefono.length < 10) return { ok: false, error: "Falta un teléfono de 10 dígitos, o que el cliente elija seguimiento por Instagram." };
-  return { ok: true, telefono: telefono, contacto: "Teléfono " + telefono };
+  if (telefono.length >= 10) return { ok: true, telefono: telefono, contacto: "Teléfono " + telefono };
+  if (a.entrega === "domicilio") return { ok: false, error: "A domicilio el teléfono de 10 dígitos es obligatorio: sin él el repartidor no puede coordinar la entrega. Pídelo; si no quiere darlo, ofrécele recoger en sucursal." };
+  if (a.seguimiento === "instagram") return { ok: true, telefono: "", contacto: "Instagram (conversación " + ctx.conversacionId + ")" };
+  return { ok: false, error: "Falta el teléfono de 10 dígitos, o que el cliente prefiera el seguimiento por Instagram (solo si recoge en sucursal)." };
 }
 
 // Qué le dice el bot al cliente para pagar. Los datos de la transferencia salen de la hoja Configuración: si no están, no se inventan.
@@ -659,10 +666,21 @@ function _botFechaLegible(iso) {
   return BOT_DIAS_COMPLETOS[d.getDay()] + " " + Number(p[2]) + " de " + BOT_MESES_NOMBRE[Number(p[1]) - 1];
 }
 
-function _botIndicacionesRecoger(sucursal, fecha, horario) {
+// Para recoger la hora es obligatoria: HH:MM, dentro del horario de la sucursal ese día y, si es hoy, después de la hora actual.
+function _botValidarHoraRecoger(hora, fecha, horario, ahora) {
+  const texto = String(hora || "").trim();
+  const rango = horario ? " (" + horario.abre + " a " + horario.cierra + ")" : "";
+  if (!/^([01]?\d|2[0-3]):[0-5]\d$/.test(texto)) return "Falta la hora a la que pasará por su pedido, en formato HH:MM" + rango + ".";
+  const minutos = _botMinutos(texto);
+  if (horario && (minutos < _botMinutos(horario.abre) || minutos > _botMinutos(horario.cierra))) return "Esa hora queda fuera del horario" + rango + ".";
+  if (fecha === ahora.iso && minutos < ahora.min + BOT_MARGEN_HORA_RECOGER_MIN) return "Esa hora ya pasó o no alcanza a estar lista: tiene que ser más tarde que ahora" + rango + ".";
+  return "";
+}
+
+function _botIndicacionesRecoger(sucursal, fecha, horario, hora) {
   const politica = String(_cfgVal(SpreadsheetApp.getActiveSpreadsheet(), PEDIDO_CLAVE_POLITICA, "")).trim();
   const dia = _botFechaLegible(fecha);
-  const cuando = horario ? "el " + dia + ", de " + horario.abre + " a " + horario.cierra : "el " + dia;
+  const cuando = hora ? "el " + dia + " a las " + hora : horario ? "el " + dia + ", de " + horario.abre + " a " + horario.cierra : "el " + dia;
   return "Recoges en " + sucursal + " " + cuando + ". Da tu referencia al llegar." + (politica ? " " + politica : " Si no vas a poder pasar, avísanos por aquí para reprogramarlo.");
 }
 
@@ -689,8 +707,9 @@ function _botCrearPedido(a, ctx) {
   if (!_botDentroDelLimite("bot_pedidos_" + ahora.iso + "_" + Math.floor(ahora.min / 60), 3600, BOT_MAX_PEDIDOS_POR_HORA)) { ctx.handoff = true; return { ok: false, error: "Hay muchos pedidos en este momento; lo ve una persona del equipo." }; }
   const fecha = _botCalcularFechaMemo({ entrega: a.entrega, sucursal: a.sucursal, fecha_deseada: a.fecha_entrega, items: a.items }, ctx.conversacionId, true);
   if (!fecha.valida) return { ok: false, error: fecha.motivo || "La fecha no es posible.", primera_fecha: fecha.primera_fecha };
-  if (a.hora && fecha.horario && (_botMinutos(a.hora) < _botMinutos(fecha.horario.abre) || _botMinutos(a.hora) > _botMinutos(fecha.horario.cierra))) {
-    return { ok: false, error: "Esa hora queda fuera del horario (" + fecha.horario.abre + " a " + fecha.horario.cierra + ")." };
+  if (!domicilio) {
+    const errorHora = _botValidarHoraRecoger(a.hora, a.fecha_entrega, fecha.horario, ahora);
+    if (errorHora) return { ok: false, error: errorHora };
   }
 
   const sucursal = domicilio ? BOT_SUCURSAL_DOMICILIO : a.sucursal;
@@ -709,11 +728,20 @@ function _botCrearPedido(a, ctx) {
   const referencia = pedidoAnotar(SpreadsheetApp.getActiveSpreadsheet(), res.idVenta, { estado: PEDIDO_ESTADO.POR_CONFIRMAR, contacto: contacto.contacto, origen: ctx.canal });
   const ticket = _botTicket(cot, a.entrega, a.fecha_entrega, a.sucursal);
   ctx.pedido = { id: res.idVenta, referencia: referencia, total: cot.total };
-  _botAvisar((a.mensajero ? "🚗🧁 Pedido nuevo por " + ctx.canal + " — lo recoge un " + a.mensajero : "🧁 Pedido nuevo por " + ctx.canal) + " · " + referencia, nombre + " · " + contacto.contacto + "\n" + ticket + "\n" + detalle + "\nReferencia: " + referencia + " · Estado: POR CONFIRMAR (reserva " + res.idVenta + ", ya apartada en el sistema). Revisarlo y confirmar con el cliente.");
+  _botAvisar((a.mensajero ? "🚗🧁 Pedido nuevo por " + ctx.canal + " — lo recoge un " + a.mensajero : "🧁 Pedido nuevo por " + ctx.canal) + " · " + referencia, nombre + " · " + contacto.contacto + "\n" + ticket + "\n" + detalle + "\nReferencia: " + referencia + " · Estado: POR CONFIRMAR (reserva " + res.idVenta + ", ya apartada en el sistema). Revisarlo y confirmar con el cliente.", { sinWhatsapp: true });   // por WhatsApp solo avisan los pedidos para hoy (abajo)
+  try {   // el pedido es para hoy: Yessenia y Rebeca lo saben al instante y avisan a la sucursal
+    pedidoAvisarSiEsDeHoy(SpreadsheetApp.getActiveSpreadsheet(), { referencia: referencia, fechaEntrega: a.fecha_entrega, domicilio: domicilio, direccion: a.direccion + (a.colonia ? " (" + a.colonia + ")" : ""),
+      sucursal: a.sucursal, hora: a.hora, cliente: nombre, contacto: contacto.contacto, resumen: cot.lineas.map(function (l) { return l.cantidad + " " + l.sabor + " " + l.tamano; }).join(" + "), total: cot.total });
+  } catch (e) { Logger.log("Aviso de pedido para hoy: " + e); }
+  try {   // el pedido aparece en el tablero al instante, sin esperar la revisión de cada 5 min
+    tableroAgregarPedidoNuevo({ referencia: referencia, estado: PEDIDO_ESTADO.POR_CONFIRMAR, origen: ctx.canal, cliente: nombre, contacto: contacto.contacto,
+      items: cot.lineas.map(function (l) { return l.cantidad + " " + l.sabor + " " + l.tamano; }), total: cot.total, pago: a.metodo_pago, canal: domicilio ? BOT_CANAL_DOMICILIO : BOT_CANAL_RECOGER,
+      sucursal: sucursal, fechaEntrega: a.fecha_entrega, llego: Utilities.formatDate(new Date(), TZ_MX, "yyyy-MM-dd HH:mm") });
+  } catch (e) { Logger.log("Tablero: " + e); }
   return {
     ok: true, pedido: res.idVenta, referencia: referencia, total: cot.total, ticket: ticket,
     indicaciones_pago: _botIndicacionesPago(a.metodo_pago, cot.total, referencia),
-    indicaciones_entrega: domicilio ? "Entrega a domicilio el " + _botFechaLegible(a.fecha_entrega) + ", entre las " + BOT_VENTANA_ENTREGA.abre + " y las " + BOT_VENTANA_ENTREGA.cierra + "." : _botIndicacionesRecoger(a.sucursal, a.fecha_entrega, fecha.horario),
+    indicaciones_entrega: domicilio ? "Entrega a domicilio el " + _botFechaLegible(a.fecha_entrega) + ", entre las " + BOT_VENTANA_ENTREGA.abre + " y las " + BOT_VENTANA_ENTREGA.cierra + "." : _botIndicacionesRecoger(a.sucursal, a.fecha_entrega, fecha.horario, a.hora),
     mensaje: "Pedido apartado. El equipo lo revisa y lo confirma."
   };
 }
