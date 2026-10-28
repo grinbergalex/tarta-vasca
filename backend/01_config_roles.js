@@ -173,7 +173,7 @@ const WHATSAPP_CLAVE_RESUMEN = "aviso_whatsapp_resumen";   // números que recib
 const WHATSAPP_MAX_DETALLE = 700;      // las variables de una plantilla no pueden pasar de ~1000 caracteres en total
 const BOT_DIAS_COMPLETOS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
 const BOT_MESES_NOMBRE = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
-const BOT_NOMBRE = "";                      // nombre con el que se presenta el bot (pendiente de definir con Rebeca); vacío = sin nombre
+const BOT_NOMBRE = "Maite";                 // nombre con el que se presenta el bot (Alex y Rebeca, 27-oct-2026); vacío = sin nombre
 const BOT_PEDIDOS_ACTIVOS = true;         // encendido en la rama de pruebas: el bot toma pedidos; false = solo consulta
 const BOT_HERRAMIENTAS_DE_PEDIDO = ["cotizar_pedido", "crear_pedido", "consultar_pedido"];
 const BOT_MAX_PIEZAS_POR_PEDIDO = 12;       // más que esto pasa con una persona (eventos, regalos corporativos)
