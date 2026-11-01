@@ -14,7 +14,8 @@
 
 // Del tipo que manda el bot a lo que se escribe en la hoja y se usa como prioridad.
 const BOT_TEXTO_PAUSA = "Ya le avisé al equipo y una persona te escribe personalmente en cuanto pueda ❤️";
-const ALERTA_URGENTES =["queja_u_observacion", "mensajero"];
+const BOT_TEXTO_DISCULPA = "Una disculpa por la espera 🙏 Ya le recordé al equipo que sigues aquí, y alguien te escribe personalmente lo antes posible ❤️";
+const ALERTA_URGENTES = ["queja_u_observacion", "mensajero", "cliente_esperando"];
 
 function botAlertaPersonal(ss, origen, tipo, titulo, detalle, conversacionId) {
   const clave = "bot_alerta_" + origen + "_" + tipo + "_" + conversacionId;
@@ -67,9 +68,23 @@ function botReanudarConversacion(conversacionId) {
   PropertiesService.getScriptProperties().deleteProperty(BOT_PAUSA_PREFIJO + String(conversacionId));
 }
 
-// Respuesta mientras está pausada: el aviso va una sola vez por hora; el resto del tiempo, silencio.
+// Minutos que lleva pausada la conversación (la pausa guarda cuándo termina: inicio = fin - BOT_PAUSA_HORAS).
+function _botMinutosPausada(conversacionId) {
+  const hasta = Number(PropertiesService.getScriptProperties().getProperty(BOT_PAUSA_PREFIJO + conversacionId));
+  return hasta ? (Date.now() - (hasta - BOT_PAUSA_HORAS * 3600 * 1000)) / 60000 : 0;
+}
+
+// Respuesta mientras está pausada. Si el cliente sigue escribiendo y la persona no ha llegado (BOT_DISCULPA_MINUTOS),
+// Maite se disculpa por la espera y se le recuerda al equipo; si no, el aviso va una sola vez por hora y luego silencio.
 function botRespuestaPausada(conversacionId) {
   const cache = CacheService.getScriptCache();
+  const minutos = _botMinutosPausada(conversacionId);
+  if (minutos >= BOT_DISCULPA_MINUTOS && !cache.get("bot_pausa_disculpa_" + conversacionId)) {
+    cache.put("bot_pausa_disculpa_" + conversacionId, "1", BOT_DISCULPA_MINUTOS * 60);
+    botAlertaPersonal(SpreadsheetApp.getActiveSpreadsheet(), "recordatorio", "cliente_esperando", "⏰ Un cliente sigue esperando a una persona",
+      "Lleva " + Math.round(minutos) + " min esperando y volvió a escribir (conv. " + conversacionId + ")", conversacionId);
+    return { ok: true, respuesta: BOT_TEXTO_DISCULPA, handoff: true, alerta: "cliente_esperando", pausada: true };
+  }
   const clave = "bot_pausa_avisada_" + conversacionId;
   const primera = !cache.get(clave);
   if (primera) cache.put(clave, "1", 3600);
