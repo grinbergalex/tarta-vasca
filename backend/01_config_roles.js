@@ -149,9 +149,11 @@ const PEDIDO_PREFIJO_REFERENCIA = "TV";
 const PEDIDO_PROPIEDAD_CONSECUTIVO = "PEDIDO_REF_";      // propiedad del script con el último consecutivo del día
 const PEDIDO_VENTANA_FILAS = 200;                        // un pedido recién creado se busca solo en las últimas filas de Ventas
 const PEDIDO_COLUMNAS = ["referencia", "estado_pedido", "contacto_seguimiento", "origen_pedido"];  // se crean solas en Ventas
-const PEDIDO_ESTADO = { APARTADO: "APARTADO", POR_CONFIRMAR: "POR CONFIRMAR", CONFIRMADO: "CONFIRMADO", ENTREGADO: "ENTREGADO", NO_RECOGIDO: "NO RECOGIDO", CANCELADO: "CANCELADO" };
+const PEDIDO_ESTADO = { APARTADO: "APARTADO", POR_CONFIRMAR: "POR CONFIRMAR", CONFIRMADO: "CONFIRMADO", POR_REVISAR: "POR REVISAR", ENTREGADO: "ENTREGADO", NO_RECOGIDO: "NO RECOGIDO", CANCELADO: "CANCELADO" };   // POR REVISAR: no se recogió y sigue apartado hasta que una persona decida
+const PEDIDO_ESTADOS_ABIERTOS = [PEDIDO_ESTADO.APARTADO, PEDIDO_ESTADO.POR_CONFIRMAR, PEDIDO_ESTADO.CONFIRMADO, PEDIDO_ESTADO.POR_REVISAR];   // lo que sigue apartado y todavía no se cierra
 const PEDIDO_MOTIVO_NO_RECOGIDO = "Cliente no llegó";
 const PEDIDO_HOJA_NO_RECOGIDOS = "Pedidos_No_Recogidos";   // lista de trabajo de la campaña de recuperación
+const PEDIDO_CANALES_PRODUCCION = ["Apartado", "Tienda", "Domicilio"];   // reservas que son pedidos (mostrador, bot, Shopify): cuentan en la producción del día
 const PEDIDO_CANALES_RECOGER = ["Tienda", "Apartado", "Reservado"];   // canales con recolección en sucursal (Domicilio va por ruta)
 const PEDIDO_HORA_REVISION = 21;                           // hora del reporte diario (después de cerrar todas las sucursales)
 const PEDIDO_RECORDATORIO_DESDE = 9;                       // el recordatorio de pedidos sin confirmar solo sale entre estas horas
@@ -160,7 +162,8 @@ const PEDIDO_RECORDATORIO_HORAS_DEFECTO = 2;
 const PEDIDO_CLAVE_RECORDATORIO_HORAS = "pedido_recordatorio_horas";
 // Tablero de pedidos (21_tablero_pedidos.js): pestaña de solo lectura donde caen todos los pedidos de todas las fuentes.
 const TABLERO_HOJA = "Tablero_Pedidos";
-const TABLERO_ENCABEZADO = ["Referencia", "Estado", "Origen", "Cliente", "Contacto", "Pedido", "Total", "Pago", "Entrega", "Sucursal", "Fecha de entrega", "Llegó", "Confirma"];
+const TABLERO_PREFIJO_SUCURSAL = "Pedidos ";   // una pestaña por sucursal: "Pedidos Polanco", "Pedidos Cuajimalpa", "Pedidos Bosques"
+const TABLERO_ENCABEZADO = ["Llave", "Estado", "Origen", "Cliente", "Contacto", "Pedido", "Total", "Pago", "Entrega", "Sucursal", "Fecha de entrega", "Hora", "Llegó", "Confirma"];
 const TABLERO_VENTANA_FILAS = 4000;            // solo se lee el final de Ventas: ahí están los pedidos abiertos y los recientes
 const TABLERO_DIAS_CERRADOS = 7;               // cuántos días siguen visibles los entregados y no recogidos
 const TABLERO_MAX_ASIGNACIONES = 15;           // referencias nuevas por corrida (pedidos de Shopify, teléfono o mostrador)
@@ -168,7 +171,17 @@ const TABLERO_MINUTOS_ACTUALIZACION = 5;       // 1, 5, 10, 15 o 30 (lo que perm
 // Claves de la hoja Configuración (las edita el equipo; si están vacías el bot no inventa nada):
 const PEDIDO_CLAVE_TRANSFERENCIA = "pedido_datos_transferencia";   // banco, titular, CLABE e indicaciones de la transferencia
 const PEDIDO_CLAVE_POLITICA = "pedido_politica_no_recoger";        // qué pasa si el cliente no pasa por su pedido
-const PEDIDO_CLAVE_AUTO_NO_RECOGIDO = "pedido_auto_no_recogido";   // "SI" = el reporte diario marca solo los vencidos
+// --- Cierre del día, mensajes a clientes y seguimiento (v9, ver 24_seguimiento_clientes.js) ---
+const SEGUIMIENTO_HOJA = "Seguimiento_Pedidos";
+const SEGUIMIENTO_ENCABEZADO = ["Llave", "Cliente", "Contacto", "Canal", "Id ManyChat", "Sucursal", "Fecha de entrega", "Hora", "Estado", "Entregado el", "Feedback", "Reagenda"];
+const MENSAJES_HOJA = "Mensajes_Clientes";                 // cola de mensajes proactivos a clientes: qué, a quién, cuándo y cómo salió
+const MENSAJES_ENCABEZADO = ["Programado", "Tipo", "Llave", "Cliente", "Id ManyChat", "Canal", "Mensaje", "Estado", "Resultado", "Enviado el"];
+const MENSAJE_TIPO = { REAGENDAR: "reagendar", FEEDBACK: "feedback" };
+const REPORTE_NOCHE_HOJA = "Reportes_Noche";               // huella del reporte diario a Rebeca y Yessenia
+const FEEDBACK_DIAS = 2;                                    // días después de la entrega en que se pregunta "¿cómo te fue?"
+const FEEDBACK_HORA = "10:00";
+const PEDIDO_ESTADOS_HOJA = [PEDIDO_ESTADO.CONFIRMADO, PEDIDO_ESTADO.ENTREGADO, PEDIDO_ESTADO.NO_RECOGIDO];   // opciones del menú de Estado en las pestañas por sucursal
+const PEDIDO_CLAVE_AUTORIZADOS_HOJA = "pedidos_hoja_autorizados";   // correos que pueden cambiar el Estado desde la hoja (vacío = cualquiera con acceso de edición)
 const PEDIDO_CLAVE_GRACIA_DIAS = "pedido_gracia_dias";             // días después de la fecha de entrega antes de darlo por no recogido
 // --- Avisos por WhatsApp (v9, ver 20_whatsapp_avisos.js) ---
 const WHATSAPP_VERSION_API = "v21.0";
@@ -184,7 +197,12 @@ const MANYCHAT_CLAVE_DESTINOS_HOY = "aviso_hoy_manychat";   // quién recibe los
 const MANYCHAT_CLAVE_FLUJO_AVISO = "manychat_flujo_aviso";  // identificador (ns) del flujo de ManyChat que manda la plantilla aviso_pedido_hoy
 const MANYCHAT_CAMPO_REFERENCIA = "aviso_referencia";       // campos de usuario de ManyChat que llenan las dos variables de la plantilla
 const MANYCHAT_CAMPO_DETALLE = "aviso_detalle";
-const MANYCHAT_MAX_DETALLE = 300;                            // la variable de una plantilla no debe pasar de unos cientos de caracteres
+const MANYCHAT_CLAVE_FLUJO_REPORTE = "manychat_flujo_reporte";                 // flujo del reporte de la noche a Rebeca y Yessenia
+const MANYCHAT_CLAVE_FLUJO_INSTAGRAM = "manychat_flujo_cliente_instagram";    // flujos que mandan un mensaje al cliente según su canal
+const MANYCHAT_CLAVE_FLUJO_WHATSAPP = "manychat_flujo_cliente_whatsapp";
+const MANYCHAT_CAMPO_MENSAJE = "mensaje_cliente";                              // campo de usuario que lleva el texto al cliente
+const MANYCHAT_MAX_REPORTE = 900;                                              // el reporte de la noche puede ser más largo que un aviso
+const MANYCHAT_MAX_DETALLE = 300;                           // la variable de una plantilla no debe pasar de unos cientos de caracteres
 const WHATSAPP_MAX_DETALLE = 700;     // las variables de una plantilla no pueden pasar de ~1000 caracteres en total
 const BOT_DIAS_COMPLETOS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
 const BOT_MESES_NOMBRE = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
@@ -198,7 +216,9 @@ const BOT_SUCURSAL_DOMICILIO = SUCURSAL_COCINA;
 const BOT_DIAS_ENTREGA_DOMICILIO = [2, 3, 4, 5, 6];   // martes a sábado, como dice la página de la tienda
 const BOT_VENTANA_ENTREGA = { abre: "09:00", cierra: "15:00" };
 const BOT_HORA_CORTE_DOMICILIO = "18:00";   // pedidos a domicilio después de esta hora suman un día
-const BOT_MARGEN_HORA_RECOGER_MIN = 60;   // para recoger hoy, la hora elegida tiene que ser al menos esto después de ahora
+const BOT_PAGOS_RECOGER = ["efectivo", "transferencia", "tarjeta"];   // la tarjeta solo se paga en sucursal, al recoger
+const BOT_PAGOS_DOMICILIO = ["efectivo", "transferencia"];
+const BOT_MARGEN_HORA_RECOGER_MIN = 60;  // para recoger hoy, la hora elegida tiene que ser al menos esto después de ahora
 const BOT_MARGEN_MISMO_DIA_MIN = 60;       // para recoger hoy, tiene que faltar al menos esto para cerrar
 const BOT_TIENDA_URL = "https://latartavasca.com";
 const BOT_TAMANOS = ["Individual", "Mediana", "Grande"];

@@ -346,15 +346,17 @@ versión viva contra el repo (regla dura de arriba).
 - ⚠️ **`pedidoNoRecogido` NO usa `eliminarMovimiento`**: esa función repone stock si el canal de la fila no es
   "Reservado", y estas reservas traen canal Tienda o Domicilio (suma piezas que nunca se descontaron). Libera con
   `invLiberar` y marca `ANULADO` directo. Quedan en la hoja `Pedidos_No_Recogidos` (lista de la campaña).
-- **Regla de no recogido**: el día de la entrega, al CERRAR la sucursal, lo que debió recogerse y no llegó se libera (`pedido_gracia_dias` suma días de espera). **Reporte diario** `pedidosRevisionDiaria` (21:00; instalar una vez con `instalarRevisionDiariaPedidos()`): lista los
-  apartados vencidos y, por defecto, los marca solos y libera las tartas (`pedido_auto_no_recogido = NO` solo los lista). Solo recolección en sucursal.
+- **Regla de no recogido** (reemplazada el 28-oct: ya nada se cancela solo): el día de la entrega, al CERRAR la sucursal, lo que debió
+  recogerse y no llegó pasa a **POR REVISAR** y SIGUE APARTADO (`pedido_gracia_dias` suma días de espera). Lo corre `pedidosRevisionDiaria`
+  (21:00; instalar una vez con `instalarRevisionDiariaPedidos()`), que ahora es el **cierre del día** de `24_seguimiento_clientes.js`. Solo
+  recolección en sucursal. La persona autorizada lo resuelve desde la hoja: ENTREGADO (si sí llegó) o NO RECOGIDO (libera las tartas).
 - **Velocidad del pedido** (ManyChat solo espera ~8 s + un sondeo de 7 s): la hoja Ventas ya pasa de 11 mil filas, así que
   `pedidoAnotar` busca solo en las últimas `PEDIDO_VENTANA_FILAS`, escribe en bloque y saca el consecutivo de una
   propiedad del script; `crear_pedido` reutiliza la fecha validada en la conversación (`_botCalcularFechaMemo`); y con
   `crear_pedido` exitoso el mensaje de confirmación lo arma el sistema (`_botMensajeConfirmacion`) sin otra llamada a la
   IA. El turno que confirma bajó de 18-35 s a ~9 s. `registrarVenta` (3 s) no se tocó.
 - **Claves de Configuración** (las llena el equipo; vacías, el bot no inventa nada): `pedido_datos_transferencia`,
-  `pedido_politica_no_recoger`, `pedido_auto_no_recogido`, `pedido_gracia_dias`, `bot_correo_avisos`.
+  `pedido_politica_no_recoger`, `pedido_gracia_dias`, `bot_correo_avisos`.
 - **Avisos por WhatsApp** (`20_whatsapp_avisos.js`): API oficial de Meta con una plantilla aprobada de dos variables
   (`aviso_equipo_tarta_vasca`). Sin claves no hace nada. Las claves van en Propiedades del script (`WHATSAPP_TOKEN`,
   `WHATSAPP_PHONE_ID`), nunca en el código; los destinatarios en Configuración (`aviso_whatsapp_numeros`). Un aviso que
@@ -422,6 +424,49 @@ versión viva contra el repo (regla dura de arriba).
   Cancelados, Resumen, Bitácora y Configuración. El Estado es un menú desplegable en todas; cambiarlo mueve el pedido y lo anota
   en la Bitácora; los pedidos para recoger deben traer hora (si falta, se pone roja).
   Se construiría en pestañas nuevas dentro del Excel que Rebeca decida (el de respuestas del formulario o el Sistema).
+
+### Ambiente de pruebas completo (28-oct-2026, en construcción)
+
+Pedido de Alex: un ambiente de pruebas desde cero con inventario inicial, donde un pedido se vea en todos los lugares y se pruebe
+todo el ciclo. Hecho hasta ahora (solo en el proyecto de pruebas, no en producción):
+- **Reset** (`95_prueba_reset.js`, vive solo en el proyecto de pruebas, con candados: token, hoja "…PRUEBAS…" y frase de
+  confirmación): libera las reservas, borra de Ventas los pedidos con referencia, vacía las pestañas del tablero, avisos,
+  no recogidos y Bot_Log, reinicia las referencias y carga un inventario inicial conocido (Bosques 12/8/6, Cuajimalpa y Polanco
+  6/3/2 por sabor en Individual/Mediana/Grande, con escaseces a propósito: Frutos Rojos Grande en Polanco 0, Queso Mediana en
+  Cuajimalpa 1, Pumpkin spice Individual en Polanco 1; todo lo que no sea tarta del menú en cero). Termina con
+  `reconciliarLedger()` y `auditarConsistencia()` en verde. ⚠️ `invAjustar` sobre un SKU sin fila previa asienta el ajuste
+  DOS veces en el libro mayor (lo da de alta con `invProducir` y luego asienta la diferencia completa): por eso el reset reconcilia.
+- **Llave de recolección**: el mensaje de confirmación dice "Tu llave es TV-…": se la da a quien lo atienda en la sucursal para
+  que encuentren su tarta apartada (es la referencia; la pestaña la nombra "Llave").
+- **Pestañas por sucursal** (`21_tablero_pedidos.js`): `Pedidos Bosques`, `Pedidos Cuajimalpa` y `Pedidos Polanco` además de
+  `Tablero_Pedidos`, con hora de recoger como columna. Un pedido nuevo entra al instante en la general y en la de su sucursal
+  (los domicilios salen de Bosques); confirmar/entregar/no llegó cambia el estado del renglón en todas las pestañas al instante;
+  la revisión de cada 5 min reacomoda el orden. Ya no se reconstruye todo en cada acción (tardaba y dejaba renglones viejos).
+- **Producción del día** (`getProduccionManana`) ahora cuenta también los pedidos del bot y de Shopify (`PEDIDO_CANALES_PRODUCCION`).
+  `getApartados` NO se tocó a propósito: esa pantalla tiene cancelar, que usa `eliminarMovimiento` y repondría stock que nunca se
+  descontó en los canales Tienda y Domicilio.
+- **Lealtad** (`23_clientes_lealtad.js`, hoja `Clientes_Lealtad`): un renglón por cliente (clave: teléfono; sin teléfono, su
+  conversación de Instagram) con pedidos hechos, entregados, no recogidos, total comprado, primer pedido y última entrega.
+- **Cierre del día y mensajes a clientes** (`24_seguimiento_clientes.js`, todo probado en el proyecto de pruebas con un reloj simulado):
+  - `pedidosCierreDelDia` (21:00): lo que no se recogió pasa a POR REVISAR (sigue apartado), se programa un mensaje al cliente
+    ofreciéndole reagendar para mañana u otra fecha, y a Rebeca y Yessenia les llega el **reporte de la noche** con las tartas apartadas
+    sin entregar, por sucursal (con llave, cliente, piezas y hora). Queda huella en `Reportes_Noche`.
+  - **Feedback**: al entregar un pedido se programa para `FEEDBACK_DIAS` (2) días después a las `FEEDBACK_HORA` (10:00) el mensaje
+    "¿cómo te fue?". Los mensajes proactivos pasan por la cola `Mensajes_Clientes` (PENDIENTE → ENVIADO / FALLÓ / SIN CANAL, con el
+    motivo); `mensajesClientesEnviarAhora` (cada 30 min, `instalarMensajesClientes()`) manda los que ya toca.
+  - `Seguimiento_Pedidos` guarda por llave el id de contacto de ManyChat (la conversación del bot) y el canal: sin él no hay mensaje.
+    Los pedidos de Shopify o teléfono quedan SIN CANAL hasta tener una forma de ubicar al cliente en ManyChat.
+  - **Menú de Estado en las pestañas por sucursal**: opciones CONFIRMADO, ENTREGADO y NO RECOGIDO. `tableroAlEditar` (trigger instalable,
+    `instalarMenuEstadoPedidos()`) ejecuta la misma acción que el punto de venta (entregar descuenta, no recogido libera) con el nombre
+    de quien editó en la auditoría; si falla o el correo no está en `pedidos_hoja_autorizados` (vacío = cualquiera con edición), revierte
+    la celda y avisa. ⚠️ Si Alex cambia el rol con el que corren estas acciones, revisar `tableroAplicarEstado` (usa Owner internamente).
+  - Flujos de ManyChat que usa el envío (cada uno es un flujo de un solo paso con campos del contacto): `manychat_flujo_aviso`,
+    `manychat_flujo_reporte` (aviso_referencia + aviso_detalle), `manychat_flujo_cliente_instagram` y `manychat_flujo_cliente_whatsapp`
+    (mensaje_cliente). Mientras falte la clave o el flujo en Configuración, el envío queda anotado como "NO SE MANDÓ: falta …" y el
+    mensaje sigue PENDIENTE. **Pendiente**: crear en ManyChat los flujos de reporte y de cliente y las plantillas de WhatsApp
+    (`reporte_apartados_noche`, `reagendar_pedido`, `feedback_pedido`) para que lleguen fuera de la ventana de 24 h.
+  - Para probar sin esperar días: el proyecto de pruebas tiene rutas que reciben una hora simulada (cierre del día y envío de mensajes).
+  - Falta: que el cliente conteste al mensaje de reagendar y el bot cambie la fecha del pedido (hoy lo pasa con una persona).
 
 ## Legacy / pendientes
 

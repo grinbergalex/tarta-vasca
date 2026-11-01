@@ -835,7 +835,7 @@ if(hV){ var dV=hV.getDataRange().getValues(), hd=dV[0]||[];
 var iTipo=hd.indexOf("tipo_op"), iAnul=hd.indexOf("estado_anul"), iFe=hd.indexOf("fecha_entrega");
 for(var r=1;r<dV.length;r++){ var row=dV[r]; if(!row[0])continue;
 if(iTipo!==-1&&row[iTipo]!=="Reservado")continue;
-if(row[9]!=="Apartado")continue;
+if(PEDIDO_CANALES_PRODUCCION.indexOf(row[9])===-1)continue;   // v9: también los pedidos del bot y de Shopify, no solo "Apartado"
 if(iAnul!==-1&&row[iAnul]==="ANULADO")continue;
 var fe = iFe!==-1 ? row[iFe] : "";
 var feStr = fe instanceof Date ? Utilities.formatDate(fe,tz,"yyyy-MM-dd") : String(fe).substring(0,10);

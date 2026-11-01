@@ -163,7 +163,7 @@ function pedidoConfirmar(body, sesion) {
   if (pedido.estado !== PEDIDO_ESTADO.POR_CONFIRMAR && pedido.estado !== PEDIDO_ESTADO.APARTADO) return { ok: false, error: "Este pedido está " + pedido.estado + ": no se puede confirmar." };
   pedidoAnotar(ss, pedido.idVenta, { estado: PEDIDO_ESTADO.CONFIRMADO });
   registrarAuditoria(sesion.usuario, sesion.rol, "PEDIDO_CONFIRMADO", pedido.referencia + " (" + pedido.idVenta + ")");
-  _tableroRefrescarSiHaceFalta();
+  tableroMarcarEstado(pedido.referencia, PEDIDO_ESTADO.CONFIRMADO);
   return { ok: true, referencia: pedido.referencia, estado: PEDIDO_ESTADO.CONFIRMADO };
 }
 
@@ -178,7 +178,9 @@ function pedidoEntregar(body, sesion) {
   const res = convertirReservaAVenta({ idVenta: pedido.idVenta, metodoPago: body.metodoPago }, sesion);
   if (!res.ok) return res;
   pedidoAnotar(ss, pedido.idVenta, { estado: PEDIDO_ESTADO.ENTREGADO });
-  _tableroRefrescarSiHaceFalta();
+  tableroMarcarEstado(pedido.referencia, PEDIDO_ESTADO.ENTREGADO);
+  try { lealtadRegistrarEntrega(ss, pedido); } catch (e) { Logger.log("Lealtad: " + e); }
+  try { seguimientoMarcarEntregado(ss, pedido.referencia, new Date()); } catch (e) { Logger.log("Seguimiento: " + e); }
   return { ok: true, referencia: pedido.referencia, estado: PEDIDO_ESTADO.ENTREGADO, total: res.total };
 }
 
@@ -186,7 +188,7 @@ function pedidoEntregar(body, sesion) {
 // anula el pedido con su motivo y lo deja en la lista de la campaña.
 function pedidoNoRecogido(body, sesion) {
   const resultado = _pedidoMarcarNoRecogido(body, sesion);
-  if (resultado.ok) _tableroRefrescarSiHaceFalta();
+  if (resultado.ok) tableroMarcarEstado(resultado.referencia, PEDIDO_ESTADO.NO_RECOGIDO);
   return resultado;
 }
 
@@ -216,6 +218,7 @@ function _pedidoMarcarNoRecogido(body, sesion) {
       hoja.getRange(f, idx.estado_pedido + 1).setValue(PEDIDO_ESTADO.NO_RECOGIDO);
     });
     _pedidoRegistrarNoRecogido(ss, pedido, ahora);
+    try { lealtadRegistrarNoRecogido(ss, pedido); } catch (e) { Logger.log("Lealtad: " + e); }
     registrarAuditoria(sesion.usuario, sesion.rol, "PEDIDO_NO_RECOGIDO", pedido.referencia + " (" + pedido.idVenta + ") | liberado el apartado");
     _utilMarcarDirty();
     return { ok: true, referencia: pedido.referencia, estado: PEDIDO_ESTADO.NO_RECOGIDO };
@@ -283,24 +286,11 @@ function pedidosVencidos(ss, ahora, diasGracia) {
   return vencidos;
 }
 
-// Reporte diario (trigger a las 21:00, ya cerradas todas las sucursales). Por defecto marca solos los vencidos y libera las
-// tartas; con pedido_auto_no_recogido = NO solo los lista para que una persona los marque.
+// Trigger de las 21:00 (ya cerradas todas las sucursales). El cierre del día vive en 24_seguimiento_clientes.js:
+// lo que no se recogió queda POR REVISAR (sigue apartado, nada se cancela solo), se avisa al cliente y se manda el reporte
+// de la noche a Rebeca y Yessenia.
 function pedidosRevisionDiaria() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const auto = String(_cfgVal(ss, PEDIDO_CLAVE_AUTO_NO_RECOGIDO, "SI")).toUpperCase() === "SI";
-  const vencidos = pedidosVencidos(ss, new Date(), _cfgVal(ss, PEDIDO_CLAVE_GRACIA_DIAS, 0));
-  const sesion = { usuario: "sistema", rol: "Owner" };
-  const marcados = [];
-  if (auto) vencidos.forEach(function (p) { const r = pedidoNoRecogido({ idVenta: p.idVenta }, sesion); if (r.ok) marcados.push(p); });
-  const lista = (auto ? marcados : vencidos).map(function (p) {
-    return "• " + p.referencia + " · " + (p.cliente || "sin nombre") + " · " + (p.contacto || "sin contacto") + " · " + _pedidoResumenItems(p) + " · $" + p.total + " · debía recogerse el " + p.fechaEntrega + " en " + p.sucursal;
-  });
-  if (!lista.length) return { ok: true, vencidos: 0 };
-  const titulo = auto ? "📋 Pedidos no recogidos (ya liberados): " + lista.length : "📋 Pedidos apartados vencidos por revisar: " + lista.length;
-  const pie = auto ? "\n\nLas tartas ya volvieron al inventario. La lista de la campaña está en la hoja " + PEDIDO_HOJA_NO_RECOGIDOS + ", con un mensaje sugerido para cada cliente."
-    : "\n\nSiguen apartados. Márcalos como no recogidos para liberar las tartas y llevarlos a la campaña.";
-  _botAvisar(titulo, lista.join("\n") + pie);
-  return { ok: true, vencidos: lista.length, marcados: marcados.length };
+  return pedidosCierreDelDia(new Date());
 }
 
 // Correr UNA vez desde el editor.
