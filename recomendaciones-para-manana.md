@@ -27,6 +27,13 @@ Preparado la noche del 31-oct al 1-nov-2026. Todo lo construido está **solo en 
 8. **Tope de piezas de tartas "a pedido" para fechas futuras** (capacidad de la cocina) y confirmar que el tope de 12 piezas es el correcto.
 9. **Cuándo y cómo publicar**: copia de la hoja real, claves nuevas (BOT_TOKEN, ManyChat, Anthropic), cambiar URL y token del botón Atendida a los reales, y piloto con la palabra "prueba".
 
+### Decisiones de Alex (1-nov-2026)
+- **Plantillas de WhatsApp**: revisadas en Meta. Solo existe `aviso_pedido_hoy` (Utilidad, Spanish MEX, Activa, aprobada el 28-oct). Faltan por crear: alerta, reporte de la noche, reagendar y feedback. Pendiente.
+- **Feedback por Instagram (2 días)**: pendiente; **revisarlo al terminar de implementar**.
+- **Revelar que es IA**: no se revela; solo si preguntan (así ya está).
+- **Lomas del Chamizal / Granjas Navidad, datos de transferencia**: pendientes.
+- **Aviso de privacidad**: el integral VF (Senko Legal, 28-oct) ya está publicado en https://latartavasca.com/pages/aviso-de-privacidad. Maite lo comparte una vez al pedir nombre/teléfono (`BOT_URL_AVISO_PRIVACIDAD`, 01). Falta subir esa versión al proyecto de pruebas.
+
 ## 3. Lo que dice la investigación (resumen; el informe completo con enlaces está abajo)
 
 Nivel de confianza: **[Oficial]** leído en páginas de Meta; **[Terceros]** blogs o proveedores; **[No verificado]**.

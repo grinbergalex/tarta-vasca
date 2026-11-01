@@ -232,6 +232,7 @@ const BOT_ROL = "Admin_Ventas";             // sesión interna (nunca sale por e
 const BOT_SUCURSAL_DOMICILIO = SUCURSAL_COCINA;
 const BOT_DIAS_ENTREGA_DOMICILIO = [2, 3, 4, 5, 6];   // martes a sábado, como dice la página de la tienda
 const BOT_VENTANA_ENTREGA = { abre: "09:00", cierra: "15:00" };
+const BOT_URL_AVISO_PRIVACIDAD = "https://latartavasca.com/pages/aviso-de-privacidad"; // aviso integral VF (28-oct), ya publicado en la tienda en línea
 const BOT_HORA_CORTE_RECOGER = "18:00";      // bot: para recoger MAÑANA algo que no está listo, el pedido tiene que caer antes de esta hora (Alex, 31-oct: 16:00, subida a 18:00 igual que domicilio; se ajusta aquí). RECOGER_HORA_CORTE es de la tienda en línea y no se toca
 const BOT_HORA_CORTE_DOMICILIO = "18:00";   // pedidos a domicilio después de esta hora suman un día
 const BOT_PAGOS_RECOGER = ["efectivo", "transferencia", "tarjeta"];   // la tarjeta solo se paga en sucursal, al recoger
