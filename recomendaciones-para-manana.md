@@ -34,6 +34,9 @@ Preparado la noche del 31-oct al 1-nov-2026. Todo lo construido está **solo en 
 - **Lomas del Chamizal / Granjas Navidad, datos de transferencia**: pendientes.
 - **Aviso de privacidad**: el integral VF (Senko Legal, 28-oct) ya está publicado en https://latartavasca.com/pages/aviso-de-privacidad. Maite lo comparte una vez al pedir nombre/teléfono (`BOT_URL_AVISO_PRIVACIDAD`, 01). Falta subir esa versión al proyecto de pruebas.
 
+### Idea a implementar después (Alex, 1-nov): Maite reconoce al cliente
+Al empezar la conversación Maite busca quién es el cliente (por el teléfono de WhatsApp o el contacto de Instagram) y le habla personalizado: lo saluda por su nombre, le ofrece ver su histórico de pedidos y le dice "qué bueno que regresaste, llevabas X tiempo sin comprar" con el tiempo real. Ya existen los datos: `Clientes_Lealtad` (pedidos, entregados, no recogidos, total, primer pedido y última entrega; clave teléfono o conversación de Instagram) y `Seguimiento_Pedidos`. Cuidados al construirlo: en Instagram no hay teléfono hasta que el cliente lo da (solo se reconoce por la conversación o por el id de ManyChat); el histórico solo se detalla a quien lo hizo en esta conversación o da los últimos 4 dígitos (regla vigente de `consultar_pedido`); no inventar el tiempo, calcularlo de la última entrega real; y el aviso de privacidad ya cubre el uso de estos datos para atender al cliente.
+
 ## 3. Lo que dice la investigación (resumen; el informe completo con enlaces está abajo)
 
 Nivel de confianza: **[Oficial]** leído en páginas de Meta; **[Terceros]** blogs o proveedores; **[No verificado]**.
