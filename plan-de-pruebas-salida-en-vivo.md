@@ -58,7 +58,7 @@ Construido (31-oct, `25_alertas_bot.js`) y probado hablando con el bot en el amb
 | E2 | Mención de Uber, DiDi, taxi o mensajero para recoger: aviso con quién y a qué hora | ✅ (taxi y DiDi probados; no pausa el bot) · ✅ llegó de verdad a Alex |
 | E3 | Petición compleja (evento, restaurante, regalo corporativo, más de 12 piezas, algo que el bot no sabe): aviso | ✅ probado con 60 tartas para una boda · ✅ llegó de verdad a Alex |
 | E4 | Pide factura, cambiar o cancelar un pedido, o hablar con una persona: aviso | ✅ factura y "quiero hablar con una persona" probados · ✅ llegó de verdad a Alex |
-| E5 | Después de avisar, el bot no sigue contestando solo (pausa) | ✅ en el servidor: 12 h de silencio (avisa una vez "ya le avisé al equipo"); se reanuda con `botReanudarConversacion("id")` · ✅ el flujo de ManyChat ya no manda nada cuando la respuesta viene vacía (Condición agregada 1-nov) · ⬜ probar con Instagram real (G3) |
+| E5 | Después de avisar, el bot no sigue contestando solo (pausa) | ✅ en el servidor: 12 h de silencio (avisa una vez "ya le avisé al equipo"); se reanuda con `botReanudarConversacion("id")` · ✅ el flujo de ManyChat ya no manda nada cuando la respuesta viene vacía (Condición agregada 1-nov) · ✅ probado en Instagram real (G3) |
 | E6 | Llega a Rebeca y a Yessenia por separado y queda anotado en una hoja | ✅ la hoja y el envío por separado (probado con la API simulada; 4 alertas simultáneas se anotaron completas) · ✅ envío real probado solo a Alex; a Rebeca y Yessenia al publicar |
 
 ## F. Seguridad y marca
@@ -75,7 +75,7 @@ Construido (31-oct, `25_alertas_bot.js`) y probado hablando con el bot en el amb
 |---|---|---|
 | G1 | El flujo de Instagram apunta al sistema real y trae el token nuevo (OBLIGATORIA) | ⬜ |
 | G2 | Solo contesta a quien escribe la palabra "prueba" mientras dura el piloto (OBLIGATORIA) | ⬜ |
-| G3 | Cuando el bot pasa a una persona, el flujo se pausa | ✅ construido en el servidor y en el flujo de ManyChat · ⬜ probar en Instagram real: pedir hablar con una persona y escribir otra vez; debe contestar solo la primera vez |
+| G3 | Cuando el bot pasa a una persona, el flujo se pausa | ✅ construido en el servidor y en el flujo de ManyChat · ✅ probado en Instagram real (31-oct): pidió hablar con una persona, la siguiente respuesta fue el aviso de una sola vez y el tercer mensaje no tuvo respuesta |
 | G4 | Una respuesta larga del bot no se corta ni se repite (consultas de 10 s o más) | ✅ en pruebas: primera llamada cortada a los 6 s, el sondeo recogió la respuesta de 11 s, la misma las dos veces y un solo turno registrado |
 | G5 | Plantillas de WhatsApp aprobadas por Meta (aviso, reporte, reagendar, feedback) | 🔴 en revisión / sin crear |
 
