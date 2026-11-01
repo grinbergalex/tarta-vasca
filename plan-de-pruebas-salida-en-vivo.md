@@ -45,21 +45,21 @@ Se sale en vivo cuando todo lo marcado **OBLIGATORIA** esté en ✅.
 | # | Prueba | Estado |
 |---|---|---|
 | D1 | A las 21:00 lo que no se recogió pasa a POR REVISAR y sigue apartado | ✅ simulado |
-| D2 | Mensaje al cliente para reagendar esa misma noche | ✅ cola · 🔴 envío real: faltan flujos en ManyChat |
-| D3 | Reporte de la noche a Rebeca y Yessenia | ✅ armado · 🔴 envío real: falta flujo y plantilla |
-| D4 | Feedback a los 2 días de entregado | ✅ programación · 🔴 envío real: faltan flujos |
+| D2 | Mensaje al cliente para reagendar esa misma noche | ✅ cola · ✅ flujo de WhatsApp creado · ⬜ flujo de Instagram y plantilla |
+| D3 | Reporte de la noche a Rebeca y Yessenia | ✅ armado · ✅ flujo creado · ⬜ plantilla y prueba real |
+| D4 | Feedback a los 2 días de entregado | ✅ programación · ✅ flujo de WhatsApp creado · ⬜ flujo de Instagram y plantilla |
 | D5 | Registro de lealtad suma entregas, no recogidos y total | ✅ |
 
 ## E. Alertas al personal (WhatsApp personal de Rebeca y Yessenia)  — **OBLIGATORIAS**
-Construido (31-oct, `25_alertas_bot.js`) y probado hablando con el bot en el ambiente de pruebas. Cada alerta queda en la hoja `Alertas_Bot`. El envío real a los dos WhatsApp espera el flujo `manychat_flujo_alerta` en ManyChat y su plantilla (hoy dice "NO SE MANDÓ: falta manychat_flujo_alerta").
+Construido (31-oct, `25_alertas_bot.js`) y probado hablando con el bot en el ambiente de pruebas. Cada alerta queda en la hoja `Alertas_Bot`. Flujo `Alerta bot (sistema)` creado en ManyChat (1-nov, texto normal dentro de 24 h): la alerta de una queja llegó de verdad a Alex. Fuera de las 24 h hace falta una plantilla aprobada por Meta.
 | # | Prueba | Estado |
 |---|---|---|
-| E1 | Queja u observación negativa: aviso inmediato | ✅ alerta urgente al instante y otra al pasar a persona con nombre y teléfono · 🔴 envío real: falta el flujo |
-| E2 | Mención de Uber, DiDi, taxi o mensajero para recoger: aviso con quién y a qué hora | ✅ (taxi y DiDi probados; no pausa el bot) · 🔴 envío real: falta el flujo |
-| E3 | Petición compleja (evento, restaurante, regalo corporativo, más de 12 piezas, algo que el bot no sabe): aviso | ✅ probado con 60 tartas para una boda · 🔴 envío real: falta el flujo |
-| E4 | Pide factura, cambiar o cancelar un pedido, o hablar con una persona: aviso | ✅ factura y "quiero hablar con una persona" probados · 🔴 envío real: falta el flujo |
+| E1 | Queja u observación negativa: aviso inmediato | ✅ alerta urgente al instante y otra al pasar a persona con nombre y teléfono · ✅ llegó de verdad a Alex |
+| E2 | Mención de Uber, DiDi, taxi o mensajero para recoger: aviso con quién y a qué hora | ✅ (taxi y DiDi probados; no pausa el bot) · ✅ llegó de verdad a Alex |
+| E3 | Petición compleja (evento, restaurante, regalo corporativo, más de 12 piezas, algo que el bot no sabe): aviso | ✅ probado con 60 tartas para una boda · ✅ llegó de verdad a Alex |
+| E4 | Pide factura, cambiar o cancelar un pedido, o hablar con una persona: aviso | ✅ factura y "quiero hablar con una persona" probados · ✅ llegó de verdad a Alex |
 | E5 | Después de avisar, el bot no sigue contestando solo (pausa) | ✅ en el servidor: 12 h de silencio (avisa una vez "ya le avisé al equipo"); se reanuda con `botReanudarConversacion("id")` · ⬜ ManyChat debe dejar de mostrar el mensaje cuando viene vacío (G3) |
-| E6 | Llega a Rebeca y a Yessenia por separado y queda anotado en una hoja | ✅ la hoja y el envío por separado (probado con la API simulada; 4 alertas simultáneas se anotaron completas) · 🔴 envío real a sus WhatsApp |
+| E6 | Llega a Rebeca y a Yessenia por separado y queda anotado en una hoja | ✅ la hoja y el envío por separado (probado con la API simulada; 4 alertas simultáneas se anotaron completas) · ✅ envío real probado solo a Alex; a Rebeca y Yessenia al publicar |
 
 ## F. Seguridad y marca
 | # | Prueba | Estado |
