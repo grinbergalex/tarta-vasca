@@ -408,6 +408,7 @@ versión viva contra el repo (regla dura de arriba).
   sucursal ese día y, si es hoy, al menos `BOT_MARGEN_HORA_RECOGER_MIN` después de ahora). A domicilio no se pide hora. Hoy se
   guarda en el motivo de la fila de Ventas ("Hora: HH:MM") y sale en la confirmación al cliente; falta una columna propia
   en Ventas/Tablero cuando se construya el libro de pedidos.
+- **Fecha mínima para recoger (31-oct)**: mañana solo se acepta lo que ya está listo en la sucursal; lo que no está listo, para mañana, solo si el pedido cae antes de `BOT_HORA_CORTE_RECOGER` (18:00, igual que domicilio; empezó en 16:00 y Alex la subió el 31-oct; se ajusta ahí); después, pasado mañana. A domicilio rige `BOT_HORA_CORTE_DOMICILIO` (también 18:00). `RECOGER_HORA_CORTE` (17:00) es del calendario de la tienda en línea y no se toca. ⚠️ En el proyecto de pruebas había un parche viejo que hacía que `tiendaDisponibilidad` leyera el inventario REAL de producción; ya se quitó (el bot de pruebas debe usar el inventario de pruebas).
 - **Domicilio o días después**: solo se registra en la lista de pedidos (y en Rutas, si es domicilio); no manda avisos.
   La visibilidad en producción el día de cocinar es solo "subirlo al sistema" por ahora (sin aviso de anticipación):
   pendiente corregir `getProduccionManana`, que hoy solo ve canal "Apartado".

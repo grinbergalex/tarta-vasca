@@ -561,7 +561,7 @@ function _botCalcularFecha(a) {
   if (!horarios) return { error: "Para recoger necesito la sucursal: " + BOT_SUCURSALES_RECOGER.join(", ") + "." };
   return _botReglasFecha({
     ahora: _botAhora(), horarios: horarios, entrega: a.entrega,
-    horaCorte: a.entrega === "domicilio" ? BOT_HORA_CORTE_DOMICILIO : RECOGER_HORA_CORTE,
+    horaCorte: a.entrega === "domicilio" ? BOT_HORA_CORTE_DOMICILIO : BOT_HORA_CORTE_RECOGER,
     disponibleHoy: a.entrega === "recoger" && _botDisponibleHoy(a.sucursal, a.items),
     fechaDeseada: a.fecha_deseada
   });
