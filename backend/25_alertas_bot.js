@@ -25,10 +25,36 @@ function botAlertaPersonal(ss, origen, tipo, titulo, detalle, conversacionId) {
     aviso = { configurado: false, motivo: "ya se avisó hace poco de lo mismo en esta conversación", destinatarios: [], resultados: [] };
   } else {
     cache.put(clave, "1", BOT_ALERTA_REPETIDA_SEGUNDOS);
-    aviso = manychatAvisarEquipo(ss, MANYCHAT_CLAVE_FLUJO_ALERTA, titulo, detalle, MANYCHAT_MAX_DETALLE);
+    const conSugerencia = detalle + " | Sugerencia para decirle al cliente: " + _botSugerenciaCliente(tipo);
+    aviso = manychatAvisarEquipo(ss, MANYCHAT_CLAVE_FLUJO_ALERTA, titulo, conSugerencia, MANYCHAT_MAX_ALERTA, [{ nombre: MANYCHAT_CAMPO_CONVERSACION, valor: String(conversacionId) }]);
   }
   _botRegistrarAlerta(ss, origen, tipo, conversacionId, titulo, detalle, aviso);
   return aviso;
+}
+
+// Texto que Rebeca o Yessenia copian y pegan al cliente al tomar la conversación (sin dato inventado: no promete reembolsos ni fechas).
+const BOT_SUGERENCIAS_CLIENTE = {
+  queja_u_observacion: "Hola, soy [tu nombre] de La Tarta Vasca. Lamento mucho lo que pasó; ya lo estoy revisando personalmente y te escribo en un momento.",
+  mensajero: "Hola, soy [tu nombre] de La Tarta Vasca. Tengo tu aviso del mensajero; ¿a nombre de quién lo recoge y a qué hora aproximada?",
+  cotizacion_evento_o_restaurante: "Hola, soy [tu nombre] de La Tarta Vasca. Gracias por pensar en nosotros; ¿me cuentas la fecha, cuántas piezas y el lugar para cotizarte?",
+  factura: "Hola, soy [tu nombre] de La Tarta Vasca. Con gusto te ayudo con tu factura; ¿me compartes tus datos fiscales y el número de tu pedido?"
+};
+const BOT_SUGERENCIA_GENERICA = "Hola, soy [tu nombre] de La Tarta Vasca. Ya vi tu mensaje y te ayudo personalmente.";
+function _botSugerenciaCliente(tipo) { return BOT_SUGERENCIAS_CLIENTE[tipo] || BOT_SUGERENCIA_GENERICA; }
+
+// Acción pública protegida con BOT_TOKEN: el botón ATENDIDA del WhatsApp de la alerta la llama (solicitud externa de ManyChat).
+function botAtendida(body) {
+  const secreto = PropertiesService.getScriptProperties().getProperty("BOT_TOKEN");
+  if (!secreto || String(body.botToken || "") !== secreto) return { ok: false, error: "No autorizado." };
+  const conversacionId = String(body.conversacionId || "").replace(/[^A-Za-z0-9_-]/g, "").substring(0, 64);
+  if (!conversacionId) return { ok: false, error: "Falta la conversación." };
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const pendiente = _botPendienteDe(ss, conversacionId);
+  if (!pendiente) return { ok: false, error: "No hay una conversación pendiente con ese id." };
+  const hoja = ss.getSheetByName(PENDIENTES_HOJA);
+  hoja.getRange(pendiente.fila, PENDIENTE_COL.ESTADO + 1).setValue(PENDIENTE_ESTADO.ATENDIDA);
+  _botPendienteAnotarMensaje(ss, pendiente.fila);
+  return { ok: true, estado: PENDIENTE_ESTADO.ATENDIDA };
 }
 
 function _botRegistrarAlerta(ss, origen, tipo, conversacionId, titulo, detalle, aviso) {

@@ -55,7 +55,7 @@ function _manychatEnviarFlujo(idContacto, flujo, campos) {
 
 // Avisa al equipo (Yessenia y Rebeca) con un flujo de dos campos: título y detalle.
 // Devuelve { configurado, motivo, destinatarios, resultados:[{ nombre, ok, detalle }] }.
-function manychatAvisarEquipo(ss, claveFlujo, titulo, detalle, maximo) {
+function manychatAvisarEquipo(ss, claveFlujo, titulo, detalle, maximo, camposExtra) {
   const destinatarios = _manychatDestinatarios(ss);
   const flujo = String(_cfgVal(ss, claveFlujo, "")).trim();
   const salida = { configurado: false, motivo: "", destinatarios: destinatarios, resultados: [] };
@@ -63,7 +63,7 @@ function manychatAvisarEquipo(ss, claveFlujo, titulo, detalle, maximo) {
   if (!flujo) { salida.motivo = "falta " + claveFlujo + " en Configuración"; return salida; }
   if (!destinatarios.length) { salida.motivo = "falta " + MANYCHAT_CLAVE_DESTINOS_HOY + " en Configuración"; return salida; }
   salida.configurado = true;
-  const campos = [{ nombre: MANYCHAT_CAMPO_REFERENCIA, valor: _whatsappLimpiar(titulo, MANYCHAT_MAX_DETALLE) }, { nombre: MANYCHAT_CAMPO_DETALLE, valor: _whatsappLimpiar(detalle, maximo || MANYCHAT_MAX_DETALLE) }];
+  const campos = [{ nombre: MANYCHAT_CAMPO_REFERENCIA, valor: _whatsappLimpiar(titulo, MANYCHAT_MAX_DETALLE) }, { nombre: MANYCHAT_CAMPO_DETALLE, valor: _whatsappLimpiar(detalle, maximo || MANYCHAT_MAX_DETALLE) }].concat(camposExtra || []);
   destinatarios.forEach(function (d) {
     const r = _manychatEnviarFlujo(d.id, flujo, campos);
     salida.resultados.push({ nombre: d.nombre || d.id, ok: r.ok, detalle: r.detalle });

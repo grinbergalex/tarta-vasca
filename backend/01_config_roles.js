@@ -212,10 +212,12 @@ const PENDIENTE_ESTADO = { PENDIENTE: "PENDIENTE", ATENDIDA: "ATENDIDA", SIN_ATE
 const BOT_RECORDATORIO_MINUTOS = 5;                                            // cada cuánto se le recuerda al equipo que un cliente espera (Alex, 1-nov)
 const BOT_RECORDATORIOS_MAX = 12;                                              // tope de recordatorios por conversación (con 5 min = 1 hora); después avisa que nadie atendió
 const MX_OFFSET_HORAS = 6;                                                     // México sin horario de verano (UTC-6): sirve para leer fechas de la hoja
-const BOT_REENGANCHE_HORAS = 4;                                                // con la conversación ATENDIDA, si el cliente calla tantas horas y vuelve a escribir, Maite se reincorpora
+const BOT_REENGANCHE_HORAS = 1.5;                                              // con la conversación ATENDIDA, si el cliente calla tantas horas y vuelve a escribir, Maite se reincorpora (Alex, 1-nov)
 const BOT_PAUSA_HORAS = 12;                                                  // cuánto calla el bot tras pasar a una persona
 const MANYCHAT_MAX_REPORTE = 900;                                             // el reporte de la noche puede ser más largo que un aviso
 const MANYCHAT_MAX_DETALLE = 300;                           // la variable de una plantilla no debe pasar de unos cientos de caracteres
+const MANYCHAT_MAX_ALERTA = 700;                                           // las alertas llevan además el texto sugerido para el cliente
+const MANYCHAT_CAMPO_CONVERSACION = "bot_conversacion";                        // campo de usuario con la conversación del cliente: lo usa el botón ATENDIDA del flujo de alerta
 const WHATSAPP_MAX_DETALLE = 700;     // las variables de una plantilla no pueden pasar de ~1000 caracteres en total
 const BOT_DIAS_COMPLETOS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
 const BOT_MESES_NOMBRE = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];

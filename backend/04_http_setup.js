@@ -92,6 +92,7 @@ if (accion === "logout") return logout(body);
 if (accion === "tiendaDisponibilidad") return tiendaDisponibilidad();  // v7.6 — pública: calendario del carrito de Shopify
 if (accion === "botConversar") return botConversar(body);              // v9 — pública pero protegida con BOT_TOKEN (ManyChat y chat de pruebas)
 if (accion === "botRespuesta") return botRespuesta(body);              // v9 — ManyChat recoge la respuesta si la primera llamada se rindió
+if (accion === "botAtendida") return botAtendida(body);                  // v9 — botón ATENDIDA del WhatsApp de alerta (protegida con BOT_TOKEN)
 const sesion = validarToken(body.token);
 if (!sesion.ok) return { ok: false, error: "Sesión inválida o expirada. Vuelve a iniciar sesión." };
 switch (accion) {
