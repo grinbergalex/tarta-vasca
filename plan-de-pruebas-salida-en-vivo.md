@@ -17,7 +17,7 @@ Se sale en vivo cuando todo lo marcado **OBLIGATORIA** esté en ✅.
 | A9 | Pedir más piezas de las que hay para otro día: lo acepta (se produce a pedido); el tope es de 12 piezas | ✅ |
 | A10 | Más de 12 piezas: pasa con una persona | ✅ (el aviso a su WhatsApp depende del bloque E) |
 | A11 | Cambiar de opinión a mitad del pedido (sabor, fecha, sucursal): el resumen final refleja el cambio | ✅ |
-| A12 | Colonia sin cobertura (Lomas del Chamizal): no inventa precio y avisa | 🔴 falta decidir cómo se atiende esa zona |
+| A12 | Colonia sin cobertura (Lomas del Chamizal): no inventa precio y avisa | ✅ no inventa envío y ofrece recoger o preguntar al equipo · 💬 falta decidir cómo se atiende esa zona |
 | A13 | Resumen final y "¿lo dejo así?" antes de crear el pedido (OBLIGATORIA) | ✅ |
 | A14 | **Para mañana**: con la tarta lista en la sucursal sí; si no está lista, solo si el pedido cae antes de las 18:00 (si no, ofrece pasado mañana). La hora de corte es una constante que se ajusta (`BOT_HORA_CORTE_RECOGER`) | ✅ probado con y sin existencias; corte subido de 16:00 a 18:00 (31-oct), pruebas locales ✅, ⬜ repetir en vivo |
 
@@ -25,12 +25,12 @@ Se sale en vivo cuando todo lo marcado **OBLIGATORIA** esté en ✅.
 | # | Prueba | Estado |
 |---|---|---|
 | B1 | Un pedido del bot aparece en Ventas, Inventario (apartado), Tablero, pestaña de su sucursal, producción, lealtad y seguimiento | ✅ |
-| B2 | La pantalla de **Apartados del POS no cambia** (sigue viendo solo lo que ve hoy) (OBLIGATORIA) | ⬜ verificar en el POS real |
-| B3 | Un pedido por WhatsApp tomado como hoy (POS o formulario) sigue igual y además aparece en el Tablero con su llave (OBLIGATORIA) | ⬜ |
-| B4 | Un pedido de Shopify aparece en el Tablero | ⬜ |
+| B2 | La pantalla de **Apartados del POS no cambia** (sigue viendo solo lo que ve hoy) (OBLIGATORIA) | ✅ en pruebas: con 7 pedidos del bot, Apartados mostraba 0; con una reserva hecha como el POS, mostró solo esa · el frontend no cambió · ⬜ vista final en el POS real |
+| B3 | Un pedido por WhatsApp tomado como hoy (POS o formulario) sigue igual y además aparece en el Tablero con su llave (OBLIGATORIA) | ✅ en pruebas: una reserva del POS recibió su llave (TV-1031-03) y salió en el Tablero como "Teléfono o mostrador" |
+| B4 | Un pedido de Shopify aparece en el Tablero | ✅ por código (misma ruta que B3, entra como POR CONFIRMAR) · ⬜ con un pedido real de Shopify |
 | B5 | La producción de mañana suma también los pedidos del bot, sin duplicar los de ruta | ✅ · ⬜ revisar con el cocinero |
-| B6 | Las ventas y reportes financieros no cambian por tener pedidos apartados (OBLIGATORIA) | ⬜ |
-| B7 | Las columnas nuevas de Ventas no rompen ninguna pantalla del POS (OBLIGATORIA) | ⬜ |
+| B6 | Las ventas y reportes financieros no cambian por tener pedidos apartados (OBLIGATORIA) | ✅ por revisión: el bot usa la misma reserva que ya existía y el diff contra `main` no toca reportes ni frontend · ⬜ comparar un reporte antes y después en el real |
+| B7 | Las columnas nuevas de Ventas no rompen ninguna pantalla del POS (OBLIGATORIA) | ✅ por revisión: se agregan al final de la hoja con el mismo mecanismo de siempre (`_ensureColVentas`/`pedidoAnotar`), nada se recorre y las posiciones de las columnas viejas no cambian · ⬜ abrir las pantallas en el real |
 
 ## C. Gestionar desde la hoja (pestañas por sucursal)
 | # | Prueba | Estado |
@@ -50,15 +50,16 @@ Se sale en vivo cuando todo lo marcado **OBLIGATORIA** esté en ✅.
 | D4 | Feedback a los 2 días de entregado | ✅ programación · 🔴 envío real: faltan flujos |
 | D5 | Registro de lealtad suma entregas, no recogidos y total | ✅ |
 
-## E. Alertas al personal (WhatsApp personal de Rebeca y Yessenia)  — **OBLIGATORIAS, por construir**
+## E. Alertas al personal (WhatsApp personal de Rebeca y Yessenia)  — **OBLIGATORIAS**
+Construido (31-oct, `25_alertas_bot.js`) y probado hablando con el bot en el ambiente de pruebas. Cada alerta queda en la hoja `Alertas_Bot`. El envío real a los dos WhatsApp espera el flujo `manychat_flujo_alerta` en ManyChat y su plantilla (hoy dice "NO SE MANDÓ: falta manychat_flujo_alerta").
 | # | Prueba | Estado |
 |---|---|---|
-| E1 | Queja u observación negativa: aviso inmediato | ⬜ |
-| E2 | Mención de Uber, DiDi, taxi o mensajero para recoger: aviso con quién y a qué hora | ⬜ |
-| E3 | Petición compleja (evento, restaurante, regalo corporativo, más de 12 piezas, algo que el bot no sabe): aviso | ⬜ |
-| E4 | Pide factura, cambiar o cancelar un pedido, o hablar con una persona: aviso | ⬜ |
-| E5 | Después de avisar, el bot no sigue contestando solo (pausa) | ⬜ |
-| E6 | Llega a Rebeca y a Yessenia por separado y queda anotado en una hoja | ⬜ |
+| E1 | Queja u observación negativa: aviso inmediato | ✅ alerta urgente al instante y otra al pasar a persona con nombre y teléfono · 🔴 envío real: falta el flujo |
+| E2 | Mención de Uber, DiDi, taxi o mensajero para recoger: aviso con quién y a qué hora | ✅ (taxi y DiDi probados; no pausa el bot) · 🔴 envío real: falta el flujo |
+| E3 | Petición compleja (evento, restaurante, regalo corporativo, más de 12 piezas, algo que el bot no sabe): aviso | ✅ probado con 60 tartas para una boda · 🔴 envío real: falta el flujo |
+| E4 | Pide factura, cambiar o cancelar un pedido, o hablar con una persona: aviso | ✅ factura y "quiero hablar con una persona" probados · 🔴 envío real: falta el flujo |
+| E5 | Después de avisar, el bot no sigue contestando solo (pausa) | ✅ en el servidor: 12 h de silencio (avisa una vez "ya le avisé al equipo"); se reanuda con `botReanudarConversacion("id")` · ⬜ ManyChat debe dejar de mostrar el mensaje cuando viene vacío (G3) |
+| E6 | Llega a Rebeca y a Yessenia por separado y queda anotado en una hoja | ✅ la hoja y el envío por separado (probado con la API simulada; 4 alertas simultáneas se anotaron completas) · 🔴 envío real a sus WhatsApp |
 
 ## F. Seguridad y marca
 | # | Prueba | Estado |
@@ -75,7 +76,7 @@ Se sale en vivo cuando todo lo marcado **OBLIGATORIA** esté en ✅.
 | G1 | El flujo de Instagram apunta al sistema real y trae el token nuevo (OBLIGATORIA) | ⬜ |
 | G2 | Solo contesta a quien escribe la palabra "prueba" mientras dura el piloto (OBLIGATORIA) | ⬜ |
 | G3 | Cuando el bot pasa a una persona, el flujo se pausa | ⬜ |
-| G4 | Una respuesta larga del bot no se corta ni se repite (consultas de 10 s o más) | ⬜ |
+| G4 | Una respuesta larga del bot no se corta ni se repite (consultas de 10 s o más) | ✅ en pruebas: primera llamada cortada a los 6 s, el sondeo recogió la respuesta de 11 s, la misma las dos veces y un solo turno registrado |
 | G5 | Plantillas de WhatsApp aprobadas por Meta (aviso, reporte, reagendar, feedback) | 🔴 en revisión / sin crear |
 
 ## H. Antes de publicar en el sistema real

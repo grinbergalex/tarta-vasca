@@ -34,6 +34,7 @@ function botConversar(body) {
   const mensaje = String(body.mensaje || "").trim().substring(0, BOT_MAX_CARACTERES_MENSAJE);
   if (!conversacionId || !mensaje) return { ok: false, error: "Falta la conversación o el mensaje." };
 
+  if (botEstaPausada(conversacionId)) return _botTerminar(conversacionId, botRespuestaPausada(conversacionId));
   const memoria = _botCargarMemoria(conversacionId);
   if (memoria.turnos >= BOT_MAX_TURNOS_POR_CONVERSACION) {
     _botAvisar("Conversación del bot en pausa", "La conversación " + conversacionId + " llegó al tope de " + BOT_MAX_TURNOS_POR_CONVERSACION + " turnos.");
@@ -255,7 +256,7 @@ function _botPrompt(ahora) {
     "MOTIVOS PARA HACER LLEGAR UN MENSAJE AL PERSONAL (siempre, sin excepción):",
     "1. Cualquier queja u OBSERVACIÓN sobre las tartas (llegó aplastada, estaba muy dulce, algo no les gustó, una sugerencia): AL INSTANTE, en ese mismo turno, llama avisar_al_equipo con tipo \"queja_u_observacion\" y lo que dijo, aunque todavía no tengas su nombre ni su teléfono (así el equipo se entera de inmediato). Después pide nombre, teléfono y, si puede, una foto; y cuando los tengas (o si no los quiere dar), llama pasar_a_persona con tipo \"queja_u_observacion\" y el resumen completo. Si es un elogio, agradece con cariño y avisa con avisar_al_equipo (tipo \"observacion\"), sin pausar.",
     "2. Cotizaciones para eventos o restaurantes → pasar_a_persona con tipo \"cotizacion_evento_o_restaurante\".",
-    "3. Cualquier petición de mandar un Uber, DiDi u otro mensajero a recoger su pedido → avisar_al_equipo con tipo \"mensajero\" (ver abajo).",
+    "3. Cualquier petición de mandar un Uber, DiDi, taxi u otro mensajero a recoger su pedido → avisar_al_equipo con tipo \"mensajero\" (ver abajo).",
     "4. Si en algún momento mencionan que quieren hablar con alguien más → pasar_a_persona con tipo \"pidio_persona\".",
     "CÓMO CONTACTAR AL EQUIPO: si el cliente quiere comunicarse directamente, dale el WhatsApp y el formulario de consultar_manual (tema pedidos_y_canales) y ofrécele que le avises al equipo (pasar_a_persona, tipo \"pidio_persona\"); ofrécelo también cuando algo no se pueda resolver por aquí.",
     "También pasas con una persona (pasar_a_persona) cuando piden factura (tipo \"factura\"), quieren cambiar o cancelar un pedido (tipo \"cambio_o_cancelacion\"), preguntan por alergias graves o temas médicos que las herramientas no cubran, o no sabes algo (tipo \"otro\"). Al pasar, dilo con calidez (\"le aviso al equipo para que te ayuden personalmente ❤️\") y deja un resumen claro para que no tengan que preguntarte todo otra vez.",
@@ -264,7 +265,7 @@ function _botPrompt(ahora) {
     "",
     "NOMBRES: el sabor \"Queso\" del menú es la Tradicional de Queso: así lo llamas con el cliente.",
     "",
-    "MENSAJERO (UBER, DIDI U OTRO): si el cliente dice que va a mandar un Uber, un DiDi u otro mensajero por su pedido, llama avisar_al_equipo con tipo \"mensajero\" para que el equipo lo sepa, pregunta a nombre de quién lo va a recoger y a qué hora aproximada, dile que el equipo coordina los detalles con él, y sigue con el pedido normal para recoger. Al crear el pedido pasa el campo mensajero (Uber, DiDi u otro).",
+    "MENSAJERO (UBER, DIDI, TAXI U OTRO): si el cliente dice que va a mandar un Uber, un DiDi, un taxi u otro mensajero por su pedido, llama avisar_al_equipo con tipo \"mensajero\" para que el equipo lo sepa, pregunta a nombre de quién lo va a recoger y a qué hora aproximada, dile que el equipo coordina los detalles con él, y sigue con el pedido normal para recoger. Al crear el pedido pasa el campo mensajero (Uber, DiDi u otro).",
     "",
     "DOMICILIO EL MISMO DÍA: nunca hay entrega a domicilio el mismo día, porque los repartidores salen temprano a ruta. Si piden entrega para hoy, dilo con amabilidad y ofrece la primera fecha posible, o recoger hoy en sucursal si hay tarta lista.",
     "",
@@ -297,7 +298,7 @@ function _botHerramientas() {
     { name: "crear_pedido", description: "Crea el pedido (queda apartado y POR CONFIRMAR, con su referencia, y avisa al equipo). Úsalo solo después de que el cliente dijo que sí al ticket final.", input_schema: { type: "object", properties: { nombre: { type: "string" }, seguimiento: { type: "string", enum: ["telefono", "instagram"], description: "Cómo quiere que le den seguimiento. Siempre se pide el teléfono; \"instagram\" solo si recoge en sucursal y no quiso darlo. En WhatsApp no se pide: ya se tiene su número." }, telefono: { type: "string", description: "10 dígitos. Se pide siempre; OBLIGATORIO a domicilio y, para recoger, solo puede faltar si el cliente no quiso darlo (no se pide en WhatsApp)" }, metodo_pago: { type: "string", enum: BOT_PAGOS_RECOGER, description: "La tarjeta solo se paga en sucursal, al recoger; a domicilio solo efectivo o transferencia" }, entrega: entrega, sucursal: { type: "string", enum: BOT_SUCURSALES_RECOGER, description: "Solo si recoge" }, direccion: { type: "string" }, colonia: { type: "string" }, fecha_entrega: { type: "string", description: "AAAA-MM-DD" }, hora: { type: "string", description: "HH:MM. OBLIGATORIA si recoge (a qué hora pasa por su pedido, dentro del horario de la sucursal); a domicilio no se pide" }, items: items, notas: { type: "string" }, mensajero: { type: "string", description: "Solo si lo recoge un Uber, DiDi u otro mensajero: cuál" } }, required: ["nombre", "metodo_pago", "entrega", "fecha_entrega", "items"] } },
     { name: "consultar_pedido", description: "Estado de un pedido por su referencia (por ejemplo TV-1027-03). Solo responde si el cliente es quien lo hizo en esta conversación o da los últimos 4 dígitos de su teléfono.", input_schema: { type: "object", properties: { referencia: { type: "string" }, ultimos_4_telefono: { type: "string", description: "Solo si el pedido se hizo en otra conversación" } }, required: ["referencia"] } },
     { name: "pasar_a_persona", description: "Avisa al equipo y pausa el bot en esta conversación. Con tipo \"queja_u_observacion\" manda una alerta urgente.", input_schema: { type: "object", properties: { tipo: { type: "string", enum: ["queja_u_observacion", "cotizacion_evento_o_restaurante", "pidio_persona", "factura", "cambio_o_cancelacion", "otro"] }, motivo: { type: "string" }, resumen: { type: "string", description: "Qué quiere el cliente y qué datos ya dio" } }, required: ["tipo", "motivo", "resumen"] } },
-    { name: "avisar_al_equipo", description: "Avisa al equipo SIN pausar el bot. Úsalo cuando el cliente dice que mandará un Uber, DiDi u otro mensajero por su pedido (tipo \"mensajero\") cuando hay una queja u observación negativa o una sugerencia sobre las tartas (tipo \"queja_u_observacion\": avisa de inmediato, antes de pedir sus datos), o cuando deja un elogio (tipo \"observacion\").",input_schema: { type: "object", properties: { tipo: { type: "string", enum: ["mensajero", "queja_u_observacion", "observacion", "otro"] }, nota: { type: "string", description: "Qué dijo el cliente y qué datos dio (nombre de quien recoge, hora)" } }, required: ["tipo", "nota"] } }
+    { name: "avisar_al_equipo", description: "Avisa al equipo SIN pausar el bot. Úsalo cuando el cliente dice que mandará un Uber, DiDi, taxi u otro mensajero por su pedido (tipo \"mensajero\") cuando hay una queja u observación negativa o una sugerencia sobre las tartas (tipo \"queja_u_observacion\": avisa de inmediato, antes de pedir sus datos), o cuando deja un elogio (tipo \"observacion\").",input_schema: { type: "object", properties: { tipo: { type: "string", enum: ["mensajero", "queja_u_observacion", "observacion", "otro"] }, nota: { type: "string", description: "Qué dijo el cliente y qué datos dio (nombre de quien recoge, hora)" } }, required: ["tipo", "nota"] } }
   ];
   return BOT_PEDIDOS_ACTIVOS ? herramientas : herramientas.filter(function (h) { return BOT_HERRAMIENTAS_DE_PEDIDO.indexOf(h.name) === -1; });
 }
@@ -772,15 +773,20 @@ function _botPasarAPersona(a, ctx) {
   ctx.handoff = true;
   ctx.alerta = a.tipo || "otro";
   const encabezado = BOT_ENCABEZADOS_ALERTA[a.tipo] || "🙋 El bot pasa una conversación a una persona";
-  _botAvisar(encabezado, "Motivo: " + a.motivo + "\nResumen: " + a.resumen + "\nConversación: " + ctx.conversacionId);
+  const detalle = "Motivo: " + a.motivo + "\nResumen: " + a.resumen + "\nConversación: " + ctx.conversacionId;
+  _botAvisar(encabezado, detalle, { sinWhatsapp: true });
+  botAlertaPersonal(SpreadsheetApp.getActiveSpreadsheet(), "pasar", ctx.alerta, encabezado, "[" + ctx.canal + "] " + a.resumen + " (conv. " + ctx.conversacionId + ")", ctx.conversacionId);
+  botPausar(ctx.conversacionId);
   return { ok: true, mensaje: "Ya se avisó al equipo." };
 }
 
 // Aviso al equipo sin pausar el bot (por ejemplo, un Uber o DiDi que va a recoger).
 function _botAvisarAlEquipo(a, ctx) {
   if (a.tipo && a.tipo !== "otro") ctx.alerta = ctx.alerta || a.tipo;
-  const encabezados = { mensajero: "🚗 El cliente mandará un Uber/DiDi por su pedido", observacion: "💬 Comentario de un cliente sobre las tartas", queja_u_observacion: "🚨 QUEJA U OBSERVACIÓN SOBRE LAS TARTAS — aviso inmediato (faltan sus datos)" };
-  _botAvisar(encabezados[a.tipo] || "📣 Aviso del bot", String(a.nota || "") + "\nConversación: " + ctx.conversacionId);
+  const encabezados = { mensajero: "🚗 El cliente mandará un Uber/DiDi/taxi por su pedido", observacion: "💬 Comentario de un cliente sobre las tartas", queja_u_observacion: "🚨 QUEJA U OBSERVACIÓN SOBRE LAS TARTAS — aviso inmediato (faltan sus datos)" };
+  const encabezado = encabezados[a.tipo] || "📣 Aviso del bot";
+  _botAvisar(encabezado, String(a.nota || "") + "\nConversación: " + ctx.conversacionId, { sinWhatsapp: true });
+  if (a.tipo !== "observacion") botAlertaPersonal(SpreadsheetApp.getActiveSpreadsheet(), "avisar", a.tipo || "otro", encabezado, "[" + ctx.canal + "] " + String(a.nota || "") + " (conv. " + ctx.conversacionId + ")", ctx.conversacionId);
   return { ok: true, mensaje: "Ya se avisó al equipo; sigue con el pedido." };
 }
 
