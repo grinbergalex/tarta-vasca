@@ -465,7 +465,7 @@ todo el ciclo. Hecho hasta ahora (solo en el proyecto de pruebas, no en producci
   - Flujos de ManyChat que usa el envío (cada uno es un flujo de un solo paso con campos del contacto): `manychat_flujo_aviso`,
     `manychat_flujo_reporte` (aviso_referencia + aviso_detalle), `manychat_flujo_cliente_instagram` y `manychat_flujo_cliente_whatsapp`
     (mensaje_cliente). Mientras falte la clave o el flujo en Configuración, el envío queda anotado como "NO SE MANDÓ: falta …" y el
-    mensaje sigue PENDIENTE. Creados en ManyChat el 1-nov (texto normal, dentro de la ventana de 24 h): alerta, reporte y mensaje al cliente por WhatsApp. El campo que lleva el mensaje al cliente es `aviso_detalle` (el campo `mensaje_cliente` nunca existió en ManyChat). **Pendiente**: el flujo de Instagram (`manychat_flujo_cliente_instagram`) y las plantillas de WhatsApp
+    mensaje sigue PENDIENTE. Creados en ManyChat el 1-nov (texto normal, dentro de la ventana de 24 h): alerta, reporte y mensaje al cliente por WhatsApp. El campo que lleva el mensaje al cliente es `aviso_detalle` (el campo `mensaje_cliente` nunca existió en ManyChat). El flujo de Instagram (`manychat_flujo_cliente_instagram`) también quedó creado; ManyChat aceptó los envíos de prueba a Alex por WhatsApp e Instagram. **Pendiente**: las plantillas de WhatsApp
     (`reporte_apartados_noche`, `reagendar_pedido`, `feedback_pedido`) para que lleguen fuera de la ventana de 24 h.
   - Para probar sin esperar días: el proyecto de pruebas tiene rutas que reciben una hora simulada (cierre del día y envío de mensajes).
   - Falta: que el cliente conteste al mensaje de reagendar y el bot cambie la fecha del pedido (hoy lo pasa con una persona).

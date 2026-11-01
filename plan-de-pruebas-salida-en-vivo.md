@@ -45,9 +45,9 @@ Se sale en vivo cuando todo lo marcado **OBLIGATORIA** esté en ✅.
 | # | Prueba | Estado |
 |---|---|---|
 | D1 | A las 21:00 lo que no se recogió pasa a POR REVISAR y sigue apartado | ✅ simulado |
-| D2 | Mensaje al cliente para reagendar esa misma noche | ✅ cola · ✅ flujo de WhatsApp creado · ⬜ flujo de Instagram y plantilla |
+| D2 | Mensaje al cliente para reagendar esa misma noche | ✅ cola · ✅ flujos de WhatsApp e Instagram creados, ManyChat aceptó los envíos a Alex · ⬜ plantilla para fuera de 24 h |
 | D3 | Reporte de la noche a Rebeca y Yessenia | ✅ armado · ✅ flujo creado · ⬜ plantilla y prueba real |
-| D4 | Feedback a los 2 días de entregado | ✅ programación · ✅ flujo de WhatsApp creado · ⬜ flujo de Instagram y plantilla |
+| D4 | Feedback a los 2 días de entregado | ✅ programación · ✅ flujos de WhatsApp e Instagram creados · ⬜ plantilla para fuera de 24 h |
 | D5 | Registro de lealtad suma entregas, no recogidos y total | ✅ |
 
 ## E. Alertas al personal (WhatsApp personal de Rebeca y Yessenia)  — **OBLIGATORIAS**
