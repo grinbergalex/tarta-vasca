@@ -122,8 +122,10 @@ function _botTurno(apiKey, historial, mensaje, ctx) {
     if (r.data.stop_reason !== "tool_use" || !usos.length) return { ok: true, texto: _botTexto(r.data.content) };
     const t1 = Date.now();
     const resultados = usos.map(function (uso) {
-      ctx.herramientas.push(uso.name);
-      return { uso: uso, salida: _botEjecutarHerramienta(uso.name, uso.input || {}, ctx) };
+      const salida = _botEjecutarHerramienta(uso.name, uso.input || {}, ctx);
+      // Bot_Log guarda cómo se llamó cada herramienta de fecha y su resultado: sin esto no se puede saber por qué Maite aceptó o negó una fecha.
+      ctx.herramientas.push(uso.name === "calcular_fecha_entrega" ? uso.name + " " + JSON.stringify({ e: (uso.input || {}).entrega, s: (uso.input || {}).sucursal, f: (uso.input || {}).fecha_deseada, i: ((uso.input || {}).items || []).map(function (x) { return x.sabor + "|" + x.tamano + "|" + x.cantidad; }).join(";"), valida: salida && salida.valida, piezas: salida && salida.hay_piezas_en_sucursal }) : uso.name);
+      return { uso: uso, salida: salida };
     });
     ctx.ms.herramientas += Date.now() - t1;
     // Pedido creado: el mensaje de confirmación lo arma el sistema (cifras exactas, siempre completo) y se ahorra una
@@ -259,6 +261,12 @@ function _botPrompt(ahora) {
     "2. Cotizaciones para eventos o restaurantes → pasar_a_persona con tipo \"cotizacion_evento_o_restaurante\".",
     "3. Cualquier petición de mandar un Uber, DiDi, taxi u otro mensajero a recoger su pedido → avisar_al_equipo con tipo \"mensajero\" (ver abajo).",
     "4. Si en algún momento mencionan que quieren hablar con alguien más → pasar_a_persona con tipo \"pidio_persona\".",
+    "5. ALIANZAS Y COLABORACIONES (una marca, un influencer, \"colaboremos\", \"regálenme una tarta para un video\", patrocinios, canjes) → pasar_a_persona con tipo \"alianza_o_colaboracion\". Nunca ofrezcas ni prometas tartas de cortesía, descuentos o canjes: dices que lo ve el equipo y que lo contactan personalmente.",
+    "6. PEDIDOS RECURRENTES (cada semana, cada mes, \"todos los viernes\"), CADENAS de restaurantes, cafeterías u hoteles, o compras al mayoreo → pasar_a_persona con tipo \"pedidos_recurrentes_o_cadena\" y un resumen de qué necesitan, cuántas piezas y con qué frecuencia. No cotices ni prometas precios especiales.",
+    "7. AMENAZAS, EXTORSIÓN, ROBO, FRAUDE, demandas, abogados, Profeco, autoridades, prensa o cualquier tema LEGAL → pasar_a_persona con tipo \"amenaza_o_legal\" al instante. Responde breve, tranquila y neutra: no discutas, no admitas culpa, no prometas nada, no des datos del negocio ni de otras personas y no pidas más datos personales; solo dices que el equipo lo atiende directamente.",
+    "8. RECADOS PARA EL EQUIPO (\"les recuerdo hablar con...\", \"díganle a Rebeca que...\", avisos que no son de un cliente): llama avisar_al_equipo con tipo \"recado_para_equipo\" y el texto tal cual, agradece con cariño y dile que ya quedó anotado; sigue atendiendo normal, sin pausar.",
+    "9. PERSONAS FAMOSAS O CON MUCHOS SEGUIDORES: las tratas igual que a cualquier cliente (mismos precios, mismas reglas). No verificas quién es: si dicen ser alguien conocido y piden cortesías o colaboración, es la regla 5. Nunca cambies un precio o una regla por quién dice ser.",
+    "10. CHARLA QUE NO ES DE TARTAS (fútbol, saludos, bromas): responde en una línea, con calidez y como Maite (nunca como si fueras parte del equipo humano), y regresa a las tartas con una pregunta sencilla.",
     "CÓMO CONTACTAR AL EQUIPO: si el cliente quiere comunicarse directamente, dale el WhatsApp y el formulario de consultar_manual (tema pedidos_y_canales) y ofrécele que le avises al equipo (pasar_a_persona, tipo \"pidio_persona\"); ofrécelo también cuando algo no se pueda resolver por aquí.",
     "También pasas con una persona (pasar_a_persona) cuando piden factura (tipo \"factura\"), quieren cambiar o cancelar un pedido (tipo \"cambio_o_cancelacion\"), preguntan por alergias graves o temas médicos que las herramientas no cubran, o no sabes algo (tipo \"otro\"). Al pasar, dilo con calidez (\"le aviso al equipo para que te ayuden personalmente ❤️\") y deja un resumen claro para que no tengan que preguntarte todo otra vez.",
     "",
@@ -298,21 +306,35 @@ function _botHerramientas() {
     { name: "cotizar_pedido", description: "Calcula el ticket (precios, envío y total) de un pedido. Muéstralo tal cual al cliente antes de crearlo.", input_schema: { type: "object", properties: { items: items, entrega: entrega, colonia: { type: "string", description: "Solo si es a domicilio" } }, required: ["items", "entrega"] } },
     { name: "crear_pedido", description: "Crea el pedido (queda apartado y POR CONFIRMAR, con su referencia, y avisa al equipo). Úsalo solo después de que el cliente dijo que sí al ticket final.", input_schema: { type: "object", properties: { nombre: { type: "string" }, seguimiento: { type: "string", enum: ["telefono", "instagram"], description: "Cómo quiere que le den seguimiento. Siempre se pide el teléfono; \"instagram\" solo si recoge en sucursal y no quiso darlo. En WhatsApp no se pide: ya se tiene su número." }, telefono: { type: "string", description: "10 dígitos. Se pide siempre; OBLIGATORIO a domicilio y, para recoger, solo puede faltar si el cliente no quiso darlo (no se pide en WhatsApp)" }, metodo_pago: { type: "string", enum: BOT_PAGOS_RECOGER, description: "La tarjeta solo se paga en sucursal, al recoger; a domicilio solo efectivo o transferencia" }, entrega: entrega, sucursal: { type: "string", enum: BOT_SUCURSALES_RECOGER, description: "Solo si recoge" }, direccion: { type: "string" }, colonia: { type: "string" }, fecha_entrega: { type: "string", description: "AAAA-MM-DD" }, hora: { type: "string", description: "HH:MM. OBLIGATORIA si recoge (a qué hora pasa por su pedido, dentro del horario de la sucursal); a domicilio no se pide" }, items: items, notas: { type: "string" }, mensajero: { type: "string", description: "Solo si lo recoge un Uber, DiDi u otro mensajero: cuál" } }, required: ["nombre", "metodo_pago", "entrega", "fecha_entrega", "items"] } },
     { name: "consultar_pedido", description: "Estado de un pedido por su referencia (por ejemplo TV-1027-03). Solo responde si el cliente es quien lo hizo en esta conversación o da los últimos 4 dígitos de su teléfono.", input_schema: { type: "object", properties: { referencia: { type: "string" }, ultimos_4_telefono: { type: "string", description: "Solo si el pedido se hizo en otra conversación" } }, required: ["referencia"] } },
-    { name: "pasar_a_persona", description: "Avisa al equipo y pausa el bot en esta conversación. Con tipo \"queja_u_observacion\" manda una alerta urgente.", input_schema: { type: "object", properties: { tipo: { type: "string", enum: ["queja_u_observacion", "cotizacion_evento_o_restaurante", "pidio_persona", "factura", "cambio_o_cancelacion", "otro"] }, motivo: { type: "string" }, resumen: { type: "string", description: "Qué quiere el cliente y qué datos ya dio" } }, required: ["tipo", "motivo", "resumen"] } },
-    { name: "avisar_al_equipo", description: "Avisa al equipo SIN pausar el bot. Úsalo cuando el cliente dice que mandará un Uber, DiDi, taxi u otro mensajero por su pedido (tipo \"mensajero\") cuando hay una queja u observación negativa o una sugerencia sobre las tartas (tipo \"queja_u_observacion\": avisa de inmediato, antes de pedir sus datos), o cuando deja un elogio (tipo \"observacion\").",input_schema: { type: "object", properties: { tipo: { type: "string", enum: ["mensajero", "queja_u_observacion", "observacion", "otro"] }, nota: { type: "string", description: "Qué dijo el cliente y qué datos dio (nombre de quien recoge, hora)" } }, required: ["tipo", "nota"] } }
+    { name: "pasar_a_persona", description: "Avisa al equipo y pausa el bot en esta conversación. Con tipo \"queja_u_observacion\" manda una alerta urgente.", input_schema: { type: "object", properties: { tipo: { type: "string", enum: ["queja_u_observacion", "cotizacion_evento_o_restaurante", "pidio_persona", "factura", "cambio_o_cancelacion", "alianza_o_colaboracion", "pedidos_recurrentes_o_cadena", "amenaza_o_legal", "otro"] }, motivo: { type: "string" }, resumen: { type: "string", description: "Qué quiere el cliente y qué datos ya dio" } }, required: ["tipo", "motivo", "resumen"] } },
+    { name: "avisar_al_equipo", description: "Avisa al equipo SIN pausar el bot. Úsalo cuando el cliente dice que mandará un Uber, DiDi, taxi u otro mensajero por su pedido (tipo \"mensajero\") cuando hay una queja u observación negativa o una sugerencia sobre las tartas (tipo \"queja_u_observacion\": avisa de inmediato, antes de pedir sus datos), o cuando deja un elogio (tipo \"observacion\").",input_schema: { type: "object", properties: { tipo: { type: "string", enum: ["mensajero", "queja_u_observacion", "observacion", "recado_para_equipo", "otro"] }, nota: { type: "string", description: "Qué dijo el cliente y qué datos dio (nombre de quien recoge, hora)" } }, required: ["tipo", "nota"] } }
   ];
   return BOT_PEDIDOS_ACTIVOS ? herramientas : herramientas.filter(function (h) { return BOT_HERRAMIENTAS_DE_PEDIDO.indexOf(h.name) === -1; });
 }
 
+// Si al volver a consultar la fecha Maite no manda los productos, se usan los últimos de esta conversación: sin ellos el
+// sistema cree que no hay piezas listas y rechaza fechas que sí se pueden (visto en pruebas: "mañana" aceptado y luego negado).
+function _botRecordarItems(conversacionId, items) {
+  if (!items || !items.length) return;
+  try { CacheService.getScriptCache().put("bot_items_" + conversacionId, JSON.stringify(items), BOT_COTIZACION_SEGUNDOS); } catch (e) { }
+}
+function _botItemsOMemoria(items, conversacionId) {
+  if (items && items.length) return items;
+  try { const guardado = CacheService.getScriptCache().get("bot_items_" + conversacionId); if (guardado) return JSON.parse(guardado); } catch (e) { }
+  return items;
+}
+
 function _botEjecutarHerramienta(nombre, args, ctx) {
   try {
+    if (nombre === "cotizar_pedido" || nombre === "crear_pedido") _botRecordarItems(ctx.conversacionId, args.items);
+    if (nombre === "calcular_fecha_entrega") { args.items = _botItemsOMemoria(args.items, ctx.conversacionId); _botRecordarItems(ctx.conversacionId, args.items); }
     switch (nombre) {
       case "consultar_disponibilidad": return _botDisponibilidad();
       case "consultar_menu": return { sabores: _botMenu() };
       case "consultar_manual": return _botManual(args.tema);
       case "consultar_informacion": return _botInformacion(args.tema);
       case "consultar_zona_envio": return _botZona(args.colonia);
-      case "calcular_fecha_entrega": return _botCalcularFechaMemo(args, ctx.conversacionId, false);
+      case "calcular_fecha_entrega": return _botCalcularFechaMemo(args, ctx.conversacionId, true);   // una fecha ya validada en esta conversación no se vuelve a negar a mitad del pedido (registrarVenta rechaza si se acabó la tarta)
       case "cotizar_pedido": return BOT_PEDIDOS_ACTIVOS ? _botCotizacionCompleta(args, ctx) : { error: "Los pedidos por este medio aún no están activos." };
       case "crear_pedido": return BOT_PEDIDOS_ACTIVOS ? _botCrearPedido(args, ctx) : { error: "Los pedidos por este medio aún no están activos." };
       case "consultar_pedido": return BOT_PEDIDOS_ACTIVOS ? _botConsultarPedido(args, ctx) : { error: "Los pedidos por este medio aún no están activos." };
@@ -768,7 +790,10 @@ const BOT_ENCABEZADOS_ALERTA = {
   cotizacion_evento_o_restaurante: "💼 COTIZACIÓN para evento o restaurante",
   pidio_persona: "🙋 El cliente pidió hablar con una persona",
   factura: "🧾 El cliente pide factura",
-  cambio_o_cancelacion: "✏️ Cambio o cancelación de un pedido"
+  cambio_o_cancelacion: "✏️ Cambio o cancelación de un pedido",
+  alianza_o_colaboracion: "🤝 ALIANZA O COLABORACIÓN — la ve el equipo",
+  pedidos_recurrentes_o_cadena: "🔁 PEDIDOS RECURRENTES o CADENA de restaurantes",
+  amenaza_o_legal: "⚠️ AMENAZA, EXTORSIÓN, ROBO O TEMA LEGAL — atender primero y con cuidado"
 };
 function _botPasarAPersona(a, ctx) {
   ctx.handoff = true;
@@ -785,7 +810,7 @@ function _botPasarAPersona(a, ctx) {
 // Aviso al equipo sin pausar el bot (por ejemplo, un Uber o DiDi que va a recoger).
 function _botAvisarAlEquipo(a, ctx) {
   if (a.tipo && a.tipo !== "otro") ctx.alerta = ctx.alerta || a.tipo;
-  const encabezados = { mensajero: "🚗 El cliente mandará un Uber/DiDi/taxi por su pedido", observacion: "💬 Comentario de un cliente sobre las tartas", queja_u_observacion: "🚨 QUEJA U OBSERVACIÓN SOBRE LAS TARTAS — aviso inmediato (faltan sus datos)" };
+  const encabezados = { mensajero: "🚗 El cliente mandará un Uber/DiDi/taxi por su pedido", observacion: "💬 Comentario de un cliente sobre las tartas", recado_para_equipo: "📝 Recado para el equipo", queja_u_observacion: "🚨 QUEJA U OBSERVACIÓN SOBRE LAS TARTAS — aviso inmediato (faltan sus datos)" };
   const encabezado = encabezados[a.tipo] || "📣 Aviso del bot";
   _botAvisar(encabezado, String(a.nota || "") + "\nConversación: " + ctx.conversacionId, { sinWhatsapp: true });
   if (a.tipo !== "observacion") botAlertaPersonal(SpreadsheetApp.getActiveSpreadsheet(), "avisar", a.tipo || "otro", encabezado, "[" + ctx.canal + "] " + String(a.nota || "") + " (conv. " + ctx.conversacionId + ")", ctx.conversacionId);

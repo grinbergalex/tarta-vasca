@@ -68,6 +68,13 @@ Construido (31-oct, `25_alertas_bot.js`) y probado hablando con el bot en el amb
 | E8 | Solo recuerda con alguna sucursal abierta (horarios de `HORARIOS_SUCURSAL`) | ✅ pruebas locales |
 | E9 | Con la conversación ATENDIDA Maite calla; si el cliente calla 4 h y vuelve a escribir, Maite se reincorpora | ✅ pruebas locales · ⬜ en Instagram real |
 | E10 | La disculpa por la espera a los 5 min si el cliente insiste | ✅ pruebas locales · ⬜ en Instagram real |
+| E11 | Alianza o colaboración (marca, influencer, "regálenme una tarta") alerta y no promete cortesías | ✅ probado conversando |
+| E12 | Pedidos recurrentes o cadena de restaurantes alerta, sin cotizar | ✅ probado conversando |
+| E13 | Amenaza, extorsión, robo o tema legal alerta urgente, respuesta neutra | ✅ probado con amenaza de demanda en Profeco |
+| E14 | Recado para el equipo ("les recuerdo hablar con…") alerta sin pausar | ✅ probado conversando |
+| E15 | Quien dice ser famoso o con muchos seguidores: mismos precios y reglas; si pide regalos, alerta | ✅ probado con actriz e influencer · 🔴 verificado/seguidores no se pueden detectar |
+| E16 | Alergias: nunca garantiza ausencia de ingredientes y avisa | ✅ probado con dos conversaciones · ⬜ Rebeca debe validar la lista oficial de alérgenos |
+| E17 | Charla fuera de tema (fútbol): una línea y regresa a las tartas | ✅ probado |
 
 ## F. Seguridad y marca
 | # | Prueba | Estado |
