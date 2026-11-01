@@ -34,7 +34,8 @@ function botConversar(body) {
   const mensaje = String(body.mensaje || "").trim().substring(0, BOT_MAX_CARACTERES_MENSAJE);
   if (!conversacionId || !mensaje) return { ok: false, error: "Falta la conversación o el mensaje." };
 
-  if (botEstaPausada(conversacionId)) return _botTerminar(conversacionId, botRespuestaPausada(conversacionId));
+  const pausada = botEstaPausada(conversacionId) ? botRespuestaPausada(conversacionId) : null;   // null = ya terminó con la persona y Maite vuelve
+  if (pausada) return _botTerminar(conversacionId, pausada);
   const memoria = _botCargarMemoria(conversacionId);
   if (memoria.turnos >= BOT_MAX_TURNOS_POR_CONVERSACION) {
     _botAvisar("Conversación del bot en pausa", "La conversación " + conversacionId + " llegó al tope de " + BOT_MAX_TURNOS_POR_CONVERSACION + " turnos.");
@@ -777,6 +778,7 @@ function _botPasarAPersona(a, ctx) {
   _botAvisar(encabezado, detalle, { sinWhatsapp: true });
   botAlertaPersonal(SpreadsheetApp.getActiveSpreadsheet(), "pasar", ctx.alerta, encabezado, "[" + ctx.canal + "] " + a.resumen + " (conv. " + ctx.conversacionId + ")", ctx.conversacionId);
   botPausar(ctx.conversacionId);
+  botPendienteRegistrar(SpreadsheetApp.getActiveSpreadsheet(), ctx.conversacionId, ctx.canal, ctx.alerta, a.resumen);
   return { ok: true, mensaje: "Ya se avisó al equipo." };
 }
 

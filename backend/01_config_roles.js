@@ -207,7 +207,13 @@ const BOT_ALERTA_REPETIDA_SEGUNDOS = 600;                                      /
 const ALERTA_ESPERA_CANDADO_MS = 10000;                                        // cuánto espera una alerta para anotarse si otra está escribiendo
 const BOT_PAUSA_PREFIJO = "bot_pausa_";                                        // propiedad del script por conversación pasada a una persona
 const BOT_DISCULPA_MINUTOS = 5;                                                // si pasan tantos minutos desde el traspaso y el cliente vuelve a escribir, Maite se disculpa y se le recuerda al equipo
-const BOT_PAUSA_HORAS = 12;                                                   // cuánto calla el bot tras pasar a una persona
+const PENDIENTES_HOJA = "Conversaciones_Pendientes";                          // un renglón por conversación pasada a una persona; ATENDIDA detiene los recordatorios
+const PENDIENTE_ESTADO = { PENDIENTE: "PENDIENTE", ATENDIDA: "ATENDIDA", SIN_ATENDER: "SIN ATENDER" };
+const BOT_RECORDATORIO_MINUTOS = 5;                                            // cada cuánto se le recuerda al equipo que un cliente espera (Alex, 1-nov)
+const BOT_RECORDATORIOS_MAX = 12;                                              // tope de recordatorios por conversación (con 5 min = 1 hora); después avisa que nadie atendió
+const MX_OFFSET_HORAS = 6;                                                     // México sin horario de verano (UTC-6): sirve para leer fechas de la hoja
+const BOT_REENGANCHE_HORAS = 4;                                                // con la conversación ATENDIDA, si el cliente calla tantas horas y vuelve a escribir, Maite se reincorpora
+const BOT_PAUSA_HORAS = 12;                                                  // cuánto calla el bot tras pasar a una persona
 const MANYCHAT_MAX_REPORTE = 900;                                             // el reporte de la noche puede ser más largo que un aviso
 const MANYCHAT_MAX_DETALLE = 300;                           // la variable de una plantilla no debe pasar de unos cientos de caracteres
 const WHATSAPP_MAX_DETALLE = 700;     // las variables de una plantilla no pueden pasar de ~1000 caracteres en total

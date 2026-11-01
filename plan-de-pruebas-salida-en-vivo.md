@@ -61,6 +61,14 @@ Construido (31-oct, `25_alertas_bot.js`) y probado hablando con el bot en el amb
 | E5 | Después de avisar, el bot no sigue contestando solo (pausa) | ✅ en el servidor: 12 h de silencio (avisa una vez "ya le avisé al equipo"); se reanuda con `botReanudarConversacion("id")` · ✅ el flujo de ManyChat ya no manda nada cuando la respuesta viene vacía (Condición agregada 1-nov) · ✅ probado en Instagram real (G3) |
 | E6 | Llega a Rebeca y a Yessenia por separado y queda anotado en una hoja | ✅ la hoja y el envío por separado (probado con la API simulada; 4 alertas simultáneas se anotaron completas) · ✅ envío real probado solo a Alex; a Rebeca y Yessenia al publicar |
 
+## E2. Conversaciones pendientes y reincorporación de Maite (1-nov)
+| # | Prueba | Estado |
+|---|---|---|
+| E7 | Recordatorio urgente cada 5 min a Rebeca y Yessenia hasta que alguien marque ATENDIDA, con tope de 12 | ✅ pruebas locales · ⬜ en vivo con la hoja real |
+| E8 | Solo recuerda con alguna sucursal abierta (horarios de `HORARIOS_SUCURSAL`) | ✅ pruebas locales |
+| E9 | Con la conversación ATENDIDA Maite calla; si el cliente calla 4 h y vuelve a escribir, Maite se reincorpora | ✅ pruebas locales · ⬜ en Instagram real |
+| E10 | La disculpa por la espera a los 5 min si el cliente insiste | ✅ pruebas locales · ⬜ en Instagram real |
+
 ## F. Seguridad y marca
 | # | Prueba | Estado |
 |---|---|---|

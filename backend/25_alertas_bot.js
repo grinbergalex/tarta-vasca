@@ -74,19 +74,126 @@ function _botMinutosPausada(conversacionId) {
   return hasta ? (Date.now() - (hasta - BOT_PAUSA_HORAS * 3600 * 1000)) / 60000 : 0;
 }
 
-// Respuesta mientras está pausada. Si el cliente sigue escribiendo y la persona no ha llegado (BOT_DISCULPA_MINUTOS),
-// Maite se disculpa por la espera y se le recuerda al equipo; si no, el aviso va una sola vez por hora y luego silencio.
+// Respuesta mientras está pausada. Devuelve null si la conversación ya terminó con la persona y Maite vuelve a participar.
+//  - Si la persona ya la marcó ATENDIDA: Maite calla mientras el cliente siga conversando; cuando pasan BOT_REENGANCHE_HORAS
+//    sin que el cliente escriba y vuelve a escribir, se considera una conversación nueva y Maite se reincorpora.
+//  - Si sigue PENDIENTE y el cliente insiste (BOT_DISCULPA_MINUTOS), Maite se disculpa por la espera; si no, el aviso va
+//    una sola vez por hora y luego silencio.
+// Los recordatorios al equipo no salen de aquí sino de botRecordatoriosPendientes (cada BOT_RECORDATORIO_MINUTOS).
 function botRespuestaPausada(conversacionId) {
   const cache = CacheService.getScriptCache();
+  const pendiente = _botPendienteDe(SpreadsheetApp.getActiveSpreadsheet(), conversacionId);
+  if (pendiente && pendiente.estado === PENDIENTE_ESTADO.ATENDIDA) {
+    const silencio = Date.now() - pendiente.ultimoMensajeMs;
+    _botPendienteAnotarMensaje(SpreadsheetApp.getActiveSpreadsheet(), pendiente.fila);
+    if (silencio > BOT_REENGANCHE_HORAS * 3600000) { botReanudarConversacion(conversacionId); return null; }
+    return { ok: true, respuesta: "", handoff: true, alerta: "atendida_por_persona", pausada: true };
+  }
   const minutos = _botMinutosPausada(conversacionId);
   if (minutos >= BOT_DISCULPA_MINUTOS && !cache.get("bot_pausa_disculpa_" + conversacionId)) {
     cache.put("bot_pausa_disculpa_" + conversacionId, "1", BOT_DISCULPA_MINUTOS * 60);
-    botAlertaPersonal(SpreadsheetApp.getActiveSpreadsheet(), "recordatorio", "cliente_esperando", "⏰ Un cliente sigue esperando a una persona",
-      "Lleva " + Math.round(minutos) + " min esperando y volvió a escribir (conv. " + conversacionId + ")", conversacionId);
     return { ok: true, respuesta: BOT_TEXTO_DISCULPA, handoff: true, alerta: "cliente_esperando", pausada: true };
   }
   const clave = "bot_pausa_avisada_" + conversacionId;
   const primera = !cache.get(clave);
   if (primera) cache.put(clave, "1", 3600);
   return { ok: true, respuesta: primera ? BOT_TEXTO_PAUSA : "", handoff: true, alerta: "pausada", pausada: true };
+}
+
+// ---------------------------------------------------------------------------
+// CONVERSACIONES PENDIENTES: recordatorio urgente cada BOT_RECORDATORIO_MINUTOS hasta que alguien la marque ATENDIDA
+//
+// Cada traspaso a una persona abre un renglón PENDIENTE en `Conversaciones_Pendientes`. Quien la atiende cambia el Estado
+// a ATENDIDA (menú desplegable) y los recordatorios paran. El sistema no ve lo que se contesta desde Instagram o WhatsApp,
+// así que esa marca es la única forma de saber que ya llegó alguien. Tope: BOT_RECORDATORIOS_MAX; solo mientras
+// haya alguna sucursal abierta (HORARIOS_SUCURSAL): con la tienda cerrada no se recuerda y se retoma al abrir.
+// Se instala una vez con instalarRecordatoriosPendientes().
+// ---------------------------------------------------------------------------
+const PENDIENTE_COL = { CONVERSACION: 0, CANAL: 1, DESDE: 2, MOTIVO: 3, ESTADO: 4, RECORDATORIOS: 5, ULTIMO: 6, MENSAJE_CLIENTE: 7 };
+const PENDIENTE_COLUMNAS = 8;
+
+function botPendienteRegistrar(ss, conversacionId, canal, tipo, resumen) {
+  try {
+    let hoja = ss.getSheetByName(PENDIENTES_HOJA);
+    if (!hoja) {
+      hoja = ss.insertSheet(PENDIENTES_HOJA);
+      hoja.getRange(1, 1, 1, PENDIENTE_COLUMNAS).setValues([["Conversación", "Canal", "Desde", "Motivo", "Estado", "Recordatorios", "Último recordatorio", "Último mensaje del cliente"]]).setFontWeight("bold");
+      hoja.setFrozenRows(1);
+    }
+    const ahora = Utilities.formatDate(new Date(), TZ_MX, "yyyy-MM-dd HH:mm");
+    hoja.appendRow([conversacionId, canal, ahora, tipo + ": " + resumen, PENDIENTE_ESTADO.PENDIENTE, 0, "", ahora]);
+    const ultima = hoja.getLastRow();
+    try { hoja.getRange(ultima, PENDIENTE_COL.ESTADO + 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList([PENDIENTE_ESTADO.PENDIENTE, PENDIENTE_ESTADO.ATENDIDA], true).build()); } catch (e) { }
+  } catch (e) { }
+}
+
+// Hay tienda abierta si alguna sucursal está en su horario de atención (HORARIOS_SUCURSAL, la única fuente).
+function _botTiendaAbierta(dow, minutosDelDia) {
+  return SUCURSALES.some(function (sucursal) {
+    const horario = (HORARIOS_SUCURSAL[sucursal] || [])[dow];
+    if (!horario || horario.cerrado) return false;
+    return minutosDelDia >= _hhmmAMinutos(horario.abre) && minutosDelDia < _hhmmAMinutos(horario.cierra);
+  });
+}
+function _hhmmAMinutos(hhmm) { const p = String(hhmm).split(":"); return Number(p[0]) * 60 + Number(p[1] || 0); }
+
+// El último renglón de esa conversación: { fila, estado, ultimoMensajeMs } o null.
+function _botPendienteDe(ss, conversacionId) {
+  const hoja = ss.getSheetByName(PENDIENTES_HOJA);
+  if (!hoja || hoja.getLastRow() < 2) return null;
+  const filas = hoja.getRange(2, 1, hoja.getLastRow() - 1, PENDIENTE_COLUMNAS).getValues();
+  for (let i = filas.length - 1; i >= 0; i--) {
+    if (String(filas[i][PENDIENTE_COL.CONVERSACION]) === String(conversacionId)) {
+      return { fila: i + 2, estado: String(filas[i][PENDIENTE_COL.ESTADO]), ultimoMensajeMs: _pendienteDesdeMs(filas[i][PENDIENTE_COL.MENSAJE_CLIENTE]) || _pendienteDesdeMs(filas[i][PENDIENTE_COL.DESDE]) };
+    }
+  }
+  return null;
+}
+
+function _botPendienteAnotarMensaje(ss, fila) {
+  try { ss.getSheetByName(PENDIENTES_HOJA).getRange(fila, PENDIENTE_COL.MENSAJE_CLIENTE + 1).setValue(Utilities.formatDate(new Date(), TZ_MX, "yyyy-MM-dd HH:mm")); } catch (e) { }
+}
+
+// Milisegundos de una fecha "yyyy-MM-dd HH:mm" de la hoja (hora de México).
+function _pendienteDesdeMs(texto) {
+  const m = String(texto).match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})/);
+  return m ? Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4] + MX_OFFSET_HORAS, +m[5]) : 0;
+}
+
+// Trigger cada BOT_RECORDATORIO_MINUTOS. `ahora` solo se pasa en las pruebas.
+function botRecordatoriosPendientes(ahora) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const hoja = ss.getSheetByName(PENDIENTES_HOJA);
+  if (!hoja || hoja.getLastRow() < 2) return { enviados: 0 };
+  const ahoraFecha = ahora || new Date();
+  const dow = Number(Utilities.formatDate(ahoraFecha, TZ_MX, "u")) % 7;   // 0 = domingo
+  const minutosDelDia = Number(Utilities.formatDate(ahoraFecha, TZ_MX, "H")) * 60 + Number(Utilities.formatDate(ahoraFecha, TZ_MX, "m"));
+  if (!_botTiendaAbierta(dow, minutosDelDia)) return { enviados: 0, tiendaCerrada: true };
+  const filas = hoja.getRange(2, 1, hoja.getLastRow() - 1, 7).getValues();
+  let enviados = 0;
+  filas.forEach(function (f, i) {
+    if (String(f[PENDIENTE_COL.ESTADO]) !== PENDIENTE_ESTADO.PENDIENTE) return;
+    const hechos = Number(f[PENDIENTE_COL.RECORDATORIOS]) || 0;
+    const desde = _pendienteDesdeMs(f[PENDIENTE_COL.DESDE]);
+    const ultimo = _pendienteDesdeMs(f[PENDIENTE_COL.ULTIMO]) || desde;
+    const minutos = Math.round((ahoraFecha.getTime() - desde) / 60000);
+    if (ahoraFecha.getTime() - ultimo < BOT_RECORDATORIO_MINUTOS * 60000) return;
+    const fila = i + 2;
+    if (hechos >= BOT_RECORDATORIOS_MAX) {
+      hoja.getRange(fila, PENDIENTE_COL.ESTADO + 1).setValue(PENDIENTE_ESTADO.SIN_ATENDER);
+      botAlertaPersonal(ss, "recordatorio_final", "cliente_esperando", "🚨 Nadie atendió a un cliente", "Pasaron " + minutos + " min y se acabaron los recordatorios: " + f[PENDIENTE_COL.MOTIVO] + " (conv. " + f[PENDIENTE_COL.CONVERSACION] + ")", f[PENDIENTE_COL.CONVERSACION]);
+      return;
+    }
+    botAlertaPersonal(ss, "recordatorio" + (hechos + 1), "cliente_esperando", "⏰ Un cliente espera a una persona (" + (hechos + 1) + ")",
+      "Lleva " + minutos + " min: [" + f[PENDIENTE_COL.CANAL] + "] " + f[PENDIENTE_COL.MOTIVO] + " (conv. " + f[PENDIENTE_COL.CONVERSACION] + "). Cámbialo a ATENDIDA en " + PENDIENTES_HOJA + " cuando lo atiendas.", f[PENDIENTE_COL.CONVERSACION]);
+    hoja.getRange(fila, PENDIENTE_COL.RECORDATORIOS + 1).setValue(hechos + 1);
+    hoja.getRange(fila, PENDIENTE_COL.ULTIMO + 1).setValue(Utilities.formatDate(ahoraFecha, TZ_MX, "yyyy-MM-dd HH:mm"));
+    enviados++;
+  });
+  return { enviados: enviados };
+}
+
+function instalarRecordatoriosPendientes() {
+  ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === "botRecordatoriosPendientes") ScriptApp.deleteTrigger(t); });
+  ScriptApp.newTrigger("botRecordatoriosPendientes").timeBased().everyMinutes(BOT_RECORDATORIO_MINUTOS).create();
 }
