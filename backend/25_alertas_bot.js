@@ -25,21 +25,22 @@ function botAlertaPersonal(ss, origen, tipo, titulo, detalle, conversacionId) {
     aviso = { configurado: false, motivo: "ya se avisó hace poco de lo mismo en esta conversación", destinatarios: [], resultados: [] };
   } else {
     cache.put(clave, "1", BOT_ALERTA_REPETIDA_SEGUNDOS);
-    const conSugerencia = detalle + " | Sugerencia para decirle al cliente: " + _botSugerenciaCliente(tipo);
-    aviso = manychatAvisarEquipo(ss, MANYCHAT_CLAVE_FLUJO_ALERTA, titulo, conSugerencia, MANYCHAT_MAX_ALERTA, [{ nombre: MANYCHAT_CAMPO_CONVERSACION, valor: String(conversacionId) }]);
+    aviso = manychatAvisarEquipo(ss, MANYCHAT_CLAVE_FLUJO_ALERTA, titulo, detalle, MANYCHAT_MAX_ALERTA, [{ nombre: MANYCHAT_CAMPO_CONVERSACION, valor: String(conversacionId) }]);
+    // El texto sugerido va en un mensaje APARTE, solo con el texto, para copiarlo y pegarlo de un toque. Los recordatorios no lo repiten.
+    if (aviso.configurado && !/^recordatorio/.test(origen)) aviso.sugerencia = manychatSugerenciaEquipo(ss, _botSugerenciaCliente(tipo));
   }
   _botRegistrarAlerta(ss, origen, tipo, conversacionId, titulo, detalle, aviso);
   return aviso;
 }
 
-// Texto que Rebeca o Yessenia copian y pegan al cliente al tomar la conversación (sin dato inventado: no promete reembolsos ni fechas).
+// Texto que Rebeca o Yessenia copian y pegan al cliente al tomar la conversación: listo para pegar, sin huecos que llenar ni promesas (reembolsos, fechas).
 const BOT_SUGERENCIAS_CLIENTE = {
-  queja_u_observacion: "Hola, soy [tu nombre] de La Tarta Vasca. Lamento mucho lo que pasó; ya lo estoy revisando personalmente y te escribo en un momento.",
-  mensajero: "Hola, soy [tu nombre] de La Tarta Vasca. Tengo tu aviso del mensajero; ¿a nombre de quién lo recoge y a qué hora aproximada?",
-  cotizacion_evento_o_restaurante: "Hola, soy [tu nombre] de La Tarta Vasca. Gracias por pensar en nosotros; ¿me cuentas la fecha, cuántas piezas y el lugar para cotizarte?",
-  factura: "Hola, soy [tu nombre] de La Tarta Vasca. Con gusto te ayudo con tu factura; ¿me compartes tus datos fiscales y el número de tu pedido?"
+  queja_u_observacion: "Hola, te escribe el equipo de La Tarta Vasca. Lamento mucho lo que pasó; ya lo estoy revisando personalmente y te escribo en un momento.",
+  mensajero: "Hola, te escribe el equipo de La Tarta Vasca. Tengo tu aviso del mensajero; ¿a nombre de quién lo recoge y a qué hora aproximada?",
+  cotizacion_evento_o_restaurante: "Hola, te escribe el equipo de La Tarta Vasca. Gracias por pensar en nosotros; ¿me cuentas la fecha, cuántas piezas y el lugar para cotizarte?",
+  factura: "Hola, te escribe el equipo de La Tarta Vasca. Con gusto te ayudo con tu factura; ¿me compartes tus datos fiscales y el número de tu pedido?"
 };
-const BOT_SUGERENCIA_GENERICA = "Hola, soy [tu nombre] de La Tarta Vasca. Ya vi tu mensaje y te ayudo personalmente.";
+const BOT_SUGERENCIA_GENERICA = "Hola, te escribe el equipo de La Tarta Vasca. Ya vi tu mensaje y te ayudo personalmente.";
 function _botSugerenciaCliente(tipo) { return BOT_SUGERENCIAS_CLIENTE[tipo] || BOT_SUGERENCIA_GENERICA; }
 
 // Acción pública protegida con BOT_TOKEN: el botón ATENDIDA del WhatsApp de la alerta la llama (solicitud externa de ManyChat).
@@ -65,7 +66,7 @@ function _botRegistrarAlerta(ss, origen, tipo, conversacionId, titulo, detalle, 
       hoja.getRange(1, 1, 1, 7).setValues([["Fecha y hora", "Tipo", "Urgente", "Conversación", "Título", "Detalle", "Resultado"]]).setFontWeight("bold");
       hoja.setFrozenRows(1);
     }
-    const fila = [Utilities.formatDate(new Date(), TZ_MX, "yyyy-MM-dd HH:mm"), tipo + " (" + origen + ")", ALERTA_URGENTES.indexOf(tipo) !== -1 ? "SÍ" : "", conversacionId, titulo, detalle, _pedidoResultadoAviso(aviso)];
+    const fila = [Utilities.formatDate(new Date(), TZ_MX, "yyyy-MM-dd HH:mm"), tipo + " (" + origen + ")", ALERTA_URGENTES.indexOf(tipo) !== -1 ? "SÍ" : "", conversacionId, titulo, detalle, _pedidoResultadoAviso(aviso) + (aviso.sugerencia ? " | sugerencia: " + aviso.sugerencia : "")];
     // Varias conversaciones pueden alertar al mismo tiempo: sin candado, dos appendRow seguidos se pisan y se pierde un renglón.
     const candado = LockService.getDocumentLock();   // candado propio: no compite con el de las ventas
     candado.waitLock(ALERTA_ESPERA_CANDADO_MS);

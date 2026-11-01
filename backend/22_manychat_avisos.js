@@ -85,3 +85,15 @@ function manychatMensajeCliente(ss, idContacto, canal, texto) {
   const r = _manychatEnviarFlujo(idContacto, flujo, [{ nombre: MANYCHAT_CAMPO_MENSAJE, valor: _whatsappLimpiar(texto, 1000) }]);
   return { configurado: true, ok: r.ok, detalle: r.detalle };
 }
+
+// Manda el texto sugerido como mensaje aparte a quienes reciben las alertas (flujo de un solo paso con el campo bot_sugerencia).
+// Devuelve un texto corto para la hoja Alertas_Bot.
+function manychatSugerenciaEquipo(ss, texto) {
+  const flujo = String(_cfgVal(ss, MANYCHAT_CLAVE_FLUJO_SUGERENCIA, "")).trim();
+  if (!flujo) return "sin flujo de sugerencia";
+  const resultados = _manychatDestinatarios(ss).map(function (d) {
+    const r = _manychatEnviarFlujo(d.id, flujo, [{ nombre: MANYCHAT_CAMPO_SUGERENCIA, valor: _whatsappLimpiar(texto, MANYCHAT_MAX_ALERTA) }]);
+    return (d.nombre || d.id) + (r.ok ? " ok" : " FALLÓ " + r.detalle);
+  });
+  return resultados.join(", ");
+}
