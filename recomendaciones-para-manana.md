@@ -28,7 +28,7 @@ Preparado la noche del 31-oct al 1-nov-2026. Todo lo construido está **solo en 
 9. **Cuándo y cómo publicar**: copia de la hoja real, claves nuevas (BOT_TOKEN, ManyChat, Anthropic), cambiar URL y token del botón Atendida a los reales, y piloto con la palabra "prueba".
 
 ### Decisiones de Alex (1-nov-2026)
-- **Plantillas de WhatsApp**: revisadas en Meta. Solo existe `aviso_pedido_hoy` (Utilidad, Spanish MEX, Activa, aprobada el 28-oct). Faltan por crear: alerta, reporte de la noche, reagendar y feedback. Pendiente.
+- **Plantillas de WhatsApp** (1-nov): `aviso_pedido_hoy` aprobada y activa (28-oct). Enviadas a revisión de Meta el 1-nov, todas Utilidad y Spanish (MEX): `alerta_bot_equipo` ({{1}} título, {{2}} detalle), `reagendar_pedido` ({{1}} descripción del pedido), `feedback_pedido` ({{1}} descripción del pedido) y `reporte_apartados_noche` ({{1}} lista de apartados). Pendiente: ver si las aprueban (Meta puede recategorizar feedback a Marketing) y cambiar los flujos de ManyChat a las plantillas, con los campos que usa cada una.
 - **Feedback por Instagram (2 días)**: pendiente; **revisarlo al terminar de implementar**.
 - **Revelar que es IA**: no se revela; solo si preguntan (así ya está).
 - **Lomas del Chamizal / Granjas Navidad, datos de transferencia**: pendientes.
