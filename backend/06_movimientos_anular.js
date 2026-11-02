@@ -164,9 +164,15 @@ if (!h) return { ok: false, error: `Hoja "${hoja}" no existe.` };
       if (hoja === "Ventas") {
         const canalFila = String(dataFila[9] || "");
         const cantFila = Number(dataFila[6]) || 0;
-        // v4.5.12-fix: SOLO las reservas no descontaron stock. Los regalos (Cortesía)
-        // SÍ descuentan inventario al registrarse, así que al anularlos hay que reponer.
-        const requiereReponer = cantFila > 0 && canalFila !== "Reservado";
+        // Una reserva (tipo_op "Reservado") nunca descontó stock: se libera lo apartado y no se repone. Antes se decidía por el
+        // canal, y los apartados (canal "Apartado") y las reservas de Shopify (Tienda/Domicilio) sumaban piezas que nunca
+        // existieron (1-nov). Los regalos (Cortesía) sí descuentan al registrarse, así que al anularlos se repone.
+        const idxTipoFila = headersFinales.indexOf("tipo_op");
+        const esReserva = canalFila === "Reservado" || (idxTipoFila !== -1 && String(dataFila[idxTipoFila]) === "Reservado");
+        if (esReserva && cantFila > 0) {
+          try { invLiberar(ss, String(dataFila[4]), String(dataFila[5]), String(dataFila[3]), cantFila, "apartado", id, sesion.usuario); } catch (e) { }
+        }
+        const requiereReponer = cantFila > 0 && !esReserva;
         if (requiereReponer) {
           totalAReponer += cantFila;
           try {
