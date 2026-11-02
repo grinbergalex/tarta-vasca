@@ -330,8 +330,14 @@ La cocina pasó de Cuajimalpa a Bosques; Cuajimalpa quedó como punto de venta.
 
 ## v9 — Bot de Instagram y pedidos con seguimiento (oct-2026, rama `feat/bot-instagram-cerebro`)
 
-⚠️ **Aún NO está en producción.** Se probó solo en el proyecto de pruebas. Antes de `clasp push`: comparar la
-versión viva contra el repo (regla dura de arriba).
+✅ **Publicado el 1-nov-2026 en la versión 130** (backend) y en `main` (POS, `app.js?v=20261101`, `reparto.js?v=20261101b`), en modo
+**piloto**. Respaldo previo de la hoja: "RESPALDO Tarta Vasca — Sistema 1-nov-2026 antes de publicar Maite". Reversa: `update-deployment`
+a la versión 129 (o 128). Hecho en producción: Configuración con los flujos de ManyChat (`aviso_hoy_manychat` = solo Alex en el piloto),
+`Bot_Manual` copiado de pruebas, pestañas del tablero creadas y triggers instalados (tablero cada 5 min, menú de Estado, mensajes a
+clientes, recordatorios de pendientes, reporte de las 18:00). **Falta**: claves en Propiedades (las pone Alex: `BOT_TOKEN`,
+`MANYCHAT_API_TOKEN`, revisar `ANTHROPIC_API_KEY`), cambiar en ManyChat la URL y el token del flujo del bot y del botón Atendida a los de
+producción, `excel_pedidos_id` (vacío a propósito en el piloto), el cierre de las 21:00 (`instalarRevisionDiariaPedidos`, se instala
+después de limpiar los 12 pedidos de Shopify abiertos), proteger las hojas de datos y la prueba real mínima (plan, sección I).
 
 - **Bot**: `18_bot_conversacion.js` (cerebro con IA y herramientas), `18_bot_chat.html` (chat de pruebas) y
   `103_setup_bot_manual.js` (una vez: pestaña `Bot_Manual`, la guía de marca que edita el equipo). Acciones
