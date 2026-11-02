@@ -33,6 +33,9 @@ function botConversar(body) {
   const conversacionId = String(body.conversacionId || "").replace(/[^A-Za-z0-9_-]/g, "").substring(0, 64);
   const mensaje = String(body.mensaje || "").trim().substring(0, BOT_MAX_CARACTERES_MENSAJE);
   if (!conversacionId || !mensaje) return { ok: false, error: "Falta la conversación o el mensaje." };
+  // El mismo mensaje de la misma conversación llegando dos veces seguidas (ManyChat reintenta, o en el piloto quedaron dos flujos
+  // esperando) se procesa UNA vez: dos turnos a la vez llegaron a pelear por el mismo pedido (1-nov). La copia no contesta nada.
+  if (_botMensajeRepetido(conversacionId, mensaje)) return { ok: true, respuesta: "", duplicado: true };
 
   const pausada = botEstaPausada(conversacionId) ? botRespuestaPausada(conversacionId) : null;   // null = ya terminó con la persona y Maite vuelve
   if (pausada) return _botTerminar(conversacionId, pausada);
@@ -70,10 +73,23 @@ function botConversar(body) {
 // quedaría sin su llave. Se guarda vacía PRIMERO (un sondeo tardío no la repite) y se le manda por el flujo de mensaje al cliente.
 // Si no se pudo mandar, se deja lista como siempre. Devuelve true si salió.
 function _botEntregarPorSuCuenta(conversacionId, canal, resultado) {
-  _botGuardarEstado(conversacionId, Object.assign({}, resultado, { listo: true, entregado: true, respuesta: "" }));
-  const envio = manychatMensajeCliente(SpreadsheetApp.getActiveSpreadsheet(), conversacionId, canal, resultado.respuesta);
-  Logger.log("Respuesta tardía enviada por su cuenta (" + conversacionId + "): " + (envio.ok ? "ok" : envio.detalle));
-  return envio.ok;
+  _botGuardarEstado(conversacionId, Object.assign({}, resultado, { listo: true, entregado: true, respuesta: "" }));   // que ManyChat no la mande otra vez
+  let ok = false;
+  try {
+    const envio = manychatMensajeCliente(SpreadsheetApp.getActiveSpreadsheet(), conversacionId, canal, resultado.respuesta);
+    Logger.log("Respuesta tardía enviada por su cuenta (" + conversacionId + "): " + (envio.ok ? "ok" : envio.detalle));
+    ok = envio.ok;
+  } catch (e) { Logger.log("Respuesta tardía no enviada (" + conversacionId + "): " + e); }
+  return ok;   // si no salió, botConversar sigue y _botTerminar la deja lista para que ManyChat la recoja con botRespuesta
+}
+
+function _botMensajeRepetido(conversacionId, mensaje) {
+  try {
+    const cache = CacheService.getScriptCache(), clave = "bot_msg_" + hashSimple(conversacionId + "#" + mensaje);
+    if (cache.get(clave)) return true;
+    cache.put(clave, "1", BOT_DUPLICADO_SEGUNDOS);
+  } catch (e) { }
+  return false;
 }
 
 // ManyChat llama aquí después de la primera llamada (que se rinde a los ~8 s). Espera hasta `espera` segundos a que la

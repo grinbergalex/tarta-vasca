@@ -276,6 +276,7 @@ const BOT_CACHE_FECHA_SEGUNDOS = 300;        // la fecha ya validada en la conve
 const BOT_CACHE_MENU_SEGUNDOS = 60;         // el menú ya calculado (un cambio de precio llega al bot en menos de 1 min)
 const BOT_SONDEO_MAX_SEGUNDOS = 7;           // cuánto puede esperar botRespuesta a que la respuesta esté lista (ManyChat corta a ~8 s)
 const BOT_SONDEO_PASO_MS = 500;
+const BOT_DUPLICADO_SEGUNDOS = 20;   // el mismo mensaje de la misma conversación dentro de este lapso se procesa una sola vez
 const BOT_RESCATE_SEGUNDOS = 16;            // si el turno tarda más, ManyChat ya dejó de esperar (~8 s + sondeo de 7 s): el sistema le manda la respuesta al cliente por su cuenta
 const BOT_RESULTADO_SEGUNDOS = 600;         // cuánto se guarda la respuesta lista para que ManyChat la recoja
 // Dónde están las sucursales (el horario sale de HORARIOS_SUCURSAL). ⚠ La dirección de Bosques salió
