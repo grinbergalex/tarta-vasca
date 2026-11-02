@@ -33,6 +33,11 @@ function botAlertaPersonal(ss, origen, tipo, titulo, detalle, conversacionId) {
   return aviso;
 }
 
+// El cuerpo de toda alerta, un dato por renglón (en la plantilla los renglones se vuelven " | ").
+function botDetalleAlerta(canal, texto, conversacionId) {
+  return "📱 " + (canal || "Instagram") + "\n💬 " + String(texto || "").trim() + "\n🔎 Conversación " + conversacionId;
+}
+
 // Texto que Rebeca o Yessenia copian y pegan al cliente al tomar la conversación: listo para pegar, sin huecos que llenar ni promesas (reembolsos, fechas).
 const BOT_SUGERENCIAS_CLIENTE = {
   queja_u_observacion: "Hola, te escribe el equipo de La Tarta Vasca. Lamento mucho lo que pasó; ya lo estoy revisando personalmente y te escribo en un momento.",
@@ -195,7 +200,7 @@ function botRecordatoriosPendientes(ahora) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const hoja = ss.getSheetByName(PENDIENTES_HOJA);
   if (!hoja || hoja.getLastRow() < 2) return { enviados: 0 };
-  const ahoraFecha = ahora || new Date();
+  const ahoraFecha = ahora instanceof Date ? ahora : new Date();   // el trigger pasa un evento, no una fecha
   const dow = Number(Utilities.formatDate(ahoraFecha, TZ_MX, "u")) % 7;   // 0 = domingo
   const minutosDelDia = Number(Utilities.formatDate(ahoraFecha, TZ_MX, "H")) * 60 + Number(Utilities.formatDate(ahoraFecha, TZ_MX, "m"));
   if (!_botTiendaAbierta(dow, minutosDelDia)) return { enviados: 0, tiendaCerrada: true };
@@ -211,11 +216,11 @@ function botRecordatoriosPendientes(ahora) {
     const fila = i + 2;
     if (hechos >= BOT_RECORDATORIOS_MAX) {
       hoja.getRange(fila, PENDIENTE_COL.ESTADO + 1).setValue(PENDIENTE_ESTADO.SIN_ATENDER);
-      botAlertaPersonal(ss, "recordatorio_final", "cliente_esperando", "🚨 Nadie atendió a un cliente", "Pasaron " + minutos + " min y se acabaron los recordatorios: " + f[PENDIENTE_COL.MOTIVO] + " (conv. " + f[PENDIENTE_COL.CONVERSACION] + ")", f[PENDIENTE_COL.CONVERSACION]);
+      botAlertaPersonal(ss, "recordatorio_final", "cliente_esperando", "🚨 Nadie atendió a un cliente", "⏱️ Pasaron " + minutos + " min y se acabaron los recordatorios.\n" + botDetalleAlerta(f[PENDIENTE_COL.CANAL], f[PENDIENTE_COL.MOTIVO], f[PENDIENTE_COL.CONVERSACION]), f[PENDIENTE_COL.CONVERSACION]);
       return;
     }
     botAlertaPersonal(ss, "recordatorio" + (hechos + 1), "cliente_esperando", "⏰ Un cliente espera a una persona (" + (hechos + 1) + ")",
-      "Lleva " + minutos + " min: [" + f[PENDIENTE_COL.CANAL] + "] " + f[PENDIENTE_COL.MOTIVO] + " (conv. " + f[PENDIENTE_COL.CONVERSACION] + "). Cámbialo a ATENDIDA en " + PENDIENTES_HOJA + " cuando lo atiendas.", f[PENDIENTE_COL.CONVERSACION]);
+      "⏱️ Lleva " + minutos + " min esperando.\n" + botDetalleAlerta(f[PENDIENTE_COL.CANAL], f[PENDIENTE_COL.MOTIVO], f[PENDIENTE_COL.CONVERSACION]) + "\n👉 Al atenderlo toca *Atendida* (o cámbialo en " + PENDIENTES_HOJA + ").", f[PENDIENTE_COL.CONVERSACION]);
     hoja.getRange(fila, PENDIENTE_COL.RECORDATORIOS + 1).setValue(hechos + 1);
     hoja.getRange(fila, PENDIENTE_COL.ULTIMO + 1).setValue(Utilities.formatDate(ahoraFecha, TZ_MX, "yyyy-MM-dd HH:mm"));
     enviados++;

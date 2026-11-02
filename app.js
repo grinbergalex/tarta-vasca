@@ -201,11 +201,12 @@ function fmtMXN(n) {
 //   "merma"  = merma operativa (canal "Merma")
 function _tipoOpVenta(v) {
   if (!v) return "venta";
+  if (v.tipoOp === "Reservado") return "reserva";   // apartado o pedido aún sin entregar: no es dinero cobrado
   if (v.canal === "Merma") return "merma";
   if (v.canal === "Cortesía") return "regalo";
   return "venta";
 }
-const TIPOS_OP = [["venta","🛍 Venta"],["regalo","🎁 Regalo"],["merma","🗑 Merma"]];
+const TIPOS_OP = [["venta","🛍 Venta"],["regalo","🎁 Regalo"],["merma","🗑 Merma"],["reserva","📦 Apartado sin entregar"]];
 // A diferencia de sabores/tamaños/canales (vacío = todos), el filtro de tipo de
 // operación vacío dejaba TODOS los reportes en cero: "Venta" viene activo por
 // defecto, así que tocar ese chip lo apagaba y no quedaba ningún tipo visible.
@@ -2716,6 +2717,7 @@ function onCanalChange(){
   if(cli) cli.style.display = esPlat ? "none" : "block";
   L("canal-aviso").style.display = esPlat ? "flex" : "none";
   const esDomicilio = canal === "Domicilio";
+  if (typeof rutaPedidosPendientes === "function") rutaPedidosPendientes(canal === "Ruta");
   L("envio-section").style.display = esDomicilio ? "block" : "none";
   if(!esDomicilio){ S.costoEnvio = 0; if(L("envio-costo-aviso")) L("envio-costo-aviso").style.display="none"; }
   const aviso = L("canal-precio-aviso");

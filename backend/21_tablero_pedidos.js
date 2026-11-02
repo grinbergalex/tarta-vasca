@@ -42,6 +42,12 @@ function _tableroPago(fila) {
   return m ? m[1] : String(fila[10] || "");
 }
 
+// Dirección de un pedido a domicilio del bot, de la nota: "Domicilio: Calle 1 (Lomas) | Pago: …" -> "Calle 1 (Lomas)".
+function _tableroDireccion(fila) {
+  const m = String(fila[14] || "").match(/Domicilio: ([^|]+)/);
+  return m ? m[1].trim() : "";
+}
+
 // A qué hora pasa por su pedido: los pedidos del bot la traen en la nota ("Hora: 18:30").
 function _tableroHora(fila) {
   const m = String(fila[14] || "").match(/Hora: (\d{1,2}:\d{2})/);
@@ -80,7 +86,7 @@ function _tableroLeerPedidos(ss, hoja, idx) {
     if (!grupos[id]) {
       grupos[id] = { idVenta: id, referencia: String(f[idx.referencia] || ""), estado: estado, origen: _tableroOrigen(f, idx), cliente: String(f[12] || ""),
         contacto: String(f[idx.contacto_seguimiento] || "") || telefonos[String(f[11])] || "", pago: _tableroPago(f), canal: String(f[9] || ""), sucursal: String(f[3] || ""),
-        fechaEntrega: fechaEntrega, hora: _tableroHora(f), llego: _tableroFecha(f[1], "yyyy-MM-dd HH:mm"), items: [], total: Number(idxEnvio !== -1 ? f[idxEnvio] : 0) || 0 };
+        fechaEntrega: fechaEntrega, hora: _tableroHora(f), direccion: _tableroDireccion(f), llego: _tableroLlego(f), items: [], total: Number(idxEnvio !== -1 ? f[idxEnvio] : 0) || 0 };
       orden.push(id);
     }
     grupos[id].items.push((Number(f[6]) || 0) + " " + f[4] + " " + f[5]);
@@ -101,8 +107,14 @@ function _tableroAsignarReferencias(ss, pedidos) {
   return asignadas;
 }
 
+// Cuándo llegó el pedido. Al entregarlo, la fecha de la fila pasa a ser la de la entrega y la del pedido queda en las notas.
+function _tableroLlego(f) {
+  const hecho = String(f[14] || "").match(/Pedido hecho (\d{4}-\d\d-\d\d \d\d:\d\d)/);
+  return hecho ? hecho[1] : _tableroFecha(f[1], "yyyy-MM-dd HH:mm");
+}
+
 function _tableroFila(p) {
-  const domicilio = p.canal === BOT_CANAL_DOMICILIO;
+  const domicilio = p.canal === BOT_CANAL_DOMICILIO || p.canal === PEDIDO_CANAL_RUTA;   // un domicilio entregado queda como venta de Ruta
   return [p.referencia || "—", p.estado, p.origen, p.cliente, p.contacto, p.items.join(" + "), p.total, p.pago, domicilio ? "Domicilio" : "Recoger", p.sucursal, p.fechaEntrega, p.hora || "", p.llego,
     PEDIDO_ESTADOS_ABIERTOS.indexOf(p.estado) !== -1 ? _pedidoQuienGestiona({ canal: p.canal, sucursal: p.sucursal }) : ""];
 }
@@ -159,12 +171,14 @@ function tableroPedidosActualizar() {
     const idx = _pedidoIndices(ventas);
     const pedidos = _tableroLeerPedidos(ss, ventas, idx);
     const asignadas = _tableroAsignarReferencias(ss, pedidos);
+    let alExcel = 0;
+    try { alExcel = pedidosDomicilioAlExcel(ss, pedidos); } catch (e) { Logger.log("Domicilios al Excel de pedidos: " + e); }
     _tableroEscribir(_tableroPrepararHoja(ss, TABLERO_HOJA), pedidos.map(_tableroFila), false);
     SUCURSALES.forEach(function (sucursal) {
       const propios = pedidos.filter(function (p) { return p.sucursal === sucursal; });
       _tableroEscribir(_tableroPrepararHoja(ss, TABLERO_PREFIJO_SUCURSAL + sucursal), propios.map(_tableroFila), true);
     });
-    return { ok: true, pedidos: pedidos.length, referenciasNuevas: asignadas };
+    return { ok: true, pedidos: pedidos.length, referenciasNuevas: asignadas, anotadosEnExcel: alExcel };
   } finally { cache.remove("tablero_corriendo"); }
 }
 
@@ -216,7 +230,7 @@ function _tableroAutorizado(ss, correo) {
 
 function _tableroMetodoPago(pago) {
   const metodos = { efectivo: "Efectivo", transferencia: "Transferencia", tarjeta: "Tarjeta" };
-  return metodos[String(pago).toLowerCase()] || "Efectivo";
+  return metodos[String(pago).toLowerCase()] || "";   // desconocida (Shopify, Pendiente): la decide pedidoEntregar, nunca Efectivo
 }
 
 // Aplica el estado que se eligió en la hoja. Devuelve { ok, error }.

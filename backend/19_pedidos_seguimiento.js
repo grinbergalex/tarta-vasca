@@ -126,7 +126,7 @@ function pedidoLeer(ss, clave) {
     if (!esClave) continue;
     if (!pedido) {
       pedido = { idVenta: String(f[0]), referencia: String(f[idx.referencia] || ""), estado: _pedidoEstadoDe(f, idx), sucursal: f[3], canal: f[9], cliente: f[12],
-        fechaEntrega: idx.fechaEntrega !== -1 ? _pedidoTexto(f[idx.fechaEntrega]).substring(0, 10) : "", contacto: String(f[idx.contacto_seguimiento] || ""), origen: String(f[idx.origen_pedido] || ""), notas: String(f[14] || ""), creado: f[1] instanceof Date ? Utilities.formatDate(f[1], TZ_MX, "yyyy-MM-dd HH:mm") : String(f[1] || ""), items: [], total: 0, filas: [] };
+        fechaEntrega: idx.fechaEntrega !== -1 ? _pedidoTexto(f[idx.fechaEntrega]).substring(0, 10) : "", contacto: String(f[idx.contacto_seguimiento] || ""), origen: String(f[idx.origen_pedido] || ""), notas: String(f[14] || ""), metodo: String(f[10] || ""), creado: f[1] instanceof Date ? Utilities.formatDate(f[1], TZ_MX, "yyyy-MM-dd HH:mm") : String(f[1] || ""), items: [], total: 0, filas: [] };
     } else if (String(f[0]) !== pedido.idVenta) { continue; }
     pedido.items.push({ sabor: f[4], tamano: f[5], cantidad: Number(f[6]) || 0, subtotal: Number(f[8]) || 0 });
     pedido.total += Number(f[8]) || 0;
@@ -142,7 +142,8 @@ function pedidoLeer(ss, clave) {
 function _pedidoPuedeGestionar(sesion, pedido, permitirChofer) {
   const perm = getPermisos(sesion.rol);
   if (perm.puedeVerAmbas && perm.puedeVender) return true;
-  if (String(pedido.canal) === BOT_CANAL_DOMICILIO) return !!(permitirChofer && perm.esChofer);
+  if (String(pedido.canal) === BOT_CANAL_DOMICILIO && permitirChofer && perm.esChofer) return true;
+  // El punto de venta de la sucursal del pedido; los domicilios salen de la cocina (Bosques), así que Bosques los entrega en el POS.
   return !!(perm.puedeVender && getSucursalUsuario(sesion.usuario) === pedido.sucursal);
 }
 
@@ -175,20 +176,54 @@ function pedidoEntregar(body, sesion) {
   if (!pedido) return { ok: false, error: "Pedido no encontrado." };
   if (!_pedidoPuedeGestionar(sesion, pedido, false)) return { ok: false, error: "Este pedido lo entrega " + _pedidoQuienGestiona(pedido) + "." };
   if (pedido.estado === PEDIDO_ESTADO.ENTREGADO) return { ok: false, error: "Este pedido ya se entregó." };
-  const res = convertirReservaAVenta({ idVenta: pedido.idVenta, metodoPago: body.metodoPago }, sesion);
+  // Un domicilio entregado es venta de Ruta, se entregue desde la venta de Ruta o desde Apartados: así cae siempre en la misma meta.
+  const canal = String(pedido.canal) === BOT_CANAL_DOMICILIO || body.canal === PEDIDO_CANAL_RUTA ? PEDIDO_CANAL_RUTA : undefined;
+  const res = convertirReservaAVenta({ idVenta: pedido.idVenta, canal: canal, metodoPago: _pedidoMetodoAlEntregar(body, pedido) }, sesion);
   if (!res.ok) return res;
+  _pedidoFechaDeEntrega(ss, pedido);
   pedidoAnotar(ss, pedido.idVenta, { estado: PEDIDO_ESTADO.ENTREGADO });
   tableroMarcarEstado(pedido.referencia, PEDIDO_ESTADO.ENTREGADO);
   try { lealtadRegistrarEntrega(ss, pedido); } catch (e) { Logger.log("Lealtad: " + e); }
   try { seguimientoMarcarEntregado(ss, pedido.referencia, new Date()); } catch (e) { Logger.log("Seguimiento: " + e); }
+  excelPedidoMarcarEstado(ss, pedido.referencia, PEDIDO_ESTADO.ENTREGADO);
   return { ok: true, referencia: pedido.referencia, estado: PEDIDO_ESTADO.ENTREGADO, total: res.total };
+}
+
+// Forma de pago al entregar: la que se eligió, la que el cliente le dio a Maite, o la del pedido (Shopify ya cobró en línea).
+// Si nadie la sabe queda "Por definir" y se corrige después; nunca "Efectivo" por defecto, porque inflaría la caja.
+function _pedidoMetodoAlEntregar(body, pedido) {
+  const elegida = body.metodoPago && _tableroMetodoPago(body.metodoPago);
+  if (elegida) return elegida;
+  const deNotas = _pedidoMetodoDeNotas(pedido.notas);
+  if (deNotas) return deNotas;
+  return pedido.metodo && pedido.metodo !== "Pendiente" ? pedido.metodo : PEDIDO_METODO_POR_DEFINIR;
+}
+
+// La venta cuenta el día que se entregó (reportes, metas, utilidades), no el día que se pidió. La fecha del pedido queda en las notas.
+function _pedidoFechaDeEntrega(ss, pedido) {
+  const hoja = ss.getSheetByName("Ventas");
+  const ahora = new Date();
+  pedido.filas.forEach(function (fila) {
+    hoja.getRange(fila, 2).setValue(ahora);
+    const notas = hoja.getRange(fila, 15);
+    notas.setValue(String(notas.getValue() || "") + " | Pedido hecho " + pedido.creado);
+  });
+}
+
+// La forma de pago que el cliente le dio a Maite ("… | Pago: transferencia | …"). Sin ella (Shopify, POS) se deja la de la reserva.
+function _pedidoMetodoDeNotas(notas) {
+  const m = String(notas || "").match(/Pago: (\w+)/);
+  return (m && _tableroMetodoPago(m[1])) || undefined;
 }
 
 // El cliente no llegó: libera lo apartado (sin reponer stock, porque las reservas nunca lo descontaron),
 // anula el pedido con su motivo y lo deja en la lista de la campaña.
 function pedidoNoRecogido(body, sesion) {
   const resultado = _pedidoMarcarNoRecogido(body, sesion);
-  if (resultado.ok) tableroMarcarEstado(resultado.referencia, PEDIDO_ESTADO.NO_RECOGIDO);
+  if (resultado.ok) {
+    tableroMarcarEstado(resultado.referencia, PEDIDO_ESTADO.NO_RECOGIDO);
+    excelPedidoMarcarEstado(SpreadsheetApp.getActiveSpreadsheet(), resultado.referencia, PEDIDO_ESTADO.NO_RECOGIDO);
+  }
   return resultado;
 }
 
@@ -272,11 +307,13 @@ function pedidosVencidos(ss, ahora, diasGracia) {
     const f = valores[i];
     if (idx.tipo === -1 || f[idx.tipo] !== "Reservado") continue;
     if (idx.anul !== -1 && f[idx.anul] === "ANULADO") continue;
-    if (PEDIDO_CANALES_RECOGER.indexOf(String(f[9])) === -1) continue;
+    // Para recoger vence al cerrar su sucursal; a domicilio (decisión de Alex, 1-nov) al terminar la ventana de reparto.
+    const domicilio = String(f[9]) === BOT_CANAL_DOMICILIO;
+    if (!domicilio && PEDIDO_CANALES_RECOGER.indexOf(String(f[9])) === -1) continue;
     const fecha = idx.fechaEntrega !== -1 ? _pedidoTexto(f[idx.fechaEntrega]).substring(0, 10) : "";
     if (!fecha) continue;
-    const horario = getHorarioHoy(String(f[3]), ahora);
-    if (!_pedidoEsVencido(fecha, _pedidoMinutos(horario.cierra), hoyIso, minAhora, diasGracia)) continue;
+    const cierra = domicilio ? BOT_VENTANA_ENTREGA.cierra : getHorarioHoy(String(f[3]), ahora).cierra;
+    if (!_pedidoEsVencido(fecha, _pedidoMinutos(cierra), hoyIso, minAhora, diasGracia)) continue;
     const id = String(f[0]);
     if (vistos[id]) continue;
     vistos[id] = true;
@@ -338,14 +375,40 @@ function pedidoAvisarSiEsDeHoy(ss, p) {
   if (p.fechaEntrega !== Utilities.formatDate(new Date(), TZ_MX, "yyyy-MM-dd")) return { enviado: false };
   const donde = p.domicilio ? "A DOMICILIO: " + p.direccion : "Recoge en " + p.sucursal + (p.hora ? " a las " + p.hora : "");
   const detalle = [p.cliente, p.contacto, p.resumen + " ($" + p.total + ")", donde].filter(Boolean).join(", ");
-  const aviso = manychatAvisarPedidoHoy(ss, p.referencia, detalle);
+  const campos = _pedidoCamposAvisoHoy(p);
+  const aviso = manychatAvisarPedidoHoy(ss, p.referencia, { texto: pedidoTicketHoy(p.referencia, campos), plantilla: detalle }, campos);
   _pedidoRegistrarAvisoHoy(ss, p.referencia, detalle, aviso);
   return { enviado: aviso.configurado, destinatarios: aviso.destinatarios.length };
 }
 
+// El ticket que eligió Alex (opción 1, 1-nov), completo, para el flujo con diseño. Es el mismo texto de la plantilla pedido_hoy_ticket.
+function pedidoTicketHoy(referencia, campos) {
+  const v = {};
+  campos.forEach(function (c) { v[c.nombre] = c.valor; });
+  const c = MANYCHAT_CAMPOS_PEDIDO_HOY, raya = "━━━━━━━━━━━━";
+  return ["🧁 *PEDIDO PARA HOY* · La Tarta Vasca", raya, "🔑 Llave *" + referencia + "* · " + v[c.donde], "👤 Cliente: " + v[c.cliente],
+    "🍰 Pedido: " + v[c.pedido], "💳 Paga: " + v[c.pago], raya, "Avisa a la sucursal para que lo tenga listo 🙏"].join("\n");
+}
+
+// Un dato por campo de ManyChat, para el aviso tipo ticket (decisión de Alex, 1-nov):
+//   TV-1102-01 · Polanco · 13:00 / Ana López · 55 1234 5678 / 1 Queso Mediana — $420 / Paga: transferencia
+function _pedidoCamposAvisoHoy(p) {
+  const donde = p.domicilio ? "A domicilio: " + p.direccion
+    : p.sucursal + (p.hora ? " · " + p.hora : "") + (p.mensajero ? " · lo recoge un " + p.mensajero : "");
+  const valores = { donde: donde, cliente: [p.cliente, _pedidoTelefonoLegible(p.contacto)].filter(Boolean).join(" · "),
+    pedido: p.resumen + " — $" + p.total, pago: p.pago || "por definir" };
+  return Object.keys(MANYCHAT_CAMPOS_PEDIDO_HOY).map(function (k) { return { nombre: MANYCHAT_CAMPOS_PEDIDO_HOY[k], valor: _whatsappLimpiar(valores[k], MANYCHAT_MAX_DETALLE) }; });
+}
+
+// "5512345678" -> "55 1234 5678"; cualquier otra cosa (usuario de Instagram) se deja igual.
+function _pedidoTelefonoLegible(contacto) {
+  const t = String(contacto || "").replace(/\D/g, "");
+  return t.length === 10 ? t.substring(0, 2) + " " + t.substring(2, 6) + " " + t.substring(6) : String(contacto || "");
+}
+
 function _pedidoResultadoAviso(aviso) {
   if (!aviso.configurado) return "NO SE MANDÓ: " + aviso.motivo;
-  return aviso.resultados.map(function (r) { return r.nombre + (r.ok ? " enviado" : " FALLÓ " + r.detalle); }).join(" · ");
+  return aviso.resultados.map(function (r) { return r.nombre + (r.ok ? " enviado" : " FALLÓ " + r.detalle) + (r.forma ? " (" + r.forma + ")" : ""); }).join(" · ");
 }
 
 function _pedidoRegistrarAvisoHoy(ss, referencia, detalle, aviso) {

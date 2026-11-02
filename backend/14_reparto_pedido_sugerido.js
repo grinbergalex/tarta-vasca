@@ -703,75 +703,6 @@ var zonas = [
 ];
 zonas.forEach(function(z){ if(!existentes[z[0]]) h.appendRow(z); });
 }
-function _reservasPorSkuSep(ss){
-var out = {};
-function ensure(k){ if(!out[k]) out[k]={ruta:0, apartado:0}; return out[k]; }
-try {
-var peds = _repLeerPedidos(ss);
-for (var i=0;i<peds.length;i++){
-var p = peds[i];
-if (p.estado!=="base" && p.estado!=="planeado") continue;
-var its = p.items || [];
-for (var j=0;j<its.length;j++){
-var it = its[j];
-if(!it || !it.sabor || !it.tamano) continue;
-ensure(SUCURSAL_COCINA+"|"+it.sabor+"|"+it.tamano).ruta += (Number(it.cantidad)||0);
-}
-}
-} catch(e){}
-try {
-var hV = ss.getSheetByName("Ventas");
-if (hV){
-var dV = hV.getDataRange().getValues();
-var hd = dV[0]||[];
-var iTipo = hd.indexOf("tipo_op"), iAnul = hd.indexOf("estado_anul");
-for (var r=1;r<dV.length;r++){
-var row = dV[r];
-if(!row[0]) continue;
-if(iTipo!==-1 && row[iTipo]!=="Reservado") continue;
-if(iAnul!==-1 && row[iAnul]==="ANULADO") continue;
-if(row[9]!=="Apartado") continue;
-ensure(row[3]+"|"+row[4]+"|"+row[5]).apartado += (Number(row[6])||0);
-}
-}
-} catch(e){}
-return out;
-}
-function _reservasPorSku(ss){
-var out = {};
-try {
-var peds = _repLeerPedidos(ss);
-for (var i=0;i<peds.length;i++){
-var p = peds[i];
-if (p.estado!=="base" && p.estado!=="planeado") continue;
-var its = p.items || [];
-for (var j=0;j<its.length;j++){
-var it = its[j];
-if(!it || !it.sabor || !it.tamano) continue;
-var k = SUCURSAL_COCINA+"|"+it.sabor+"|"+it.tamano;
-out[k] = (out[k]||0) + (Number(it.cantidad)||0);
-}
-}
-} catch(e){}
-try {
-var hV = ss.getSheetByName("Ventas");
-if (hV){
-var dV = hV.getDataRange().getValues();
-var hd = dV[0]||[];
-var iTipo = hd.indexOf("tipo_op"), iAnul = hd.indexOf("estado_anul");
-for (var r=1;r<dV.length;r++){
-var row = dV[r];
-if(!row[0]) continue;
-if(iTipo!==-1 && row[iTipo]!=="Reservado") continue;
-if(iAnul!==-1 && row[iAnul]==="ANULADO") continue;
-if(row[9]!=="Apartado") continue;
-var k2 = row[3]+"|"+row[4]+"|"+row[5];
-out[k2] = (out[k2]||0) + (Number(row[6])||0);
-}
-}
-} catch(e){}
-return out;
-}
 function getApartados(body, sesion){
 var ss = SpreadsheetApp.getActiveSpreadsheet();
 var h = ss.getSheetByName("Ventas");
@@ -779,7 +710,8 @@ if(!h) return { ok:true, apartados:[] };
 var headers = h.getRange(1,1,1,h.getLastColumn()).getValues()[0];
 var datos = h.getDataRange().getValues();
 var iTipo = headers.indexOf("tipo_op"), iAnul = headers.indexOf("estado_anul"),
-iAnt = headers.indexOf("anticipo_reserva"), iFe = headers.indexOf("fecha_entrega");
+iAnt = headers.indexOf("anticipo_reserva"), iFe = headers.indexOf("fecha_entrega"),
+iRef = headers.indexOf("referencia"), iOrigen = headers.indexOf("origen_pedido");
 if(iTipo===-1) return { ok:true, apartados:[] };
 var perm = getPermisos(sesion.rol);
 var sucU = perm.puedeVerAmbas ? null : getSucursalUsuario(sesion.usuario);
@@ -787,16 +719,21 @@ var grupos = {};
 for(var i=1;i<datos.length;i++){
 var r = datos[i];
 if(r[iTipo]!=="Reservado") continue;
-if(r[9]!=="Apartado") continue;
+// v9: además de los apartados del POS, los pedidos de Maite y de Shopify (canal Tienda o Domicilio): se entregan desde aquí.
+if(PEDIDO_CANALES_PRODUCCION.indexOf(r[9])===-1) continue;
 if(iAnul!==-1 && r[iAnul]==="ANULADO") continue;
 if(sucU && r[3]!==sucU) continue;
 var id=r[0];
 if(!grupos[id]){
+var esPedido = r[9]!=="Apartado";
 grupos[id]={ idVenta:id,
 fecha: r[1] instanceof Date ? Utilities.formatDate(r[1], TZ_MX, "yyyy-MM-dd'T'HH:mm:ss") : r[1],
 fechaEntrega: iFe!==-1 ? (r[iFe] instanceof Date ? Utilities.formatDate(r[iFe], TZ_MX, "yyyy-MM-dd") : (r[iFe]||"")) : "",
 usuario:r[2], sucursal:r[3], metodoPago:r[10], clienteId:r[11], clienteNombre:r[12],
-anticipo: iAnt!==-1 ? (Number(r[iAnt])||0) : 0, notas:r[14], items:[], total:0 };
+anticipo: iAnt!==-1 ? (Number(r[iAnt])||0) : 0, notas:r[14], items:[], total:0,
+// esPedido: no se libera con "Liberar" (repondría tartas que nunca se descontaron): se entrega o se marca "no llegó".
+esPedido: esPedido, canal: r[9], referencia: iRef!==-1 ? String(r[iRef]||"") : "", origen: iOrigen!==-1 ? String(r[iOrigen]||"") : "",
+hora: esPedido ? _tableroHora(r) : "", pago: esPedido ? _tableroPago(r) : "" };
 }
 grupos[id].items.push({ sabor:r[4], tamano:r[5], cantidad:Number(r[6]), precio:Number(r[7]), subtotal:Number(r[8]) });
 grupos[id].total += Number(r[8]);

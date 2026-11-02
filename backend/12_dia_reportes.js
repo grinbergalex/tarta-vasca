@@ -248,6 +248,7 @@ return;
       const [idV, fecha, , sucursal, sabor, tamano, cantidad, , , canal] = datosV[i];
       if (sucursal !== suc) continue;
       if (canal === "Merma" || canal === "Cortesía") continue;
+      if (!_ventaVendidaDeVerdad(datosV[0], datosV[i])) continue;
       const fd = new Date(fecha);
       if (Utilities.formatDate(fd, TZ_MX, "yyyy-MM-dd") !== fechaStr) continue;
       const k = sabor + "|" + tamano;
@@ -316,6 +317,7 @@ let totalDinero = 0;
 for (let i = 1; i < datosV.length; i++) {
 const [, fecha, , sucursal, sabor, tamano, cantidad, , subtotal, canal] = datosV[i];
 if (canal === "Merma") continue;
+if (!_ventaVendidaDeVerdad(datosV[0], datosV[i])) continue;
 const fd = new Date(fecha);
 if (Utilities.formatDate(fd, TZ_MX, "yyyy-MM-dd") !== fechaStr) continue;
 const hora = Utilities.formatDate(fd, TZ_MX, "HH") + ":00";
@@ -334,3 +336,10 @@ return { ok: true, fecha: fechaStr, totalUnidades, totalDinero, porHora, porSabo
 // =================================================================================
 // FIN v4.4
 // =================================================================================
+
+
+// Fila de Ventas que sí es una venta: ni anulada ni reserva sin entregar (apartados y pedidos de Maite o Shopify).
+function _ventaVendidaDeVerdad(encabezados, fila) {
+  const anul = encabezados.indexOf("estado_anul"), tipo = encabezados.indexOf("tipo_op");
+  return !(anul !== -1 && fila[anul] === "ANULADO") && !(tipo !== -1 && fila[tipo] === "Reservado");
+}

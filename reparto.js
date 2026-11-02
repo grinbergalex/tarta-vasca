@@ -569,10 +569,58 @@ async function apReload(){
     ap.map(function(a){
       var its=a.items.map(function(it){return it.cantidad+"× "+it.sabor+" "+it.tamano;}).join(" · ");
       return "<div style='border:1px solid var(--warm);border-radius:8px;padding:10px;margin-bottom:8px'>"+
-        "<div style='display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px'><div><b>"+(a.clienteNombre||"Cliente")+"</b> · 📅 entrega <b>"+(a.fechaEntrega||"—")+"</b></div><div style='color:var(--accent);font-weight:700'>$"+a.total.toLocaleString('es-MX')+"</div></div>"+
+        "<div style='display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px'><div><b>"+(a.clienteNombre||"Cliente")+"</b> · 📅 entrega <b>"+(a.fechaEntrega||"—")+"</b>"+(a.hora?(" · 🕐 "+a.hora):"")+"</div><div style='color:var(--accent);font-weight:700'>$"+a.total.toLocaleString('es-MX')+"</div></div>"+
+        (a.esPedido?apRenglonPedido(a):"")+
         "<div style='font-size:12px;color:var(--muted);margin-top:4px'>"+its+" · "+a.sucursal+(a.anticipo>0?(" · anticipo $"+a.anticipo.toLocaleString('es-MX')):"")+"</div>"+
-        "<div style='margin-top:6px;display:flex;gap:8px;flex-wrap:wrap'><button class='btn-sec' onclick=\"apConvertir('"+a.idVenta+"')\">✓ Entregar (convertir a venta)</button><button class='btn-sec' onclick=\"apLiberar('"+a.idVenta+"')\">Liberar</button></div>"+
+        "<div style='margin-top:6px;display:flex;gap:8px;flex-wrap:wrap'>"+(a.esPedido?apBotonesPedido(a):
+          "<button class='btn-sec' onclick=\"apConvertir('"+a.idVenta+"')\">✓ Entregar (convertir a venta)</button><button class='btn-sec' onclick=\"apLiberar('"+a.idVenta+"')\">Liberar</button>")+"</div>"+
       "</div>"; }).join("");
+}
+/* v9: pedidos de Maite (Instagram/WhatsApp) y de Shopify. Se entregan aquí (una sola venta, con la forma de pago del pedido) o se
+   marcan "no llegó". NO llevan "Liberar": esa función repondría tartas que nunca se descontaron. */
+function apRenglonPedido(a){
+  var dom=a.canal==="Domicilio";
+  return "<div style='font-size:12px;margin-top:4px'>🔑 <b>"+(a.referencia||"sin llave")+"</b> · "+(a.origen||"en línea")+" · "+(dom?"🚚 domicilio":"recoge en tienda")+(a.pago?(" · paga "+a.pago):"")+"</div>";
+}
+function apBotonesPedido(a){
+  var clave=a.referencia||a.idVenta;
+  return "<button class='btn-sec' onclick=\"apEntregarPedido('"+clave+"')\">✓ Entregado</button><button class='btn-sec' onclick=\"apNoLlego('"+clave+"')\">✗ No llegó</button>";
+}
+async function apEntregarPedido(clave, canal){
+  if(!confirm("¿El cliente ya tiene su pedido "+clave+"? Se registra la venta una sola vez (no la captures aparte en el POS).")) return;
+  var res=await api("pedidoEntregar",{referencia:clave, canal:canal||""});
+  if(res.ok){ toast("✅ Pedido "+clave+" entregado"); await apReload(); if(canal) rutaPedidosPendientes(true); } else toast(res.error||"Error","error");
+}
+/* v9: al elegir el canal Ruta en la venta, los pedidos a domicilio que ya están apartados (Maite y tienda en línea) salen arriba.
+   Si ya se entregó, se toca aquí y queda como venta de Ruta UNA vez: capturarlo en el carrito lo vendería dos veces. */
+async function rutaPedidosPendientes(mostrar){
+  var cont=L("ruta-pedidos");
+  if(!cont) return;
+  if(!mostrar){ cont.style.display="none"; cont.innerHTML=""; return; }
+  cont.style.display="block";
+  cont.innerHTML="<div style='font-size:12px;color:var(--muted)'>Buscando pedidos a domicilio apartados…</div>";
+  var res=await api("getApartados");
+  if(L("venta-canal") && L("venta-canal").value!=="Ruta") return;
+  var hoy=new Date(); hoy=hoy.getFullYear()+"-"+String(hoy.getMonth()+1).padStart(2,"0")+"-"+String(hoy.getDate()).padStart(2,"0");
+  var peds=((res&&res.apartados)||[]).filter(function(a){ return a.esPedido && a.canal==="Domicilio" && String(a.fechaEntrega||"")<=hoy; });
+  if(!peds.length){ cont.innerHTML="<div style='font-size:12px;color:var(--muted)'>Sin pedidos a domicilio apartados para hoy.</div>"; return; }
+  cont.innerHTML="<div style='border:2px solid var(--accent);border-radius:10px;padding:10px'>"+
+    "<div style='font-weight:700;font-size:13px;margin-bottom:4px'>🚚 Pedidos a domicilio ya apartados ("+peds.length+")</div>"+
+    "<div style='font-size:12px;color:var(--muted);margin-bottom:8px'>Si ya se entregó, tócalo aquí. <b>No lo captures en el carrito</b>: se vendería dos veces.</div>"+
+    peds.map(function(a){
+      var its=a.items.map(function(it){return it.cantidad+"× "+it.sabor+" "+it.tamano;}).join(" · ");
+      var clave=a.referencia||a.idVenta;
+      return "<div style='border-top:1px solid var(--warm);padding:8px 0'>"+
+        "<div style='font-size:13px'><b>"+(a.clienteNombre||"Cliente")+"</b> · "+its+" · <b>$"+a.total.toLocaleString('es-MX')+"</b></div>"+
+        "<div style='font-size:12px;color:var(--muted)'>🔑 "+clave+" · "+(a.origen||"en línea")+" · 📅 "+(a.fechaEntrega||"—")+(a.pago?(" · paga "+a.pago):"")+"</div>"+
+        "<div style='margin-top:6px;display:flex;gap:8px;flex-wrap:wrap'><button class='btn-sec' onclick=\"apEntregarPedido('"+clave+"','Ruta')\">✓ Entregado</button>"+
+        "<button class='btn-sec' onclick=\"apNoLlego('"+clave+"')\">✗ No llegó</button></div></div>";
+    }).join("")+"</div>";
+}
+async function apNoLlego(clave){
+  if(!confirm("¿Marcar el pedido "+clave+" como NO RECOGIDO? La tarta vuelve a estar disponible.")) return;
+  var res=await api("pedidoNoRecogido",{referencia:clave});
+  if(res.ok){ toast("Pedido "+clave+" marcado como no recogido"); await apReload(); if(L("venta-canal") && L("venta-canal").value==="Ruta") rutaPedidosPendientes(true); } else toast(res.error||"Error","error");
 }
 async function apGuardar(){
   var cli=L("ap-cli").value.trim();

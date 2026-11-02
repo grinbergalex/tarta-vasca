@@ -54,7 +54,11 @@ function _manychatEnviarFlujo(idContacto, flujo, campos) {
 }
 
 // Avisa al equipo (Yessenia y Rebeca) con un flujo de dos campos: título y detalle.
-// Devuelve { configurado, motivo, destinatarios, resultados:[{ nombre, ok, detalle }] }.
+// El flujo puede ser texto normal (llega con su diseño: saltos de línea, secciones, viñetas, pero solo si la persona escribió a la
+// línea en las últimas 24 h) o una plantilla aprobada por Meta (llega siempre, pero sus variables no aceptan saltos de línea).
+// ManyChat no dice si la ventana de 24 h de WhatsApp está abierta, así que cada flujo se marca en Configuración:
+// claveFlujo + "_es_plantilla" = si  ->  se manda la versión de una línea.
+// Devuelve { configurado, motivo, destinatarios, resultados:[{ nombre, ok, detalle, forma }] }.
 function manychatAvisarEquipo(ss, claveFlujo, titulo, detalle, maximo, camposExtra) {
   const destinatarios = _manychatDestinatarios(ss);
   const flujo = String(_cfgVal(ss, claveFlujo, "")).trim();
@@ -63,16 +67,24 @@ function manychatAvisarEquipo(ss, claveFlujo, titulo, detalle, maximo, camposExt
   if (!flujo) { salida.motivo = "falta " + claveFlujo + " en Configuración"; return salida; }
   if (!destinatarios.length) { salida.motivo = "falta " + MANYCHAT_CLAVE_DESTINOS_HOY + " en Configuración"; return salida; }
   salida.configurado = true;
-  const campos = [{ nombre: MANYCHAT_CAMPO_REFERENCIA, valor: _whatsappLimpiar(titulo, MANYCHAT_MAX_DETALLE) }, { nombre: MANYCHAT_CAMPO_DETALLE, valor: _whatsappLimpiar(detalle, maximo || MANYCHAT_MAX_DETALLE) }].concat(camposExtra || []);
+  const tope = maximo || MANYCHAT_MAX_DETALLE;
+  const esPlantilla = /^s/i.test(String(_cfgVal(ss, claveFlujo + MANYCHAT_SUFIJO_PLANTILLA, "")).trim());
+  // detalle puede traer dos versiones: { texto (con diseño), plantilla (corta, para la variable de la plantilla) }.
+  const elegido = typeof detalle === "object" ? (esPlantilla ? detalle.plantilla : detalle.texto) : detalle;
+  const campos = esPlantilla
+    ? [{ nombre: MANYCHAT_CAMPO_REFERENCIA, valor: _whatsappLimpiar(titulo, MANYCHAT_MAX_DETALLE) }, { nombre: MANYCHAT_CAMPO_DETALLE, valor: _whatsappLimpiar(elegido, tope) }]
+      .concat((camposExtra || []).map(function (c) { return { nombre: c.nombre, valor: _whatsappLimpiar(c.valor, tope) }; }))
+    : [{ nombre: MANYCHAT_CAMPO_REFERENCIA, valor: String(titulo).substring(0, MANYCHAT_MAX_DETALLE) }, { nombre: MANYCHAT_CAMPO_DETALLE, valor: String(elegido).substring(0, tope) }].concat(camposExtra || []);
   destinatarios.forEach(function (d) {
     const r = _manychatEnviarFlujo(d.id, flujo, campos);
-    salida.resultados.push({ nombre: d.nombre || d.id, ok: r.ok, detalle: r.detalle });
+    salida.resultados.push({ nombre: d.nombre || d.id, ok: r.ok, detalle: r.detalle, forma: esPlantilla ? "plantilla" : "con diseño" });
   });
   return salida;
 }
 
-function manychatAvisarPedidoHoy(ss, referencia, detalle) {
-  return manychatAvisarEquipo(ss, MANYCHAT_CLAVE_FLUJO_AVISO, referencia, detalle, MANYCHAT_MAX_DETALLE);
+// detalle: { texto: el ticket completo (flujo con diseño, campo aviso_detalle), plantilla: la versión corta de aviso_pedido_hoy }.
+function manychatAvisarPedidoHoy(ss, referencia, detalle, camposExtra) {
+  return manychatAvisarEquipo(ss, MANYCHAT_CLAVE_FLUJO_AVISO, referencia, detalle, MANYCHAT_MAX_ALERTA, camposExtra);
 }
 
 // Un mensaje proactivo a UN cliente por su canal. Devuelve { configurado, ok, detalle }.
@@ -82,7 +94,9 @@ function manychatMensajeCliente(ss, idContacto, canal, texto) {
   if (!_manychatToken()) return { configurado: false, ok: false, detalle: "falta MANYCHAT_API_TOKEN en Propiedades del script" };
   if (!flujo) return { configurado: false, ok: false, detalle: "falta " + clave + " en Configuración" };
   if (!/^\d+$/.test(String(idContacto || ""))) return { configurado: true, ok: false, detalle: "SIN CANAL: el pedido no trae el id de contacto de ManyChat" };
-  const r = _manychatEnviarFlujo(idContacto, flujo, [{ nombre: MANYCHAT_CAMPO_MENSAJE, valor: _whatsappLimpiar(texto, 1000) }]);
+  // En WhatsApp el texto puede ir en una plantilla (no acepta saltos de línea); en Instagram es texto normal y los conserva.
+  const valor = canal === "WhatsApp" ? _whatsappLimpiar(texto, 1000) : String(texto == null ? "" : texto).substring(0, 1000);
+  const r = _manychatEnviarFlujo(idContacto, flujo, [{ nombre: MANYCHAT_CAMPO_MENSAJE, valor: valor }]);
   return { configurado: true, ok: r.ok, detalle: r.detalle };
 }
 

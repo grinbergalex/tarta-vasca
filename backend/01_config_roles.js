@@ -178,6 +178,22 @@ const MENSAJES_HOJA = "Mensajes_Clientes";                 // cola de mensajes p
 const MENSAJES_ENCABEZADO = ["Programado", "Tipo", "Llave", "Cliente", "Id ManyChat", "Canal", "Mensaje", "Estado", "Resultado", "Enviado el"];
 const MENSAJE_TIPO = { REAGENDAR: "reagendar", FEEDBACK: "feedback" };
 const REPORTE_NOCHE_HOJA = "Reportes_Noche";               // huella del reporte diario a Rebeca y Yessenia
+const ENTREGAS_MANANA_HOJA = "Reportes_Entregas";           // huella del reporte de las 18:00: lo que se recoge mañana en cada tienda
+const ENTREGAS_MANANA_HORA = 18;                            // la misma hora de corte para pedir para mañana (BOT_HORA_CORTE_RECOGER)
+const ENTREGAS_TIENDAS = ["Polanco", "Cuajimalpa", "Bosques"];   // orden de las secciones del reporte; al final va Domicilio
+const ENTREGAS_SECCION_DOMICILIO = "Domicilio";
+const PEDIDO_CANAL_RUTA = "Ruta";
+const PEDIDO_METODO_POR_DEFINIR = "Por definir";   // forma de pago de un pedido entregado cuando nadie la sabe (se corrige en el POS)   // canal con el que Yessenia captura las ventas de ruta en el POS
+const ENTREGAS_CAMPOS = { Polanco: "entregas_polanco", Cuajimalpa: "entregas_cuajimalpa", Bosques: "entregas_bosques", Domicilio: "entregas_domicilio" };   // campos de ManyChat, uno por sección
+const ENTREGAS_MAX_SECCION = 900;                           // caracteres por sección en el WhatsApp (el detalle completo está en las pestañas del tablero)
+// --- Domicilios de Maite al Excel de pedidos (v9, ver 27_excel_pedidos.js) ---
+const EXCEL_PEDIDOS_CLAVE_ID = "excel_pedidos_id";          // Configuración: id del Excel de pedidos ("Pedidos Tarta Vasca (Respuestas)"); vacío = no se anota nada
+const EXCEL_PEDIDOS_HOJA = "Respuestas de formulario 1";
+const EXCEL_PEDIDOS_COL_NOTA = 58;                         // primera columna vacía y sin título del Excel: ahí va "Maite · TV-… · pago · total"
+const EXCEL_PEDIDOS_COL_ESTADO = 59;                       // la siguiente: "✅ ENTREGADO dd/MM HH:mm", "✗ NO RECOGIDO …" o "⏳ POR REVISAR …" (control de apartados cerrados)
+const EXCEL_PEDIDOS_REGISTRO = "Excel_Pedidos_Anotados";     // hoja del Sistema: qué pedido se anotó, cuándo y en qué renglón (para no repetirlo)
+const BOT_ORIGENES = ["Instagram", "WhatsApp"];             // origen_pedido de los pedidos que toma Maite
+const ENTREGAS_CLAVE_UNA_LINEA = "manychat_entregas_una_linea";   // Configuración: "si" cuando el flujo use la plantilla de WhatsApp (sus variables no aceptan saltos de línea)
 const FEEDBACK_DIAS = 2;                                    // días después de la entrega en que se pregunta "¿cómo te fue?"
 const FEEDBACK_HORA = "10:00";
 const PEDIDO_ESTADOS_HOJA = [PEDIDO_ESTADO.CONFIRMADO, PEDIDO_ESTADO.ENTREGADO, PEDIDO_ESTADO.NO_RECOGIDO];   // opciones del menú de Estado en las pestañas por sucursal
@@ -197,7 +213,9 @@ const MANYCHAT_CLAVE_DESTINOS_HOY = "aviso_hoy_manychat";   // quién recibe los
 const MANYCHAT_CLAVE_FLUJO_AVISO = "manychat_flujo_aviso";  // identificador (ns) del flujo de ManyChat que manda la plantilla aviso_pedido_hoy
 const MANYCHAT_CAMPO_REFERENCIA = "aviso_referencia";       // campos de usuario de ManyChat que llenan las dos variables de la plantilla
 const MANYCHAT_CAMPO_DETALLE = "aviso_detalle";
+const MANYCHAT_CAMPOS_PEDIDO_HOY = { donde: "aviso_donde", cliente: "aviso_cliente", pedido: "aviso_pedido", pago: "aviso_pago" };   // aviso de pedido para hoy en formato visual: un dato por campo
 const MANYCHAT_CLAVE_FLUJO_REPORTE = "manychat_flujo_reporte";                 // flujo del reporte de la noche a Rebeca y Yessenia
+const MANYCHAT_CLAVE_FLUJO_ENTREGAS = "manychat_flujo_entregas_manana";        // flujo del reporte de las 18:00 (entregas de mañana en tienda) a Rebeca y Yessenia
 const MANYCHAT_CLAVE_FLUJO_INSTAGRAM = "manychat_flujo_cliente_instagram";    // flujos que mandan un mensaje al cliente según su canal
 const MANYCHAT_CLAVE_FLUJO_WHATSAPP = "manychat_flujo_cliente_whatsapp";
 const MANYCHAT_CAMPO_MENSAJE = "aviso_detalle";                                // campo de usuario que lleva el texto al cliente (el mismo de los avisos: cada contacto tiene el suyo, así no se crea otro campo en ManyChat)
@@ -216,7 +234,8 @@ const BOT_RECORDATORIOS_MAX = 12;                                              /
 const MX_OFFSET_HORAS = 6;                                                     // México sin horario de verano (UTC-6): sirve para leer fechas de la hoja
 const BOT_REENGANCHE_HORAS = 1.5;                                              // con la conversación ATENDIDA, si el cliente calla tantas horas y vuelve a escribir, Maite se reincorpora (Alex, 1-nov)
 const BOT_PAUSA_HORAS = 12;                                                  // cuánto calla el bot tras pasar a una persona
-const MANYCHAT_MAX_REPORTE = 900;                                             // el reporte de la noche puede ser más largo que un aviso
+const MANYCHAT_SUFIJO_PLANTILLA = "_es_plantilla";   // "manychat_flujo_X_es_plantilla" = si: ese flujo es una plantilla de Meta y se le manda todo en una línea
+const MANYCHAT_MAX_REPORTE = 900;                                            // el reporte de la noche puede ser más largo que un aviso
 const MANYCHAT_MAX_DETALLE = 300;                           // la variable de una plantilla no debe pasar de unos cientos de caracteres
 const MANYCHAT_MAX_ALERTA = 700;                                           // las alertas llevan además el texto sugerido para el cliente
 const MANYCHAT_CAMPO_CONVERSACION = "bot_conversacion";                        // campo de usuario con la conversación del cliente: lo usa el botón ATENDIDA del flujo de alerta
@@ -257,6 +276,7 @@ const BOT_CACHE_FECHA_SEGUNDOS = 300;        // la fecha ya validada en la conve
 const BOT_CACHE_MENU_SEGUNDOS = 60;         // el menú ya calculado (un cambio de precio llega al bot en menos de 1 min)
 const BOT_SONDEO_MAX_SEGUNDOS = 7;           // cuánto puede esperar botRespuesta a que la respuesta esté lista (ManyChat corta a ~8 s)
 const BOT_SONDEO_PASO_MS = 500;
+const BOT_RESCATE_SEGUNDOS = 16;            // si el turno tarda más, ManyChat ya dejó de esperar (~8 s + sondeo de 7 s): el sistema le manda la respuesta al cliente por su cuenta
 const BOT_RESULTADO_SEGUNDOS = 600;         // cuánto se guarda la respuesta lista para que ManyChat la recoja
 // Dónde están las sucursales (el horario sale de HORARIOS_SUCURSAL). ⚠ La dirección de Bosques salió
 // de un mensaje de mayo-2026: confirmar con Rebe.

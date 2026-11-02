@@ -61,7 +61,19 @@ function botConversar(body) {
   _botGuardarMemoria(conversacionId, memoria);
   _botBitacora(ctx, mensaje, turno.texto);
   // alerta ("queja", "mensajero", ...): para que ManyChat o el equipo lo distingan de un traspaso normal.
-  return _botTerminar(conversacionId, { ok: true, respuesta: turno.texto, handoff: ctx.handoff, alerta: ctx.alerta, pedido: ctx.pedido });
+  const resultado = { ok: true, respuesta: turno.texto, handoff: ctx.handoff, alerta: ctx.alerta, pedido: ctx.pedido };
+  if (resultado.respuesta && Date.now() - ctx.inicio > BOT_RESCATE_SEGUNDOS * 1000 && _botEntregarPorSuCuenta(conversacionId, canal, resultado)) return resultado;
+  return _botTerminar(conversacionId, resultado);
+}
+
+// El turno tardó más de lo que ManyChat espera (pasa al crear un pedido): la respuesta ya no la recogería nadie y el cliente se
+// quedaría sin su llave. Se guarda vacía PRIMERO (un sondeo tardío no la repite) y se le manda por el flujo de mensaje al cliente.
+// Si no se pudo mandar, se deja lista como siempre. Devuelve true si salió.
+function _botEntregarPorSuCuenta(conversacionId, canal, resultado) {
+  _botGuardarEstado(conversacionId, Object.assign({}, resultado, { listo: true, entregado: true, respuesta: "" }));
+  const envio = manychatMensajeCliente(SpreadsheetApp.getActiveSpreadsheet(), conversacionId, canal, resultado.respuesta);
+  Logger.log("Respuesta tardía enviada por su cuenta (" + conversacionId + "): " + (envio.ok ? "ok" : envio.detalle));
+  return envio.ok;
 }
 
 // ManyChat llama aquí después de la primera llamada (que se rinde a los ~8 s). Espera hasta `espera` segundos a que la
@@ -131,7 +143,7 @@ function _botTurno(apiKey, historial, mensaje, ctx) {
     // Pedido creado: el mensaje de confirmación lo arma el sistema (cifras exactas, siempre completo) y se ahorra una
     // llamada a la IA, que son ~5 s y ManyChat solo espera unos segundos.
     const creado = resultados.filter(function (x) { return x.uso.name === "crear_pedido" && x.salida && x.salida.ok; })[0];
-    if (creado) return { ok: true, texto: _botMensajeConfirmacion(creado.uso.input || {}, creado.salida, ctx) };
+    if (creado) return { ok: true, texto: _botMensajeConfirmacion(creado.uso.input || {}, creado.salida) };
     mensajes.push({ role: "user", content: resultados.map(function (x) {
       return { type: "tool_result", tool_use_id: x.uso.id, content: JSON.stringify(x.salida) };
     }) });
@@ -139,16 +151,15 @@ function _botTurno(apiKey, historial, mensaje, ctx) {
   return { ok: false, error: "Demasiadas vueltas de herramientas." };
 }
 
-function _botMensajeConfirmacion(a, r, ctx) {
+// El pedido queda cerrado en este mensaje: ninguna persona le vuelve a escribir al cliente para confirmarlo (decisión de Alex, 1-nov).
+function _botMensajeConfirmacion(a, r) {
   const nombre = String(a.nombre || "").trim().split(/\s+/)[0];
-  const seguimiento = ctx.canal === "WhatsApp" ? "por este mismo chat" : (a.seguimiento === "instagram" ? "por esta misma conversación" : "al número que nos diste");
   return [
     "Listo" + (nombre ? ", " + nombre : "") + ", tu pedido quedó apartado. Gracias por tu pedido.",
-    "Tu llave es " + r.referencia + ". Guárdala: se la das a quien te atienda en la sucursal para que encuentren tu tarta apartada, y sirve para preguntar por tu pedido aquí.",
+    "Tu llave es " + r.referencia + ". Guárdala: " + (a.entrega === "domicilio" ? "sirve para preguntar por tu pedido aquí." : "se la das a quien te atienda en la sucursal para que encuentren tu tarta apartada, y sirve para preguntar por tu pedido aquí."),
     "Total: $" + r.total,
     r.indicaciones_entrega,
-    r.indicaciones_pago,
-    "El equipo revisa tu pedido y te confirma " + seguimiento + "."
+    r.indicaciones_pago
   ].filter(Boolean).join("\n\n");
 }
 
@@ -709,6 +720,12 @@ function _botIndicacionesRecoger(sucursal, fecha, horario, hora) {
   return "Recoges en " + sucursal + " " + cuando + ". Da tu llave al llegar." +(politica ? " " + politica : " Si no vas a poder pasar, avísanos por aquí para reprogramarlo.");
 }
 
+// "Calle 1, Lomas" + colonia "Lomas" -> sin repetir la colonia si el cliente ya la escribió en la dirección.
+function _botDireccionCompleta(a) {
+  const dir = String(a.direccion || "").trim(), colonia = String(a.colonia || "").trim();
+  return colonia && _botSinAcentos(dir).indexOf(_botSinAcentos(colonia)) === -1 ? dir + " (" + colonia + ")" : dir;
+}
+
 function _botCrearPedido(a, ctx) {
   const nombre = String(a.nombre || "").trim();
   if (!nombre) return { ok: false, error: "Falta el nombre." };
@@ -739,7 +756,7 @@ function _botCrearPedido(a, ctx) {
   }
 
   const sucursal = domicilio ? BOT_SUCURSAL_DOMICILIO : a.sucursal;
-  const detalle = [domicilio ? "Domicilio: " + a.direccion + (a.colonia ? " (" + a.colonia + ")" : "") : "Recoge en " + a.sucursal, "Pago: " + a.metodo_pago, a.mensajero ? "LO RECOGE UN MENSAJERO (" + a.mensajero + ")" : "", a.hora ? "Hora: " + a.hora : "", a.notas ? "Notas: " + a.notas : ""].filter(Boolean).join(" | ");
+  const detalle = [domicilio ? "Domicilio: " + _botDireccionCompleta(a) : "Recoge en " + a.sucursal, "Pago: " + a.metodo_pago, a.mensajero ? "LO RECOGE UN MENSAJERO (" + a.mensajero + ")" : "", a.hora ? "Hora: " + a.hora : "", a.notas ? "Notas: " + a.notas : ""].filter(Boolean).join(" | ");
   const sesion = { usuario: BOT_USUARIO, rol: BOT_ROL, sucursal: sucursal };
   const res = registrarVenta({
     opId: "BOT-" + ctx.conversacionId + "-" + hashSimple(a.fecha_entrega + JSON.stringify(cot.lineas) + contacto.contacto),
@@ -756,10 +773,10 @@ function _botCrearPedido(a, ctx) {
   try { seguimientoRegistrarPedido(SpreadsheetApp.getActiveSpreadsheet(), { referencia: referencia, cliente: nombre, contacto: contacto.contacto, canal: ctx.canal, idContacto: ctx.conversacionId, sucursal: sucursal, fechaEntrega: a.fecha_entrega, hora: domicilio ? "" : a.hora, estado: PEDIDO_ESTADO.POR_CONFIRMAR }); } catch (e) { Logger.log("Seguimiento: " + e); }
   const ticket = _botTicket(cot, a.entrega, a.fecha_entrega, a.sucursal);
   ctx.pedido = { id: res.idVenta, referencia: referencia, total: cot.total };
-  _botAvisar((a.mensajero ? "🚗🧁 Pedido nuevo por " + ctx.canal + " — lo recoge un " + a.mensajero : "🧁 Pedido nuevo por " + ctx.canal) + " · " + referencia, nombre + " · " + contacto.contacto + "\n" + ticket + "\n" + detalle + "\nReferencia: " + referencia + " · Estado: POR CONFIRMAR (reserva " + res.idVenta + ", ya apartada en el sistema). Revisarlo y confirmar con el cliente.", { sinWhatsapp: true });   // por WhatsApp solo avisan los pedidos para hoy (abajo)
+  _botAvisar((a.mensajero ? "🚗🧁 Pedido nuevo por " + ctx.canal + " — lo recoge un " + a.mensajero : "🧁 Pedido nuevo por " + ctx.canal) + " · " + referencia, nombre + " · " + contacto.contacto + "\n" + ticket + "\n" + detalle + "\nReferencia: " + referencia + " · Estado: POR CONFIRMAR (reserva " + res.idVenta + ", ya apartada en el sistema). Maite ya se lo confirmó al cliente con su llave: nadie tiene que contestarle.", { sinWhatsapp: true });   // por WhatsApp solo avisan los pedidos para hoy (abajo)
   try {   // el pedido es para hoy: Yessenia y Rebeca lo saben al instante y avisan a la sucursal
-    pedidoAvisarSiEsDeHoy(SpreadsheetApp.getActiveSpreadsheet(), { referencia: referencia, fechaEntrega: a.fecha_entrega, domicilio: domicilio, direccion: a.direccion + (a.colonia ? " (" + a.colonia + ")" : ""),
-      sucursal: a.sucursal, hora: a.hora, cliente: nombre, contacto: contacto.contacto, resumen: cot.lineas.map(function (l) { return l.cantidad + " " + l.sabor + " " + l.tamano; }).join(" + "), total: cot.total });
+    pedidoAvisarSiEsDeHoy(SpreadsheetApp.getActiveSpreadsheet(), { referencia: referencia, fechaEntrega: a.fecha_entrega, domicilio: domicilio, direccion: _botDireccionCompleta(a),
+      sucursal: a.sucursal, hora: a.hora, pago: a.metodo_pago, mensajero: a.mensajero, cliente: nombre, contacto: contacto.contacto, resumen: cot.lineas.map(function (l) { return l.cantidad + " " + l.sabor + " " + l.tamano; }).join(" + "), total: cot.total });
   } catch (e) { Logger.log("Aviso de pedido para hoy: " + e); }
   try {   // el pedido aparece en el tablero al instante, sin esperar la revisión de cada 5 min
     tableroAgregarPedidoNuevo({ referencia: referencia, estado: PEDIDO_ESTADO.POR_CONFIRMAR, origen: ctx.canal, cliente: nombre, contacto: contacto.contacto,
@@ -770,7 +787,7 @@ function _botCrearPedido(a, ctx) {
     ok: true, pedido: res.idVenta, referencia: referencia, total: cot.total, ticket: ticket,
     indicaciones_pago: _botIndicacionesPago(a.metodo_pago, cot.total, referencia),
     indicaciones_entrega: domicilio ? "Entrega a domicilio el " + _botFechaLegible(a.fecha_entrega) + ", entre las " + BOT_VENTANA_ENTREGA.abre + " y las " + BOT_VENTANA_ENTREGA.cierra + "." : _botIndicacionesRecoger(a.sucursal, a.fecha_entrega, fecha.horario, a.hora),
-    mensaje: "Pedido apartado. El equipo lo revisa y lo confirma."
+    mensaje: "Pedido apartado y confirmado al cliente con su llave."
   };
 }
 
@@ -801,7 +818,7 @@ function _botPasarAPersona(a, ctx) {
   const encabezado = BOT_ENCABEZADOS_ALERTA[a.tipo] || "🙋 El bot pasa una conversación a una persona";
   const detalle = "Motivo: " + a.motivo + "\nResumen: " + a.resumen + "\nConversación: " + ctx.conversacionId;
   _botAvisar(encabezado, detalle, { sinWhatsapp: true });
-  botAlertaPersonal(SpreadsheetApp.getActiveSpreadsheet(), "pasar", ctx.alerta, encabezado, "[" + ctx.canal + "] " + a.resumen + " (conv. " + ctx.conversacionId + ")", ctx.conversacionId);
+  botAlertaPersonal(SpreadsheetApp.getActiveSpreadsheet(), "pasar", ctx.alerta, encabezado, botDetalleAlerta(ctx.canal, a.resumen, ctx.conversacionId), ctx.conversacionId);
   botPausar(ctx.conversacionId);
   botPendienteRegistrar(SpreadsheetApp.getActiveSpreadsheet(), ctx.conversacionId, ctx.canal, ctx.alerta, a.resumen);
   return { ok: true, mensaje: "Ya se avisó al equipo." };
@@ -813,7 +830,7 @@ function _botAvisarAlEquipo(a, ctx) {
   const encabezados = { mensajero: "🚗 El cliente mandará un Uber/DiDi/taxi por su pedido", observacion: "💬 Comentario de un cliente sobre las tartas", recado_para_equipo: "📝 Recado para el equipo", queja_u_observacion: "🚨 QUEJA U OBSERVACIÓN SOBRE LAS TARTAS — aviso inmediato (faltan sus datos)" };
   const encabezado = encabezados[a.tipo] || "📣 Aviso del bot";
   _botAvisar(encabezado, String(a.nota || "") + "\nConversación: " + ctx.conversacionId, { sinWhatsapp: true });
-  if (a.tipo !== "observacion") botAlertaPersonal(SpreadsheetApp.getActiveSpreadsheet(), "avisar", a.tipo || "otro", encabezado, "[" + ctx.canal + "] " + String(a.nota || "") + " (conv. " + ctx.conversacionId + ")", ctx.conversacionId);
+  if (a.tipo !== "observacion") botAlertaPersonal(SpreadsheetApp.getActiveSpreadsheet(), "avisar", a.tipo || "otro", encabezado, botDetalleAlerta(ctx.canal, a.nota, ctx.conversacionId), ctx.conversacionId);
   return { ok: true, mensaje: "Ya se avisó al equipo; sigue con el pedido." };
 }
 
@@ -836,5 +853,5 @@ function _botBitacora(ctx, mensaje, respuesta) {
     let hoja = ss.getSheetByName("Bot_Log");
     if (!hoja) { hoja = ss.insertSheet("Bot_Log"); hoja.appendRow(["fecha", "conversacion", "cliente", "bot", "herramientas", "pedido", "handoff", "alerta", "ms_total", "ms_ia", "ms_herramientas", "vueltas_ia"]); hoja.setFrozenRows(1); }
     hoja.appendRow([new Date(), ctx.conversacionId, mensaje, respuesta, ctx.herramientas.join(", "), ctx.pedido ? ctx.pedido.id : "", ctx.handoff, ctx.alerta, Date.now() - ctx.inicio, ctx.ms.ia, ctx.ms.herramientas, ctx.ms.vueltas]);
-  } catch (e) { }
+  } catch (e) { Logger.log("Bot_Log no se pudo escribir: " + e); }
 }

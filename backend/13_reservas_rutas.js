@@ -88,22 +88,14 @@ return { ok:true, mensaje:"Reserva "+idVenta+" convertida a venta", total };
 }catch(err){ return {ok:false,error:String(err&&err.message?err.message:err)}; }
 finally{ try{lock.releaseLock();}catch(_e){} }
 }
-// Libera la reserva: usa eliminarMovimiento (soft delete) para devolver stock
+// Libera la reserva (soft delete). eliminarMovimiento libera lo apartado y no repone: la reserva nunca descontó stock.
+// Los pedidos de Maite y Shopify no se liberan aquí: van por pedidoNoRecogido (los anota en la campaña y en el tablero).
 function liberarReserva(body, sesion) {
 const { idVenta, motivo } = body;
 if (!idVenta) return { ok:false, error:"Falta idVenta." };
 requierePuedeVender(sesion);
-try{
-  const ss=SpreadsheetApp.getActiveSpreadsheet(); const h=ss.getSheetByName("Ventas");
-  const headers=h.getRange(1,1,1,h.getLastColumn()).getValues()[0];
-  const idxTipo=headers.indexOf("tipo_op"), idxAnul=headers.indexOf("estado_anul");
-  const datos=h.getDataRange().getValues();
-  for(let i=1;i<datos.length;i++){ const r=datos[i]; if(r[0]!==idVenta)continue;
-    if(idxAnul!==-1&&r[idxAnul]==="ANULADO")continue;
-    if(idxTipo!==-1&&r[idxTipo]!=="Reservado")continue;
-    try{ invLiberar(ss,r[4],r[5],r[3],Number(r[6])||0,"apartado",idVenta,sesion.usuario); }catch(e){}
-  }
-}catch(e){}
+const pedido = pedidoLeer(SpreadsheetApp.getActiveSpreadsheet(), idVenta);
+if (pedido && pedido.referencia) return { ok:false, error:"Es un pedido (" + pedido.referencia + "): márcalo como No llegó." };
 return eliminarMovimiento({ hoja:"Ventas", id:idVenta, motivo:motivo||"Reserva liberada", _liberacionReserva:true }, sesion);
 }
 // Endpoint helper: sucursales que el usuario puede operar

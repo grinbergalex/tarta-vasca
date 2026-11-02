@@ -42,9 +42,11 @@ const hojaVentas = ss.getSheetByName("Ventas");
 const datosVentas = hojaVentas?hojaVentas.getDataRange().getValues():[];
 const headersVentas = datosVentas.length > 0 ? datosVentas[0] : [];
 const idxEstadoAnul = headersVentas.indexOf("estado_anul");
+const idxTipoOpV = headersVentas.indexOf("tipo_op");
 const gruposVentas = {};
 for (let i = 1; i < datosVentas.length; i++) {
 if (idxEstadoAnul !== -1 && datosVentas[i][idxEstadoAnul] === "ANULADO") continue;  // saltar anuladas
+if (idxTipoOpV !== -1 && datosVentas[i][idxTipoOpV] === "Reservado") continue;     // apartados y pedidos sin entregar: aún no son ingreso
 const [idVenta,fecha,,sucursal,sabor,tamano,cantidad,precio,subtotal,canal] = datosVentas[i];
 if (!idVenta) continue;
 if (!gruposVentas[idVenta]) gruposVentas[idVenta]={idVenta,fecha,sucursal,canal,items:[]};

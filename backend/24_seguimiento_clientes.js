@@ -3,8 +3,9 @@
 //
 // Lo que el sistema hace por su cuenta, sin que nadie lo pida:
 //  1. CIERRE DEL DÍA (pedidosCierreDelDia, trigger de las 21:00, ya cerradas todas las sucursales):
-//     - los pedidos para recoger que ya pasaron su hora límite pasan a POR REVISAR y SIGUEN APARTADOS (nada se cancela solo:
-//       una persona decide), y esa misma noche se le manda al cliente un mensaje ofreciendo reagendar;
+//     - los pedidos para recoger que ya pasaron su hora límite, y los de domicilio que no se entregaron ese día, pasan a POR
+//       REVISAR y SIGUEN APARTADOS (nada se cancela solo: una persona decide), y esa misma noche se le manda al cliente un
+//       mensaje ofreciendo reagendar;
 //     - a Rebeca y a Yessenia les llega el reporte de las tartas apartadas que no se entregaron.
 //  2. FEEDBACK: al marcar un pedido como entregado se programa, para FEEDBACK_DIAS días después, un mensaje preguntando
 //     "¿cómo te fue?".
@@ -93,9 +94,9 @@ function _mensajesHoja(ss) {
   return hoja;
 }
 
-function _mensajeTexto(tipo, nombre, llave) {
+function _mensajeTexto(tipo, nombre, llave, domicilio) {
   const saludo = "Hola" + (nombre ? " " + nombre : "") + ", ";
-  if (tipo === MENSAJE_TIPO.REAGENDAR) return saludo + "hoy no pudiste pasar por tu pedido " + llave + " y tu tarta sigue apartada. ¿Te la reagendamos para mañana o para otra fecha? Respóndeme por aquí con el día y la hora que te acomoden.";
+  if (tipo === MENSAJE_TIPO.REAGENDAR) return saludo + (domicilio ? "hoy no pudimos entregarte tu pedido " : "hoy no pudiste pasar por tu pedido ") + llave + " y tu tarta sigue apartada. ¿Te la reagendamos para mañana o para otra fecha? Respóndeme por aquí con el día y la hora que te acomoden.";
   return saludo + "¿cómo te fue con tu tarta? Cuéntame qué te pareció: tu opinión nos ayuda a mejorar.";
 }
 
@@ -112,7 +113,7 @@ function mensajeClienteProgramar(ss, d) {
   const nueva = ultima + 1;
   hoja.getRange(nueva, 1, 1, 1).setNumberFormat("@");
   hoja.getRange(nueva, 10, 1, 1).setNumberFormat("@");
-  hoja.getRange(nueva, 1, 1, MENSAJES_ENCABEZADO.length).setValues([[d.programado, d.tipo, d.llave, d.cliente, d.idContacto, d.canal, _mensajeTexto(d.tipo, nombre, d.llave), "PENDIENTE", "", ""]]);
+  hoja.getRange(nueva, 1, 1, MENSAJES_ENCABEZADO.length).setValues([[d.programado, d.tipo, d.llave, d.cliente, d.idContacto, d.canal, _mensajeTexto(d.tipo, nombre, d.llave, d.domicilio), "PENDIENTE", "", ""]]);
   return true;
 }
 
@@ -159,14 +160,36 @@ function _cierreAbiertos(ss, hoyIso) {
   return _tableroLeerPedidos(ss, ventas, idx).filter(function (p) { return PEDIDO_ESTADOS_ABIERTOS.indexOf(p.estado) !== -1 && p.fechaEntrega && p.fechaEntrega <= hoyIso; });
 }
 
-// "Polanco: TV-1028-01 Alex 1 Lotus Mediana 16:00; … | Cuajimalpa: …"
+// Control de apartados completados (pedido de Alex, 1-nov): los que debían entregarse hoy y ya se entregaron.
+function _cierreEntregadosHoy(ss, hoyIso) {
+  const ventas = ss.getSheetByName("Ventas");
+  return _tableroLeerPedidos(ss, ventas, _pedidoIndices(ventas)).filter(function (p) { return p.estado === PEDIDO_ESTADO.ENTREGADO && p.fechaEntrega === hoyIso; });
+}
+
+// Un renglón por pedido, igual que el reporte de las 18:00: "• 13:00 Alex: 1 Queso Mediana · 🔑 TV-1101-02"
+function _reporteNocheRenglon(p) {
+  return "• " + (p.hora ? p.hora + " " : "") + (p.cliente || "sin nombre") + ": " + p.items.join(", ") + " · 🔑 " + p.referencia;
+}
+
+// Control de apartados completados (pedido de Alex, 1-nov).
+function _reporteEntregadosTexto(entregados) {
+  if (!entregados.length) return "✅ *Entregados hoy:* ninguno";
+  return "✅ *Entregados hoy (" + entregados.length + ")*\n" + entregados.map(_reporteNocheRenglon).join("\n");
+}
+
+// Lo que sigue apartado, con una sección por punto de venta y una de Domicilio (como el reporte de las 18:00).
 function _reporteNocheTexto(abiertos) {
-  if (!abiertos.length) return "Todo lo apartado se entregó.";
-  const porSucursal = {};
-  abiertos.forEach(function (p) { (porSucursal[p.sucursal] = porSucursal[p.sucursal] || []).push(p); });
-  return Object.keys(porSucursal).sort().map(function (s) {
-    return s + ": " + porSucursal[s].map(function (p) { return p.referencia + " " + (p.cliente || "sin nombre") + " " + p.items.join("+") + (p.hora ? " " + p.hora : ""); }).join("; ");
-  }).join(" | ");
+  if (!abiertos.length) return "🎉 Todo lo apartado se entregó.";
+  const porSeccion = {};
+  abiertos.forEach(function (p) {
+    const seccion = String(p.canal) === BOT_CANAL_DOMICILIO ? ENTREGAS_SECCION_DOMICILIO : p.sucursal;
+    (porSeccion[seccion] = porSeccion[seccion] || []).push(p);
+  });
+  const orden = ENTREGAS_TIENDAS.concat([ENTREGAS_SECCION_DOMICILIO]).filter(function (s) { return porSeccion[s]; })
+    .concat(Object.keys(porSeccion).filter(function (s) { return ENTREGAS_TIENDAS.indexOf(s) === -1 && s !== ENTREGAS_SECCION_DOMICILIO; }));
+  return "⏳ *Siguen apartadas (" + abiertos.length + ")*\n" + orden.map(function (s) {
+    return "\n" + (s === ENTREGAS_SECCION_DOMICILIO ? "🚚 " : "📍 ") + "*" + s + "*\n" + porSeccion[s].map(_reporteNocheRenglon).join("\n");
+  }).join("\n") + "\n\nMañana se resuelven en Apartados del POS: ✓ Entregado o ✗ No llegó.";
 }
 
 function _reporteNocheRegistrar(ss, titulo, detalle, aviso, ahora) {
@@ -179,7 +202,7 @@ function _seguimientoProgramarReagenda(ss, pedido, ahora) {
   const seguimiento = seguimientoLeer(ss, pedido.referencia);
   mensajeClienteProgramar(ss, {
     tipo: MENSAJE_TIPO.REAGENDAR, llave: pedido.referencia, cliente: pedido.cliente, idContacto: seguimiento ? seguimiento["Id ManyChat"] : "",
-    canal: seguimiento ? seguimiento["Canal"] : "", programado: _fechaHora(ahora)
+    canal: seguimiento ? seguimiento["Canal"] : "", programado: _fechaHora(ahora), domicilio: String(pedido.canal) === BOT_CANAL_DOMICILIO
   });
 }
 
@@ -194,12 +217,15 @@ function pedidosCierreDelDia(ahora) {
     pedidoAnotar(ss, p.idVenta, { estado: PEDIDO_ESTADO.POR_REVISAR });
     tableroMarcarEstado(p.referencia, PEDIDO_ESTADO.POR_REVISAR);
     seguimientoActualizar(ss, p.referencia, { "Estado": PEDIDO_ESTADO.POR_REVISAR });
+    excelPedidoMarcarEstado(ss, p.referencia, PEDIDO_ESTADO.POR_REVISAR);
     _seguimientoProgramarReagenda(ss, p, momento);
     porRevisar++;
   });
   const abiertos = _cierreAbiertos(ss, hoyIso);
-  const titulo = "Reporte de la noche " + Utilities.formatDate(momento, TZ_MX, "dd/MM") + ": " + (abiertos.length ? abiertos.length + " apartadas sin entregar" : "nada pendiente");
-  const detalle = _reporteNocheTexto(abiertos);
+  const entregados = _cierreEntregadosHoy(ss, hoyIso);
+  const titulo = "Reporte de la noche " + Utilities.formatDate(momento, TZ_MX, "dd/MM") + ": " + entregados.length + " entregadas · "
+    + (abiertos.length ? abiertos.length + " apartadas sin entregar" : "nada pendiente");
+  const detalle = _reporteEntregadosTexto(entregados) + "\n\n" + _reporteNocheTexto(abiertos);
   const aviso = manychatAvisarEquipo(ss, MANYCHAT_CLAVE_FLUJO_REPORTE, titulo, detalle, MANYCHAT_MAX_REPORTE);
   _reporteNocheRegistrar(ss, titulo, detalle, aviso, momento);
   return { ok: true, porRevisar: porRevisar, apartadasSinEntregar: abiertos.length, reporte: _pedidoResultadoAviso(aviso), mensajes: mensajesClientesEnviar(ss, momento) };

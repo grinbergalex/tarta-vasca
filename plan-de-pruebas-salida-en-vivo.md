@@ -6,9 +6,12 @@ Se sale en vivo cuando todo lo marcado **OBLIGATORIA** esté en ✅.
 ## A. El pedido por el bot
 | # | Prueba | Estado |
 |---|---|---|
-| A1 | Pedido para recoger otro día: queda agendado, trae llave y hora | ✅ |
-| A2 | Pedido para recoger **hoy**: manda el aviso por WhatsApp (OBLIGATORIA) | ✅ con texto normal · ⬜ con la plantilla aprobada |
+| A1 | Pedido para recoger otro día: queda agendado, trae llave y hora | ✅ · ✅ **probado en Instagram real el 1-nov en la noche** (pruebas @103): TV-1101-03 Lotus Mediana, Cuajimalpa, miércoles 4 a las 11:00; la confirmación llegó una vez, con llave y sin "el equipo te confirma"; quedó una sola vez en Tablero y en la pestaña de Cuajimalpa (aunque el "sí" entró dos veces), apartada en inventario y en el reporte de las 18:00 del martes |
+| A1b | Turno que crea el pedido tarda más de lo que ManyChat espera (~19 s) | 🔴→✅ el 1-nov el primer pedido (TV-1101-02) se creó pero la llave nunca le llegó al cliente (turno de 20 s). Arreglado: si el turno pasa de `BOT_RESCATE_SEGUNDOS` (16) el sistema manda la respuesta por su cuenta (flujo de mensaje al cliente) y la deja vacía para que un sondeo tardío no la repita |
+| A1c | Piloto: escribir "prueba" a media conversación duplica la respuesta | ⚠️ solo en el piloto: el flujo espera la respuesta del cliente y además el disparador "PRUEBA" arranca otro recorrido. Escribir "prueba" solo en el primer mensaje. En vivo (disparador sin palabra) no pasa |
+| A2 | Pedido para recoger **hoy**: manda el aviso por WhatsApp (OBLIGATORIA) | ✅ con texto normal · ✅ 1-nov: el flujo `Aviso pedido hoy (sistema)` ya usa la plantilla aprobada `aviso_pedido_hoy` (antes mandaba texto "PRUEBA:" solo dentro de 24 h); ManyChat aceptó 2 avisos de prueba a Alex (20:08 y 20:12) · ✅ Alex confirmó que le llegaron por WhatsApp (el "Plantilla no encontrada" de ManyChat es solo de la vista) · ✅ **probado por Instagram real el 1-nov 20:33** con el reloj simulado de pruebas (Maite creyó que eran las 13:00): Lotus mediana para hoy en Polanco la negó por tener menos de 2 piezas y ofreció alternativas; Queso mediana hoy 15:00 → TV-1101-04, confirmación con llave, aviso de WhatsApp a Alex, Tablero y pestaña de Polanco, apartada en inventario · plantilla visual tipo ticket `pedido_hoy_ticket` (diseño elegido por Alex) **enviada a revisión de Meta el 1-nov 20:28** desde ManyChat, con sus variables ligadas a `aviso_referencia`, `aviso_donde`, `aviso_cliente`, `aviso_pedido`, `aviso_pago` (pruebas @105 ya los llena) · ⬜ al aprobarse: cambiar el flujo `Aviso pedido hoy (sistema)` a `pedido_hoy_ticket` |
 | A3 | A domicilio sin teléfono: no crea el pedido y ofrece recoger | ✅ |
+| A3b | A domicilio por Instagram: cae al Excel de pedidos en su fecha, como si lo capturara una persona, y sale en el mensaje de las 18:00 (OBLIGATORIA) | ✅ **probado en Instagram real el 1-nov** (pruebas @107-108): TV-1101-05 Pistache Grande + Lotus Mediana, miércoles 4, Bosques de las Lomas, $1,200 efectivo → renglón en el Excel de prueba con fecha 04/11 y cada tarta en su columna; en el reporte, "🆕 Entraron hoy para otros días". Sabor inexistente (Taro) lo rechaza y ofrece el menú · ⬜ en producción poner `excel_pedidos_id` con el id del Excel real |
 | A4 | Recoger exige hora dentro del horario; si es hoy, al menos 1 h después de ahora | ✅ |
 | A5 | Tarjeta solo al recoger (nunca a domicilio) | ✅ |
 | A6 | "Elige tú": recomienda UNA y espera el sí antes de anotar | ✅ |
@@ -40,6 +43,8 @@ Se sale en vivo cuando todo lo marcado **OBLIGATORIA** esté en ✅.
 | C3 | Un correo no autorizado no puede cambiar el estado (se deshace) | ✅ simulado |
 | C4 | Repetir una acción ya hecha no hace nada | ✅ |
 | C5 | La auditoría de inventario sigue en verde después del ciclo (OBLIGATORIA) | ✅ |
+| C6 | Entregar un pedido de Maite/Shopify desde la pantalla de **Apartados del POS** registra UNA venta con la forma de pago del pedido; "No llegó" libera sin tocar el físico; sin "Liberar" (OBLIGATORIA) | ✅ backend en pruebas @110 (repetir la entrega se rechaza; auditoría en verde) · ✅ tarjeta del POS con datos de ejemplo · ⬜ ver la pantalla en el POS real después de publicar |
+| C7 | Control de apartados cerrados: el renglón del Excel de pedidos se marca ✅ ENTREGADO / ✗ NO RECOGIDO / ⏳ POR REVISAR y el reporte de la noche trae "Entregados hoy" | ✅ pruebas @110 (Excel de prueba) |
 
 ## D. Cierre del día y seguimiento
 | # | Prueba | Estado |
@@ -49,6 +54,8 @@ Se sale en vivo cuando todo lo marcado **OBLIGATORIA** esté en ✅.
 | D3 | Reporte de la noche a Rebeca y Yessenia | ✅ armado · ✅ flujo creado · ⬜ plantilla y prueba real |
 | D4 | Feedback a los 2 días de entregado | ✅ programación · ✅ flujos de WhatsApp e Instagram creados · ⬜ plantilla para fuera de 24 h |
 | D5 | Registro de lealtad suma entregas, no recogidos y total | ✅ |
+| D6 | Reporte de las 18:00 a Rebeca y Yessenia: entregas de mañana por sección (Polanco, Cuajimalpa, Bosques, Domicilio) y lo que falta (OBLIGATORIA) | ✅ en pruebas @100 (3 pedidos, detectó la falta de Frutos Rojos Grande en Polanco, llegó a Alex con secciones) · ⬜ plantilla de WhatsApp para fuera de 24 h |
+| D7 | Los pedidos a domicilio del bot y de Shopify llegan a Reparto | 🔴 hoy no llegan (solo Ventas y Tablero); el reporte de las 18:00 los marca · 💬 decidir |
 
 ## E. Alertas al personal (WhatsApp personal de Rebeca y Yessenia)  — **OBLIGATORIAS**
 Construido (31-oct, `25_alertas_bot.js`) y probado hablando con el bot en el ambiente de pruebas. Cada alerta queda en la hoja `Alertas_Bot`. Flujo `Alerta bot (sistema)` creado en ManyChat (1-nov, texto normal dentro de 24 h): la alerta de una queja llegó de verdad a Alex. Fuera de las 24 h hace falta una plantilla aprobada por Meta.
@@ -64,7 +71,8 @@ Construido (31-oct, `25_alertas_bot.js`) y probado hablando con el bot en el amb
 ## E2. Conversaciones pendientes y reincorporación de Maite (1-nov)
 | # | Prueba | Estado |
 |---|---|---|
-| E7 | Recordatorio urgente cada 5 min a Rebeca y Yessenia hasta que alguien marque ATENDIDA, con tope de 12 | ✅ pruebas locales · ⬜ en vivo con la hoja real |
+| E7 | Recordatorio urgente cada 5 min a Rebeca y Yessenia hasta que alguien marque ATENDIDA, con tope de 12 | ✅ pruebas locales · ⬜ en vivo con la hoja real · 🔴 1-nov 19:40: el trigger `botRecordatoriosPendientes` falla en pruebas ("Los parámetros ((class),String,String) no coinciden… Utilities.formatDate": una fecha llega como texto) — revisar en el punto de alertas |
+| E7b | `Bot_Log` no anotó los turnos del 1-nov en la noche aunque `BOT_LOG` = 1 (último renglón 13:52) | 🔴 revisar: sin bitácora no se puede hacer la revisión semanal de conversaciones |
 | E8 | Solo recuerda con alguna sucursal abierta (horarios de `HORARIOS_SUCURSAL`) | ✅ pruebas locales |
 | E9 | Con la conversación ATENDIDA Maite calla; si el cliente calla 4 h y vuelve a escribir, Maite se reincorpora | ✅ pruebas locales · ⬜ en Instagram real |
 | E10 | La disculpa por la espera a los 5 min si el cliente insiste | ✅ pruebas locales · ⬜ en Instagram real |
@@ -92,17 +100,43 @@ Construido (31-oct, `25_alertas_bot.js`) y probado hablando con el bot en el amb
 | G2 | Solo contesta a quien escribe la palabra "prueba" mientras dura el piloto (OBLIGATORIA) | ⬜ |
 | G3 | Cuando el bot pasa a una persona, el flujo se pausa | ✅ construido en el servidor y en el flujo de ManyChat · ✅ probado en Instagram real (31-oct): pidió hablar con una persona, la siguiente respuesta fue el aviso de una sola vez y el tercer mensaje no tuvo respuesta |
 | G4 | Una respuesta larga del bot no se corta ni se repite (consultas de 10 s o más) | ✅ en pruebas: primera llamada cortada a los 6 s, el sondeo recogió la respuesta de 11 s, la misma las dos veces y un solo turno registrado |
-| G5 | Plantillas de WhatsApp aprobadas por Meta (aviso, reporte, reagendar, feedback) | 🔴 en revisión / sin crear |
+| G5 | Plantillas de WhatsApp aprobadas por Meta (aviso, reporte, reagendar, feedback) | ✅ `aviso_pedido_hoy` aprobada · 🔴 `alerta_bot_equipo`, `reagendar_pedido`, `feedback_pedido` y `reporte_apartados_noche` **En revisión** (revisado en WhatsApp Manager el 1-nov en la noche; las cuatro siguen en Utilidad, ninguna rechazada). ManyChat aún no las lista: solo aparecen ahí ya aprobadas |
+| G6 | ManyChat Pro: la prueba termina el 5-nov-2026 (cobro anual USD 348). Sin Pro dejan de funcionar las solicitudes externas, o sea Maite | 💬 decidir Alex antes del 5-nov |
 
 ## H. Antes de publicar en el sistema real
 | # | Prueba | Estado |
 |---|---|---|
-| H1 | Comparar la versión viva con el repo (OBLIGATORIA) | ✅ la v128 es idéntica a main |
+| H1 | Comparar la versión viva con el repo (OBLIGATORIA) | ✅ la v128 es idéntica a main (revisado otra vez el 1-nov en la noche: solo cambia el fin de línea del script 97, y el código subido al proyecto (HEAD) es igual a la v128). Repetirlo justo antes del `clasp push` |
 | H2 | **Copia de seguridad de la hoja real** justo antes de publicar (OBLIGATORIA) | ⬜ |
 | H3 | Plan de reversa: reapuntar la implementación a la v128 (un comando) | ✅ conocido |
 | H4 | Claves en el proyecto real: bot, Anthropic, ManyChat (las pone Alex) | ⬜ |
 | H5 | Configuración real: destinatarios, flujos, datos de transferencia | ⬜ |
 | H6 | Instalar los avisos automáticos (tablero, mensajes; el cierre de las 21:00 al final) | ⬜ |
+
+## Pasos para publicar (solo cuando Alex diga "publícalo")
+La rama SÍ toca el frontend (`app.js`, `reparto.js`, `index.html`: Apartados con pedidos, venta de Ruta, reportes sin reservas): el backend
+se publica primero y el merge a `main` (POS) inmediatamente después, con el `?v=` ya subido.
+1. **Respaldo** de la hoja real (H2): Archivo → Hacer una copia, con fecha en el nombre.
+2. **Comparar otra vez** la versión viva con `main` (H1). Si producción ya no es @128 o el HEAD del proyecto cambió, parar.
+3. Merge de `feat/bot-instagram-cerebro` a `main` y push (el mismo día que se publica el backend).
+4. `cd backend && clasp push`, luego `clasp -P backend create-version "v9 bot de Instagram"` y
+   `clasp -P backend update-deployment AKfycbxJfDX3lwu5AE9GDA1WGZ3_MP3AAGPsCz54CdzS_cnE9zxQArN1zLmjnZixwc2A13eF --versionNumber <N>`.
+   **Reversa**: el mismo `update-deployment` con `--versionNumber 128`.
+5. **Claves (las pone Alex)** en Propiedades del script real: `BOT_TOKEN` (nuevo, distinto al de pruebas), `MANYCHAT_API_TOKEN` y
+   `ANTHROPIC_API_KEY` (revisar si ya existe por `iaProcesar`).
+6. Correr `setupBotManual` (103) y copiar el contenido de `Bot_Manual` de la hoja de pruebas.
+7. **Configuración real**: `aviso_hoy_manychat` (para el piloto, solo el id de Alex), `manychat_flujo_aviso`, `manychat_flujo_alerta`,
+   `manychat_flujo_sugerencia`, `manychat_flujo_reporte`, `manychat_flujo_entregas_manana`, `manychat_flujo_cliente_instagram`, `manychat_flujo_cliente_whatsapp`
+   (los mismos ns de los flujos de pruebas: es la misma cuenta de ManyChat), `bot_correo_avisos`, `pedido_politica_no_recoger`,
+   `pedido_gracia_dias`, `pedidos_hoja_autorizados`, `pedido_datos_transferencia` ("Banco Santander · Titular: Rebeca Cielak K · CLABE
+   014180606093201951") y `excel_pedidos_id` = `1_TM6QEAMk0P7oWuSCiSFasqFKnufE3xGYkQEl2d9dK4` (Excel de pedidos real).
+   Cada flujo que sea **plantilla de Meta** lleva además `<clave del flujo>_es_plantilla` = si (se le manda todo en una línea): hoy
+   `manychat_flujo_aviso_es_plantilla` = si. Al aprobarse cada plantilla nueva, cambiar ese flujo a la plantilla y poner su `_es_plantilla`.
+8. **Instalar avisos automáticos** (H6): `instalarTableroPedidos`, `instalarMensajesClientes`, `instalarRecordatoriosPendientes`,
+   `instalarMenuEstadoPedidos`, `instalarEntregasManana` (18:00) y, al final, `instalarRevisionDiariaPedidos` (cierre de las 21:00).
+9. **ManyChat (G1)**: en `Bot Tarta Vasca - PRUEBA` y en el botón Atendida de `Alerta bot (sistema)`, cambiar la URL y el token de pruebas
+   por los reales. La palabra "PRUEBA" se queda como disparador durante el piloto (G2).
+10. Prueba real mínima (sección I).
 
 ## I. Prueba real mínima (ya en producción, con "prueba")
 1. Alex hace un pedido para otro día y lo ve en el Tablero, en su pestaña y en el inventario.

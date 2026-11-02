@@ -364,7 +364,8 @@ versión viva contra el repo (regla dura de arriba).
 - **Quién gestiona un pedido** (`_pedidoPuedeGestionar`): todos lo ven; lo confirma el punto de venta de ESA sucursal
   (para recoger) o quien hace las rutas, rol Chofer (a domicilio). Dueña y Administradora pueden con todo. Entregar y
   "no llegó" no los hace el Chofer hoy.
-- **Recordatorio** `pedidosRecordatorioSinConfirmar` (`instalarRecordatorioPedidos()`, cada `pedido_recordatorio_horas`,
+- **Recordatorio** (⚠️ NO instalar: desde el 1-nov nadie confirma pedidos a mano; lo reemplaza el reporte de las 18:00)
+  `pedidosRecordatorioSinConfirmar` (`instalarRecordatorioPedidos()`, cada `pedido_recordatorio_horas`,
   por defecto 2, de 9 a 20 h): lista lo que llegó hoy y nadie confirmó, a todo el equipo y, por WhatsApp, a los números
   de `aviso_whatsapp_resumen` (la Dueña).
 - **SIGUIENTE ETAPA (pedido de Alex, 27-oct-2026): mandar el recibo al cliente cuando el chofer marque el pedido como
@@ -413,8 +414,96 @@ versión viva contra el repo (regla dura de arriba).
 - **Maite en comentarios de fotos y stories (decisión de Alex, 1-nov; SOLO cuando se esté en vivo, no en pruebas)**: que siga la conversación **en la foto** (público) y que toda la información de La Tarta Vasca (precios, disponibilidad, sabores, horarios) se dé ahí aunque sea pública; al llegar el momento de **compartir datos personales (dirección, teléfono)** le pide al cliente pasarse al mensaje directo y ahí sigue el pedido. Pendiente de construir: hoy el flujo solo se activa con mensajes directos. Hay que comprobar en ManyChat qué permite el disparador "Comentarios de publicaciones" (respuesta pública, si cada comentario nuevo en el hilo vuelve a disparar, límite de un mensaje privado por comentario) y que el bot detecte y nunca pida ni acepte datos personales en público. Las respuestas a stories llegan como mensaje directo (son privadas por naturaleza), así que ahí no aplica lo "público".
 - **Más motivos de alerta (decisiones de Alex, 1-nov)**: alianza o colaboración, pedidos recurrentes o cadena de restaurantes (`pedidos_recurrentes_o_cadena`), amenaza, extorsión, robo o tema legal (`amenaza_o_legal`, urgente: Maite responde neutra, sin admitir culpa), recados dirigidos al equipo (`recado_para_equipo`, no pausa) y quien se dice famoso o con muchos seguidores (se trata como cualquier cliente; si pide cortesías es colaboración). Un perfil verificado o con más de 50,000 seguidores **no se puede detectar**: ManyChat no expone esos datos para Instagram (solo ventana de mensajería, última interacción, última vez visto y optado por ingreso); haría falta la API de perfil de Instagram con permisos de Meta. La charla fuera de tema se contesta en una línea y se regresa a las tartas.
 - **Consistencia de fechas (1-nov)**: `calcular_fecha_entrega` reutiliza la fecha ya validada en la conversación (`_botCalcularFechaMemo(..., true)`), y si Maite no repite los productos al volver a consultarla se usan los últimos (`_botItemsOMemoria`): sin productos el sistema cree que no hay piezas listas y niega fechas posibles. Se vio una vez que "mañana" se aceptó y se negó al confirmar; no se repitió. `Bot_Log` guarda ahora cómo se consultó cada fecha (entrega, sucursal, fecha, productos, resultado) para diagnosticarlo.
+- **Nadie le contesta el pedido al cliente (decisión de Alex, 1-nov)**: Maite lo cierra con la llave, el día, la hora y el pago; el
+  mensaje final ya no dice "el equipo te confirma". El estado POR CONFIRMAR / CONFIRMADO queda como marca interna de la sucursal.
+- **Reporte de las 18:00, entregas de mañana (1-nov)** (`26_entregas_manana.js`, `pedidosEntregasManana`, instalar una vez con
+  `instalarEntregasManana()`): a Rebeca y Yessenia por WhatsApp (ManyChat; destinatarios `aviso_hoy_manychat`) un mensaje con una sección
+  por punto de venta (Polanco, Cuajimalpa, Bosques) y una de Domicilio: cuántos pedidos y tartas, ✅ todo hay / ⚠️ falta (hornear y
+  transferir; en Bosques "por hornear", que incluye domicilio) y un renglón por pedido (hora, cliente, piezas, total, pago, llave). Entran
+  todos los orígenes de Ventas (bot, Shopify, POS) y, en Domicilio, también los capturados a mano en Reparto. Falta = piezas de mañana −
+  (inventario de la tienda − lo que aún se entrega hoy). No cuenta ventas de mostrador de mañana ni pedidos que lleguen después de las 18:00.
+  Cada sección va en su propio campo de ManyChat (`entregas_polanco`, `entregas_cuajimalpa`, `entregas_bosques`, `entregas_domicilio`, más
+  `aviso_referencia` con la fecha) dentro del flujo `Entregas manana (sistema)` (clave `manychat_flujo_entregas_manana`, ns
+  `content20261101202729_499516`, texto normal dentro de 24 h, con saltos de línea). Cuando el flujo use plantilla de WhatsApp (sus variables
+  no aceptan saltos de línea), poner `manychat_entregas_una_linea` = si. Huella completa en `Reportes_Entregas`. Probado en pruebas @100 con
+  `probarEntregasManana()` (solo pruebas): detectó la falta de Frutos Rojos Grande en Polanco y llegó a Alex.
+- ⚠️ **Los pedidos a domicilio del bot y de Shopify NO entran a Reparto** (solo a Ventas y al Tablero): quien arma la ruta no los ve ahí.
+  Decisión de Alex (1-nov): las rutas se planean A MANO, no con la pantalla de Reparto (que además está apagada, ver abajo). Los
+  domicilios de Maite deben caer al **Excel de pedidos** ("Pedidos Tarta Vasca (Respuestas)", hoja "Respuestas de formulario 1", de
+  latartavasca@gmail.com: marca temporal, nombre, fecha de entrega, dirección, teléfono y una columna por sabor y tamaño) en su fecha,
+  como si los hubiera capturado una persona, y salir en el reporte de las 18:00 (sección Domicilio: "Confirmen que estén en la ruta de
+  mañana"). **Construido (1-nov, `27_excel_pedidos.js`, `pedidosDomicilioAlExcel`)**: en cada revisión del tablero (cada 5 min, no en
+  el turno de Maite) cada domicilio abierto de Maite (origen Instagram/WhatsApp) con llave se agrega al final de esa hoja como lo haría
+  una persona: marca de hora, nombre, fecha de entrega (Date), dirección, teléfono y la cantidad en la columna de su sabor y tamaño
+  (se emparejan por nombre sin acentos ni "Tarta de"; "Taro" → "Taro velvet" si es la única que empieza igual). Lo que no tiene columna
+  en el formulario va en la dirección entre corchetes. En la columna 58 (vacía) va "Maite · TV-… · pago · total". No se repite: hoja
+  `Excel_Pedidos_Anotados` del Sistema. Clave de Configuración `excel_pedidos_id` (vacía = no hace nada; en producción el id del Excel
+  real `1_TM6QEAMk0P7oWuSCiSFasqFKnufE3xGYkQEl2d9dK4`). El reporte de las 18:00 agrega en Domicilio "🆕 Entraron hoy para otros días
+  (ya en el Excel)". Probado en pruebas @108 con un Excel de prueba que solo copia los encabezados del real (TV-1101-05 cayó en Lotus
+  MEDIANA y Pistache GRANDE, fecha 04/11).
+- 🔴 **BUG EN PRODUCCIÓN (encontrado el 1-nov): el módulo de Reparto del backend está desactivado desde el 16-jul-2026** (commit
+  24e6ff5, al dividir el backend en archivos). En `14_reparto_pedido_sugerido.js` el comentario que abre "MÓDULO REPARTO A DOMICILIO"
+  termina en `===== /` en vez de `*/`, así que todo hasta el siguiente `*/` (≈ líneas 365-688: `repartoSetup`, `repartoEstado`,
+  `repartoAddPedido`, `repartoPlanear`, `repartoCerrarRuta`, `_repLeerPedidos`…) es comentario. Las acciones del API que los llaman
+  fallan con ReferenceError y `getProduccionManana` deja fuera, en silencio, los pedidos de Reparto. Está igual en `main` y en la v128.
+  Arreglarlo reactiva el módulo en producción: probarlo antes en pruebas y confirmar con Rebeca si hoy usan la pantalla de Reparto.
+- **Entregar desde el POS (decisión de Alex, 1-nov, opción A)**: la venta de un pedido se registra en el POS, así que la pantalla de
+  **Apartados** (`getApartados`, `reparto.js` `apReload`) ahora muestra también los pedidos de Maite y de Shopify (canal Tienda o
+  Domicilio) con llave, hora, origen y forma de pago, y botones **"✓ Entregado"** (`pedidoEntregar`: apartado → venta UNA vez, con la
+  forma de pago que el cliente dio a Maite, `_pedidoMetodoDeNotas`) y **"✗ No llegó"** (`pedidoNoRecogido`). A esos pedidos NO se
+  les muestra "Liberar" (usa `eliminarMovimiento` y repondría tartas). Los domicilios los puede entregar el punto de venta de Bosques
+  (antes solo Dueña/Administradora). Control de cerrados: al entregar, no llegó o quedar POR REVISAR se marca la columna 59 del Excel
+  de pedidos ("✅ ENTREGADO dd/MM HH:mm", `excelPedidoMarcarEstado`) y el reporte de la noche trae "✅ Entregados hoy (N): …".
+  Probado en pruebas @110 (TV-1101-03 y TV-1101-05 entregados una sola vez, TV-1101-01 y -04 no llegó, auditoría en verde). La
+  pantalla del POS solo se probó con datos de ejemplo (no hay POS de pruebas): ⚠️ al publicar, el `reparto.js` nuevo va en `main` y
+  necesita el backend nuevo el MISMO momento (si no, "Entregado" falla).
+- **Venta de Ruta (decisión de Alex, 1-nov)**: Yessenia captura la venta de ruta en el POS al entregar (canal "Ruta") y, si no se
+  entregó, la cancela. Para que un domicilio de Maite o de Shopify no se venda dos veces, al elegir el canal **Ruta** en la venta sale
+  arriba la caja "🚚 Pedidos a domicilio ya apartados" (`rutaPedidosPendientes`, `reparto.js`; vencidos u hoy) con "✓ Entregado"
+  (`pedidoEntregar` con `canal: "Ruta"`: el apartado se vuelve UNA venta de canal Ruta) y "✗ No llegó". Probado en pruebas (TV-1101-07:
+  una sola fila Ruta / Transferencia / Venta, la segunda vez "ya se entregó", auditoría en verde); la caja, solo con datos de ejemplo.
+  Los de Shopify se descuentan de Cuajimalpa (ahí los aparta el sincronizador), aunque la tarta salga de Bosques.
+- **Shopify: los 12 pedidos abiertos (#1052-#1063) son reales** (pagados en línea, $9,450, Shopify los marca entregados). No se sabe si
+  la venta también se capturó en el POS: se le preguntó a Yessenia (1-nov). Si sí → solo liberar el apartado; si no → convertirlos en
+  venta (método Shopify) para que se descuenten una vez. Contacto de pruebas "Sara" (TV-1029-01) cerrado en pruebas el 1-nov.
+- **Triggers con fecha simulada**: un trigger instalable pasa un EVENTO como primer argumento; la función que recibe `ahora` para
+  pruebas debe usar `ahora instanceof Date ? ahora : new Date()` (así fallaba `botRecordatoriosPendientes`, ya corregido).
+- **Punto 6: cómo afectan los pedidos al resto del sistema (1-nov, probado en pruebas)**:
+  - 🔴 **Anular o liberar una reserva ya no inventa piezas** (`eliminarMovimiento`, 06): antes decidía por el canal ("Reservado") y los
+    apartados del POS (canal "Apartado") y los pedidos (Tienda/Domicilio) **reponían** stock que nunca se descontó, y además dejaban
+    `res_apartado` sin liberar. Ahora decide por `tipo_op`: una reserva se libera y no se repone. ⚠️ El bug de los apartados normales
+    estaba en producción ("Liberar" en Apartados) y es la causa probable de los apartados fantasma. ✅ **Publicado solo ese arreglo el
+    1-nov en la versión 129** (commit 1ee31d7 en `main`; 06 y 13); lo demás de esta rama sigue sin publicar. `liberarReserva` ya no libera
+    dos veces y rechaza los pedidos con llave ("márcalo como No llegó").
+  - **Reportes**: una reserva sin entregar ya no cuenta como venta: `_tipoOpVenta` (app.js) la clasifica "reserva" (chip "📦 Apartado sin
+    entregar", apagado por defecto) en diario, periodo, conciliación y utilidades; Utilidades (10), Seguimiento de ventas y Análisis
+    de demanda (12, `_ventaVendidaDeVerdad`) se saltan reservas y anuladas.
+  - **Al entregar un pedido** (`pedidoEntregar`): la venta cae el **día que se entrega** (columna B; la fecha del pedido queda en notas
+    como "Pedido hecho …" y el tablero la lee de ahí, `_tableroLlego`); todo domicilio queda canal **Ruta** (misma meta se entregue
+    desde Ruta o desde Apartados); la forma de pago desconocida queda **"Por definir"**, nunca Efectivo (inflaba la caja y mandaba
+    correos de diferencia). Shopify conserva "Shopify".
+  - Decidido (Alex, 1-nov): el efectivo que cobra el chofer en un domicilio entra a la caja de Bosques (así funciona hoy). La comisión
+    de "Shopify" ya está en la hoja Comisiones (−3%). Pendiente: revisar las fórmulas de "Espejo para Shopify" y "Resumen ventas por sabor
+    y canal" (no están en el código: si suman Ventas sin filtrar `tipo_op`, cuentan pedidos abiertos); y que la auditoría diaria
+    compare `res_apartado` contra las reservas abiertas de Ventas (hoy no lo detecta).
+- **Diseño de los WhatsApp al equipo (1-nov)**: el reporte de la noche va por secciones como el de las 18:00 (✅ entregados, ⏳ siguen
+  apartadas por 📍 tienda y 🚚 Domicilio, un renglón por pedido con 🔑 llave); las alertas, un dato por renglón (`botDetalleAlerta`);
+  el pedido para hoy, el ticket que eligió Alex (`pedidoTicketHoy`). ⚠️ El diseño (saltos de línea) solo llega como **texto normal**,
+  y WhatsApp solo entrega texto normal si la persona escribió a la línea en las últimas 24 h. ManyChat **no expone** esa ventana para
+  WhatsApp (ni por API: `last_interaction` viene vacío; ni como condición de flujo: solo existe para Instagram), así que no se puede
+  elegir solo. Regla: el flujo que es plantilla de Meta se marca `<clave>_es_plantilla` = si y recibe la versión de una línea; los
+  demás reciben el diseño. Lo que siempre llega con diseño será cada plantilla nueva al aprobarse (`pedido_hoy_ticket` ya enviada).
+- **Plantilla `entregas_manana` (reporte de las 18:00) enviada a Meta el 1-nov** (Utility, es_MX): "📋 *ENTREGAS DE MAÑANA* ·
+  {aviso_referencia}" y un renglón por sección (📍 Polanco, Cuajimalpa, Bosques, 🚚 Domicilio con `entregas_*`). Al aprobarse:
+  cambiar el flujo `Entregas manana (sistema)` a esa plantilla y poner `manychat_entregas_una_linea` = si (sus variables no
+  aceptan saltos de línea). ManyChat Pro se cobra solo el 5-nov (USD 348/año + excedentes arriba de 2,500 contactos, hoy 242).
+- 🔴 **Shopify en producción (revisado el 1-nov, solo lectura)**: las reservas de la tienda en línea **nunca se cierran**. De #1052 a
+  #1063 hay 11 pedidos ABIERTOS (17 tartas apartadas; 7 a domicilio en Cuajimalpa) con fecha de entrega del 23 al 31-oct. La venta
+  real se registra aparte (las rutas, canal "Ruta", las captura Yessenia al vender: 265 renglones en octubre), así que esas tartas
+  siguen apartadas de más. Limpiarlas con un script de una vez (como `101`/`102`) solo con el OK de Alex.
 - **Informe de buenas prácticas y decisiones pendientes**: `recomendaciones-para-manana.md` (raíz del repo).
-- **Domicilio o días después**: solo se registra en la lista de pedidos (y en Rutas, si es domicilio); no manda avisos.
+- **Domicilio o días después**: solo se registra en la lista de pedidos (Ventas y Tablero; los de domicilio NO llegan solos a Reparto, ver
+  arriba); no manda aviso al momento, sale en el reporte de las 18:00 del día anterior.
   La visibilidad en producción el día de cocinar es solo "subirlo al sistema" por ahora (sin aviso de anticipación):
   pendiente corregir `getProduccionManana`, que hoy solo ve canal "Apartado".
 - **Lo que no se cerró**: no hay recordatorio por hora de recogida. Al final del día todos los pedidos de hoy sin cerrar
@@ -472,6 +561,10 @@ todo el ciclo. Hecho hasta ahora (solo en el proyecto de pruebas, no en producci
     mensaje sigue PENDIENTE. Creados en ManyChat el 1-nov (texto normal, dentro de la ventana de 24 h): alerta, reporte y mensaje al cliente por WhatsApp. El campo que lleva el mensaje al cliente es `aviso_detalle` (el campo `mensaje_cliente` nunca existió en ManyChat). El flujo de Instagram (`manychat_flujo_cliente_instagram`) también quedó creado; ManyChat aceptó los envíos de prueba a Alex por WhatsApp e Instagram. **Pendiente**: las plantillas de WhatsApp
     (`reporte_apartados_noche`, `reagendar_pedido`, `feedback_pedido`) para que lleguen fuera de la ventana de 24 h.
   - Para probar sin esperar días: el proyecto de pruebas tiene rutas que reciben una hora simulada (cierre del día y envío de mensajes).
+  - **Reloj simulado de Maite (solo pruebas, 1-nov)**: `95_prueba_reloj.js` redefine `_botAhora` (se carga después de 18 y gana);
+    `relojSimuladoEncender("13:00")` hace que Maite crea que hoy (fecha real) son esas horas, para probar pedidos "para hoy" con las
+    tiendas cerradas; caduca sola a las 2 h o con `relojSimuladoApagar()`. `95_prueba_correr.js` tiene una sola función
+    (`correrPrueba`) para correr pruebas desde el editor sin pelear con el menú de funciones.
   - Falta: que el cliente conteste al mensaje de reagendar y el bot cambie la fecha del pedido (hoy lo pasa con una persona).
 
 ## Legacy / pendientes
