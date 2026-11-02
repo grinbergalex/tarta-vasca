@@ -250,3 +250,12 @@ function _velEstadoFila(hoja, fila, idxEstadoAnul){
   if (hoja === "Transferencias") return fila[4] || "";
   return "";
 }
+// Correr UNA vez desde el editor (cuenta dueña de la web app) cuando un permiso nuevo no quedó autorizado: obliga a Google a mostrar
+// TODOS los permisos del proyecto. En la ventana hay que marcar "Seleccionar todo" (en especial "Conectarse a un servicio externo",
+// que usan Maite, la IA y ManyChat) y Permitir. Origen: 1-nov-2026 la web app no podía usar UrlFetchApp aunque el editor no lo pedía.
+function autorizarPermisos() {
+  ScriptApp.requireAllScopes(ScriptApp.AuthMode.FULL);
+  const prueba = UrlFetchApp.fetch("https://www.google.com", { muteHttpExceptions: true }).getResponseCode();
+  Logger.log("Permisos completos. Conexión externa: HTTP " + prueba);
+  return prueba;
+}
