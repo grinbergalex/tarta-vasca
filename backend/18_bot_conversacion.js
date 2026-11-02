@@ -231,7 +231,7 @@ function _botPrompt(ahora) {
     "- Si en el menú un precio viene vacío (null), no digas ningún precio de ese sabor y tamaño: explica que lo confirmas con el equipo y usa pasar_a_persona.",
     "- SABOR DE TEMPORADA / DEL MES: en consultar_menu los sabores con de_temporada: true son los de temporada. Si preguntan por el sabor del mes o de temporada, di cuál es, con su descripción, y si trae disponible_hasta, hasta cuándo; si no trae fecha, di que es por tiempo limitado y que la fecha exacta la confirmas con el equipo. Cuando recomiendes o listes sabores, menciona el de temporada.",
     "- Solo ofreces sabores que estén en consultar_menu. Si consultar_disponibilidad trae otro nombre que no está en el menú, ignóralo y no lo menciones.",
-    "- NUNCA afirmes una fecha, un horario ni \"desde mañana\" sin haber llamado calcular_fecha_entrega con lo que el cliente pidió. Si todavía no dice para cuándo, pregúntaselo; no adelantes nada. Si una fecha no es posible, dile la primera fecha posible que te devuelve la herramienta, tal cual. Si el cliente te contradice (\"pero había en inventario\"), vuelve a llamar la herramienta con los items antes de contestar.",
+    "- NUNCA afirmes una fecha, un horario ni \"desde mañana\" sin haber llamado calcular_fecha_entrega con lo que el cliente pidió. Si todavía no dice para cuándo, pregúntaselo; no adelantes nada. Si pide recoger HOY o MAÑANA, llama calcular_fecha_entrega en ese momento aunque todavía no diga sabor (con la sucursal y la fecha): la herramienta te dice qué está listo ahí y se lo ofreces de entrada; nunca prometas \"te la preparo para mañana\" antes de eso. Si una fecha no es posible pero la herramienta trae listo_en_sucursal, ofrécele PRIMERO esas tartas para esa fecha (sigue su instruccion); solo si no le sirven, dile la primera fecha posible que te devuelve la herramienta, tal cual. Si el cliente te contradice (\"pero había en inventario\"), vuelve a llamar la herramienta con los items antes de contestar.",
     "- NUNCA des cantidades de inventario (ni exactas ni aproximadas). Solo di si hay o no hay tarta lista en una sucursal, o que quedan pocas. Cuando listes lo que hay listo hoy, aclara que la cantidad es limitada y pregunta cuántas necesita ANTES de prometer: no digas \"tenemos\" como si alcanzara para cualquier cantidad, y no te contradigas (si dijiste que hay, y luego no alcanza para lo que pide, explica que hay pero no tantas, y ofrece lo que sí alcanza).",
     "- No narres tus verificaciones (\"ya verifiqué\", \"sigue lista\", \"todo en orden\"): solo da el resultado. No repitas una consulta de disponibilidad o de fecha si nada cambió en la conversación.",
     "",
@@ -582,9 +582,8 @@ function _botHorariosDe(entrega, sucursal) {
   if (entrega === "domicilio") return [0, 1, 2, 3, 4, 5, 6].map(function (d) { return BOT_DIAS_ENTREGA_DOMICILIO.indexOf(d) !== -1 ? BOT_VENTANA_ENTREGA : null; });
   return BOT_SUCURSALES_RECOGER.indexOf(sucursal) !== -1 ? HORARIOS_SUCURSAL[sucursal] : null;
 }
-function _botDisponibleHoy(sucursal, items) {
+function _botDisponibleHoy(sucursal, items, lista) {
   if (!sucursal || !items || !items.length) return false;
-  const lista = (tiendaDisponibilidad().hoy[sucursal]) || [];
   return items.every(function (it) {
     const tamano = _botNormalizarTamano(it.tamano);
     const hallado = lista.filter(function (x) { return _botSinAcentos(x.k) === _botSinAcentos(it.sabor + "|" + tamano); })[0];
@@ -594,11 +593,30 @@ function _botDisponibleHoy(sucursal, items) {
 function _botCalcularFecha(a) {
   const horarios = _botHorariosDe(a.entrega, a.sucursal);
   if (!horarios) return { error: "Para recoger necesito la sucursal: " + BOT_SUCURSALES_RECOGER.join(", ") + "." };
-  return _botReglasFecha({
+  const recoger = a.entrega === "recoger";
+  const lista = recoger ? ((tiendaDisponibilidad().hoy[a.sucursal]) || []) : [];
+  const salida = _botReglasFecha({
     ahora: _botAhora(), horarios: horarios, entrega: a.entrega,
-    horaCorte: a.entrega === "domicilio" ? BOT_HORA_CORTE_DOMICILIO : BOT_HORA_CORTE_RECOGER,
-    disponibleHoy: a.entrega === "recoger" && _botDisponibleHoy(a.sucursal, a.items),
+    horaCorte: recoger ? BOT_HORA_CORTE_RECOGER : BOT_HORA_CORTE_DOMICILIO,
+    disponibleHoy: recoger && _botDisponibleHoy(a.sucursal, a.items, lista),
     fechaDeseada: a.fecha_deseada
+  });
+  return recoger ? _botOfrecerLoQueHay(salida, a, lista) : salida;
+}
+
+// Decisión de Alex (1-nov): para recoger antes de la primera fecha de preparación (hoy o mañana) se puede apartar lo que YA está
+// en la sucursal. Si lo pedido no está (o el cliente aún no dice sabor), Maite recibe la lista de lo listo y la ofrece primero.
+function _botOfrecerLoQueHay(salida, a, lista) {
+  if (salida.hay_piezas_en_sucursal || salida.valida) return salida;
+  const pideAntes = !a.fecha_deseada || (salida.primera_fecha && a.fecha_deseada < salida.primera_fecha);
+  if (!pideAntes) return salida;
+  const delMenu = _botMenu().map(function (m) { return _botSinAcentos(m.sabor); });
+  const listo = lista.map(function (x) { const p = x.k.split("|"); return { sabor: p[0], tamano: p[1], pocas: x.max <= 2 }; })
+    .filter(function (x) { return delMenu.indexOf(_botSinAcentos(x.sabor)) !== -1; });
+  if (!listo.length) return salida;
+  return Object.assign(salida, {
+    listo_en_sucursal: listo,
+    instruccion: "Para recoger " + (a.fecha_deseada ? "el " + a.fecha_deseada : "hoy o mañana") + " en " + a.sucursal + " SÍ se puede apartar lo que ya está listo ahí (listo_en_sucursal): ofrécelo primero, sin dar cantidades. Si elige una de esas tartas, vuelve a llamar calcular_fecha_entrega con esos items y esa fecha. Solo para otros sabores o tamaños, la primera fecha es primera_fecha."
   });
 }
 
