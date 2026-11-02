@@ -573,6 +573,20 @@ todo el ciclo. Hecho hasta ahora (solo en el proyecto de pruebas, no en producci
     (`correrPrueba`) para correr pruebas desde el editor sin pelear con el menú de funciones.
   - Falta: que el cliente conteste al mensaje de reagendar y el bot cambie la fecha del pedido (hoy lo pasa con una persona).
 
+## Piloto en producción — noche del 1-nov (pendiente para la mañana)
+
+- 🔴 **Producción no puede llamar a servicios externos todavía.** La primera prueba real por Instagram (23:10) contestó "se me trabó
+  algo": el error (bandeja del POS, "El bot falló") dice que el proyecto no tiene permiso para `UrlFetchApp.fetch`. La web app corre como
+  grinbergalex@gmail.com y esa cuenta nunca autorizó `script.external_request` en el proyecto de producción (antes nada lo usaba de verdad;
+  Maite, la IA y ManyChat sí). **`clasp update-deployment` NO pide permisos nuevos**: la primera vez que el código use un permiso nuevo hay que
+  implementar desde el editor (Implementar → Administrar implementaciones → ✏️ → Nueva versión → Implementar) y aceptar "Permitir". Lo hace
+  Alex (es un permiso de su cuenta). Mientras tanto, cada "prueba" en Instagram falla y deja un aviso "El bot falló" en la bandeja de todo el equipo.
+- **Arreglo listo, sin publicar** (commit d43309b en la rama): para recoger hoy o mañana Maite ofrece lo que ya está en la sucursal
+  (`_botOfrecerLoQueHay`, `listo_en_sucursal`). Probado en pruebas v111 con una conversación simulada. Se publica con "publícalo" junto con el
+  paso de los permisos (la versión que se implemente desde el editor ya debe traer el arreglo: primero `clasp push`, luego implementar).
+- El flujo "Bot Tarta Vasca - PRUEBA" de ManyChat ya apunta a producción (publicado 23:03) con el `BOT_TOKEN` de producción; el de
+  "Alerta bot (sistema)" tiene la dirección nueva en borrador y le falta el token y "Actualizar".
+
 ## Legacy / pendientes
 
 - `cargaInv 17.js`, `ventasmasivoCuaji17.js`, `limpiar apartados.js`:
