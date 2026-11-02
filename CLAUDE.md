@@ -573,19 +573,21 @@ todo el ciclo. Hecho hasta ahora (solo en el proyecto de pruebas, no en producci
     (`correrPrueba`) para correr pruebas desde el editor sin pelear con el menú de funciones.
   - Falta: que el cliente conteste al mensaje de reagendar y el bot cambie la fecha del pedido (hoy lo pasa con una persona).
 
-## Piloto en producción — noche del 1-nov (pendiente para la mañana)
+## Piloto en producción — noche del 1-nov
 
-- 🔴 **Producción no puede llamar a servicios externos todavía.** La primera prueba real por Instagram (23:10) contestó "se me trabó
-  algo": el error (bandeja del POS, "El bot falló") dice que el proyecto no tiene permiso para `UrlFetchApp.fetch`. La web app corre como
-  grinbergalex@gmail.com y esa cuenta nunca autorizó `script.external_request` en el proyecto de producción (antes nada lo usaba de verdad;
-  Maite, la IA y ManyChat sí). **`clasp update-deployment` NO pide permisos nuevos**: la primera vez que el código use un permiso nuevo hay que
-  implementar desde el editor (Implementar → Administrar implementaciones → ✏️ → Nueva versión → Implementar) y aceptar "Permitir". Lo hace
-  Alex (es un permiso de su cuenta). Mientras tanto, cada "prueba" en Instagram falla y deja un aviso "El bot falló" en la bandeja de todo el equipo.
-- **Arreglo listo, sin publicar** (commit d43309b en la rama): para recoger hoy o mañana Maite ofrece lo que ya está en la sucursal
-  (`_botOfrecerLoQueHay`, `listo_en_sucursal`). Probado en pruebas v111 con una conversación simulada. Se publica con "publícalo" junto con el
-  paso de los permisos (la versión que se implemente desde el editor ya debe traer el arreglo: primero `clasp push`, luego implementar).
-- El flujo "Bot Tarta Vasca - PRUEBA" de ManyChat ya apunta a producción (publicado 23:03) con el `BOT_TOKEN` de producción; el botón
-  Atendida de "Alerta bot (sistema)" también (publicado por Alex).
+- ✅ **Maite contesta desde producción (versión 132).** El bloqueo era el permiso "Conectarse a un servicio externo" (`UrlFetchApp`) de
+  grinbergalex@gmail.com, que quedó sin marcar en el consentimiento granular de Google; implementar desde el editor no lo volvía a pedir.
+  Se arregló con `autorizarPermisos()` (15): `ScriptApp.requireAllScopes` obliga a mostrar todos los permisos ("Seleccionar todo").
+  Si vuelve a pasar con un permiso nuevo, correrla otra vez. **`clasp update-deployment` nunca pide permisos.**
+- ✅ **Recoger hoy o mañana**: Maite ofrece lo que ya está en la sucursal (`_botOfrecerLoQueHay`, `listo_en_sucursal`). Probado en vivo:
+  pedido TV-1101-13 (1 Lotus Individual, Polanco, lunes 2-nov 13:00, efectivo) entró a Ventas, al tablero y a "Pedidos Polanco"; se
+  liberó con el menú de Estado → NO RECOGIDO (anulado por "hoja-grinbergalex"), lo que también probó el menú en producción. Quedó un
+  renglón de prueba en `Pedidos_No_Recogidos` y avisos "El bot falló" de la prueba en la bandeja del POS (borrables).
+- ⚠️ **No llegó la confirmación con la llave** de ese pedido: en el piloto escribir "prueba" varias veces deja varias copias del flujo de
+  ManyChat esperando, y dos llamaron a Maite a la vez con el mismo "Sí". Arreglo **listo sin publicar** (commit 6fbee5f): un mensaje
+  repetido en 20 s se procesa una vez (`_botMensajeRepetido`) y el envío tardío no tumba el turno. En vivo (sin palabra clave) no hay copias.
+- ⚠️ **Auditoría de producción**: Bosques Queso Grande inventario 10 vs libro mayor 14. Viene del 30-oct (venta de Ruta de 4 y
+  transferencias), antes de Maite. No se tocó: revisar con Yessenia antes de reconciliar.
 
 ## Legacy / pendientes
 
