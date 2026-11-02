@@ -584,8 +584,8 @@ todo el ciclo. Hecho hasta ahora (solo en el proyecto de pruebas, no en producci
 - **Arreglo listo, sin publicar** (commit d43309b en la rama): para recoger hoy o mañana Maite ofrece lo que ya está en la sucursal
   (`_botOfrecerLoQueHay`, `listo_en_sucursal`). Probado en pruebas v111 con una conversación simulada. Se publica con "publícalo" junto con el
   paso de los permisos (la versión que se implemente desde el editor ya debe traer el arreglo: primero `clasp push`, luego implementar).
-- El flujo "Bot Tarta Vasca - PRUEBA" de ManyChat ya apunta a producción (publicado 23:03) con el `BOT_TOKEN` de producción; el de
-  "Alerta bot (sistema)" tiene la dirección nueva en borrador y le falta el token y "Actualizar".
+- El flujo "Bot Tarta Vasca - PRUEBA" de ManyChat ya apunta a producción (publicado 23:03) con el `BOT_TOKEN` de producción; el botón
+  Atendida de "Alerta bot (sistema)" también (publicado por Alex).
 
 ## Legacy / pendientes
 
