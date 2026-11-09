@@ -157,6 +157,7 @@ const PEDIDO_MOTIVO_CANCELADO_SHOPIFY = "Cancelado en Shopify";
 const PEDIDO_HOJA_NO_RECOGIDOS = "Pedidos_No_Recogidos";   // lista de trabajo de la campaña de recuperación
 const PEDIDO_CANALES_PRODUCCION = ["Apartado", "Tienda", "Domicilio"];   // reservas que son pedidos (mostrador, bot, Shopify): cuentan en la producción del día
 const PEDIDO_CANALES_RECOGER = ["Tienda", "Apartado", "Reservado"];   // canales con recolección en sucursal (Domicilio va por ruta)
+const CIERRE_MARCAR_MAX_MS = 3 * 60 * 1000;               // tope para marcar POR REVISAR en el cierre de las 21:00; el trigger muere a los 6 min
 const PEDIDO_HORA_REVISION = 21;                           // hora del reporte diario (después de cerrar todas las sucursales)
 const PEDIDO_RECORDATORIO_DESDE = 9;                       // el recordatorio de pedidos sin confirmar solo sale entre estas horas
 const PEDIDO_RECORDATORIO_HASTA = 20;

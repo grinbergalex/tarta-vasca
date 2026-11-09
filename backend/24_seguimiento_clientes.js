@@ -211,9 +211,13 @@ function pedidosCierreDelDia(ahora) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const momento = ahora || new Date();
   const hoyIso = Utilities.formatDate(momento, TZ_MX, "yyyy-MM-dd");
-  let porRevisar = 0;
+  let porRevisar = 0, sinMarcar = 0;
+  // Marcar cada pedido tarda (lee Ventas y otras hojas): con muchos vencidos se acababan los 6 min del trigger y el reporte
+  // no salía (8-nov). Pasado el tope se deja de marcar —lo que falte se marca la noche siguiente— y el reporte sale siempre.
+  const limite = Date.now() + CIERRE_MARCAR_MAX_MS;
   pedidosVencidos(ss, momento, _cfgVal(ss, PEDIDO_CLAVE_GRACIA_DIAS, 0)).forEach(function (p) {
     if (p.estado === PEDIDO_ESTADO.POR_REVISAR) return;
+    if (Date.now() > limite) { sinMarcar++; return; }
     pedidoAnotar(ss, p.idVenta, { estado: PEDIDO_ESTADO.POR_REVISAR });
     tableroMarcarEstado(p.referencia, PEDIDO_ESTADO.POR_REVISAR);
     seguimientoActualizar(ss, p.referencia, { "Estado": PEDIDO_ESTADO.POR_REVISAR });
@@ -225,7 +229,8 @@ function pedidosCierreDelDia(ahora) {
   const entregados = _cierreEntregadosHoy(ss, hoyIso);
   const titulo = "Reporte de la noche " + Utilities.formatDate(momento, TZ_MX, "dd/MM") + ": " + entregados.length + " entregadas · "
     + (abiertos.length ? abiertos.length + " apartadas sin entregar" : "nada pendiente");
-  const detalle = _reporteEntregadosTexto(entregados) + "\n\n" + _reporteNocheTexto(abiertos);
+  const detalle = _reporteEntregadosTexto(entregados) + "\n\n" + _reporteNocheTexto(abiertos)
+    + (sinMarcar ? "\n\n⚠️ " + sinMarcar + " pedidos vencidos no alcanzaron a pasar a POR REVISAR: se marcan mañana." : "");
   const aviso = manychatAvisarEquipo(ss, MANYCHAT_CLAVE_FLUJO_REPORTE, titulo, detalle, MANYCHAT_MAX_REPORTE);
   _reporteNocheRegistrar(ss, titulo, detalle, aviso, momento);
   return { ok: true, porRevisar: porRevisar, apartadasSinEntregar: abiertos.length, reporte: _pedidoResultadoAviso(aviso), mensajes: mensajesClientesEnviar(ss, momento) };
