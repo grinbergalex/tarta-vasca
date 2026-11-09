@@ -277,7 +277,7 @@ function _botPrompt(ahora) {
       "5. Cuando ya tengas TODOS los datos (pedido, fecha, hora o dirección, pago, nombre y teléfono), muestra un resumen final corto y pregunta \"¿lo dejo así?\". NUNCA crees el pedido en el mismo mensaje en que te dan el último dato (el teléfono o el nombre): espera el \"sí\" del cliente al resumen y entonces llama crear_pedido. El pedido queda apartado en el sistema como POR CONFIRMAR, con una REFERENCIA, y el equipo recibe el aviso.",
       "6. Cuando crear_pedido sale bien, el SISTEMA le manda al cliente el mensaje de confirmación por ti (referencia, total, pago, recoger y seguimiento): no lo repitas. Si crear_pedido falla, explícale con calidez qué falta o qué cambiar. Lo que debe incluir ese mensaje, por si lo necesitas EN POCOS MENSAJES: su LLAVE (la referencia TV-…; que la guarde: se la da a quien lo atienda en la sucursal para que encuentren su tarta apartada, y sirve para preguntar por su pedido aquí), el total, las indicaciones de pago y las de recoger o entrega tal como vienen en el resultado (indicaciones_pago e indicaciones_entrega), y que el equipo revisa y le confirma. No inventes datos de cuenta, horarios ni reglas: usa solo lo que traiga el resultado. Si el resultado no trae los datos de la transferencia, dile que el equipo se los comparte en un momento.",
       "- Si el cliente pregunta qué pasa si no puede ir por su pedido, NO inventes reglas (plazos, cargos, quién puede recoger, cambios de fecha). Usa solo lo que dicen las indicaciones de recoger del resultado; si no traen una política, dile que nos avise por aquí y que el equipo lo ayuda a reprogramar, y llama avisar_al_equipo con tipo \"otro\" y su referencia.",
-      "- Si el cliente pregunta por un pedido, usa consultar_pedido con su referencia; solo da detalles a quien lo hizo en esta conversación o a quien dé los últimos 4 dígitos de su teléfono.",
+      "- Si el cliente pregunta por un pedido, usa consultar_pedido con su llave (referencia TV-…). Si no la tiene, pídele el nombre y el teléfono con los que lo hizo y consulta con esos dos datos. Con la llave, solo da detalles a quien lo hizo en esta conversación o a quien dé los últimos 4 dígitos de su teléfono.",
       "- No pides datos de tarjeta. Las formas de pago y las facturas salen de consultar_manual (tema pagos_y_facturas). Si piden un anticipo, pasas con una persona. Si piden factura, dices que sí se emiten y que necesitan comunicarse con el equipo, y llamas pasar_a_persona con tipo \"factura\".",
       "- Máximo " + BOT_MAX_PIEZAS_POR_PEDIDO + " piezas por pedido por aquí; más que eso (eventos, regalos corporativos, restaurantes) lo ve una persona.",
       "- Editar o cancelar un pedido ya hecho todavía no se puede por aquí: pasas con una persona (pasar_a_persona, tipo \"cambio_o_cancelacion\").",
@@ -332,7 +332,7 @@ function _botHerramientas() {
     { name: "calcular_fecha_entrega", description: "Dice si una fecha es posible (y cuál es la primera fecha posible) para recoger o para entrega a domicilio. Pasa los items para saber si se puede recoger hoy.", input_schema: { type: "object", properties: { entrega: entrega, sucursal: { type: "string", enum: BOT_SUCURSALES_RECOGER, description: "Solo si recoge" }, fecha_deseada: { type: "string", description: "AAAA-MM-DD" }, items: items }, required: ["entrega"] } },
     { name: "cotizar_pedido", description: "Calcula el ticket (precios, envío y total) de un pedido. Muéstralo tal cual al cliente antes de crearlo.", input_schema: { type: "object", properties: { items: items, entrega: entrega, colonia: { type: "string", description: "Solo si es a domicilio" } }, required: ["items", "entrega"] } },
     { name: "crear_pedido", description: "Crea el pedido (queda apartado y POR CONFIRMAR, con su referencia, y avisa al equipo). Úsalo solo después de que el cliente dijo que sí al ticket final.", input_schema: { type: "object", properties: { nombre: { type: "string" }, seguimiento: { type: "string", enum: ["telefono", "instagram"], description: "Cómo quiere que le den seguimiento. Siempre se pide el teléfono; \"instagram\" solo si recoge en sucursal y no quiso darlo. En WhatsApp no se pide: ya se tiene su número." }, telefono: { type: "string", description: "10 dígitos. Se pide siempre; OBLIGATORIO a domicilio y, para recoger, solo puede faltar si el cliente no quiso darlo (no se pide en WhatsApp)" }, metodo_pago: { type: "string", enum: BOT_PAGOS_RECOGER, description: "La tarjeta solo se paga en sucursal, al recoger; a domicilio solo efectivo o transferencia" }, entrega: entrega, sucursal: { type: "string", enum: BOT_SUCURSALES_RECOGER, description: "Solo si recoge" }, direccion: { type: "string" }, colonia: { type: "string" }, fecha_entrega: { type: "string", description: "AAAA-MM-DD" }, hora: { type: "string", description: "HH:MM. OBLIGATORIA si recoge (a qué hora pasa por su pedido, dentro del horario de la sucursal); a domicilio no se pide" }, items: items, notas: { type: "string" }, mensajero: { type: "string", description: "Solo si lo recoge un Uber, DiDi u otro mensajero: cuál" } }, required: ["nombre", "metodo_pago", "entrega", "fecha_entrega", "items"] } },
-    { name: "consultar_pedido", description: "Estado de un pedido por su referencia (por ejemplo TV-1027-03). Solo responde si el cliente es quien lo hizo en esta conversación o da los últimos 4 dígitos de su teléfono.", input_schema: { type: "object", properties: { referencia: { type: "string" }, ultimos_4_telefono: { type: "string", description: "Solo si el pedido se hizo en otra conversación" } }, required: ["referencia"] } },
+    { name: "consultar_pedido", description: "Estado de un pedido por su referencia (por ejemplo TV-1027-03), o, si el cliente no la tiene, por el nombre Y el teléfono con los que lo hizo (devuelve sus pedidos abiertos o de los últimos días). Con referencia solo responde si el cliente es quien lo hizo en esta conversación o da los últimos 4 dígitos de su teléfono.", input_schema: { type: "object", properties: { referencia: { type: "string" }, ultimos_4_telefono: { type: "string", description: "Solo si el pedido se hizo en otra conversación" }, nombre: { type: "string", description: "Solo si no tiene la referencia" }, telefono: { type: "string", description: "10 dígitos; solo si no tiene la referencia" } } } },
     { name: "pasar_a_persona", description: "Avisa al equipo y pausa el bot en esta conversación. Con tipo \"queja_u_observacion\" manda una alerta urgente.", input_schema: { type: "object", properties: { tipo: { type: "string", enum: ["queja_u_observacion", "cotizacion_evento_o_restaurante", "pidio_persona", "factura", "cambio_o_cancelacion", "alianza_o_colaboracion", "pedidos_recurrentes_o_cadena", "amenaza_o_legal", "otro"] }, motivo: { type: "string" }, resumen: { type: "string", description: "Qué quiere el cliente y qué datos ya dio" } }, required: ["tipo", "motivo", "resumen"] } },
     { name: "avisar_al_equipo", description: "Avisa al equipo SIN pausar el bot. Úsalo cuando el cliente dice que mandará un Uber, DiDi, taxi u otro mensajero por su pedido (tipo \"mensajero\") cuando hay una queja u observación negativa o una sugerencia sobre las tartas (tipo \"queja_u_observacion\": avisa de inmediato, antes de pedir sus datos), o cuando deja un elogio (tipo \"observacion\").",input_schema: { type: "object", properties: { tipo: { type: "string", enum: ["mensajero", "queja_u_observacion", "observacion", "recado_para_equipo", "otro"] }, nota: { type: "string", description: "Qué dijo el cliente y qué datos dio (nombre de quien recoge, hora)" } }, required: ["tipo", "nota"] } }
   ];
@@ -827,12 +827,36 @@ function _botCrearPedido(a, ctx) {
 
 // Solo habla de un pedido con quien lo hizo en esta conversación o quien da los últimos 4 dígitos del teléfono.
 function _botConsultarPedido(a, ctx) {
+  if (!a.referencia) return _botConsultarPedidoPorNombre(a);
   const pedido = pedidoLeer(SpreadsheetApp.getActiveSpreadsheet(), a.referencia);
   if (!pedido || !pedido.referencia) return { error: "No encuentro ese pedido. Revisa la referencia (por ejemplo TV-1027-03)." };
   const digitos = String(pedido.contacto).replace(/\D/g, "");
   const esSuyo = pedido.contacto.indexOf(ctx.conversacionId) !== -1 || (String(a.ultimos_4_telefono || "").length === 4 && digitos.slice(-4) === String(a.ultimos_4_telefono));
   if (!esSuyo) return { error: "No puedo darle detalles de ese pedido a esta conversación. Pide al cliente los últimos 4 dígitos del teléfono con el que lo hizo, o pasa con una persona." };
   return { referencia: pedido.referencia, estado: pedido.estado, fecha_entrega: pedido.fechaEntrega, sucursal: pedido.sucursal, pedido: _pedidoResumenItems(pedido), total: pedido.total };
+}
+
+// Sin la llave (pedido de Alex, 8-nov): el nombre Y el teléfono tienen que coincidir. Solo mira los pedidos que lleva el tablero
+// (abiertos y los cerrados de los últimos días); los pedidos de mostrador sin teléfono no se pueden encontrar así.
+function _botConsultarPedidoPorNombre(a) {
+  const telefono = String(a.telefono || "").replace(/\D/g, "").slice(-10);
+  const nombre = _botSinAcentos(a.nombre).split(/\s+/).filter(Boolean);
+  if (telefono.length < 10 || !nombre.length) return { error: "Pide la llave del pedido (TV-…) o, si no la tiene, el nombre y el teléfono de 10 dígitos con los que lo hizo." };
+  const ss = SpreadsheetApp.getActiveSpreadsheet(), ventas = ss.getSheetByName("Ventas");
+  const hallados = _tableroLeerPedidos(ss, ventas, _pedidoIndices(ventas)).filter(function (p) {
+    return _botMismoTelefono(p.contacto, telefono) && _botMismoNombre(p.cliente, nombre);
+  });
+  if (!hallados.length) return { error: "No encuentro un pedido con ese nombre y ese teléfono. Pide la llave (TV-…) o pasa con una persona." };
+  return { pedidos: hallados.slice(0, BOT_CONSULTA_MAX_PEDIDOS).map(function (p) {
+    return { referencia: p.referencia, estado: p.estado, fecha_entrega: p.fechaEntrega, hora: p.hora, entrega: p.canal === BOT_CANAL_DOMICILIO ? "domicilio" : "recoger en " + p.sucursal, pedido: p.items.join(", "), total: p.total };
+  }) };
+}
+function _botMismoTelefono(contacto, telefono) {
+  return String(contacto || "").replace(/\D/g, "").indexOf(telefono) !== -1;
+}
+// Basta con que el primer nombre que da el cliente esté en el nombre del pedido ("Ana" encuentra "Ana Pérez").
+function _botMismoNombre(cliente, palabras) {
+  return _botSinAcentos(cliente).split(/\s+/).indexOf(palabras[0]) !== -1;
 }
 
 // Cada tipo de traspaso se anuncia distinto. Las quejas llevan la marca 🚨 para no confundirlas con un traspaso normal.

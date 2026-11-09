@@ -245,6 +245,7 @@ const BOT_MESES_NOMBRE = ["enero", "febrero", "marzo", "abril", "mayo", "junio",
 const BOT_NOMBRE = "Maite";                 // nombre con el que se presenta el bot (Alex y Rebeca, 27-oct-2026); vacío = sin nombre
 const BOT_PEDIDOS_ACTIVOS = true;         // encendido en la rama de pruebas: el bot toma pedidos; false = solo consulta
 const BOT_HERRAMIENTAS_DE_PEDIDO = ["cotizar_pedido", "crear_pedido", "consultar_pedido"];
+const BOT_CONSULTA_MAX_PEDIDOS = 5;          // bot: cuántos pedidos devuelve como máximo una consulta por nombre y teléfono
 const BOT_MAX_PIEZAS_POR_PEDIDO = 12;       // más que esto pasa con una persona (eventos, regalos corporativos)
 const BOT_USUARIO = "bot-instagram";
 const BOT_ROL = "Admin_Ventas";             // sesión interna (nunca sale por el API): permite elegir la sucursal al reservar
