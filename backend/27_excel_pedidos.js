@@ -1,5 +1,8 @@
 // ============================================================================
-// v9 — LOS PEDIDOS A DOMICILIO DE MAITE SE ANOTAN EN EL EXCEL DE PEDIDOS (decisión de Alex, 1-nov)
+// v9 — LOS PEDIDOS DE MAITE SE ANOTAN EN EL EXCEL DE PEDIDOS (decisión de Alex, 1-nov; recoger, 8-nov)
+//
+// Van al Excel los de domicilio y los de recoger para mañana o después. Los de recoger HOY no: esos se resuelven en la tienda
+// con lo que ya hay (decisión de Alex, 8-nov). Un pedido para recoger lleva en la dirección "Recoger en <sucursal> · <hora>".
 //
 // Las rutas se planean a mano con el Excel donde caen todos los pedidos ("Pedidos Tarta Vasca (Respuestas)", la hoja del
 // formulario). Un pedido a domicilio de Maite se anota ahí igual que lo haría una persona: un renglón al final con marca de
@@ -67,10 +70,20 @@ function _excelFila(p, mapa, columnas) {
   fila[0] = new Date();
   fila[1] = p.cliente || "";
   fila[2] = new Date(Number(p3[0]), Number(p3[1]) - 1, Number(p3[2]));
-  fila[3] = (p.direccion || "") + (sinColumna.length ? " [+ " + sinColumna.join(", ") + "]" : "");
+  fila[3] = _excelDondeSeEntrega(p) + (sinColumna.length ? " [+ " + sinColumna.join(", ") + "]" : "");
   fila[4] = _excelTelefono(p.contacto);
   fila[EXCEL_PEDIDOS_COL_NOTA - 1] = ["Maite", p.referencia, p.pago, "$" + p.total].filter(Boolean).join(" · ");
   return { fila: fila, sinColumna: sinColumna };
+}
+
+function _excelDondeSeEntrega(p) {
+  if (p.canal === BOT_CANAL_DOMICILIO) return p.direccion || "";
+  return ["Recoger en " + p.sucursal, p.hora].filter(Boolean).join(" · ");
+}
+
+// Domicilio siempre; recoger solo si es para un día después de hoy.
+function _excelVaAlExcel(p, hoyIso) {
+  return p.canal === BOT_CANAL_DOMICILIO ? p.fechaEntrega >= hoyIso : p.fechaEntrega > hoyIso;
 }
 
 function _excelRegistroHoja(ss) {
@@ -102,14 +115,14 @@ function excelPedidoMarcarEstado(ss, referencia, estado) {
 }
 
 // pedidos: los que ya leyó el tablero. Devuelve cuántos se anotaron.
-function pedidosDomicilioAlExcel(ss, pedidos) {
+function pedidosMaiteAlExcel(ss, pedidos) {
   const id = String(_cfgVal(ss, EXCEL_PEDIDOS_CLAVE_ID, "")).trim();
   if (!id) return 0;
   const hoyIso = Utilities.formatDate(new Date(), TZ_MX, "yyyy-MM-dd");
   const anotadas = _excelLlavesAnotadas(ss);
   const nuevos = pedidos.filter(function (p) {
-    return p.canal === BOT_CANAL_DOMICILIO && BOT_ORIGENES.indexOf(p.origen) !== -1 && PEDIDO_ESTADOS_ABIERTOS.indexOf(p.estado) !== -1
-      && p.referencia && !anotadas[p.referencia] && p.fechaEntrega >= hoyIso;
+    return BOT_ORIGENES.indexOf(p.origen) !== -1 && PEDIDO_ESTADOS_ABIERTOS.indexOf(p.estado) !== -1
+      && p.referencia && !anotadas[p.referencia] && _excelVaAlExcel(p, hoyIso);
   });
   if (!nuevos.length) return 0;
   const excel = SpreadsheetApp.openById(id).getSheetByName(EXCEL_PEDIDOS_HOJA);

@@ -589,6 +589,8 @@ todo el ciclo. Hecho hasta ahora (solo en el proyecto de pruebas, no en producci
 - ⚠️ **Auditoría de producción**: Bosques Queso Grande inventario 10 vs libro mayor 14. Viene del 30-oct (venta de Ruta de 4 y
   transferencias), antes de Maite. No se tocó: revisar con Yessenia antes de reconciliar.
 
+- **Decisiones de Alex (8-nov)**: (1) al **Excel de pedidos** van los domicilios y **también los de recoger para mañana o después** (dirección = "Recoger en <sucursal> · <hora>"); los de recoger hoy para hoy no (`pedidosMaiteAlExcel`, `_excelVaAlExcel`). (2) Maite consulta un pedido **por nombre y teléfono** si el cliente no tiene la llave (`_botConsultarPedidoPorNombre`: los dos tienen que coincidir; solo pedidos que lleva el tablero). (3) Recoger mañana: antes de las 18:00 se acepta cualquier tarta; después, solo lo que ya está en la sucursal (así estaba). (4) Encender el reporte de las 21:00 (`instalarRevisionDiariaPedidos`, lo corre Alex desde el editor).
+
 ## Legacy / pendientes
 
 - `cargaInv 17.js`, `ventasmasivoCuaji17.js`, `limpiar apartados.js`:
