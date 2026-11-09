@@ -591,6 +591,13 @@ todo el ciclo. Hecho hasta ahora (solo en el proyecto de pruebas, no en producci
 
 - **Decisiones de Alex (8-nov)**: (1) al **Excel de pedidos** van los domicilios y **también los de recoger para mañana o después** (dirección = "Recoger en <sucursal> · <hora>"); los de recoger hoy para hoy no (`pedidosMaiteAlExcel`, `_excelVaAlExcel`). (2) Maite consulta un pedido **por nombre y teléfono** si el cliente no tiene la llave (`_botConsultarPedidoPorNombre`: los dos tienen que coincidir; solo pedidos que lleva el tablero). (3) Recoger mañana: antes de las 18:00 se acepta cualquier tarta; después, solo lo que ya está en la sucursal (así estaba). (4) Encender el reporte de las 21:00 (`instalarRevisionDiariaPedidos`, lo corre Alex desde el editor).
 
+- **Pedidos de Shopify se cierran solos (Alex, 8-nov-2026, v135)**: la sucursal ya captura en el POS la venta de un pedido en
+  línea, así que el sincronizador (`shopify-sync/VentasShopify.js`, `porCerrar_`/`cerrarUnPedido_`) NO crea venta: cuando Shopify
+  marca el pedido entregado (o cancelado), llama `pedidoCerrarDesdeShopify` (19), que libera solo lo que ese pedido sigue apartando
+  según `Inv_Ledger` (`_pedidoApartadoVigente`: un pedido que nunca apartó no le quita el apartado a otro) y deja las filas
+  ANULADO con motivo `PEDIDO_MOTIVO_VENDIDO_APARTE` (se lee ENTREGADO) o `PEDIDO_MOTIVO_CANCELADO_SHOPIFY`. Una vez por pedido
+  (propiedad `CERR_<pedido>` del sincronizador); solo manda correo si alguno falla.
+
 ## Legacy / pendientes
 
 - `cargaInv 17.js`, `ventasmasivoCuaji17.js`, `limpiar apartados.js`:

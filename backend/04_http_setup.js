@@ -202,6 +202,7 @@ case "liberarReserva":          return liberarReserva(body, sesion);            
 case "pedidoConfirmar":         return pedidoConfirmar(body, sesion);                 // v9 — el equipo confirma un pedido apartado
 case "pedidoEntregar":          return pedidoEntregar(body, sesion);                  // v9 — ya se entregó: reserva -> venta, baja el inventario
 case "pedidoNoRecogido":        return pedidoNoRecogido(body, sesion);                // v9 — cliente no llegó: libera el apartado y lo manda a la campaña
+case "pedidoCerrarDesdeShopify": return pedidoCerrarDesdeShopify(body, sesion);       // Shopify lo entregó o canceló: libera el apartado sin crear venta
 case "getSucursalesUsuario":    return getSucursalesUsuario(body, sesion);            // NUEVO v4.4b
 // ===== REPARTO A DOMICILIO =====
 case "repartoEstado":        return repartoEstado(body, sesion);

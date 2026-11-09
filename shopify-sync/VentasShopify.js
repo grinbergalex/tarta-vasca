@@ -61,7 +61,7 @@ function revisarVentasShopify() {
 function leerPedidosAdmin_(token, dias) {
   const desde = new Date(Date.now() - dias * 24 * 60 * 60 * 1000).toISOString();
   const consulta = "query Pedidos($q: String, $cursor: String) { orders(first: 50, after: $cursor, query: $q, sortKey: CREATED_AT) { " +
-    "pageInfo { hasNextPage endCursor } nodes { name createdAt cancelledAt test displayFinancialStatus " +
+    "pageInfo { hasNextPage endCursor } nodes { name createdAt cancelledAt test displayFinancialStatus displayFulfillmentStatus " +
     "shippingLine { title originalPriceSet { shopMoney { amount } } } " +
     "shippingAddress { name phone zip } billingAddress { name phone } phone email customAttributes { key value } " +
     "lineItems(first: 20) { nodes { title variantTitle quantity product { tags } discountedUnitPriceSet { shopMoney { amount } } } } } } }";
@@ -200,11 +200,17 @@ function registrarPedidosShopify() {
     if (!desde) throw new Error("Falta VENTAS_DESDE: sin fecha de inicio no se registra nada, para no duplicar pedidos viejos.");
     const hoja = leerHoja_();
     const pedidos = leerPedidosAdmin_(token, DIAS_A_REVISAR);
-    const elegidos = elegirPorRegistrar_(pedidos.map(p => traducirPedido_(p, hoja)), pedidos, {
+    const traducidos = pedidos.map(p => traducirPedido_(p, hoja));
+    const elegidos = elegirPorRegistrar_(traducidos, pedidos, {
       modo: modo, desde: desde, soloPedido: props.getProperty("VENTAS_SOLO_PEDIDO"),
       yaRegistrado: nombre => !!props.getProperty("REG_" + nombre)
     });
     const resultados = elegidos.map(t => registrarUnPedido_(t, props));
+    const sucursalDe = {};
+    traducidos.forEach(t => { sucursalDe[t.pedido] = t.venta.sucursal; });
+    const cierres = porCerrar_(pedidos, nombre => props.getProperty("REG_" + nombre), nombre => !!props.getProperty("CERR_" + nombre))
+      .map(c => cerrarUnPedido_(c, sucursalDe[c.pedido], props));
+    if (cierres.length) avisarCierres_(cierres);
     if (resultados.length) {
       const texto = redactarReporteRegistro_(resultados);
       Logger.log(texto);
@@ -245,6 +251,46 @@ function registrarUnPedido_(t, props) {
   } catch (e) {
     return { pedido: t.pedido, venta: t.venta, ok: false, error: e.message };
   }
+}
+
+// ---------------------------------------------------------------- Cerrar lo que Shopify ya entregó o canceló
+// La venta de un pedido en línea la captura la sucursal en el POS al entregarlo, así que aquí NO se crea venta:
+// solo se libera lo que la reserva sigue apartando y el pedido queda ENTREGADO (o CANCELADO). Cada pedido se
+// cierra una vez (propiedad CERR_<pedido>).
+
+// Funcion pura: pedidos registrados en el sistema que Shopify ya entregó o canceló y aún no se cierran.
+function porCerrar_(pedidos, idRegistrado, yaCerrado) {
+  return pedidos
+    .filter(p => idRegistrado(p.name) && !yaCerrado(p.name))
+    .filter(p => p.cancelledAt || p.displayFulfillmentStatus === "FULFILLED")
+    .map(p => ({ pedido: p.name, idVenta: idRegistrado(p.name), cancelado: !!p.cancelledAt }));
+}
+
+function cerrarUnPedido_(c, sucursal, props) {
+  const sufijo = SUFIJO_PROPIEDAD_SUCURSAL[sucursal];
+  try {
+    const cuerpo = { accion: "pedidoCerrarDesdeShopify", idVenta: c.idVenta, cancelado: c.cancelado };
+    let res = llamarPos_(Object.assign({ token: sesionPos_(sufijo, props) }, cuerpo));
+    if (!res.ok && /sesi[oó]n/i.test(res.error || "")) {   // token del POS vencido: entrar de nuevo una vez
+      CacheService.getScriptCache().remove("pos_token_" + sufijo);
+      res = llamarPos_(Object.assign({ token: sesionPos_(sufijo, props) }, cuerpo));
+    }
+    if (!res.ok) return Object.assign({ ok: false, error: res.error }, c);
+    props.setProperty("CERR_" + c.pedido, res.estado || "cerrado");
+    return Object.assign({ ok: true, estado: res.estado, referencia: res.referencia, liberadas: res.liberadas || 0, yaCerrado: !!res.yaCerrado }, c);
+  } catch (e) {
+    return Object.assign({ ok: false, error: e.message }, c);
+  }
+}
+
+// Solo avisa cuando algo falla: cerrar un pedido entregado es rutina.
+function avisarCierres_(cierres) {
+  const texto = "PEDIDOS DE SHOPIFY ENTREGADOS O CANCELADOS → SE CERRARON EN EL SISTEMA (sin crear venta)\n\n" +
+    cierres.map(c => "  • " + c.pedido + " (" + (c.referencia || c.idVenta) + ")" +
+      (c.ok ? " → " + c.estado + (c.yaCerrado ? " (ya estaba cerrado)" : " · liberadas " + c.liberadas) : " → ❌ " + c.error)).join("\n") + "\n";
+  Logger.log(texto);
+  const errores = cierres.filter(c => !c.ok).length;
+  if (errores) MailApp.sendEmail(correoReporte_(), "⚠️ Tarta Vasca — " + errores + " pedidos de Shopify no se pudieron cerrar en el sistema", texto);
 }
 
 // Token del POS para el usuario de esa sucursal; se guarda 6 h en cache.

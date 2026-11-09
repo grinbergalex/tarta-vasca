@@ -103,7 +103,11 @@ function pedidoAnotar(ss, idVenta, datos) {
 // Estado que ve el cliente y el equipo, a partir de lo que dice la fila (sirve también para pedidos de Shopify o teléfono).
 function _pedidoEstadoDe(fila, idx) {
   const anulado = idx.anul !== -1 && fila[idx.anul] === "ANULADO";
-  if (anulado) return String(fila[idx.anulMotivo] || "").indexOf(PEDIDO_MOTIVO_NO_RECOGIDO) !== -1 ? PEDIDO_ESTADO.NO_RECOGIDO : PEDIDO_ESTADO.CANCELADO;
+  if (anulado) {
+    const motivo = String(fila[idx.anulMotivo] || "");
+    if (motivo.indexOf(PEDIDO_MOTIVO_NO_RECOGIDO) !== -1) return PEDIDO_ESTADO.NO_RECOGIDO;
+    return motivo.indexOf(PEDIDO_MOTIVO_VENDIDO_APARTE) !== -1 ? PEDIDO_ESTADO.ENTREGADO : PEDIDO_ESTADO.CANCELADO;
+  }
   const tipo = idx.tipo !== -1 ? fila[idx.tipo] : "";
   const marcado = idx.estado_pedido !== -1 ? String(fila[idx.estado_pedido] || "") : "";
   if (tipo === "Venta") return marcado === PEDIDO_ESTADO.ENTREGADO ? PEDIDO_ESTADO.ENTREGADO : "VENTA";
@@ -260,6 +264,76 @@ function _pedidoMarcarNoRecogido(body, sesion) {
   } catch (err) {
     return { ok: false, error: String(err && err.message ? err.message : err) };
   } finally { try { lock.releaseLock(); } catch (e) { } }
+}
+
+// Shopify ya entregó (o canceló) el pedido y la venta, si la hubo, se capturó aparte en el POS: libera solo lo que
+// este pedido sigue apartando según el libro mayor (sin reponer stock ni crear otra venta) y lo cierra.
+// Lo llama el sincronizador de Shopify (shopify-sync/VentasShopify.js) con el usuario de la sucursal.
+function pedidoCerrarDesdeShopify(body, sesion) {
+  requierePuedeVender(sesion);
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  _pedidoAsegurarColumnas(ss);
+  const lock = LockService.getScriptLock();
+  try { lock.waitLock(30000); } catch (e) { return { ok: false, error: "Sistema ocupado." }; }
+  let resultado;
+  try {
+    const pedido = _pedidoResolver(ss, body || {});
+    if (!pedido) return { ok: false, error: "Pedido no encontrado." };
+    if (!_pedidoPuedeGestionar(sesion, pedido, false)) return { ok: false, error: "Este pedido lo gestiona " + _pedidoQuienGestiona(pedido) + "." };
+    if (PEDIDO_ESTADOS_ABIERTOS.indexOf(pedido.estado) === -1) return { ok: true, yaCerrado: true, referencia: pedido.referencia, estado: pedido.estado };
+    const cancelado = !!body.cancelado;
+    const estado = cancelado ? PEDIDO_ESTADO.CANCELADO : PEDIDO_ESTADO.ENTREGADO;
+    const liberado = _pedidoLiberarApartadoVigente(ss, pedido.idVenta, sesion.usuario);
+    _pedidoAnularFilas(ss, pedido, sesion.usuario, cancelado ? PEDIDO_MOTIVO_CANCELADO_SHOPIFY : PEDIDO_MOTIVO_VENDIDO_APARTE, estado);
+    registrarAuditoria(sesion.usuario, sesion.rol, "PEDIDO_CERRADO_SHOPIFY", pedido.referencia + " (" + pedido.idVenta + ") | " + estado + " | liberadas " + liberado + " piezas apartadas");
+    _utilMarcarDirty();
+    resultado = { ok: true, referencia: pedido.referencia, estado: estado, liberadas: liberado };
+  } catch (err) {
+    return { ok: false, error: String(err && err.message ? err.message : err) };
+  } finally { try { lock.releaseLock(); } catch (e) { } }
+  tableroMarcarEstado(resultado.referencia, resultado.estado);
+  return resultado;
+}
+
+// Lo que un pedido sigue apartando, por pieza, según sus asientos en Inv_Ledger (apartó menos liberó).
+// Así un pedido que nunca apartó (no había stock) no le quita el apartado a otro pedido del mismo sabor.
+function _pedidoApartadoVigente(ss, idVenta) {
+  const libro = ss.getSheetByName("Inv_Ledger");
+  const vigente = {};
+  if (!libro || libro.getLastRow() < 2) return vigente;
+  libro.getRange(2, 1, libro.getLastRow() - 1, 13).getValues().forEach(function (L) {
+    if (String(L[12]) !== String(idVenta)) return;
+    const cambio = Number(L[8]) || 0;
+    if (!cambio) return;
+    const pieza = [L[2], L[3], L[4]].join("|");
+    vigente[pieza] = (vigente[pieza] || 0) + cambio;
+  });
+  return vigente;
+}
+
+function _pedidoLiberarApartadoVigente(ss, idVenta, usuario) {
+  const vigente = _pedidoApartadoVigente(ss, idVenta);
+  let liberado = 0;
+  Object.keys(vigente).forEach(function (pieza) {
+    if (vigente[pieza] <= 0) return;
+    const p = pieza.split("|");   // sabor | tamaño | sucursal
+    invLiberar(ss, p[0], p[1], p[2], vigente[pieza], "apartado", idVenta, usuario);
+    liberado += vigente[pieza];
+  });
+  return liberado;
+}
+
+function _pedidoAnularFilas(ss, pedido, usuario, motivo, estado) {
+  const hoja = ss.getSheetByName("Ventas");
+  const idx = _pedidoIndices(hoja);
+  const ahora = new Date().toISOString();
+  pedido.filas.forEach(function (f) {
+    hoja.getRange(f, idx.anul + 1).setValue("ANULADO");
+    hoja.getRange(f, idx.anulPor + 1).setValue(usuario);
+    hoja.getRange(f, idx.anulFecha + 1).setValue(ahora);
+    hoja.getRange(f, idx.anulMotivo + 1).setValue(motivo);
+    hoja.getRange(f, idx.estado_pedido + 1).setValue(estado);
+  });
 }
 
 function _pedidoResumenItems(pedido) {
