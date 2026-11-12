@@ -62,6 +62,8 @@ function botAtendida(body) {
   const hoja = ss.getSheetByName(PENDIENTES_HOJA);
   hoja.getRange(pendiente.fila, PENDIENTE_COL.ESTADO + 1).setValue(PENDIENTE_ESTADO.ATENDIDA);
   _botPendienteAnotarMensaje(ss, pendiente.fila);
+  botPausar(conversacionId);
+  _botMarcarHumano(conversacionId);   // volver a tocar el botón le da a la persona otros BOT_HUMANO_MINUTOS
   return { ok: true, estado: PENDIENTE_ESTADO.ATENDIDA };
 }
 
@@ -99,22 +101,34 @@ function botEstaPausada(conversacionId) {
 
 // Desde el editor: botReanudarConversacion("2131509035")
 function botReanudarConversacion(conversacionId) {
-  PropertiesService.getScriptProperties().deleteProperty(BOT_PAUSA_PREFIJO + String(conversacionId));
+  const props = PropertiesService.getScriptProperties();
+  props.deleteProperty(BOT_PAUSA_PREFIJO + String(conversacionId));
+  props.deleteProperty(BOT_HUMANO_PREFIJO + String(conversacionId));
 }
 
-// Respuesta mientras está pausada. Devuelve null cuando Maite debe contestar normal.
-//  - Si una persona ya la marcó ATENDIDA: Maite calla mientras el cliente siga conversando con ella; cuando pasan
-//    BOT_REENGANCHE_HORAS sin que el cliente escriba y vuelve a escribir, es una conversación nueva y Maite se reincorpora.
-//  - Mientras siga PENDIENTE (nadie la ha tomado), Maite sigue ayudando con lo que el cliente pregunte (Alex, 11-nov-2026:
-//    después de "avísale" el cliente preguntó por el stock de mañana y Maite solo se disculpaba). El aviso al equipo ya salió
-//    y los recordatorios siguen saliendo de botRecordatoriosPendientes hasta que alguien la marque ATENDIDA.
+// Respuesta mientras está pausada. Devuelve null cuando Maite debe contestar normal (Alex, 11-nov-2026: "es importante que
+// siempre esté lista").
+//  - Mientras siga PENDIENTE (nadie la ha tomado), Maite sigue ayudando; el aviso al equipo ya salió y los recordatorios
+//    siguen saliendo de botRecordatoriosPendientes hasta que alguien la marque ATENDIDA.
+//  - Cuando una persona la marca ATENDIDA, Maite calla BOT_HUMANO_MINUTOS para no encimarse; pasado ese lapso vuelve a
+//    contestar sola. El sistema no ve lo que la persona escribe desde Instagram o WhatsApp: si necesita más tiempo, vuelve a
+//    tocar ATENDIDA. Lo que conteste desde la Bandeja de ManyChat pausa a Maite desde ManyChat mismo.
 function botRespuestaPausada(conversacionId) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const pendiente = _botPendienteDe(ss, conversacionId);
   if (pendiente) _botPendienteAnotarMensaje(ss, pendiente.fila);
   if (!pendiente || pendiente.estado !== PENDIENTE_ESTADO.ATENDIDA) return null;
-  if (Date.now() - pendiente.ultimoMensajeMs > BOT_REENGANCHE_HORAS * 3600000) { botReanudarConversacion(conversacionId); return null; }
-  return { ok: true, respuesta: "", handoff: true, alerta: "atendida_por_persona", pausada: true };
+  const props = PropertiesService.getScriptProperties();
+  const desde = Number(props.getProperty(BOT_HUMANO_PREFIJO + conversacionId)) || _botMarcarHumano(conversacionId);   // ATENDIDA puesta a mano en la hoja: cuenta desde ahora
+  if (Date.now() - desde < BOT_HUMANO_MINUTOS * 60000) return { ok: true, respuesta: "", handoff: true, alerta: "atendida_por_persona", pausada: true };
+  botReanudarConversacion(conversacionId);
+  return null;
+}
+
+function _botMarcarHumano(conversacionId) {
+  const ahora = Date.now();
+  PropertiesService.getScriptProperties().setProperty(BOT_HUMANO_PREFIJO + conversacionId, String(ahora));
+  return ahora;
 }
 
 // ---------------------------------------------------------------------------
@@ -154,14 +168,14 @@ function _botTiendaAbierta(dow, minutosDelDia) {
 }
 function _hhmmAMinutos(hhmm) { const p = String(hhmm).split(":"); return Number(p[0]) * 60 + Number(p[1] || 0); }
 
-// El último renglón de esa conversación: { fila, estado, ultimoMensajeMs } o null.
+// El último renglón de esa conversación: { fila, estado } o null.
 function _botPendienteDe(ss, conversacionId) {
   const hoja = ss.getSheetByName(PENDIENTES_HOJA);
   if (!hoja || hoja.getLastRow() < 2) return null;
   const filas = hoja.getRange(2, 1, hoja.getLastRow() - 1, PENDIENTE_COLUMNAS).getValues();
   for (let i = filas.length - 1; i >= 0; i--) {
     if (String(filas[i][PENDIENTE_COL.CONVERSACION]) === String(conversacionId)) {
-      return { fila: i + 2, estado: String(filas[i][PENDIENTE_COL.ESTADO]), ultimoMensajeMs: _pendienteDesdeMs(filas[i][PENDIENTE_COL.MENSAJE_CLIENTE]) || _pendienteDesdeMs(filas[i][PENDIENTE_COL.DESDE]) };
+      return { fila: i + 2, estado: String(filas[i][PENDIENTE_COL.ESTADO]) };
     }
   }
   return null;
