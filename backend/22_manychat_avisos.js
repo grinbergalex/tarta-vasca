@@ -94,8 +94,10 @@ function manychatMensajeCliente(ss, idContacto, canal, texto) {
   if (!_manychatToken()) return { configurado: false, ok: false, detalle: "falta MANYCHAT_API_TOKEN en Propiedades del script" };
   if (!flujo) return { configurado: false, ok: false, detalle: "falta " + clave + " en Configuración" };
   if (!/^\d+$/.test(String(idContacto || ""))) return { configurado: true, ok: false, detalle: "SIN CANAL: el pedido no trae el id de contacto de ManyChat" };
-  // En WhatsApp el texto puede ir en una plantilla (no acepta saltos de línea); en Instagram es texto normal y los conserva.
-  const valor = canal === "WhatsApp" ? _whatsappLimpiar(texto, 1000) : String(texto == null ? "" : texto).substring(0, 1000);
+  // Solo si el flujo es una plantilla de WhatsApp (no acepta saltos de línea) se aplana el texto; si es texto normal conserva
+  // sus renglones (12-nov: la confirmación con la llave llegaba en una sola línea con " | ").
+  const esPlantilla = /^s/i.test(String(_cfgVal(ss, clave + MANYCHAT_SUFIJO_PLANTILLA, "")).trim());
+  const valor = esPlantilla ? _whatsappLimpiar(texto, 1000) : String(texto == null ? "" : texto).substring(0, 1000);
   const r = _manychatEnviarFlujo(idContacto, flujo, [{ nombre: MANYCHAT_CAMPO_MENSAJE, valor: valor }]);
   return { configurado: true, ok: r.ok, detalle: r.detalle };
 }

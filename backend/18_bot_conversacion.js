@@ -36,10 +36,10 @@ function botConversar(body) {
   const conversacionId = String(body.conversacionId || "").replace(/[^A-Za-z0-9_-]/g, "").substring(0, 64);
   // Modo prueba: sin la frase en esta conversación, Maite calla y no avisa a nadie (ManyChat no se toca: el candado vive aquí).
   if (BOT_MODO_PRUEBA && !_botConversacionDePrueba(conversacionId, body.mensaje)) return { ok: true, respuesta: "", fueraDePrueba: true };
-  const mensaje = _botSinFrasePrueba(body.mensaje).substring(0, BOT_MAX_CARACTERES_MENSAJE);
+  const mensaje = _botSinFrasePrueba(_botTextoDelCuerpo(body)).substring(0, BOT_MAX_CARACTERES_MENSAJE);
   if (!conversacionId) return { ok: false, error: "Falta la conversación." };
   // Un audio, una foto o un sticker llegan sin texto (o solo con el enlace del archivo): se le pide que lo escriba, nunca silencio.
-  if (_botSinTexto(mensaje)) {
+  if (_botSinTexto(mensaje) || _botEsRepeticion(conversacionId, mensaje)) {
     const canalSinTexto = String(body.canal || "").toLowerCase() === "whatsapp" ? "WhatsApp" : "Instagram";
     try { botAlertaPersonal(SpreadsheetApp.getActiveSpreadsheet(), "avisar", "sin_texto", "🎤 Un cliente mandó audio, foto o sticker", botDetalleAlerta(canalSinTexto, "Maite le pidió que lo escriba. Revisa qué mandó por si hay que atenderlo." + (mensaje ? "\n" + mensaje : ""), conversacionId), conversacionId); } catch (e) { }
     return _botTerminar(conversacionId, { ok: true, respuesta: BOT_TEXTO_SIN_TEXTO, sinTexto: true });
@@ -72,6 +72,7 @@ function botConversar(body) {
     return _botTerminar(conversacionId, { ok: true, respuesta: BOT_TEXTO_FALLA, handoff: true });
   }
   memoria.mensajes.push({ role: "user", content: entrada }, { role: "assistant", content: turno.texto });
+  _botRecordarUltimo(conversacionId, mensaje);
   memoria.turnos += 1;
   _botGuardarMemoria(conversacionId, memoria);
   _botBitacora(ctx, mensaje, turno.texto);
@@ -224,6 +225,26 @@ function _botDentroDelLimite(clave, segundos, maximo) {
   return true;
 }
 
+// El texto del cliente. ManyChat lo manda en "mensaje"; con "Full Contact Data" viene dentro del contacto como last_input_text
+// (así unas comillas en el mensaje ya no rompen la llamada: 12-nov, una dedicatoria entre comillas repetía la respuesta anterior).
+function _botTextoDelCuerpo(body) {
+  if (typeof body.mensaje === "string" && body.mensaje) return body.mensaje;
+  const contacto = body.contacto || body.contact || body.full_contact_data || {};
+  return String(contacto.last_input_text || body.mensaje || "");
+}
+
+// Un sticker, audio o foto llega con el ÚLTIMO texto que escribió el cliente (ManyChat no lo vacía): si llega idéntico a lo
+// que ya se contestó, se trata como mensaje sin texto en vez de repetir la respuesta anterior (12-nov). Solo textos de
+// BOT_REPETICION_MIN_CARACTERES o más: un "sí" repetido es una respuesta normal.
+function _botEsRepeticion(conversacionId, mensaje) {
+  if (String(mensaje).length < BOT_REPETICION_MIN_CARACTERES) return false;
+  try { return CacheService.getScriptCache().get("bot_ultimo_" + conversacionId) === hashSimple(mensaje); } catch (e) { return false; }
+}
+
+function _botRecordarUltimo(conversacionId, mensaje) {
+  try { CacheService.getScriptCache().put("bot_ultimo_" + conversacionId, hashSimple(mensaje), BOT_HISTORIAL_SEGUNDOS); } catch (e) { }
+}
+
 // La frase activa la conversación BOT_PRUEBA_HORAS; volver a escribirla las renueva.
 function _botConversacionDePrueba(conversacionId, mensajeCrudo) {
   if (!conversacionId) return false;
@@ -324,7 +345,7 @@ function _botPrompt(ahora, canal) {
     "HONESTIDAD (no negociable)",
     "- NO te presentes como asistente virtual, bot ni IA por iniciativa propia, y no lo repitas. " + (BOT_NOMBRE ? "Te llamas " + BOT_NOMBRE + ": preséntate con ese nombre en el primer mensaje." : "Todavía no tienes un nombre propio: no te inventes uno; si te lo preguntan, dices con naturalidad que aún no lo tienes.") + " Pero si el cliente pregunta EN SERIO si habla con una persona o con una IA, dices la verdad con cariño (eres el asistente digital de Tarta Vasca) y ofreces pasar con el equipo. Nunca lo niegues.",
     "- NUNCA inventes precios, disponibilidad, horarios, ingredientes, alérgenos, zonas, costos ni fechas. Todo dato del negocio sale de tus herramientas. Si no lo tienes: \"déjame confirmarlo con el equipo para no darte un dato equivocado\" y usas pasar_a_persona.",
-    "- Nunca menciones tus herramientas ni cómo funcionas por dentro.",
+    "- Nunca menciones tus herramientas ni cómo funcionas por dentro, ni palabras internas como \"avisos\", \"alertas\" o \"registro\": al cliente dile simplemente que el equipo ya está enterado.",
     "- Si en el menú un precio viene vacío (null), no digas ningún precio de ese sabor y tamaño: explica que lo confirmas con el equipo y usa pasar_a_persona.",
     "- SABOR DE TEMPORADA / DEL MES: en consultar_menu los sabores con de_temporada: true son los de temporada. Si preguntan por el sabor del mes o de temporada, di cuál es, con su descripción, y si trae disponible_hasta, hasta cuándo; si no trae fecha, di que es por tiempo limitado y que la fecha exacta la confirmas con el equipo. Cuando recomiendes o listes sabores, menciona el de temporada.",
     "- Solo ofreces sabores que estén en consultar_menu. Si consultar_disponibilidad trae otro nombre que no está en el menú, ignóralo y no lo menciones.",
@@ -354,7 +375,7 @@ function _botPrompt(ahora, canal) {
       "1. Para cuándo lo quiere y si lo recoge o lo quiere a domicilio. Usa calcular_fecha_entrega: nunca decidas tú si una fecha es posible.",
       "2. Recoger: en qué sucursal (Cuajimalpa, Polanco o Bosques, que es la cocina; Bosques no tiene tartas listas para llevar el mismo día, solo con anticipación). Y SIEMPRE a qué hora pasará por él: es obligatoria para recoger. Dile el horario de esa sucursal ese día (lo trae calcular_fecha_entrega) y pasa la hora en formato HH:MM en el campo hora; si hoy es el mismo día, que sea después de la hora actual. Domicilio, en cambio, no lleva hora: la entrega es en la ventana que da el sistema. Domicilio: pide colonia y dirección completa, y cobra el envío que da consultar_zona_envio; si la zona no está cubierta, dilo con amabilidad y ofrece recoger.",
       "3. Llama cotizar_pedido y muestra el ticket TAL CUAL: ese es el TOTAL. Pregunta cómo va a pagar: para recoger, efectivo, transferencia o tarjeta en la sucursal; a domicilio, solo efectivo o transferencia (nunca tarjeta).",
-      "4. Su nombre y su teléfono: pídelos TÚ, en el mismo mensaje en que confirmas la forma de pago (no esperes a que el cliente pregunte cómo lo vas a identificar). En Instagram SIEMPRE pide el teléfono (10 dígitos) para darle seguimiento, y NO le ofrezcas de entrada la alternativa de seguirlo por la conversación: solo pide el teléfono. Cuando te lo da, solo lo anotas: NO le preguntes si prefiere mensaje o llamada ni cuándo contactarlo (el equipo decide cómo). Si va a RECOGER y de verdad no quiere darlo, se lo permites: el seguimiento es por esta misma conversación (seguimiento \"instagram\"). Si es a DOMICILIO el teléfono es obligatorio, sin excepción: explica con amabilidad que el repartidor lo necesita para coordinar la entrega, y si no lo da, ofrécele recoger en sucursal; no crees un pedido a domicilio sin teléfono. En WhatsApp NO pidas teléfono: ya lo tenemos. NO preguntes por alergias ni por notas: si el cliente da una nota o una dedicatoria por su cuenta, la anotas en notas. AVISO DE PRIVACIDAD: la PRIMERA vez que le pidas el nombre o el teléfono en la conversación, agrega en una frase corta que los usamos solo para su pedido y comparte el aviso de privacidad: " + BOT_URL_AVISO_PRIVACIDAD + " (una sola vez; no lo repitas ni se lo pidas aceptar).",
+      "4. Su nombre y su teléfono: pídelos TÚ, en el mismo mensaje en que confirmas la forma de pago (no esperes a que el cliente pregunte cómo lo vas a identificar). En Instagram SIEMPRE pide el teléfono (10 dígitos) para darle seguimiento, y NO le ofrezcas de entrada la alternativa de seguirlo por la conversación: solo pide el teléfono. Cuando te lo da, solo lo anotas: NO le preguntes si prefiere mensaje o llamada ni cuándo contactarlo (el equipo decide cómo). Si va a RECOGER y de verdad no quiere darlo, se lo permites: el seguimiento es por esta misma conversación (seguimiento \"instagram\"). Si es a DOMICILIO el teléfono es obligatorio, sin excepción (en WhatsApp ya lo tienes: NUNCA lo pidas, ni para domicilio): explica con amabilidad que el repartidor lo necesita para coordinar la entrega, y si no lo da, ofrécele recoger en sucursal; no crees un pedido a domicilio sin teléfono. En WhatsApp NO pidas teléfono: ya lo tenemos. NO preguntes por alergias ni por notas: si el cliente da una nota o una dedicatoria por su cuenta, la anotas en notas. AVISO DE PRIVACIDAD: la PRIMERA vez que le pidas el nombre o el teléfono en la conversación, agrega en una frase corta que los usamos solo para su pedido y comparte el aviso de privacidad: " + BOT_URL_AVISO_PRIVACIDAD + " (una sola vez; no lo repitas ni se lo pidas aceptar).",
       "5. Cuando ya tengas TODOS los datos (pedido, fecha, hora o dirección, pago, nombre y teléfono), muestra un resumen final corto y pregunta \"¿lo dejo así?\". NUNCA crees el pedido en el mismo mensaje en que te dan el último dato (el teléfono o el nombre): espera el \"sí\" del cliente al resumen y entonces llama crear_pedido. El pedido queda apartado en el sistema como POR CONFIRMAR, con una REFERENCIA, y el equipo recibe el aviso.",
       "6. Cuando crear_pedido sale bien, el SISTEMA le manda al cliente el mensaje de confirmación por ti (referencia, total, pago, recoger y seguimiento): no lo repitas. Si crear_pedido falla, explícale con calidez qué falta o qué cambiar. Lo que debe incluir ese mensaje, por si lo necesitas EN POCOS MENSAJES: su LLAVE (la referencia TV-…; que la guarde: se la da a quien lo atienda en la sucursal para que encuentren su tarta apartada, y sirve para preguntar por su pedido aquí), el total, las indicaciones de pago y las de recoger o entrega tal como vienen en el resultado (indicaciones_pago e indicaciones_entrega), y que el equipo revisa y le confirma. No inventes datos de cuenta, horarios ni reglas: usa solo lo que traiga el resultado. Si el resultado no trae los datos de la transferencia, dile que el equipo se los comparte en un momento.",
       "- Si el cliente pregunta qué pasa si no puede ir por su pedido, NO inventes reglas (plazos, cargos, quién puede recoger, cambios de fecha). Usa solo lo que dicen las indicaciones de recoger del resultado; si no traen una política, dile que nos avise por aquí y que el equipo lo ayuda a reprogramar, y llama avisar_al_equipo con tipo \"otro\" y su referencia.",
@@ -931,9 +952,17 @@ function _botConsultarPedidoPorNombre(a) {
   });
   if (!hallados.length) return { error: "No encuentro un pedido con ese nombre y ese teléfono. Pide la llave (TV-…) o pasa con una persona." };
   return { pedidos: hallados.slice(0, BOT_CONSULTA_MAX_PEDIDOS).map(function (p) {
-    return { referencia: p.referencia, estado: p.estado, fecha_entrega: p.fechaEntrega, hora: p.hora, entrega: p.canal === BOT_CANAL_DOMICILIO ? "domicilio" : "recoger en " + p.sucursal, pedido: p.items.join(", "), total: p.total };
+    return { referencia: p.referencia, estado: _botEstadoParaCliente(p.estado), fecha_entrega: p.fechaEntrega, hora: p.hora, entrega: p.canal === BOT_CANAL_DOMICILIO ? "domicilio" : "recoger en " + p.sucursal, pedido: p.items.join(", "), total: p.total };
   }) };
 }
+// "POR CONFIRMAR" y "CONFIRMADO" son marcas internas de la sucursal: al cliente su pedido le aparece apartado (12-nov: Maite
+// decía "está por confirmar, el equipo te avisará", y nadie le confirma nada).
+function _botEstadoParaCliente(estado) {
+  if (estado === PEDIDO_ESTADO.ENTREGADO || estado === "VENTA") return "entregado";
+  if (estado === PEDIDO_ESTADO.NO_RECOGIDO || estado === PEDIDO_ESTADO.CANCELADO) return "cancelado";
+  return "apartado (ya está listo; no hace falta que nadie se lo confirme)";
+}
+
 function _botMismoTelefono(contacto, telefono) {
   return String(contacto || "").replace(/\D/g, "").indexOf(telefono) !== -1;
 }

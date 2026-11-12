@@ -243,6 +243,7 @@ const BOT_PRUEBA_PREFIJO = "bot_prueba_";                                     //
 const BOT_FRASE_PRUEBA = /probarmaite/gi;                                  // frase que activa a Maite en el modo de pruebas con el equipo (12-nov): se quita del mensaje antes de leerlo
 const REPORTE_ELOGIO_MAX = 140;                                              // caracteres de cada felicitación en el reporte de la noche
 const BOT_AVISOS_SIN_WHATSAPP = ["observacion", "recado_para_equipo"];       // elogios y recados: bandeja del POS y reporte de la noche, sin WhatsApp al momento (12-nov)
+const BOT_REPETICION_MIN_CARACTERES = 12;                                     // un texto idéntico al anterior y así de largo = sticker/audio/foto (ManyChat repite el último texto)
 const BOT_MAX_CALLADOS = 10;                                                  // mensajes del cliente que se guardan mientras Maite calla (la atiende una persona)
 const BOT_HUMANO_MINUTOS = 30;                                               // con la conversación ATENDIDA, Maite calla estos minutos y luego vuelve a contestar sola (Alex, 11-nov)
 const BOT_HUMANO_PREFIJO = "bot_humano_";                                     // propiedad del script: cuándo una persona tomó la conversación
