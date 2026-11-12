@@ -229,7 +229,6 @@ const ALERTAS_BOT_HOJA = "Alertas_Bot";                                        /
 const BOT_ALERTA_REPETIDA_SEGUNDOS = 600;                                      // la misma alerta de la misma conversación no se vuelve a mandar en este lapso
 const ALERTA_ESPERA_CANDADO_MS = 10000;                                        // cuánto espera una alerta para anotarse si otra está escribiendo
 const BOT_PAUSA_PREFIJO = "bot_pausa_";                                        // propiedad del script por conversación pasada a una persona
-const BOT_DISCULPA_MINUTOS = 5;                                                // si pasan tantos minutos desde el traspaso y el cliente vuelve a escribir, Maite se disculpa y se le recuerda al equipo
 const PENDIENTES_HOJA = "Conversaciones_Pendientes";                          // un renglón por conversación pasada a una persona; ATENDIDA detiene los recordatorios
 const PENDIENTE_ESTADO = { PENDIENTE: "PENDIENTE", ATENDIDA: "ATENDIDA", SIN_ATENDER: "SIN ATENDER" };
 const BOT_RECORDATORIO_MINUTOS = 5;                                            // cada cuánto se le recuerda al equipo que un cliente espera (Alex, 1-nov)

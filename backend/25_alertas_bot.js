@@ -13,8 +13,6 @@
 // ============================================================================
 
 // Del tipo que manda el bot a lo que se escribe en la hoja y se usa como prioridad.
-const BOT_TEXTO_PAUSA = "Ya le avisé al equipo y una persona te escribe personalmente en cuanto pueda ❤️";
-const BOT_TEXTO_DISCULPA = "Una disculpa por la espera 🙏 Ya le recordé al equipo que sigues aquí, y alguien te escribe personalmente lo antes posible ❤️";
 const ALERTA_URGENTES = ["queja_u_observacion", "mensajero", "cliente_esperando", "amenaza_o_legal"];
 const ALERTA_SIN_SUGERENCIA = ["observacion", "recado_para_equipo"];   // nadie tiene que contestarle al cliente: no va el texto sugerido
 
@@ -104,36 +102,19 @@ function botReanudarConversacion(conversacionId) {
   PropertiesService.getScriptProperties().deleteProperty(BOT_PAUSA_PREFIJO + String(conversacionId));
 }
 
-// Minutos que lleva pausada la conversación (la pausa guarda cuándo termina: inicio = fin - BOT_PAUSA_HORAS).
-function _botMinutosPausada(conversacionId) {
-  const hasta = Number(PropertiesService.getScriptProperties().getProperty(BOT_PAUSA_PREFIJO + conversacionId));
-  return hasta ? (Date.now() - (hasta - BOT_PAUSA_HORAS * 3600 * 1000)) / 60000 : 0;
-}
-
-// Respuesta mientras está pausada. Devuelve null si la conversación ya terminó con la persona y Maite vuelve a participar.
-//  - Si la persona ya la marcó ATENDIDA: Maite calla mientras el cliente siga conversando; cuando pasan BOT_REENGANCHE_HORAS
-//    sin que el cliente escriba y vuelve a escribir, se considera una conversación nueva y Maite se reincorpora.
-//  - Si sigue PENDIENTE y el cliente insiste (BOT_DISCULPA_MINUTOS), Maite se disculpa por la espera; si no, el aviso va
-//    una sola vez por hora y luego silencio.
-// Los recordatorios al equipo no salen de aquí sino de botRecordatoriosPendientes (cada BOT_RECORDATORIO_MINUTOS).
+// Respuesta mientras está pausada. Devuelve null cuando Maite debe contestar normal.
+//  - Si una persona ya la marcó ATENDIDA: Maite calla mientras el cliente siga conversando con ella; cuando pasan
+//    BOT_REENGANCHE_HORAS sin que el cliente escriba y vuelve a escribir, es una conversación nueva y Maite se reincorpora.
+//  - Mientras siga PENDIENTE (nadie la ha tomado), Maite sigue ayudando con lo que el cliente pregunte (Alex, 11-nov-2026:
+//    después de "avísale" el cliente preguntó por el stock de mañana y Maite solo se disculpaba). El aviso al equipo ya salió
+//    y los recordatorios siguen saliendo de botRecordatoriosPendientes hasta que alguien la marque ATENDIDA.
 function botRespuestaPausada(conversacionId) {
-  const cache = CacheService.getScriptCache();
-  const pendiente = _botPendienteDe(SpreadsheetApp.getActiveSpreadsheet(), conversacionId);
-  if (pendiente && pendiente.estado === PENDIENTE_ESTADO.ATENDIDA) {
-    const silencio = Date.now() - pendiente.ultimoMensajeMs;
-    _botPendienteAnotarMensaje(SpreadsheetApp.getActiveSpreadsheet(), pendiente.fila);
-    if (silencio > BOT_REENGANCHE_HORAS * 3600000) { botReanudarConversacion(conversacionId); return null; }
-    return { ok: true, respuesta: "", handoff: true, alerta: "atendida_por_persona", pausada: true };
-  }
-  const minutos = _botMinutosPausada(conversacionId);
-  if (minutos >= BOT_DISCULPA_MINUTOS && !cache.get("bot_pausa_disculpa_" + conversacionId)) {
-    cache.put("bot_pausa_disculpa_" + conversacionId, "1", BOT_DISCULPA_MINUTOS * 60);
-    return { ok: true, respuesta: BOT_TEXTO_DISCULPA, handoff: true, alerta: "cliente_esperando", pausada: true };
-  }
-  const clave = "bot_pausa_avisada_" + conversacionId;
-  const primera = !cache.get(clave);
-  if (primera) cache.put(clave, "1", 3600);
-  return { ok: true, respuesta: primera ? BOT_TEXTO_PAUSA : "", handoff: true, alerta: "pausada", pausada: true };
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const pendiente = _botPendienteDe(ss, conversacionId);
+  if (pendiente) _botPendienteAnotarMensaje(ss, pendiente.fila);
+  if (!pendiente || pendiente.estado !== PENDIENTE_ESTADO.ATENDIDA) return null;
+  if (Date.now() - pendiente.ultimoMensajeMs > BOT_REENGANCHE_HORAS * 3600000) { botReanudarConversacion(conversacionId); return null; }
+  return { ok: true, respuesta: "", handoff: true, alerta: "atendida_por_persona", pausada: true };
 }
 
 // ---------------------------------------------------------------------------
