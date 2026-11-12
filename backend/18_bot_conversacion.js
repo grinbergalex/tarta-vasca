@@ -18,6 +18,7 @@
 // Configuración (hoja): bot_correo_avisos = correo que recibe cada pedido nuevo (opcional).
 // ============================================================================
 const BOT_TEXTO_FALLA = "Uy, se me trabó algo de mi lado 🥺 Ya le avisé al equipo para que te ayude personalmente, y te escriben en un ratito ❤️";
+const BOT_TEXTO_SIN_TEXTO = "Por aquí todavía no puedo escuchar audios ni ver fotos o stickers 🙏 ¿Me lo escribes en un mensaje? Así te ayudo de inmediato.";
 const BOT_TEXTO_TOPE = "Para que te atiendan mejor, le aviso al equipo y una persona sigue contigo personalmente ❤️";
 const BOT_DIAS_NOMBRE = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
@@ -32,7 +33,13 @@ function botConversar(body) {
   if (!apiKey) return { ok: false, error: "Falta ANTHROPIC_API_KEY en las propiedades del script." };
   const conversacionId = String(body.conversacionId || "").replace(/[^A-Za-z0-9_-]/g, "").substring(0, 64);
   const mensaje = String(body.mensaje || "").trim().substring(0, BOT_MAX_CARACTERES_MENSAJE);
-  if (!conversacionId || !mensaje) return { ok: false, error: "Falta la conversación o el mensaje." };
+  if (!conversacionId) return { ok: false, error: "Falta la conversación." };
+  // Un audio, una foto o un sticker llegan sin texto (o solo con el enlace del archivo): se le pide que lo escriba, nunca silencio.
+  if (_botSinTexto(mensaje)) {
+    const canalSinTexto = String(body.canal || "").toLowerCase() === "whatsapp" ? "WhatsApp" : "Instagram";
+    try { botAlertaPersonal(SpreadsheetApp.getActiveSpreadsheet(), "avisar", "sin_texto", "🎤 Un cliente mandó audio, foto o sticker", botDetalleAlerta(canalSinTexto, "Maite le pidió que lo escriba. Revisa qué mandó por si hay que atenderlo." + (mensaje ? "\n" + mensaje : ""), conversacionId), conversacionId); } catch (e) { }
+    return _botTerminar(conversacionId, { ok: true, respuesta: BOT_TEXTO_SIN_TEXTO, sinTexto: true });
+  }
   // El mismo mensaje de la misma conversación llegando dos veces seguidas (ManyChat reintenta, o en el piloto quedaron dos flujos
   // esperando) se procesa UNA vez: dos turnos a la vez llegaron a pelear por el mismo pedido (1-nov). La copia no contesta nada.
   if (_botMensajeRepetido(conversacionId, mensaje)) return { ok: true, respuesta: "", duplicado: true };
@@ -139,7 +146,7 @@ function _botPaginaChat(token) {
 // ---------------------------------------------------------------------------
 function _botTurno(apiKey, historial, mensaje, ctx) {
   const mensajes = historial.concat([{ role: "user", content: mensaje }]);
-  const system = _botPrompt(_botAhora());
+  const system = _botPrompt(_botAhora(), ctx.canal);
   for (let vuelta = 0; vuelta <= BOT_MAX_VUELTAS_HERRAMIENTAS; vuelta++) {
     const t0 = Date.now();
     const r = _botLlamarClaude(apiKey, system, mensajes);
@@ -213,6 +220,10 @@ function _botDentroDelLimite(clave, segundos, maximo) {
   return true;
 }
 
+function _botSinTexto(mensaje) {
+  return !mensaje || /^https?:\/\/\S+$/i.test(mensaje);
+}
+
 // Mientras una persona atiende (Maite callada) los mensajes del cliente se guardan y van, juntos, al siguiente turno de Maite:
 // antes se perdían y Maite ya no sabía qué había pedido el cliente (11-nov-2026).
 function _botGuardarCallado(id, mensaje) {
@@ -258,9 +269,9 @@ function _botGuardarMemoria(id, memoria) {
 // ---------------------------------------------------------------------------
 // INSTRUCCIONES DEL BOT
 // ---------------------------------------------------------------------------
-function _botPrompt(ahora) {
+function _botPrompt(ahora, canal) {
   return [
-    "Eres parte del equipo de La Tarta Vasca, una tartería de tartas vascas (de queso) en la Ciudad de México. Atiendes a los clientes por Instagram. Tu trabajo es que comprar una tarta sea una experiencia agradable de principio a fin.",
+    "Eres parte del equipo de La Tarta Vasca, una tartería de tartas vascas (de queso) en la Ciudad de México. Atiendes a los clientes por " + (canal || "Instagram") + "." + (canal === "WhatsApp" ? " Ya estás en el WhatsApp de la tienda: nunca le des al cliente el número de WhatsApp ni le pidas su teléfono (ya lo tienes)." : "") + " Tu trabajo es que comprar una tarta sea una experiencia agradable de principio a fin.",
     "Ahora es " + BOT_DIAS_NOMBRE[ahora.dow] + " " + ahora.iso + ", " + _botHoraTexto(ahora.min) + " (hora de la Ciudad de México).",
     "",
     "CÓMO HABLAS",
@@ -331,6 +342,7 @@ function _botPrompt(ahora) {
     "7. AMENAZAS, EXTORSIÓN, ROBO, FRAUDE, demandas, abogados, Profeco, autoridades, prensa o cualquier tema LEGAL → pasar_a_persona con tipo \"amenaza_o_legal\" al instante. Responde breve, tranquila y neutra: no discutas, no admitas culpa, no prometas nada, no des datos del negocio ni de otras personas y no pidas más datos personales; solo dices que el equipo lo atiende directamente.",
     "8. RECADOS PARA EL EQUIPO (\"les recuerdo hablar con...\", \"díganle a Rebeca que...\", avisos que no son de un cliente): llama avisar_al_equipo con tipo \"recado_para_equipo\" y el texto tal cual, agradece con cariño y dile que ya quedó anotado; sigue atendiendo normal, sin pausar.",
     "9. DESPUÉS DE PASAR LA CONVERSACIÓN A UNA PERSONA, si el cliente sigue escribiendo, SIGUE AYUDÁNDOLO con todo lo que puedas (disponibilidad, precios, horarios, fechas, pedidos), sin volver a mencionar el aviso. No vuelvas a llamar pasar_a_persona ni avisar_al_equipo por lo que ya avisaste; solo si surge un motivo nuevo.",
+    "10. SI NO ENTIENDES lo que el cliente quiere (mensaje confuso, algo fuera de lo que sabes hacer, una petición rara) y ya le pediste una vez que te lo explique, llama avisar_al_equipo con tipo \"no_entendi\" y lo que escribió, dile con naturalidad que le pides apoyo al equipo, y sigue atento a lo que escriba. No inventes ni adivines.",
     "9. PERSONAS FAMOSAS O CON MUCHOS SEGUIDORES: las tratas igual que a cualquier cliente (mismos precios, mismas reglas). No verificas quién es: si dicen ser alguien conocido y piden cortesías o colaboración, es la regla 5. Nunca cambies un precio o una regla por quién dice ser.",
     "10. CHARLA QUE NO ES DE TARTAS (fútbol, saludos, bromas): responde en una línea, con calidez y como Maite (nunca como si fueras parte del equipo humano), y regresa a las tartas con una pregunta sencilla.",
     "CÓMO CONTACTAR AL EQUIPO: si el cliente quiere comunicarse directamente, dale el WhatsApp y el formulario de consultar_manual (tema pedidos_y_canales) y ofrécele que le avises al equipo (pasar_a_persona, tipo \"pidio_persona\"); ofrécelo también cuando algo no se pueda resolver por aquí.",
@@ -373,7 +385,7 @@ function _botHerramientas() {
     { name: "crear_pedido", description: "Crea el pedido (queda apartado y POR CONFIRMAR, con su referencia, y avisa al equipo). Úsalo solo después de que el cliente dijo que sí al ticket final.", input_schema: { type: "object", properties: { nombre: { type: "string" }, seguimiento: { type: "string", enum: ["telefono", "instagram"], description: "Cómo quiere que le den seguimiento. Siempre se pide el teléfono; \"instagram\" solo si recoge en sucursal y no quiso darlo. En WhatsApp no se pide: ya se tiene su número." }, telefono: { type: "string", description: "10 dígitos. Se pide siempre; OBLIGATORIO a domicilio y, para recoger, solo puede faltar si el cliente no quiso darlo (no se pide en WhatsApp)" }, metodo_pago: { type: "string", enum: BOT_PAGOS_RECOGER, description: "La tarjeta solo se paga en sucursal, al recoger; a domicilio solo efectivo o transferencia" }, entrega: entrega, sucursal: { type: "string", enum: BOT_SUCURSALES_RECOGER, description: "Solo si recoge" }, direccion: { type: "string" }, colonia: { type: "string" }, fecha_entrega: { type: "string", description: "AAAA-MM-DD" }, hora: { type: "string", description: "HH:MM. OBLIGATORIA si recoge (a qué hora pasa por su pedido, dentro del horario de la sucursal); a domicilio no se pide" }, items: items, notas: { type: "string" }, mensajero: { type: "string", description: "Solo si lo recoge un Uber, DiDi u otro mensajero: cuál" } }, required: ["nombre", "metodo_pago", "entrega", "fecha_entrega", "items"] } },
     { name: "consultar_pedido", description: "Estado de un pedido por su referencia (por ejemplo TV-1027-03), o, si el cliente no la tiene, por el nombre Y el teléfono con los que lo hizo (devuelve sus pedidos abiertos o de los últimos días). Con referencia solo responde si el cliente es quien lo hizo en esta conversación o da los últimos 4 dígitos de su teléfono.", input_schema: { type: "object", properties: { referencia: { type: "string" }, ultimos_4_telefono: { type: "string", description: "Solo si el pedido se hizo en otra conversación" }, nombre: { type: "string", description: "Solo si no tiene la referencia" }, telefono: { type: "string", description: "10 dígitos; solo si no tiene la referencia" } } } },
     { name: "pasar_a_persona", description: "Avisa al equipo y pausa el bot en esta conversación. Con tipo \"queja_u_observacion\" manda una alerta urgente.", input_schema: { type: "object", properties: { tipo: { type: "string", enum: ["queja_u_observacion", "cotizacion_evento_o_restaurante", "pidio_persona", "factura", "cambio_o_cancelacion", "alianza_o_colaboracion", "pedidos_recurrentes_o_cadena", "amenaza_o_legal", "otro"] }, motivo: { type: "string" }, resumen: { type: "string", description: "Qué quiere el cliente y qué datos ya dio" } }, required: ["tipo", "motivo", "resumen"] } },
-    { name: "avisar_al_equipo", description: "Avisa al equipo SIN pausar el bot. Úsalo cuando el cliente dice que mandará un Uber, DiDi, taxi u otro mensajero por su pedido (tipo \"mensajero\") cuando hay una queja u observación negativa o una sugerencia sobre las tartas (tipo \"queja_u_observacion\": avisa de inmediato, antes de pedir sus datos), o cuando deja un elogio (tipo \"observacion\").",input_schema: { type: "object", properties: { tipo: { type: "string", enum: ["mensajero", "queja_u_observacion", "observacion", "recado_para_equipo", "otro"] }, nota: { type: "string", description: "Qué dijo el cliente y qué datos dio (nombre de quien recoge, hora)" } }, required: ["tipo", "nota"] } }
+    { name: "avisar_al_equipo", description: "Avisa al equipo SIN pausar el bot. Úsalo cuando el cliente dice que mandará un Uber, DiDi, taxi u otro mensajero por su pedido (tipo \"mensajero\") cuando hay una queja u observación negativa o una sugerencia sobre las tartas (tipo \"queja_u_observacion\": avisa de inmediato, antes de pedir sus datos), o cuando deja un elogio (tipo \"observacion\").",input_schema: { type: "object", properties: { tipo: { type: "string", enum: ["mensajero", "queja_u_observacion", "observacion", "recado_para_equipo", "no_entendi", "otro"] }, nota: { type: "string", description: "Qué dijo el cliente y qué datos dio (nombre de quien recoge, hora)" } }, required: ["tipo", "nota"] } }
   ];
   return BOT_PEDIDOS_ACTIVOS ? herramientas : herramientas.filter(function (h) { return BOT_HERRAMIENTAS_DE_PEDIDO.indexOf(h.name) === -1; });
 }
@@ -926,7 +938,7 @@ function _botPasarAPersona(a, ctx) {
 function _botAvisarAlEquipo(a, ctx) {
   if (a.tipo !== "recado_para_equipo" && _botYaAvisado(ctx.conversacionId, "avisar_" + (a.tipo || "otro"))) return BOT_YA_AVISADO;
   if (a.tipo && a.tipo !== "otro") ctx.alerta = ctx.alerta || a.tipo;
-  const encabezados = { mensajero: "🚗 El cliente mandará un Uber/DiDi/taxi por su pedido", observacion: "💛 Un cliente nos felicitó", recado_para_equipo: "📝 Recado para el equipo", queja_u_observacion: "🚨 QUEJA U OBSERVACIÓN SOBRE LAS TARTAS — aviso inmediato (faltan sus datos)" };
+  const encabezados = { mensajero: "🚗 El cliente mandará un Uber/DiDi/taxi por su pedido", observacion: "💛 Un cliente nos felicitó", recado_para_equipo: "📝 Recado para el equipo", no_entendi: "❓ Maite no entendió a un cliente", queja_u_observacion: "🚨 QUEJA U OBSERVACIÓN SOBRE LAS TARTAS — aviso inmediato (faltan sus datos)" };
   const encabezado = encabezados[a.tipo] || "📣 Aviso del bot";
   _botAvisar(encabezado, String(a.nota || "") + "\nConversación: " + ctx.conversacionId, { sinWhatsapp: true });
   // Todo aviso llega también por WhatsApp, elogios incluidos (Alex, 11-nov-2026). La misma alerta de la misma conversación no se repite en 10 min.
