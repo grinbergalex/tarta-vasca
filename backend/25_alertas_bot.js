@@ -14,7 +14,7 @@
 
 // Del tipo que manda el bot a lo que se escribe en la hoja y se usa como prioridad.
 const ALERTA_URGENTES = ["queja_u_observacion", "mensajero", "cliente_esperando", "amenaza_o_legal"];
-const ALERTA_SIN_SUGERENCIA = ["observacion", "recado_para_equipo"];   // nadie tiene que contestarle al cliente: no va el texto sugerido
+const ALERTA_CON_SUGERENCIA = ["queja_u_observacion"];   // solo en quejas va el segundo WhatsApp con el texto para pegarle al cliente (12-nov: cada alerta eran 2 mensajes)
 
 function botAlertaPersonal(ss, origen, tipo, titulo, detalle, conversacionId) {
   const clave = "bot_alerta_" + origen + "_" + tipo + "_" + conversacionId;
@@ -26,7 +26,7 @@ function botAlertaPersonal(ss, origen, tipo, titulo, detalle, conversacionId) {
     cache.put(clave, "1", BOT_ALERTA_REPETIDA_SEGUNDOS);
     aviso = manychatAvisarEquipo(ss, MANYCHAT_CLAVE_FLUJO_ALERTA, titulo, detalle, MANYCHAT_MAX_ALERTA, [{ nombre: MANYCHAT_CAMPO_CONVERSACION, valor: String(conversacionId) }]);
     // El texto sugerido va en un mensaje APARTE, solo con el texto, para copiarlo y pegarlo de un toque. Los recordatorios no lo repiten.
-    if (aviso.configurado && !/^recordatorio/.test(origen) && ALERTA_SIN_SUGERENCIA.indexOf(tipo) === -1) aviso.sugerencia = manychatSugerenciaEquipo(ss, _botSugerenciaCliente(tipo));
+    if (aviso.configurado && !/^recordatorio/.test(origen) && ALERTA_CON_SUGERENCIA.indexOf(tipo) !== -1) aviso.sugerencia = manychatSugerenciaEquipo(ss, _botSugerenciaCliente(tipo));
   }
   _botRegistrarAlerta(ss, origen, tipo, conversacionId, titulo, detalle, aviso);
   return aviso;
@@ -187,8 +187,14 @@ function _botPendienteAnotarMensaje(ss, fila) {
 
 // Milisegundos de una fecha "yyyy-MM-dd HH:mm" de la hoja (hora de México).
 function _pendienteDesdeMs(texto) {
+  if (texto instanceof Date) return texto.getTime();   // la hoja convierte "yyyy-MM-dd HH:mm" en fecha: antes daba 0 y "lleva 29 millones de min"
   const m = String(texto).match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})/);
   return m ? Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4] + MX_OFFSET_HORAS, +m[5]) : 0;
+}
+
+function _pendienteEsDeHoy(desde, ahoraFecha) {
+  const ms = _pendienteDesdeMs(desde);
+  return !!ms && Utilities.formatDate(new Date(ms), TZ_MX, "yyyy-MM-dd") === Utilities.formatDate(ahoraFecha, TZ_MX, "yyyy-MM-dd");
 }
 
 // Trigger cada BOT_RECORDATORIO_MINUTOS. `ahora` solo se pasa en las pruebas.
@@ -205,6 +211,8 @@ function botRecordatoriosPendientes(ahora) {
   let enviados = 0;
   filas.forEach(function (f, i) {
     if (String(f[PENDIENTE_COL.ESTADO]) !== PENDIENTE_ESTADO.PENDIENTE) return;
+    // Solo se recuerda lo de hoy: una conversación de ayer que nadie marcó se cierra sin avisar (12-nov: pruebas de la noche anterior sonaban toda la mañana).
+    if (!_pendienteEsDeHoy(f[PENDIENTE_COL.DESDE], ahoraFecha)) { hoja.getRange(i + 2, PENDIENTE_COL.ESTADO + 1).setValue(PENDIENTE_ESTADO.SIN_ATENDER); return; }
     const hechos = Number(f[PENDIENTE_COL.RECORDATORIOS]) || 0;
     const desde = _pendienteDesdeMs(f[PENDIENTE_COL.DESDE]);
     const ultimo = _pendienteDesdeMs(f[PENDIENTE_COL.ULTIMO]) || desde;

@@ -206,6 +206,20 @@ function _seguimientoProgramarReagenda(ss, pedido, ahora) {
   });
 }
 
+// Los elogios del día van juntos en el reporte de la noche en vez de un WhatsApp por cada uno (12-nov-2026).
+function _reporteElogiosHoy(ss, hoyIso) {
+  const hoja = ss.getSheetByName(ALERTAS_BOT_HOJA);
+  if (!hoja || hoja.getLastRow() < 2) return "";
+  const elogios = hoja.getRange(2, 1, hoja.getLastRow() - 1, 6).getValues().filter(function (f) {
+    const fecha = f[0] instanceof Date ? Utilities.formatDate(f[0], TZ_MX, "yyyy-MM-dd") : String(f[0]).substring(0, 10);
+    return fecha === hoyIso && String(f[1]).indexOf("observacion (") === 0;
+  }).map(function (f) {
+    const texto = (String(f[5]).match(/💬 ([^\n]*)/) || [])[1] || "";
+    return "• " + texto.substring(0, REPORTE_ELOGIO_MAX);
+  });
+  return elogios.length ? "\n\n💛 Felicitaciones de hoy (" + elogios.length + "):\n" + elogios.join("\n") : "";
+}
+
 // Trigger de las 21:00. Nada se cancela solo: lo que no se recogió queda POR REVISAR (sigue apartado) y se avisa al cliente.
 function pedidosCierreDelDia(ahora) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -230,7 +244,8 @@ function pedidosCierreDelDia(ahora) {
   const titulo = "Reporte de la noche " + Utilities.formatDate(momento, TZ_MX, "dd/MM") + ": " + entregados.length + " entregadas · "
     + (abiertos.length ? abiertos.length + " apartadas sin entregar" : "nada pendiente");
   const detalle = _reporteEntregadosTexto(entregados) + "\n\n" + _reporteNocheTexto(abiertos)
-    + (sinMarcar ? "\n\n⚠️ " + sinMarcar + " pedidos vencidos no alcanzaron a pasar a POR REVISAR: se marcan mañana." : "");
+    + (sinMarcar ? "\n\n⚠️ " + sinMarcar + " pedidos vencidos no alcanzaron a pasar a POR REVISAR: se marcan mañana." : "")
+    + _reporteElogiosHoy(ss, hoyIso);
   const aviso = manychatAvisarEquipo(ss, MANYCHAT_CLAVE_FLUJO_REPORTE, titulo, detalle, MANYCHAT_MAX_REPORTE);
   _reporteNocheRegistrar(ss, titulo, detalle, aviso, momento);
   return { ok: true, porRevisar: porRevisar, apartadasSinEntregar: abiertos.length, reporte: _pedidoResultadoAviso(aviso), mensajes: mensajesClientesEnviar(ss, momento) };

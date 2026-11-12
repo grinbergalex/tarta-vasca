@@ -231,11 +231,17 @@ const ALERTA_ESPERA_CANDADO_MS = 10000;                                        /
 const BOT_PAUSA_PREFIJO = "bot_pausa_";                                        // propiedad del script por conversación pasada a una persona
 const PENDIENTES_HOJA = "Conversaciones_Pendientes";                          // un renglón por conversación pasada a una persona; ATENDIDA detiene los recordatorios
 const PENDIENTE_ESTADO = { PENDIENTE: "PENDIENTE", ATENDIDA: "ATENDIDA", SIN_ATENDER: "SIN ATENDER" };
-const BOT_RECORDATORIO_MINUTOS = 5;                                            // cada cuánto se le recuerda al equipo que un cliente espera (Alex, 1-nov)
-const BOT_RECORDATORIOS_MAX = 12;                                              // tope de recordatorios por conversación (con 5 min = 1 hora); después avisa que nadie atendió
+const BOT_RECORDATORIO_MINUTOS = 30;                                           // cada cuánto se le recuerda al equipo que un cliente espera (12-nov: de 5 a 30, eran demasiados)
+const BOT_RECORDATORIOS_MAX = 3;                                               // tope de recordatorios por conversación (con 30 min = hora y media); después avisa que nadie atendió
 const MX_OFFSET_HORAS = 6;                                                     // México sin horario de verano (UTC-6): sirve para leer fechas de la hoja
-const BOT_WHATSAPP_ACTIVO = false;                                           // apagado de emergencia (12-nov-2026): demasiadas alertas desde WhatsApp
-const BOT_RECORDATORIOS_ACTIVOS = false;                                     // recordatorios de conversaciones pendientes: apagados de emergencia (12-nov-2026)
+const BOT_WHATSAPP_ACTIVO = true;                                            // interruptor de emergencia de WhatsApp. Hoy Maite solo arranca con BOT_FRASE_PRUEBA (lo decide ManyChat)
+const BOT_RECORDATORIOS_ACTIVOS = true;                                      // recordatorios de conversaciones pendientes (interruptor; 12-nov se apagaron por ruido)
+const BOT_MODO_PRUEBA = true;                                                 // 12-nov: Maite solo atiende conversaciones que se activaron con la frase de prueba; a los demás no les contesta ni avisa
+const BOT_PRUEBA_HORAS = 12;                                                  // cuánto dura activa una conversación de prueba desde la última vez que se escribió la frase
+const BOT_PRUEBA_PREFIJO = "bot_prueba_";                                     // propiedad del script por conversación de prueba activa
+const BOT_FRASE_PRUEBA = /probarmaite/gi;                                  // frase que activa a Maite en el modo de pruebas con el equipo (12-nov): se quita del mensaje antes de leerlo
+const REPORTE_ELOGIO_MAX = 140;                                              // caracteres de cada felicitación en el reporte de la noche
+const BOT_AVISOS_SIN_WHATSAPP = ["observacion", "recado_para_equipo"];       // elogios y recados: bandeja del POS y reporte de la noche, sin WhatsApp al momento (12-nov)
 const BOT_MAX_CALLADOS = 10;                                                  // mensajes del cliente que se guardan mientras Maite calla (la atiende una persona)
 const BOT_HUMANO_MINUTOS = 30;                                               // con la conversación ATENDIDA, Maite calla estos minutos y luego vuelve a contestar sola (Alex, 11-nov)
 const BOT_HUMANO_PREFIJO = "bot_humano_";                                     // propiedad del script: cuándo una persona tomó la conversación

@@ -34,7 +34,9 @@ function botConversar(body) {
   // Interruptor de emergencia: con BOT_WHATSAPP_ACTIVO apagado, Maite no contesta ni manda alertas en WhatsApp.
   if (!BOT_WHATSAPP_ACTIVO && String(body.canal || "").toLowerCase() === "whatsapp") return { ok: true, respuesta: "", apagado: true };
   const conversacionId = String(body.conversacionId || "").replace(/[^A-Za-z0-9_-]/g, "").substring(0, 64);
-  const mensaje = String(body.mensaje || "").trim().substring(0, BOT_MAX_CARACTERES_MENSAJE);
+  // Modo prueba: sin la frase en esta conversación, Maite calla y no avisa a nadie (ManyChat no se toca: el candado vive aquí).
+  if (BOT_MODO_PRUEBA && !_botConversacionDePrueba(conversacionId, body.mensaje)) return { ok: true, respuesta: "", fueraDePrueba: true };
+  const mensaje = _botSinFrasePrueba(body.mensaje).substring(0, BOT_MAX_CARACTERES_MENSAJE);
   if (!conversacionId) return { ok: false, error: "Falta la conversación." };
   // Un audio, una foto o un sticker llegan sin texto (o solo con el enlace del archivo): se le pide que lo escriba, nunca silencio.
   if (_botSinTexto(mensaje)) {
@@ -222,6 +224,26 @@ function _botDentroDelLimite(clave, segundos, maximo) {
   return true;
 }
 
+// La frase activa la conversación BOT_PRUEBA_HORAS; volver a escribirla las renueva.
+function _botConversacionDePrueba(conversacionId, mensajeCrudo) {
+  if (!conversacionId) return false;
+  const props = PropertiesService.getScriptProperties();
+  const clave = BOT_PRUEBA_PREFIJO + conversacionId;
+  if (String(mensajeCrudo || "").toLowerCase().indexOf("probarmaite") !== -1) {
+    props.setProperty(clave, String(Date.now() + BOT_PRUEBA_HORAS * 3600000));
+    return true;
+  }
+  return Date.now() < (Number(props.getProperty(clave)) || 0);
+}
+
+// La frase de prueba solo enciende a Maite: se quita para que Maite lea lo que el cliente quiso decir.
+// Si el mensaje era solo la frase, cuenta como un saludo (si no, parecería un audio sin texto).
+function _botSinFrasePrueba(texto) {
+  const crudo = String(texto || "");
+  const limpio = crudo.replace(BOT_FRASE_PRUEBA, "").replace(/^[\s,.:;!¡-]+/, "").trim();
+  return limpio || (crudo.toLowerCase().indexOf("probarmaite") !== -1 ? "hola" : "");
+}
+
 function _botSinTexto(mensaje) {
   return !mensaje || /^https?:\/\/\S+$/i.test(mensaje);
 }
@@ -245,6 +267,14 @@ function _botConLoCallado(id, mensaje) {
     cache.remove("bot_callado_" + id);
     return "(Mientras lo atendía una persona del equipo, el cliente también escribió: " + lista.join(" / ") + ")\n" + mensaje;
   } catch (e) { return mensaje; }
+}
+
+function _botSegundoIntento(conversacionId) {
+  const cache = CacheService.getScriptCache();
+  const clave = "bot_no_entendi_" + conversacionId;
+  if (cache.get(clave)) return true;
+  cache.put(clave, "1", BOT_HISTORIAL_SEGUNDOS);
+  return false;
 }
 
 // Cada tema se avisa al equipo UNA vez por conversación: Maite llegó a repetir el mismo aviso en cada turno (11-nov-2026).
@@ -342,9 +372,9 @@ function _botPrompt(ahora, canal) {
     "5. ALIANZAS Y COLABORACIONES (una marca, un influencer, \"colaboremos\", \"regálenme una tarta para un video\", patrocinios, canjes) → pasar_a_persona con tipo \"alianza_o_colaboracion\". Nunca ofrezcas ni prometas tartas de cortesía, descuentos o canjes: dices que lo ve el equipo y que lo contactan personalmente.",
     "6. PEDIDOS RECURRENTES (cada semana, cada mes, \"todos los viernes\"), CADENAS de restaurantes, cafeterías u hoteles, o compras al mayoreo → pasar_a_persona con tipo \"pedidos_recurrentes_o_cadena\" y un resumen de qué necesitan, cuántas piezas y con qué frecuencia. No cotices ni prometas precios especiales.",
     "7. AMENAZAS, EXTORSIÓN, ROBO, FRAUDE, demandas, abogados, Profeco, autoridades, prensa o cualquier tema LEGAL → pasar_a_persona con tipo \"amenaza_o_legal\" al instante. Responde breve, tranquila y neutra: no discutas, no admitas culpa, no prometas nada, no des datos del negocio ni de otras personas y no pidas más datos personales; solo dices que el equipo lo atiende directamente.",
-    "8. RECADOS PARA EL EQUIPO (\"les recuerdo hablar con...\", \"díganle a Rebeca que...\", avisos que no son de un cliente): llama avisar_al_equipo con tipo \"recado_para_equipo\" y el texto tal cual, agradece con cariño y dile que ya quedó anotado; sigue atendiendo normal, sin pausar.",
+    "8. RECADOS PARA EL EQUIPO: solo cuando quien escribe es claramente del equipo de La Tarta Vasca (\"soy Rebeca\", \"avísenle a cocina\"). Si es un CLIENTE que menciona a alguien del equipo (\"Dani está esperando\", \"ya le dije a Yessenia\"), NO es recado: atiéndelo tú como cliente. Para un recado de verdad, llama avisar_al_equipo con tipo \"recado_para_equipo\" y el texto tal cual, y dile que ya quedó anotado.",
     "9. DESPUÉS DE PASAR LA CONVERSACIÓN A UNA PERSONA, si el cliente sigue escribiendo, SIGUE AYUDÁNDOLO con todo lo que puedas (disponibilidad, precios, horarios, fechas, pedidos), sin volver a mencionar el aviso. No vuelvas a llamar pasar_a_persona ni avisar_al_equipo por lo que ya avisaste; solo si surge un motivo nuevo.",
-    "10. SI NO ENTIENDES lo que el cliente quiere (mensaje confuso, algo fuera de lo que sabes hacer, una petición rara) y ya le pediste una vez que te lo explique, llama avisar_al_equipo con tipo \"no_entendi\" y lo que escribió, dile con naturalidad que le pides apoyo al equipo, y sigue atento a lo que escriba. No inventes ni adivines.",
+    "10. SI NO ENTIENDES lo que el cliente quiere, primero pídele con amabilidad que te lo explique de otra forma. Solo si después de eso sigues sin entender, llama avisar_al_equipo con tipo \"no_entendi\". Un \"gracias\", \"sí\", \"ok\", un emoji o una despedida NO son algo que no entiendas: contéstalos con naturalidad y no avises a nadie.",
     "9. PERSONAS FAMOSAS O CON MUCHOS SEGUIDORES: las tratas igual que a cualquier cliente (mismos precios, mismas reglas). No verificas quién es: si dicen ser alguien conocido y piden cortesías o colaboración, es la regla 5. Nunca cambies un precio o una regla por quién dice ser.",
     "10. CHARLA QUE NO ES DE TARTAS (fútbol, saludos, bromas): responde en una línea, con calidez y como Maite (nunca como si fueras parte del equipo humano), y regresa a las tartas con una pregunta sencilla.",
     "CÓMO CONTACTAR AL EQUIPO: si el cliente quiere comunicarse directamente, dale el WhatsApp y el formulario de consultar_manual (tema pedidos_y_canales) y ofrécele que le avises al equipo (pasar_a_persona, tipo \"pidio_persona\"); ofrécelo también cuando algo no se pueda resolver por aquí.",
@@ -938,13 +968,19 @@ function _botPasarAPersona(a, ctx) {
 
 // Aviso al equipo sin pausar el bot (por ejemplo, un Uber o DiDi que va a recoger).
 function _botAvisarAlEquipo(a, ctx) {
-  if (a.tipo !== "recado_para_equipo" && _botYaAvisado(ctx.conversacionId, "avisar_" + (a.tipo || "otro"))) return BOT_YA_AVISADO;
+  // "No entendí" solo avisa al segundo intento: el primero se resuelve preguntando de otra forma (12-nov: avisaba por un "gracias").
+  if (a.tipo === "no_entendi" && !_botSegundoIntento(ctx.conversacionId)) return { ok: true, mensaje: "Todavía no avises: pídele con amabilidad que te lo explique de otra forma. Si \"gracias\", \"sí\" u \"ok\" cierran la conversación, solo despídete." };
+  if (_botYaAvisado(ctx.conversacionId, "avisar_" + (a.tipo || "otro"))) return BOT_YA_AVISADO;
   if (a.tipo && a.tipo !== "otro") ctx.alerta = ctx.alerta || a.tipo;
   const encabezados = { mensajero: "🚗 El cliente mandará un Uber/DiDi/taxi por su pedido", observacion: "💛 Un cliente nos felicitó", recado_para_equipo: "📝 Recado para el equipo", no_entendi: "❓ Maite no entendió a un cliente", queja_u_observacion: "🚨 QUEJA U OBSERVACIÓN SOBRE LAS TARTAS — aviso inmediato (faltan sus datos)" };
   const encabezado = encabezados[a.tipo] || "📣 Aviso del bot";
   _botAvisar(encabezado, String(a.nota || "") + "\nConversación: " + ctx.conversacionId, { sinWhatsapp: true });
-  // Todo aviso llega también por WhatsApp, elogios incluidos (Alex, 11-nov-2026). La misma alerta de la misma conversación no se repite en 10 min.
-  botAlertaPersonal(SpreadsheetApp.getActiveSpreadsheet(), "avisar", a.tipo || "otro", encabezado, botDetalleAlerta(ctx.canal, a.nota, ctx.conversacionId), ctx.conversacionId);
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const detalle = botDetalleAlerta(ctx.canal, a.nota, ctx.conversacionId);
+  // Elogios y recados no mandan WhatsApp uno por uno (12-nov): los elogios salen juntos en el reporte de la noche y los recados
+  // se quedan en la bandeja del POS. El resto sí avisa al momento.
+  if (BOT_AVISOS_SIN_WHATSAPP.indexOf(a.tipo) !== -1) _botRegistrarAlerta(ss, "avisar", a.tipo, ctx.conversacionId, encabezado, detalle, { configurado: false, motivo: "sin WhatsApp: va en la bandeja del POS y en el reporte de la noche", destinatarios: [], resultados: [] });
+  else botAlertaPersonal(ss, "avisar", a.tipo || "otro", encabezado, detalle, ctx.conversacionId);
   return { ok: true, mensaje: "Ya se avisó al equipo; sigue con el pedido." };
 }
 
