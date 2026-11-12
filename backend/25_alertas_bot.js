@@ -20,7 +20,9 @@ function botAlertaPersonal(ss, origen, tipo, titulo, detalle, conversacionId) {
   const clave = "bot_alerta_" + origen + "_" + tipo + "_" + conversacionId;
   const cache = CacheService.getScriptCache();
   let aviso;
-  if (cache.get(clave)) {
+  if (!BOT_ALERTAS_ACTIVAS) {
+    aviso = { configurado: false, motivo: "alertas de Maite apagadas (BOT_ALERTAS_ACTIVAS)", destinatarios: [], resultados: [] };
+  } else if (cache.get(clave)) {
     aviso = { configurado: false, motivo: "ya se avisó hace poco de lo mismo en esta conversación", destinatarios: [], resultados: [] };
   } else {
     cache.put(clave, "1", BOT_ALERTA_REPETIDA_SEGUNDOS);

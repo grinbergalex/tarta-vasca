@@ -235,7 +235,8 @@ const BOT_RECORDATORIO_MINUTOS = 30;                                           /
 const BOT_RECORDATORIOS_MAX = 3;                                               // tope de recordatorios por conversación (con 30 min = hora y media); después avisa que nadie atendió
 const MX_OFFSET_HORAS = 6;                                                     // México sin horario de verano (UTC-6): sirve para leer fechas de la hoja
 const BOT_WHATSAPP_ACTIVO = true;                                            // interruptor de emergencia de WhatsApp. Hoy Maite solo arranca con BOT_FRASE_PRUEBA (lo decide ManyChat)
-const BOT_RECORDATORIOS_ACTIVOS = true;                                      // recordatorios de conversaciones pendientes (interruptor; 12-nov se apagaron por ruido)
+const BOT_ALERTAS_ACTIVAS = false;                                           // WhatsApp de alerta de Maite a Alex y Rebeca: apagado (12-nov, pidió Alex). Quedan en Alertas_Bot y en la bandeja del POS
+const BOT_RECORDATORIOS_ACTIVOS = false;                                      // recordatorios de conversaciones pendientes (interruptor; 12-nov se apagaron por ruido)
 const BOT_MODO_PRUEBA = true;                                                 // 12-nov: Maite solo atiende conversaciones que se activaron con la frase de prueba; a los demás no les contesta ni avisa
 const BOT_PRUEBA_HORAS = 12;                                                  // cuánto dura activa una conversación de prueba desde la última vez que se escribió la frase
 const BOT_PRUEBA_PREFIJO = "bot_prueba_";                                     // propiedad del script por conversación de prueba activa
