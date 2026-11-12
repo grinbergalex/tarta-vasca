@@ -37,8 +37,8 @@ function botConversar(body) {
   // esperando) se procesa UNA vez: dos turnos a la vez llegaron a pelear por el mismo pedido (1-nov). La copia no contesta nada.
   if (_botMensajeRepetido(conversacionId, mensaje)) return { ok: true, respuesta: "", duplicado: true };
 
-  const pausada = botEstaPausada(conversacionId) ? botRespuestaPausada(conversacionId) : null;   // null = ya terminó con la persona y Maite vuelve
-  if (pausada) return _botTerminar(conversacionId, pausada);
+  const pausada = botEstaPausada(conversacionId) ? botRespuestaPausada(conversacionId) : null;   // null = Maite contesta normal
+  if (pausada) { _botGuardarCallado(conversacionId, mensaje); return _botTerminar(conversacionId, pausada); }
   const memoria = _botCargarMemoria(conversacionId);
   if (memoria.turnos >= BOT_MAX_TURNOS_POR_CONVERSACION) {
     _botAvisar("Conversación del bot en pausa", "La conversación " + conversacionId + " llegó al tope de " + BOT_MAX_TURNOS_POR_CONVERSACION + " turnos.");
@@ -53,13 +53,14 @@ function botConversar(body) {
   const canal = String(body.canal || "").toLowerCase() === "whatsapp" ? "WhatsApp" : "Instagram";
   const telefonoCanal = canal === "WhatsApp" ? String(body.telefono || "").replace(/\D/g, "") : "";
   const ctx = { conversacionId: conversacionId, canal: canal, telefonoCanal: telefonoCanal, handoff: false, alerta: "", pedido: null, herramientas: [], inicio: Date.now(), ms: { ia: 0, herramientas: 0, vueltas: 0 } };
-  const turno = _botTurno(apiKey, memoria.mensajes, mensaje, ctx);
+  const entrada = _botConLoCallado(conversacionId, mensaje);   // lo que escribió mientras la atendía una persona no se pierde
+  const turno = _botTurno(apiKey, memoria.mensajes, entrada, ctx);
   if (!turno.ok) {
     // El detalle del error va solo al equipo: al cliente (o a quien esté probando la entrada) nunca se le devuelve.
     _botAvisar("El bot falló", "Conversación " + conversacionId + ". Error: " + turno.error + ". Último mensaje del cliente: " + mensaje);
     return _botTerminar(conversacionId, { ok: true, respuesta: BOT_TEXTO_FALLA, handoff: true });
   }
-  memoria.mensajes.push({ role: "user", content: mensaje }, { role: "assistant", content: turno.texto });
+  memoria.mensajes.push({ role: "user", content: entrada }, { role: "assistant", content: turno.texto });
   memoria.turnos += 1;
   _botGuardarMemoria(conversacionId, memoria);
   _botBitacora(ctx, mensaje, turno.texto);
@@ -212,6 +213,37 @@ function _botDentroDelLimite(clave, segundos, maximo) {
   return true;
 }
 
+// Mientras una persona atiende (Maite callada) los mensajes del cliente se guardan y van, juntos, al siguiente turno de Maite:
+// antes se perdían y Maite ya no sabía qué había pedido el cliente (11-nov-2026).
+function _botGuardarCallado(id, mensaje) {
+  try {
+    const cache = CacheService.getScriptCache();
+    const lista = JSON.parse(cache.get("bot_callado_" + id) || "[]");
+    lista.push(mensaje);
+    cache.put("bot_callado_" + id, JSON.stringify(lista.slice(-BOT_MAX_CALLADOS)), BOT_HISTORIAL_SEGUNDOS);
+  } catch (e) { }
+}
+
+function _botConLoCallado(id, mensaje) {
+  try {
+    const cache = CacheService.getScriptCache();
+    const lista = JSON.parse(cache.get("bot_callado_" + id) || "[]");
+    if (!lista.length) return mensaje;
+    cache.remove("bot_callado_" + id);
+    return "(Mientras lo atendía una persona del equipo, el cliente también escribió: " + lista.join(" / ") + ")\n" + mensaje;
+  } catch (e) { return mensaje; }
+}
+
+// Cada tema se avisa al equipo UNA vez por conversación: Maite llegó a repetir el mismo aviso en cada turno (11-nov-2026).
+function _botYaAvisado(conversacionId, tipo) {
+  const cache = CacheService.getScriptCache();
+  const clave = "bot_avisado_" + tipo + "_" + conversacionId;
+  if (cache.get(clave)) return true;
+  cache.put(clave, "1", BOT_HISTORIAL_SEGUNDOS);
+  return false;
+}
+const BOT_YA_AVISADO = { ok: true, mensaje: "El equipo ya estaba avisado de esto en esta conversación. No lo menciones; contesta lo que el cliente pregunta." };
+
 function _botCargarMemoria(id) {
   try { const crudo = CacheService.getScriptCache().get("bot_mem_" + id); if (crudo) return JSON.parse(crudo); } catch (e) { }
   return { mensajes: [], turnos: 0 };
@@ -234,11 +266,17 @@ function _botPrompt(ahora) {
     "CÓMO HABLAS",
     "- Cálido, agradecido y cercano, como el equipo con una amiga. Hablas de tú y usas el nombre del cliente en cuanto lo sabes.",
     "- Mensajes cortos, como en un chat: una idea por mensaje, máximo 3 o 4 líneas. Haces UNA pregunta a la vez.",
-    "- Casi sin emojis: como mucho uno por conversación, y NUNCA el corazón ❤️ en cada mensaje (resérvalo para agradecer algo importante). Nada de tono corporativo (\"estimado cliente\", \"le informamos\").",
+    "- Casi sin emojis: como mucho uno por conversación, y NUNCA el corazón ❤️ en cada mensaje (resérvalo para agradecer algo importante). La excepción es agradecer un elogio: ahí sí 2 o 3 emojis. Nada de tono corporativo (\"estimado cliente\", \"le informamos\").",
     "- No cierres cada mensaje con una pregunta de relleno (\"¿te ayudo con algo más?\", \"¿quieres que te cuente de los sabores?\"). Pregunta solo lo que haga falta para avanzar; si ya contestaste, termina ahí.",
     "- Escribes en texto plano, como en Instagram: sin negritas ni Markdown (nada de ** ni #). Para listas usa • o guiones simples.",
     "- Agradeces con calidez (por escribir, por compartir, por visitarnos), pero varía: da las gracias de bienvenida solo en el primer mensaje de la conversación, no en todos. Si alguien está molesto, primero empatizas y luego resuelves.",
     "- ESTILO DE LA MARCA (del manual de atención): hablas con seguridad y orgullo de los sabores y de la historia, recomiendas según los gustos del cliente, mantienes una actitud cálida y tranquila aun con presión, y resuelves dudas con claridad y cercanía. Que cada persona se sienta bienvenida, escuchada, guiada y apapachada, y segura de que compra un producto premium. Nunca contestes cortante ni apresures al cliente, no hables de problemas internos y nunca digas solo \"no sé\": busca la respuesta con tus herramientas y, si no la hay, ofrece confirmarla con el equipo.",
+    "",
+    "FOCO (lo más importante de cada respuesta)",
+    "- La PRIMERA línea contesta exactamente lo que el cliente preguntó en su último mensaje, usando los datos que ya dio en la conversación (sucursal, día, hora, tamaño, sabor, cantidad). Si pidió Polanco, contesta de Polanco; no le ofrezcas otra sucursal, otro día u otro tamaño salvo que lo que pidió no se pueda.",
+    "- Respuestas claras y concretas: qué hay, cuánto cuesta, cuándo y dónde. Nada de rodeos ni explicaciones que no pidió.",
+    "- Tu objetivo es que el cliente compre: después de contestar, haz UNA pregunta que acerque el pedido (cuál quiere, cuántas, a qué hora pasa, a nombre de quién).",
+    "- Los avisos al equipo son internos: una vez que avisaste algo, NO lo vuelvas a mencionar, no te disculpes por avisos y no regreses a temas ya atendidos (una felicitación, una pregunta que pasaste al equipo) salvo que el cliente lo saque. Cada tema se avisa UNA sola vez por conversación.",
     "",
     "HONESTIDAD (no negociable)",
     "- NO te presentes como asistente virtual, bot ni IA por iniciativa propia, y no lo repitas. " + (BOT_NOMBRE ? "Te llamas " + BOT_NOMBRE + ": preséntate con ese nombre en el primer mensaje." : "Todavía no tienes un nombre propio: no te inventes uno; si te lo preguntan, dices con naturalidad que aún no lo tienes.") + " Pero si el cliente pregunta EN SERIO si habla con una persona o con una IA, dices la verdad con cariño (eres el asistente digital de Tarta Vasca) y ofreces pasar con el equipo. Nunca lo niegues.",
@@ -292,7 +330,7 @@ function _botPrompt(ahora) {
     "6. PEDIDOS RECURRENTES (cada semana, cada mes, \"todos los viernes\"), CADENAS de restaurantes, cafeterías u hoteles, o compras al mayoreo → pasar_a_persona con tipo \"pedidos_recurrentes_o_cadena\" y un resumen de qué necesitan, cuántas piezas y con qué frecuencia. No cotices ni prometas precios especiales.",
     "7. AMENAZAS, EXTORSIÓN, ROBO, FRAUDE, demandas, abogados, Profeco, autoridades, prensa o cualquier tema LEGAL → pasar_a_persona con tipo \"amenaza_o_legal\" al instante. Responde breve, tranquila y neutra: no discutas, no admitas culpa, no prometas nada, no des datos del negocio ni de otras personas y no pidas más datos personales; solo dices que el equipo lo atiende directamente.",
     "8. RECADOS PARA EL EQUIPO (\"les recuerdo hablar con...\", \"díganle a Rebeca que...\", avisos que no son de un cliente): llama avisar_al_equipo con tipo \"recado_para_equipo\" y el texto tal cual, agradece con cariño y dile que ya quedó anotado; sigue atendiendo normal, sin pausar.",
-    "9. DESPUÉS DE PASAR LA CONVERSACIÓN A UNA PERSONA, si el cliente sigue escribiendo, SIGUE AYUDÁNDOLO con todo lo que puedas (disponibilidad, precios, horarios, fechas, pedidos), recordándole en una frase que el equipo ya está avisado y también le escribirá. No vuelvas a llamar pasar_a_persona por el mismo motivo; solo si surge un motivo nuevo.",
+    "9. DESPUÉS DE PASAR LA CONVERSACIÓN A UNA PERSONA, si el cliente sigue escribiendo, SIGUE AYUDÁNDOLO con todo lo que puedas (disponibilidad, precios, horarios, fechas, pedidos), sin volver a mencionar el aviso. No vuelvas a llamar pasar_a_persona ni avisar_al_equipo por lo que ya avisaste; solo si surge un motivo nuevo.",
     "9. PERSONAS FAMOSAS O CON MUCHOS SEGUIDORES: las tratas igual que a cualquier cliente (mismos precios, mismas reglas). No verificas quién es: si dicen ser alguien conocido y piden cortesías o colaboración, es la regla 5. Nunca cambies un precio o una regla por quién dice ser.",
     "10. CHARLA QUE NO ES DE TARTAS (fútbol, saludos, bromas): responde en una línea, con calidez y como Maite (nunca como si fueras parte del equipo humano), y regresa a las tartas con una pregunta sencilla.",
     "CÓMO CONTACTAR AL EQUIPO: si el cliente quiere comunicarse directamente, dale el WhatsApp y el formulario de consultar_manual (tema pedidos_y_canales) y ofrécele que le avises al equipo (pasar_a_persona, tipo \"pidio_persona\"); ofrécelo también cuando algo no se pueda resolver por aquí.",
@@ -872,6 +910,7 @@ const BOT_ENCABEZADOS_ALERTA = {
   amenaza_o_legal: "⚠️ AMENAZA, EXTORSIÓN, ROBO O TEMA LEGAL — atender primero y con cuidado"
 };
 function _botPasarAPersona(a, ctx) {
+  if (_botYaAvisado(ctx.conversacionId, "pasar_" + (a.tipo || "otro"))) return BOT_YA_AVISADO;
   ctx.handoff = true;
   ctx.alerta = a.tipo || "otro";
   const encabezado = BOT_ENCABEZADOS_ALERTA[a.tipo] || "🙋 El bot pasa una conversación a una persona";
@@ -885,6 +924,7 @@ function _botPasarAPersona(a, ctx) {
 
 // Aviso al equipo sin pausar el bot (por ejemplo, un Uber o DiDi que va a recoger).
 function _botAvisarAlEquipo(a, ctx) {
+  if (a.tipo !== "recado_para_equipo" && _botYaAvisado(ctx.conversacionId, "avisar_" + (a.tipo || "otro"))) return BOT_YA_AVISADO;
   if (a.tipo && a.tipo !== "otro") ctx.alerta = ctx.alerta || a.tipo;
   const encabezados = { mensajero: "🚗 El cliente mandará un Uber/DiDi/taxi por su pedido", observacion: "💛 Un cliente nos felicitó", recado_para_equipo: "📝 Recado para el equipo", queja_u_observacion: "🚨 QUEJA U OBSERVACIÓN SOBRE LAS TARTAS — aviso inmediato (faltan sus datos)" };
   const encabezado = encabezados[a.tipo] || "📣 Aviso del bot";
