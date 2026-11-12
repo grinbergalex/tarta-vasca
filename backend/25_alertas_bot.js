@@ -193,6 +193,7 @@ function _pendienteDesdeMs(texto) {
 
 // Trigger cada BOT_RECORDATORIO_MINUTOS. `ahora` solo se pasa en las pruebas.
 function botRecordatoriosPendientes(ahora) {
+  if (!BOT_RECORDATORIOS_ACTIVOS) return { enviados: 0, apagado: true };   // apagado de emergencia (12-nov-2026)
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const hoja = ss.getSheetByName(PENDIENTES_HOJA);
   if (!hoja || hoja.getLastRow() < 2) return { enviados: 0 };
