@@ -31,6 +31,8 @@ function botConversar(body) {
   if (!secreto || String(body.botToken || "") !== secreto) return { ok: false, error: "No autorizado." };
   const apiKey = props.getProperty("ANTHROPIC_API_KEY");
   if (!apiKey) return { ok: false, error: "Falta ANTHROPIC_API_KEY en las propiedades del script." };
+  // Interruptor de emergencia: con BOT_WHATSAPP_ACTIVO apagado, Maite no contesta ni manda alertas en WhatsApp.
+  if (!BOT_WHATSAPP_ACTIVO && String(body.canal || "").toLowerCase() === "whatsapp") return { ok: true, respuesta: "", apagado: true };
   const conversacionId = String(body.conversacionId || "").replace(/[^A-Za-z0-9_-]/g, "").substring(0, 64);
   const mensaje = String(body.mensaje || "").trim().substring(0, BOT_MAX_CARACTERES_MENSAJE);
   if (!conversacionId) return { ok: false, error: "Falta la conversación." };

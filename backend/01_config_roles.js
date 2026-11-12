@@ -234,6 +234,7 @@ const PENDIENTE_ESTADO = { PENDIENTE: "PENDIENTE", ATENDIDA: "ATENDIDA", SIN_ATE
 const BOT_RECORDATORIO_MINUTOS = 5;                                            // cada cuánto se le recuerda al equipo que un cliente espera (Alex, 1-nov)
 const BOT_RECORDATORIOS_MAX = 12;                                              // tope de recordatorios por conversación (con 5 min = 1 hora); después avisa que nadie atendió
 const MX_OFFSET_HORAS = 6;                                                     // México sin horario de verano (UTC-6): sirve para leer fechas de la hoja
+const BOT_WHATSAPP_ACTIVO = false;                                           // apagado de emergencia (12-nov-2026): demasiadas alertas desde WhatsApp
 const BOT_MAX_CALLADOS = 10;                                                  // mensajes del cliente que se guardan mientras Maite calla (la atiende una persona)
 const BOT_HUMANO_MINUTOS = 30;                                               // con la conversación ATENDIDA, Maite calla estos minutos y luego vuelve a contestar sola (Alex, 11-nov)
 const BOT_HUMANO_PREFIJO = "bot_humano_";                                     // propiedad del script: cuándo una persona tomó la conversación
