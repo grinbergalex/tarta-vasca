@@ -16,6 +16,7 @@
 const BOT_TEXTO_PAUSA = "Ya le avisé al equipo y una persona te escribe personalmente en cuanto pueda ❤️";
 const BOT_TEXTO_DISCULPA = "Una disculpa por la espera 🙏 Ya le recordé al equipo que sigues aquí, y alguien te escribe personalmente lo antes posible ❤️";
 const ALERTA_URGENTES = ["queja_u_observacion", "mensajero", "cliente_esperando", "amenaza_o_legal"];
+const ALERTA_SIN_SUGERENCIA = ["observacion", "recado_para_equipo"];   // nadie tiene que contestarle al cliente: no va el texto sugerido
 
 function botAlertaPersonal(ss, origen, tipo, titulo, detalle, conversacionId) {
   const clave = "bot_alerta_" + origen + "_" + tipo + "_" + conversacionId;
@@ -27,7 +28,7 @@ function botAlertaPersonal(ss, origen, tipo, titulo, detalle, conversacionId) {
     cache.put(clave, "1", BOT_ALERTA_REPETIDA_SEGUNDOS);
     aviso = manychatAvisarEquipo(ss, MANYCHAT_CLAVE_FLUJO_ALERTA, titulo, detalle, MANYCHAT_MAX_ALERTA, [{ nombre: MANYCHAT_CAMPO_CONVERSACION, valor: String(conversacionId) }]);
     // El texto sugerido va en un mensaje APARTE, solo con el texto, para copiarlo y pegarlo de un toque. Los recordatorios no lo repiten.
-    if (aviso.configurado && !/^recordatorio/.test(origen)) aviso.sugerencia = manychatSugerenciaEquipo(ss, _botSugerenciaCliente(tipo));
+    if (aviso.configurado && !/^recordatorio/.test(origen) && ALERTA_SIN_SUGERENCIA.indexOf(tipo) === -1) aviso.sugerencia = manychatSugerenciaEquipo(ss, _botSugerenciaCliente(tipo));
   }
   _botRegistrarAlerta(ss, origen, tipo, conversacionId, titulo, detalle, aviso);
   return aviso;

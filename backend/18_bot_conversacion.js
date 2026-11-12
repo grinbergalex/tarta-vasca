@@ -284,7 +284,7 @@ function _botPrompt(ahora) {
       ""
     ] : []),
     "MOTIVOS PARA HACER LLEGAR UN MENSAJE AL PERSONAL (siempre, sin excepción):",
-    "1. Cualquier queja u OBSERVACIÓN sobre las tartas (llegó aplastada, estaba muy dulce, algo no les gustó, una sugerencia): AL INSTANTE, en ese mismo turno, llama avisar_al_equipo con tipo \"queja_u_observacion\" y lo que dijo, aunque todavía no tengas su nombre ni su teléfono (así el equipo se entera de inmediato). Después pide nombre, teléfono y, si puede, una foto; y cuando los tengas (o si no los quiere dar), llama pasar_a_persona con tipo \"queja_u_observacion\" y el resumen completo. Si es un elogio, agradece con cariño y avisa con avisar_al_equipo (tipo \"observacion\"), sin pausar.",
+    "1. Cualquier queja u OBSERVACIÓN sobre las tartas (llegó aplastada, estaba muy dulce, algo no les gustó, una sugerencia): AL INSTANTE, en ese mismo turno, llama avisar_al_equipo con tipo \"queja_u_observacion\" y lo que dijo, aunque todavía no tengas su nombre ni su teléfono (así el equipo se entera de inmediato). Después pide nombre, teléfono y, si puede, una foto; y cuando los tengas (o si no los quiere dar), llama pasar_a_persona con tipo \"queja_u_observacion\" y el resumen completo. Si es un elogio o una felicitación (las tartas, los videos, el servicio, la marca): agradece MUCHO y de corazón, con 2 o 3 emojis (🥹❤️🙏✨🧁), dile con palabras propias cuánto significa para Rebeca y para el equipo y que se lo vas a compartir; que se sienta un agradecimiento sincero y personal, nunca una respuesta corta o genérica. Luego avisa con avisar_al_equipo (tipo \"observacion\") con lo que dijo, sin pausar.",
     "2. Cotizaciones para eventos o restaurantes → pasar_a_persona con tipo \"cotizacion_evento_o_restaurante\".",
     "3. Cualquier petición de mandar un Uber, DiDi, taxi u otro mensajero a recoger su pedido → avisar_al_equipo con tipo \"mensajero\" (ver abajo).",
     "4. Si en algún momento mencionan que quieren hablar con alguien más → pasar_a_persona con tipo \"pidio_persona\".",
@@ -885,10 +885,11 @@ function _botPasarAPersona(a, ctx) {
 // Aviso al equipo sin pausar el bot (por ejemplo, un Uber o DiDi que va a recoger).
 function _botAvisarAlEquipo(a, ctx) {
   if (a.tipo && a.tipo !== "otro") ctx.alerta = ctx.alerta || a.tipo;
-  const encabezados = { mensajero: "🚗 El cliente mandará un Uber/DiDi/taxi por su pedido", observacion: "💬 Comentario de un cliente sobre las tartas", recado_para_equipo: "📝 Recado para el equipo", queja_u_observacion: "🚨 QUEJA U OBSERVACIÓN SOBRE LAS TARTAS — aviso inmediato (faltan sus datos)" };
+  const encabezados = { mensajero: "🚗 El cliente mandará un Uber/DiDi/taxi por su pedido", observacion: "💛 Un cliente nos felicitó", recado_para_equipo: "📝 Recado para el equipo", queja_u_observacion: "🚨 QUEJA U OBSERVACIÓN SOBRE LAS TARTAS — aviso inmediato (faltan sus datos)" };
   const encabezado = encabezados[a.tipo] || "📣 Aviso del bot";
   _botAvisar(encabezado, String(a.nota || "") + "\nConversación: " + ctx.conversacionId, { sinWhatsapp: true });
-  if (a.tipo !== "observacion") botAlertaPersonal(SpreadsheetApp.getActiveSpreadsheet(), "avisar", a.tipo || "otro", encabezado, botDetalleAlerta(ctx.canal, a.nota, ctx.conversacionId), ctx.conversacionId);
+  // Todo aviso llega también por WhatsApp, elogios incluidos (Alex, 11-nov-2026). La misma alerta de la misma conversación no se repite en 10 min.
+  botAlertaPersonal(SpreadsheetApp.getActiveSpreadsheet(), "avisar", a.tipo || "otro", encabezado, botDetalleAlerta(ctx.canal, a.nota, ctx.conversacionId), ctx.conversacionId);
   return { ok: true, mensaje: "Ya se avisó al equipo; sigue con el pedido." };
 }
 
