@@ -35,7 +35,7 @@ function botConversar(body) {
   if (!BOT_WHATSAPP_ACTIVO && String(body.canal || "").toLowerCase() === "whatsapp") return { ok: true, respuesta: "", apagado: true };
   const conversacionId = String(body.conversacionId || "").replace(/[^A-Za-z0-9_-]/g, "").substring(0, 64);
   // Modo prueba: sin la frase en esta conversación, Maite calla y no avisa a nadie (ManyChat no se toca: el candado vive aquí).
-  if (BOT_MODO_PRUEBA && !_botConversacionDePrueba(conversacionId, body.mensaje)) return { ok: true, respuesta: "", fueraDePrueba: true };
+  if (BOT_MODO_PRUEBA && !_botConversacionDePrueba(conversacionId, _botTextoDelCuerpo(body))) return { ok: true, respuesta: "", fueraDePrueba: true };
   const mensaje = _botSinFrasePrueba(_botTextoDelCuerpo(body)).substring(0, BOT_MAX_CARACTERES_MENSAJE);
   if (!conversacionId) return { ok: false, error: "Falta la conversación." };
   // Un audio, una foto o un sticker llegan sin texto (o solo con el enlace del archivo): se le pide que lo escriba, nunca silencio.
