@@ -158,8 +158,13 @@ function _botTurno(apiKey, historial, mensaje, ctx) {
     ctx.ms.ia += Date.now() - t0;
     ctx.ms.vueltas += 1;
     if (!r.ok) return r;
-    mensajes.push({ role: "assistant", content: r.data.content });
     const usos = r.data.content.filter(function (b) { return b.type === "tool_use"; });
+    // A veces la IA contesta en blanco (12-nov, a un "hola"): se le pide una vez más antes de decir "se me trabó".
+    if ((r.data.stop_reason !== "tool_use" || !usos.length) && !_botTieneTexto(r.data.content) && !ctx.reintentoVacio) {
+      ctx.reintentoVacio = true;
+      continue;
+    }
+    mensajes.push({ role: "assistant", content: r.data.content });
     if (r.data.stop_reason !== "tool_use" || !usos.length) return { ok: true, texto: _botTexto(r.data.content) };
     const t1 = Date.now();
     const resultados = usos.map(function (uso) {
@@ -207,6 +212,10 @@ function _botLlamarClaude(apiKey, system, mensajes) {
     if (resp.getResponseCode() !== 200) return { ok: false, error: "IA: " + ((data.error && data.error.message) || ("HTTP " + resp.getResponseCode())) };
     return { ok: true, data: data };
   } catch (e) { return { ok: false, error: "IA: " + e.message }; }
+}
+
+function _botTieneTexto(contenido) {
+  return (contenido || []).some(function (b) { return b.type === "text" && String(b.text || "").trim(); });
 }
 
 function _botTexto(contenido) {
