@@ -952,7 +952,7 @@ function _botCrearPedido(a, ctx) {
   return {
     ok: true, pedido: res.idVenta, referencia: referencia, total: cot.total, ticket: ticket,
     indicaciones_pago: _botIndicacionesPago(a.metodo_pago, cot.total, referencia),
-    indicaciones_entrega: domicilio ? "Entrega a domicilio el " + _botFechaLegible(a.fecha_entrega) + ", entre las " + BOT_VENTANA_ENTREGA.abre + " y las " + BOT_VENTANA_ENTREGA.cierra + "." : _botIndicacionesRecoger(a.sucursal, a.fecha_entrega, fecha.horario, a.hora),
+    indicaciones_entrega: domicilio ? "Entrega a domicilio el " + _botFechaLegible(a.fecha_entrega) + ", aproximadamente entre las " + BOT_VENTANA_ENTREGA.abre + " y las " + BOT_VENTANA_ENTREGA.cierra + " (la hora exacta depende de la ruta del día)." : _botIndicacionesRecoger(a.sucursal, a.fecha_entrega, fecha.horario, a.hora),
     reemplazo: cambio && cambio.ok ? anterior.pedido.referencia : "",
     mensaje: "Pedido apartado y confirmado al cliente con su llave."
   };
