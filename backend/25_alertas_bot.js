@@ -14,7 +14,8 @@
 
 // Del tipo que manda el bot a lo que se escribe en la hoja y se usa como prioridad.
 const ALERTA_URGENTES = ["queja_u_observacion", "mensajero", "cliente_esperando", "amenaza_o_legal"];
-const ALERTA_CON_SUGERENCIA = ["queja_u_observacion"];   // solo en quejas va el segundo WhatsApp con el texto para pegarle al cliente (12-nov: cada alerta eran 2 mensajes)
+const ALERTAS_SOLAS = ["queja_u_observacion"];   // llegan en su propio mensaje: sin la lista de pendientes y fuera de esa lista en los demás avisos
+const ALERTA_CON_SUGERENCIA =["queja_u_observacion"];   // solo en quejas va el segundo WhatsApp con el texto para pegarle al cliente (12-nov: cada alerta eran 2 mensajes)
 
 function botAlertaPersonal(ss, origen, tipo, titulo, detalle, conversacionId) {
   const clave = "bot_alerta_" + origen + "_" + tipo + "_" + conversacionId;
@@ -29,7 +30,10 @@ function botAlertaPersonal(ss, origen, tipo, titulo, detalle, conversacionId) {
     // Debajo va lo que sigue sin atender, y los botones marcan los 3 pendientes más antiguos (30_bot_autonomia.js).
     // Si no se pudiera leer la lista, el aviso sale igual, como antes: un botón para esta conversación.
     let campos = [{ nombre: MANYCHAT_CAMPO_CONVERSACION, valor: String(conversacionId) }];
-    try { const conPendientes = _botAvisoConPendientes(ss, detalle, conversacionId); detalle = conPendientes.detalle; campos = conPendientes.campos; } catch (e) { Logger.log("Pendientes en el aviso: " + e); }
+    // Una queja llega sola, con su propio botón y sin la lista (Alex, 24-nov: antes sus botones marcaban otros pendientes).
+    if (ALERTAS_SOLAS.indexOf(tipo) === -1) {
+      try { const conPendientes = _botAvisoConPendientes(ss, detalle, conversacionId); detalle = conPendientes.detalle; campos = conPendientes.campos; } catch (e) { Logger.log("Pendientes en el aviso: " + e); }
+    }
     aviso = manychatAvisarEquipo(ss, _botClaveFlujoAlerta(ss, campos), titulo, detalle, MANYCHAT_MAX_ALERTA, campos);
     // El texto sugerido va en un mensaje APARTE, solo con el texto, para copiarlo y pegarlo de un toque. Los recordatorios no lo repiten.
     if (aviso.configurado && !/^recordatorio/.test(origen) && ALERTA_CON_SUGERENCIA.indexOf(tipo) !== -1) aviso.sugerencia = manychatSugerenciaEquipo(ss, _botSugerenciaCliente(tipo));

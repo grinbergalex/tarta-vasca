@@ -44,12 +44,12 @@ function _nocheEnviar(ss, sucursal, hoyIso, deLaNoche, faltantes) {
 
 // "Llegaron después del reporte de las 6 pm. Para recoger hoy:" + un renglón por pedido + lo que dice el inventario.
 function _nocheDetalle(deLaNoche, faltantes) {
-  const lineas = ["Llegaron después del reporte de las " + ENTREGAS_MANANA_HORA + ":00. Para recoger hoy:", ""];
+  const lineas = ["Llegaron después del reporte de las " + ENTREGAS_MANANA_HORA + ":00.", "", "*Para recoger hoy:*"];
   deLaNoche.forEach(function (p) { lineas.push(_entregasRenglonTienda(p)); });
   lineas.push("");
-  if (!faltantes.length) lineas.push("✅ Según el inventario sí hay todo lo de hoy en la sucursal.");
+  if (!faltantes.length) lineas.push("✅ *Según el inventario sí hay todo lo de hoy en la sucursal.*");
   else {
-    lineas.push("⚠️ Según el inventario falta para lo de hoy:");
+    lineas.push("⚠️ *Según el inventario falta para lo de hoy:*");
     faltantes.forEach(function (f) { lineas.push("• " + (f.pide - f.hay) + " " + f.sabor + " " + f.tamano + " (piden " + f.pide + ", hay " + f.hay + ")"); });
   }
   return lineas.join("\n");

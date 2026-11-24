@@ -92,11 +92,11 @@ function _entregasSeccionTienda(tienda, pedidos, faltantes) {
 // Mañana, más los domicilios que entraron hoy para días después (ya están en el Excel de pedidos en su fecha).
 function _entregasSeccionDomicilio(pedidos, nuevosOtrosDias) {
   const partes = [];
-  if (pedidos.length) partes.push(_entregasResumen(pedidos) + " · salen de " + SUCURSAL_COCINA, "⚠️ Confirmen que estén en la ruta de mañana.");
+  if (pedidos.length) partes.push(_entregasResumen(pedidos) + " · salen de " + SUCURSAL_COCINA, "⚠️ *Confirmen que estén en la ruta de mañana.*");
   else partes.push("Sin pedidos para mañana.");
   partes.push.apply(partes, pedidos.map(_entregasRenglonDomicilio));
   if (nuevosOtrosDias.length) {
-    partes.push("🆕 Entraron hoy para otros días (ya en el Excel):");
+    partes.push("🆕 *Entraron hoy para otros días (ya en el Excel):*");
     partes.push.apply(partes, nuevosOtrosDias.map(function (p) { return _entregasRenglonDomicilio(p).replace("• ", "• " + p.fechaEntrega.substring(8, 10) + "/" + p.fechaEntrega.substring(5, 7) + " "); }));
   }
   return partes.join("\n");

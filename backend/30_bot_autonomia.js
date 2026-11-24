@@ -268,8 +268,8 @@ function _botDetalleAlertaOrdenado(ctx, a, textoLibre) {
     lineas.push("", titulo);
     puntos.forEach(function (x) { lineas.push("• " + x); });
   };
-  seccion("✅ Ya dio:", yaDio);
-  seccion("❓ Falta:", falta);
+  seccion("✅ *Ya dio:*", yaDio);
+  seccion("❓ *Falta:*", falta);
   lineas.push("", "🔎 Id de ManyChat: " + ctx.conversacionId);
   return lineas.join("\n");
 }
@@ -311,7 +311,7 @@ function _botPendientesAbiertos(ss) {
     if (id) ultimo[id] = { conversacion: id, motivo: String(f[PENDIENTE_COL.MOTIVO] || ""), desde: f[PENDIENTE_COL.DESDE], estado: String(f[PENDIENTE_COL.ESTADO] || "") };
   });
   return Object.keys(ultimo).map(function (id) { return ultimo[id]; })
-    .filter(function (p) { return p.estado !== PENDIENTE_ESTADO.ATENDIDA; })
+    .filter(function (p) { return p.estado !== PENDIENTE_ESTADO.ATENDIDA && ALERTAS_SOLAS.indexOf(String(p.motivo).split(":")[0].trim()) === -1; })   // las quejas van aparte
     .sort(function (a, b) { return _pendienteDesdeMs(a.desde) - _pendienteDesdeMs(b.desde); });
 }
 
@@ -344,7 +344,7 @@ function _botAvisoConPendientes(ss, detalle, conversacionId, ahora) {
     return { nombre: campo, valor: conBoton[i] ? conBoton[i].conversacion : (i === 0 ? String(conversacionId) : MANYCHAT_SIN_BOTON) };
   });
   if (!pendientes.length) return { detalle: detalle, campos: campos };
-  const lineas = ["", "", "⏳ Sin atender (" + pendientes.length + "). Los botones marcan " + conBoton.map(function (p, i) { return i + 1; }).join(", ") + ":"];
+  const lineas = ["", "", "⏳ *Sin atender (" + pendientes.length + ")*. Los botones marcan " + conBoton.map(function (p, i) { return i + 1; }).join(", ") + ":"];
   conBoton.forEach(function (p, i) { lineas.push(_botRenglonPendiente(p, i + 1, ahoraMs)); });
   const resto = pendientes.slice(conBoton.length);
   // El resto se lista mientras quepa en el mensaje (WhatsApp cortaría a media lista): si no cabe, "…y N más".
@@ -358,7 +358,7 @@ function _botAvisoConPendientes(ss, detalle, conversacionId, ahora) {
 
 function _botListaResto(resto, mostrar, desde, ahoraMs) {
   if (!resto.length) return [];
-  const lineas = ["", "Hay " + resto.length + " pendiente" + (resto.length === 1 ? "" : "s") + " más (sin botón hasta que se atiendan los de arriba):"];
+  const lineas = ["", "*Hay " + resto.length + " pendiente" + (resto.length === 1 ? "" : "s") + " más* (sin botón hasta que se atiendan los de arriba):"];
   resto.slice(0, mostrar).forEach(function (p, i) { lineas.push(_botRenglonPendiente(p, desde + i + 1, ahoraMs)); });
   if (resto.length > mostrar) lineas.push("…y " + (resto.length - mostrar) + " más en la hoja " + PENDIENTES_HOJA);
   return lineas;
@@ -368,6 +368,7 @@ function _botListaResto(resto, mostrar, desde, ahoraMs) {
 // esperar al siguiente aviso. Si ya no queda nada, un mensaje corto de que todo está atendido (sin botones).
 function _botAvisarListaActualizada(ss, atendido) {
   const motivo = String((ss.getSheetByName(PENDIENTES_HOJA).getRange(atendido.fila, PENDIENTE_COL.MOTIVO + 1).getValues()[0] || [""])[0]);
+  if (ALERTAS_SOLAS.indexOf(motivo.split(":")[0].trim()) !== -1) return null;   // una queja va aparte: atenderla no manda la lista
   const caso = _botDescripcionPendiente(motivo);
   const quedan = _botPendientesAbiertos(ss);
   if (!quedan.length) return manychatAvisarEquipo(ss, MANYCHAT_CLAVE_FLUJO_REPORTE, "✅ Todo atendido", "Se marcó como atendido: " + caso + "\nYa no queda ninguna conversación pendiente.", MANYCHAT_MAX_ALERTA);

@@ -660,6 +660,10 @@ todo el ciclo. Hecho hasta ahora (solo en el proyecto de pruebas, no en producci
     "Alerta bot 2 botones (sistema)" y "Alerta bot 3 botones (sistema)", claves `manychat_flujo_alerta_2` y `_3` en Configuración);
     `_botClaveFlujoAlerta` elige según cuántos campos traen conversación (los vacíos van con "-", `MANYCHAT_SIN_BOTON`). Cada botón
     llama a `botAtendida` con su campo (`bot_conversacion`, `_2`, `_3`). Sin las claves, se usa el de un botón.
+    **Las quejas van aparte** (`ALERTAS_SOLAS`, Alex 24-nov): su aviso llega solo, sin la lista y con su propio botón (antes sus
+    botones marcaban otros pendientes), no aparecen en la lista de los demás avisos y atenderlas no manda la lista.
+  - **Negritas** (Alex, 24-nov): el título de cada aviso (`aviso_referencia`, con diseño) y los títulos de sección (Ya dio, Falta,
+    Sin atender, Para recoger hoy…) van entre `*…*`, que es como WhatsApp marca negritas (`_whatsappNegritas`).
   - **Ecos del WhatsApp Business del celular**: el mensaje de bienvenida y el de ausencia vuelven a disparar el flujo de ManyChat
     con el último texto del cliente. Antes Maite contestaba "no puedo escuchar audios" (4 de 7 avisos del 23-nov eran esto). Ahora
     el mismo texto otra vez dentro de `BOT_ECO_SEGUNDOS` se calla sin tocar el estado (la respuesta real puede ir en camino).

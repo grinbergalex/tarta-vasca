@@ -74,7 +74,8 @@ function manychatAvisarEquipo(ss, claveFlujo, titulo, detalle, maximo, camposExt
   const campos = esPlantilla
     ? [{ nombre: MANYCHAT_CAMPO_REFERENCIA, valor: _whatsappLimpiar(titulo, MANYCHAT_MAX_DETALLE) }, { nombre: MANYCHAT_CAMPO_DETALLE, valor: _whatsappLimpiar(elegido, tope) }]
       .concat((camposExtra || []).map(function (c) { return { nombre: c.nombre, valor: _whatsappLimpiar(c.valor, tope) }; }))
-    : [{ nombre: MANYCHAT_CAMPO_REFERENCIA, valor: String(titulo).substring(0, MANYCHAT_MAX_DETALLE) }, { nombre: MANYCHAT_CAMPO_DETALLE, valor: String(elegido).substring(0, tope) }].concat(camposExtra || []);
+    // Con diseño, el título va en negritas (Alex, 24-nov).
+    : [{ nombre: MANYCHAT_CAMPO_REFERENCIA, valor: _whatsappNegritas(String(titulo).substring(0, MANYCHAT_MAX_DETALLE)) }, { nombre: MANYCHAT_CAMPO_DETALLE, valor: String(elegido).substring(0, tope) }].concat(camposExtra || []);
   destinatarios.forEach(function (d) {
     const r = _manychatEnviarFlujo(d.id, flujo, campos);
     salida.resultados.push({ nombre: d.nombre || d.id, ok: r.ok, detalle: r.detalle, forma: esPlantilla ? "plantilla" : "con diseño" });
@@ -112,4 +113,10 @@ function manychatSugerenciaEquipo(ss, texto) {
     return (d.nombre || d.id) + (r.ok ? " ok" : " FALLÓ " + r.detalle);
   });
   return resultados.join(", ");
+}
+
+// "*texto*" = negritas en WhatsApp. Sin espacios pegados a los asteriscos (si no, WhatsApp no las respeta).
+function _whatsappNegritas(texto) {
+  const t = String(texto || "").trim();
+  return t ? "*" + t.replace(/\*/g, "") + "*" : t;
 }
