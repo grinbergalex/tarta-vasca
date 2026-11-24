@@ -117,12 +117,12 @@ const SUCURSAL_LEGADO_DESTINO_TRANSFER = "Polanco";    // y lo unico transferibl
 // recolección de la tienda en línea leen de aquí.
 const HORARIO_ENTRE_SEMANA = { abre: "09:00", cierra: "18:00" };
 const HORARIO_SABADO_COCINA = { abre: "09:00", cierra: "15:00" };
-const HORARIO_DOMINGO_CUAJIMALPA = { abre: "11:00", cierra: "15:00" };
+const HORARIO_FIN_SEMANA_CUAJIMALPA = { abre: "11:00", cierra: "15:00" };  // sábado y domingo (Alex, 24-nov-2026)
 const HORARIO_POLANCO = { abre: "11:00", cierra: "19:00" };
 const HORARIO_CERRADO = { abre: "00:00", cierra: "00:00", cerrado: true };  // lo que ve el código en un día sin atención
 const HORARIOS_SUCURSAL = {
 "Bosques":    [null, HORARIO_ENTRE_SEMANA, HORARIO_ENTRE_SEMANA, HORARIO_ENTRE_SEMANA, HORARIO_ENTRE_SEMANA, HORARIO_ENTRE_SEMANA, HORARIO_SABADO_COCINA],
-"Cuajimalpa": [HORARIO_DOMINGO_CUAJIMALPA, HORARIO_ENTRE_SEMANA, HORARIO_ENTRE_SEMANA, HORARIO_ENTRE_SEMANA, HORARIO_ENTRE_SEMANA, HORARIO_ENTRE_SEMANA, HORARIO_SABADO_COCINA],
+"Cuajimalpa": [HORARIO_FIN_SEMANA_CUAJIMALPA, HORARIO_ENTRE_SEMANA, HORARIO_ENTRE_SEMANA, HORARIO_ENTRE_SEMANA, HORARIO_ENTRE_SEMANA, HORARIO_ENTRE_SEMANA, HORARIO_FIN_SEMANA_CUAJIMALPA],
 "Polanco":    [HORARIO_POLANCO, HORARIO_POLANCO, HORARIO_POLANCO, HORARIO_POLANCO, HORARIO_POLANCO, HORARIO_POLANCO, HORARIO_POLANCO]
 };
 // v7.6 — Tienda en línea: recolección en sucursal (calendario del carrito de Shopify).
