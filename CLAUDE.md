@@ -631,6 +631,10 @@ todo el ciclo. Hecho hasta ahora (solo en el proyecto de pruebas, no en producci
     solo). Solo pedidos de esa conversación (Instagram) o de ese mismo número (WhatsApp) y abiertos. El `opId` incluye entrega y
     sucursal: con las mismas tartas, recoger→domicilio es otra operación (si no, `registrarVenta` devolvía el pedido viejo).
   - Ya no pasa con una persona por anticipo (no hay), por zona, ni por cambios de sus propios pedidos.
+  - **Audio, foto o sticker (24-nov, Alex: "me están llegando muchos")**: ManyChat los manda sin texto, con el enlace, o repitiendo
+    el último texto del cliente. Ya NO mandan WhatsApp al equipo (eran decenas por noche; la mayoría, comprobantes): quedan en la
+    bandeja del POS y en `Alertas_Bot`. Si llega en los últimos `BOT_COMPROBANTE_MENSAJES` después de cerrar un pedido con
+    transferencia, Maite lo recibe como comprobante ("Recibí tu comprobante, tu pedido TV-… sigue apartado"); si no, pide que lo escriba.
 - **Envíos por distancia**: propuesta de círculos desde Bosques ($60 ≤5 km, $90 5-11 km, $120 11-16 km, más lejos cotiza una
   persona) en el doc "Envíos por distancia desde Bosques" (artifact) y `envios-por-distancia-bosques.pdf`, para Yessenia.
   Mientras no se construya, cada colonia que falte en `ZonasEnvio` hace que Maite diga que no llega: es lo que más la traba.

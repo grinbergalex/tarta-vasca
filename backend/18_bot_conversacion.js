@@ -38,11 +38,11 @@ function botConversar(body) {
   if (BOT_MODO_PRUEBA_CANALES.indexOf(String(body.canal || "instagram").toLowerCase()) !== -1 && !_botConversacionDePrueba(conversacionId, _botTextoDelCuerpo(body))) return { ok: true, respuesta: "", fueraDePrueba: true };
   const mensaje = _botSinFrasePrueba(_botTextoDelCuerpo(body)).substring(0, BOT_MAX_CARACTERES_MENSAJE);
   if (!conversacionId) return { ok: false, error: "Falta la conversación." };
-  // Un audio, una foto o un sticker llegan sin texto (o solo con el enlace del archivo): se le pide que lo escriba, nunca silencio.
+  // Un audio, una foto o un sticker llegan sin texto (o solo con el enlace del archivo): nunca silencio. Si fue justo después de
+  // pedirle el comprobante de la transferencia, se recibe como comprobante (30_bot_autonomia.js); si no, se le pide que lo escriba.
   if (_botSinTexto(mensaje) || _botEsRepeticion(conversacionId, mensaje)) {
     const canalSinTexto = String(body.canal || "").toLowerCase() === "whatsapp" ? "WhatsApp" : "Instagram";
-    try { botAlertaPersonal(SpreadsheetApp.getActiveSpreadsheet(), "avisar", "sin_texto", "🎤 Un cliente mandó audio, foto o sticker", botDetalleAlerta(canalSinTexto, "Maite le pidió que lo escriba. Revisa qué mandó por si hay que atenderlo." + (mensaje ? "\n" + mensaje : ""), conversacionId), conversacionId); } catch (e) { }
-    return _botTerminar(conversacionId, { ok: true, respuesta: BOT_TEXTO_SIN_TEXTO, sinTexto: true });
+    return _botTerminar(conversacionId, { ok: true, respuesta: _botRespuestaSinTexto(conversacionId, mensaje, canalSinTexto), sinTexto: true });
   }
   // El mismo mensaje de la misma conversación llegando dos veces seguidas (ManyChat reintenta, o en el piloto quedaron dos flujos
   // esperando) se procesa UNA vez: dos turnos a la vez llegaron a pelear por el mismo pedido (1-nov). La copia no contesta nada.

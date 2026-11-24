@@ -199,3 +199,43 @@ function _botAnularPedido(pedido, motivo) {
   try { seguimientoActualizar(ss, pedido.referencia, { "Estado": PEDIDO_ESTADO.CANCELADO }); } catch (e) { Logger.log("Seguimiento: " + e); }
   return { ok: true };
 }
+
+// ---------------------------------------------------------------------------
+// 4. AUDIO, FOTO O STICKER (Alex, 24-nov-2026: "me están llegando muchos mensajes de audio o imágenes o stickers")
+// ---------------------------------------------------------------------------
+// ManyChat manda un archivo sin texto, con su enlace, o repitiendo el ÚLTIMO texto del cliente; así que casi nunca se sabe si fue
+// foto o audio. La mayoría eran comprobantes de transferencia justo después de que Maite pidió mandarlo: ahora se reciben como tal.
+// Ya no sale WhatsApp al equipo por esto (eran decenas por noche): queda en la bandeja del POS y en Alertas_Bot.
+function _botRespuestaSinTexto(conversacionId, mensaje, canal) {
+  const memoria = _botCargarMemoria(conversacionId);
+  const audio = /\.(ogg|opus|mp3|m4a|aac|amr|wav|mpga)(\?|$)|audio/i.test(String(mensaje || ""));
+  const pago = audio ? null : _botPagoPendiente(memoria.mensajes);
+  let respuesta, titulo;
+  if (pago) {
+    respuesta = "¡Gracias" + (pago.nombre ? ", " + pago.nombre : "") + "! Recibí tu comprobante. Tu pedido " + pago.llave + " sigue apartado; el equipo revisa el pago con tu llave y no tienes que hacer nada más.";
+    titulo = "🧾 Comprobante de transferencia recibido · " + pago.llave;
+  } else {
+    respuesta = audio ? BOT_TEXTO_SIN_TEXTO : "Recibí tu mensaje, pero por aquí no alcanzo a ver imágenes ni escuchar audios 🙏 ¿Me lo escribes? Así te ayudo de inmediato.";
+    titulo = audio ? "🎤 Un cliente mandó un audio" : "🖼️ Un cliente mandó una imagen, sticker o audio";
+  }
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const detalle = botDetalleAlerta(canal, (pago ? "Revisa el comprobante en el chat contra la llave " + pago.llave + " antes de entregar." : "Maite le pidió que lo escriba.") + (/^https?:/i.test(String(mensaje)) ? "\n" + mensaje : ""), conversacionId);
+  try { _botAvisar(titulo, detalle, { sinWhatsapp: true }); } catch (e) { }
+  try { _botRegistrarAlerta(ss, "avisar", pago ? "comprobante" : "sin_texto", conversacionId, titulo, detalle, { configurado: false, motivo: "sin WhatsApp: va en la bandeja del POS", destinatarios: [], resultados: [] }); } catch (e) { }
+  memoria.mensajes.push({ role: "user", content: pago ? "[El cliente mandó una imagen: su comprobante de la transferencia]" : "[El cliente mandó una imagen, un sticker o un audio que no puedes ver]" }, { role: "assistant", content: respuesta });
+  _botGuardarMemoria(conversacionId, memoria, canal);
+  return respuesta;
+}
+
+// El pedido con transferencia que Maite acaba de cerrar en esta conversación: { llave, nombre } o null.
+function _botPagoPendiente(mensajes) {
+  const recientes = mensajes.slice(-BOT_COMPROBANTE_MENSAJES).filter(function (m) { return m.role === "assistant"; }).map(function (m) { return String(m.content); });
+  for (let i = recientes.length - 1; i >= 0; i--) {
+    const llave = recientes[i].match(/TV-\d{4}-\d{2}/);
+    if (llave && /transferencia/i.test(recientes.join(" "))) {
+      const nombre = (recientes.join("\n").match(/(?:Listo|Gracias),\s+([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)/) || [])[1] || "";
+      return { llave: llave[0], nombre: nombre };
+    }
+  }
+  return null;
+}

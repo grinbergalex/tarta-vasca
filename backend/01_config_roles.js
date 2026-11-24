@@ -157,6 +157,7 @@ const BOT_GEO_LIMITES = { sur: 19.05, oeste: -99.45, norte: 19.75, este: -98.85 
 const BOT_GEO_CACHE_SEGUNDOS = 21600;
 const BOT_GEO_RANGO_COLONIA = 17;            // place_rank de OpenStreetMap: menos que esto es un municipio o una ciudad entera
 const BOT_GEO_MARGEN_MUNICIPIO_KM = 8;       // un municipio entero cuyo centro queda a más de 16+8 km se da por lejos sin pedir más datos
+const BOT_COMPROBANTE_MENSAJES = 6;          // una foto en los últimos 6 mensajes después de cerrar un pedido con transferencia es su comprobante
 const BOT_MOTIVO_CANCELADO_CLIENTE = "Cancelado por el cliente (Maite)";
 const BOT_MAX_TURNOS_POR_CONVERSACION = 60; // tope para cuidar el gasto de IA
 const BOT_MAX_CARACTERES_MENSAJE = 1000;
