@@ -45,7 +45,7 @@ const BOT_SUGERENCIAS_CLIENTE = {
   queja_u_observacion: "Hola, te escribe el equipo de La Tarta Vasca. Lamento mucho lo que pasó; ya lo estoy revisando personalmente y te escribo en un momento.",
   mensajero: "Hola, te escribe el equipo de La Tarta Vasca. Tengo tu aviso del mensajero; ¿a nombre de quién lo recoge y a qué hora aproximada?",
   cotizacion_evento_o_restaurante: "Hola, te escribe el equipo de La Tarta Vasca. Gracias por pensar en nosotros; ¿me cuentas la fecha, cuántas piezas y el lugar para cotizarte?",
-  factura: "Hola, te escribe el equipo de La Tarta Vasca. Con gusto te ayudo con tu factura; ¿me compartes tus datos fiscales y el número de tu pedido?",
+  factura: "Hola, te escribe el equipo de La Tarta Vasca. Ya tenemos tus datos para la factura; en cuanto esté lista te la mandamos a tu correo.",
   alianza_o_colaboracion: "Hola, te escribe el equipo de La Tarta Vasca. Gracias por escribirnos; ¿nos cuentas más de tu propuesta y cómo te gustaría colaborar?",
   pedidos_recurrentes_o_cadena: "Hola, te escribe el equipo de La Tarta Vasca. Gracias por pensar en nosotros; ¿cuántas piezas necesitas, con qué frecuencia y en qué ubicaciones?",
   amenaza_o_legal: "Hola, te escribe el equipo de La Tarta Vasca. Recibimos tu mensaje y lo estamos atendiendo directamente. Para poder ayudarte, ¿nos compartes los detalles por este medio?"
