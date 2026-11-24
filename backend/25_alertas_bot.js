@@ -70,6 +70,8 @@ function botAtendida(body) {
   _botPendienteAnotarMensaje(ss, pendiente.fila);
   botPausar(conversacionId);
   _botMarcarHumano(conversacionId);   // volver a tocar el botón le da a la persona otros BOT_HUMANO_MINUTOS
+  // Ese caso sale de la lista y el siguiente más antiguo sube a tener botón: se manda la lista al momento (30_bot_autonomia.js).
+  if (pendiente.estado !== PENDIENTE_ESTADO.ATENDIDA) { try { _botAvisarListaActualizada(ss, pendiente); } catch (e) { Logger.log("Lista actualizada: " + e); } }
   return { ok: true, estado: PENDIENTE_ESTADO.ATENDIDA };
 }
 

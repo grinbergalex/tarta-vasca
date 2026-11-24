@@ -317,10 +317,15 @@ function _botPendientesAbiertos(ss) {
 
 // "2. Pidió persona · Mariana quiere hablar con alguien… · hace 40 min"
 function _botRenglonPendiente(p, n, ahoraMs) {
-  const partes = String(p.motivo).split(":"), tipo = partes.shift().trim();
+  return n + ". " + _botDescripcionPendiente(p.motivo) + " · " + _botHace(ahoraMs - _pendienteDesdeMs(p.desde));
+}
+
+// "pidio_persona: Mariana quiere…" -> "Pidió persona · Mariana quiere…" (resumen recortado a BOT_PENDIENTE_RESUMEN_MAX)
+function _botDescripcionPendiente(motivo) {
+  const partes = String(motivo).split(":"), tipo = partes.shift().trim();
   let resumen = partes.join(":").trim();
   if (resumen.length > BOT_PENDIENTE_RESUMEN_MAX) resumen = resumen.substring(0, BOT_PENDIENTE_RESUMEN_MAX - 1) + "…";
-  return n + ". " + (BOT_PENDIENTE_ETIQUETAS[tipo] || tipo) + (resumen ? " · " + resumen : "") + " · " + _botHace(ahoraMs - _pendienteDesdeMs(p.desde));
+  return (BOT_PENDIENTE_ETIQUETAS[tipo] || tipo) + (resumen ? " · " + resumen : "");
 }
 
 function _botHace(ms) {
@@ -357,4 +362,15 @@ function _botListaResto(resto, mostrar, desde, ahoraMs) {
   resto.slice(0, mostrar).forEach(function (p, i) { lineas.push(_botRenglonPendiente(p, desde + i + 1, ahoraMs)); });
   if (resto.length > mostrar) lineas.push("…y " + (resto.length - mostrar) + " más en la hoja " + PENDIENTES_HOJA);
   return lineas;
+}
+
+// Al tocar "Atendida": a todo el equipo le llega la lista que queda, con los 3 más antiguos ya con botón, para que nadie tenga que
+// esperar al siguiente aviso. Si ya no queda nada, un mensaje corto de que todo está atendido (sin botones).
+function _botAvisarListaActualizada(ss, atendido) {
+  const motivo = String((ss.getSheetByName(PENDIENTES_HOJA).getRange(atendido.fila, PENDIENTE_COL.MOTIVO + 1).getValues()[0] || [""])[0]);
+  const caso = _botDescripcionPendiente(motivo);
+  const quedan = _botPendientesAbiertos(ss);
+  if (!quedan.length) return manychatAvisarEquipo(ss, MANYCHAT_CLAVE_FLUJO_REPORTE, "✅ Todo atendido", "Se marcó como atendido: " + caso + "\nYa no queda ninguna conversación pendiente.", MANYCHAT_MAX_ALERTA);
+  const lista = _botAvisoConPendientes(ss, "Se marcó como atendido: " + caso, "");
+  return manychatAvisarEquipo(ss, MANYCHAT_CLAVE_FLUJO_ALERTA, "✅ Atendido · quedan " + quedan.length, lista.detalle, MANYCHAT_MAX_ALERTA, lista.campos);
 }
