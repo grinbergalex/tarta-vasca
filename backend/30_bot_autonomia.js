@@ -270,7 +270,7 @@ function _botDetalleAlertaOrdenado(ctx, a, textoLibre) {
   };
   seccion("✅ *Ya dio:*", yaDio);
   seccion("❓ *Falta:*", falta);
-  lineas.push("", "🔎 Id de ManyChat: " + ctx.conversacionId);
+  lineas.push("", botEnlaceChat(ctx.conversacionId));
   return lineas.join("\n");
 }
 
@@ -290,96 +290,31 @@ function _botPedidosDeLaConversacion(ctx) {
 }
 
 // ---------------------------------------------------------------------------
-// 6. CADA AVISO TRAE LO QUE SIGUE SIN ATENDER (Alex, 24-nov-2026)
+// 6. ENLACE AL CHAT Y RECORDATORIO DE PENDIENTES (Alex, 24-nov-2026)
 // ---------------------------------------------------------------------------
-// Antes cada aviso era un mensaje suelto con su botón "Atendida", y con varios había que subir en el chat para no olvidar uno.
-// Ahora cada aviso nuevo lleva abajo la lista de conversaciones que siguen PENDIENTES (las que Maite pasó a una persona). WhatsApp
-// permite máximo 3 botones por mensaje: los llevan las 3 más antiguas (las que más esperan), en los campos de ManyChat
-// MANYCHAT_CAMPOS_BOTONES; el flujo de alertas muestra 1, 2 o 3 botones según cuántos campos traigan valor. El resto va en la
-// lista y recibe botón cuando se atienden los de arriba.
+// Cada aviso llega solo, con su botón "Atendida" y el enlace que abre esa conversación en la Bandeja de ManyChat. Lo que sigue
+// sin atender se recuerda cada BOT_RECORDATORIO_MINUTOS (3 h) mientras haya tienda abierta, un mensaje por conversación
+// (botRecordatoriosPendientes, 25_alertas_bot.js). Antes iba una lista debajo de cada aviso con hasta 3 botones: WhatsApp no
+// deja más, y con varios pendientes los botones terminaban marcando casos que no eran el del aviso.
 const BOT_PENDIENTE_ETIQUETAS = { queja_u_observacion: "Queja", cotizacion_evento_o_restaurante: "Cotización", pidio_persona: "Pidió persona",
   factura: "Factura", cambio_o_cancelacion: "Cambio o cancelación", alianza_o_colaboracion: "Colaboración", pedidos_recurrentes_o_cadena: "Pedido recurrente",
   amenaza_o_legal: "Legal", otro: "Otro" };
 
-// Las conversaciones cuyo último renglón sigue sin atender, de la más antigua a la más nueva.
-function _botPendientesAbiertos(ss) {
-  const hoja = ss.getSheetByName(PENDIENTES_HOJA);
-  if (!hoja || hoja.getLastRow() < 2) return [];
-  const ultimo = {};
-  hoja.getRange(2, 1, hoja.getLastRow() - 1, PENDIENTE_COLUMNAS).getValues().forEach(function (f) {
-    const id = String(f[PENDIENTE_COL.CONVERSACION] || "").trim();
-    if (id) ultimo[id] = { conversacion: id, motivo: String(f[PENDIENTE_COL.MOTIVO] || ""), desde: f[PENDIENTE_COL.DESDE], estado: String(f[PENDIENTE_COL.ESTADO] || "") };
-  });
-  return Object.keys(ultimo).map(function (id) { return ultimo[id]; })
-    .filter(function (p) { return p.estado !== PENDIENTE_ESTADO.ATENDIDA && PENDIENTES_FUERA_DE_LISTA.indexOf(String(p.motivo).split(":")[0].trim()) === -1; })   // las quejas van aparte
-    .sort(function (a, b) { return _pendienteDesdeMs(a.desde) - _pendienteDesdeMs(b.desde); });
+// "💬 Abrir el chat: https://app.manychat.com/<página>/chat/<id>"
+function botEnlaceChat(conversacionId) {
+  return "💬 *Abrir el chat:* " + MANYCHAT_URL_CHAT + String(conversacionId).replace(/\.0$/, "");
 }
 
-// "2. Pidió persona · Mariana quiere hablar con alguien… · hace 40 min"
-function _botRenglonPendiente(p, n, ahoraMs) {
-  return n + ". " + _botDescripcionPendiente(p.motivo) + " · " + _botHace(ahoraMs - _pendienteDesdeMs(p.desde));
-}
-
-// "pidio_persona: Mariana quiere…" -> "Pidió persona · Mariana quiere…" (resumen recortado a BOT_PENDIENTE_RESUMEN_MAX)
+// "pidio_persona: Mariana quiere…" -> "Pidió persona · Mariana quiere…"
 function _botDescripcionPendiente(motivo) {
   const partes = String(motivo).split(":"), tipo = partes.shift().trim();
-  let resumen = partes.join(":").trim();
-  if (resumen.length > BOT_PENDIENTE_RESUMEN_MAX) resumen = resumen.substring(0, BOT_PENDIENTE_RESUMEN_MAX - 1) + "…";
+  const resumen = partes.join(":").trim();
   return (BOT_PENDIENTE_ETIQUETAS[tipo] || tipo) + (resumen ? " · " + resumen : "");
 }
 
 function _botHace(ms) {
   const min = Math.max(0, Math.round(ms / 60000));
-  if (min < 60) return "hace " + min + " min";
-  if (min < 48 * 60) return "hace " + Math.round(min / 60) + " h";
-  return "hace " + Math.round(min / 1440) + " días";
-}
-
-// El detalle con la lista de pendientes debajo, y los campos de ManyChat para los botones (vacíos los que sobran).
-function _botAvisoConPendientes(ss, detalle, conversacionId, ahora) {
-  const ahoraMs = (ahora instanceof Date ? ahora : new Date()).getTime();
-  const pendientes = _botPendientesAbiertos(ss);
-  const conBoton = pendientes.slice(0, MANYCHAT_CAMPOS_BOTONES.length);
-  const campos = MANYCHAT_CAMPOS_BOTONES.map(function (campo, i) {
-    return { nombre: campo, valor: conBoton[i] ? conBoton[i].conversacion : (i === 0 ? String(conversacionId) : MANYCHAT_SIN_BOTON) };
-  });
-  if (!pendientes.length) return { detalle: detalle, campos: campos };
-  const lineas = ["", "", "⏳ *Sin atender (" + pendientes.length + ")*. Los botones marcan " + conBoton.map(function (p, i) { return i + 1; }).join(", ") + ":"];
-  conBoton.forEach(function (p, i) { lineas.push(_botRenglonPendiente(p, i + 1, ahoraMs)); });
-  const resto = pendientes.slice(conBoton.length);
-  // El resto se lista mientras quepa en el mensaje (WhatsApp cortaría a media lista): si no cabe, "…y N más".
-  for (let mostrar = Math.min(resto.length, BOT_PENDIENTES_EN_LISTA); ; mostrar--) {
-    const lista = lineas.concat(_botListaResto(resto, mostrar, conBoton.length, ahoraMs)).join("\n");
-    if (detalle.length + lista.length <= MANYCHAT_MAX_ALERTA) return { detalle: detalle + lista, campos: campos };
-    // Ni sin el resto cabe: se recorta el texto del aviso nuevo, nunca los renglones que llevan botón.
-    if (mostrar === 0) return { detalle: detalle.substring(0, Math.max(0, MANYCHAT_MAX_ALERTA - lista.length - 1)) + "…" + lista, campos: campos };
-  }
-}
-
-function _botListaResto(resto, mostrar, desde, ahoraMs) {
-  if (!resto.length) return [];
-  const lineas = ["", "*Hay " + resto.length + " pendiente" + (resto.length === 1 ? "" : "s") + " más* (sin botón hasta que se atiendan los de arriba):"];
-  resto.slice(0, mostrar).forEach(function (p, i) { lineas.push(_botRenglonPendiente(p, desde + i + 1, ahoraMs)); });
-  if (resto.length > mostrar) lineas.push("…y " + (resto.length - mostrar) + " más en la hoja " + PENDIENTES_HOJA);
-  return lineas;
-}
-
-// Al tocar "Atendida": a todo el equipo le llega la lista que queda, con los 3 más antiguos ya con botón, para que nadie tenga que
-// esperar al siguiente aviso. Si ya no queda nada, un mensaje corto de que todo está atendido (sin botones).
-function _botAvisarListaActualizada(ss, atendido) {
-  const motivo = String((ss.getSheetByName(PENDIENTES_HOJA).getRange(atendido.fila, PENDIENTE_COL.MOTIVO + 1).getValues()[0] || [""])[0]);
-  if (PENDIENTES_FUERA_DE_LISTA.indexOf(motivo.split(":")[0].trim()) !== -1) return null;   // una queja va aparte: atenderla no manda la lista
-  const caso = _botDescripcionPendiente(motivo);
-  const quedan = _botPendientesAbiertos(ss);
-  if (!quedan.length) return manychatAvisarEquipo(ss, MANYCHAT_CLAVE_FLUJO_REPORTE, "✅ Todo atendido", "Se marcó como atendido: " + caso + "\nYa no queda ninguna conversación pendiente.", MANYCHAT_MAX_ALERTA);
-  const lista = _botAvisoConPendientes(ss, "Se marcó como atendido: " + caso, "");
-  return manychatAvisarEquipo(ss, _botClaveFlujoAlerta(ss, lista.campos), "✅ Atendido · quedan " + quedan.length, lista.detalle, MANYCHAT_MAX_ALERTA, lista.campos);
-}
-
-// WhatsApp no deja poner botones condicionales: hay un flujo de ManyChat por número de botones (1, 2 o 3). Se elige el que
-// corresponde a cuántos botones traen conversación; si su clave no está en Configuración, el de un botón (como antes).
-function _botClaveFlujoAlerta(ss, campos) {
-  const botones = campos.filter(function (c) { return c.valor && c.valor !== MANYCHAT_SIN_BOTON; }).length;
-  const clave = botones >= 2 ? MANYCHAT_CLAVE_FLUJO_ALERTA + "_" + botones : MANYCHAT_CLAVE_FLUJO_ALERTA;
-  return clave !== MANYCHAT_CLAVE_FLUJO_ALERTA && String(_cfgVal(ss, clave, "")).trim() ? clave : MANYCHAT_CLAVE_FLUJO_ALERTA;
+  if (min < 60) return min + " min";
+  if (min < 48 * 60) return Math.round(min / 60) + " h";
+  return Math.round(min / 1440) + " días";
 }

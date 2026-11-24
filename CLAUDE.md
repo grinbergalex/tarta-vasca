@@ -648,22 +648,16 @@ todo el ciclo. Hecho hasta ahora (solo en el proyecto de pruebas, no en producci
     WhatsApp). Sin esos campos queda el texto libre, como antes.
     Cada aviso trae además los pedidos con llave de esa conversación o de ese número (`🔑 TV-… · nombre · fecha · estado`,
     `_botPedidosDeLaConversacion`, hasta `BOT_ALERTA_MAX_PEDIDOS`) para ubicarlos en el sistema; el id de ManyChat sigue al final.
-  - **Cada aviso trae lo que sigue sin atender (24-nov, Alex)**: debajo del caso nuevo va la lista de conversaciones PENDIENTES
-    de `Conversaciones_Pendientes` (las que Maite pasó a una persona), de la más antigua a la más nueva. WhatsApp permite máximo 3
-    botones por mensaje: los llevan las 3 más antiguas, vía los campos de ManyChat `MANYCHAT_CAMPOS_BOTONES` (bot_conversacion,
-    _2, _3; vacíos los que sobran). El resto se lista mientras quepa en `MANYCHAT_MAX_ALERTA` ("…y N más"); si ni así cabe se
-    recorta el texto del caso nuevo, nunca los renglones con botón. El flujo de alertas de ManyChat elige 1, 2 o 3 botones según
-    qué campos traen valor. Ahora el caso queda pendiente ANTES de mandar el aviso, para que entre en su propia lista.
-    Al tocar "Atendida" (`botAtendida`) a todo el equipo le llega al momento la lista que queda, con el siguiente más antiguo ya
-    con botón (`_botAvisarListaActualizada`); si no queda nada, "✅ Todo atendido" por el flujo de reportes (sin botones).
-    WhatsApp no permite botones condicionales: hay un flujo de ManyChat por número de botones ("Alerta bot (sistema)" = 1,
-    "Alerta bot 2 botones (sistema)" y "Alerta bot 3 botones (sistema)", claves `manychat_flujo_alerta_2` y `_3` en Configuración);
-    `_botClaveFlujoAlerta` elige según cuántos campos traen conversación (los vacíos van con "-", `MANYCHAT_SIN_BOTON`). Cada botón
-    llama a `botAtendida` con su campo (`bot_conversacion`, `_2`, `_3`). Sin las claves, se usa el de un botón.
-    **Las quejas van aparte** (`ALERTAS_SOLAS`, Alex 24-nov): su aviso llega solo, sin la lista y con su propio botón (antes sus
-    botones marcaban otros pendientes), no aparecen en la lista de los demás avisos y atenderlas no manda la lista.
-    También llegan solos (sin lista debajo) "pidió hablar con una persona" y "Maite se trabó" (`ALERTAS_SOLAS`); esos sí siguen
-    en la lista de los demás avisos (solo las quejas quedan fuera, `PENDIENTES_FUERA_DE_LISTA`).
+  - **Avisos al equipo: uno por caso, con enlace al chat (24-nov, Alex)**: cada aviso llega solo, con el botón "Atendida" de
+    ESA conversación y el enlace que la abre en la Bandeja de ManyChat (`botEnlaceChat`, `MANYCHAT_URL_CHAT`; reemplaza al
+    "Id de ManyChat"). Lo que sigue sin atender en `Conversaciones_Pendientes` se recuerda cada `BOT_RECORDATORIO_MINUTOS` (180)
+    mientras alguna tienda esté abierta, UN mensaje por conversación con su enlace y su botón, hasta `BOT_RECORDATORIOS_MAX` (3);
+    luego "Nadie atendió a un cliente" y queda SIN ATENDER. Lo de más de `BOT_PENDIENTE_DIAS_RECORDAR` (2) días se cierra sin avisar.
+    Las quejas también se recuerdan (son mensajes aparte, no una lista). `botRecordatoriosPendientes` lo corre la revisión del
+    tablero cada 5 min, con candado en cache; ya no tiene trigger propio (`quitarTriggerRecordatoriosPendientes` quita el viejo).
+    Historia: el mismo día se probó una lista de pendientes debajo de cada aviso con hasta 3 botones (WhatsApp no deja más,
+    flujos "Alerta bot 2/3 botones (sistema)" y campos `bot_conversacion_2/_3`, hoy sin uso); con varios pendientes los botones
+    marcaban casos que no eran el del aviso, y Alex pidió volver a mensajes independientes con enlace.
   - **"Uy, se me trabó" (24-nov)**: con `BOT_MAX_TOKENS` = 1024 la IA a veces se gastaba todo pensando en conversaciones de queja
     y contestaba en blanco (stop_reason max_tokens, ~7.5 s por llamada); además el mensaje al cliente decía "ya le avisé al equipo"
     y no salía ningún aviso. Ahora el tope es 4096, una respuesta en blanco tras el reintento es falla de verdad (`ok:false` con

@@ -14,8 +14,6 @@
 
 // Del tipo que manda el bot a lo que se escribe en la hoja y se usa como prioridad.
 const ALERTA_URGENTES = ["queja_u_observacion", "mensajero", "cliente_esperando", "amenaza_o_legal", "falla_bot"];
-const ALERTAS_SOLAS = ["queja_u_observacion", "pidio_persona", "falla_bot"];   // llegan en su propio mensaje, sin la lista de pendientes debajo (Alex, 24-nov)
-const PENDIENTES_FUERA_DE_LISTA = ["queja_u_observacion"];                     // las quejas tampoco aparecen en la lista de los demás avisos
 const ALERTA_CON_SUGERENCIA =["queja_u_observacion"];   // solo en quejas va el segundo WhatsApp con el texto para pegarle al cliente (12-nov: cada alerta eran 2 mensajes)
 
 function botAlertaPersonal(ss, origen, tipo, titulo, detalle, conversacionId) {
@@ -28,14 +26,8 @@ function botAlertaPersonal(ss, origen, tipo, titulo, detalle, conversacionId) {
     aviso = { configurado: false, motivo: "ya se avisó hace poco de lo mismo en esta conversación", destinatarios: [], resultados: [] };
   } else {
     cache.put(clave, "1", BOT_ALERTA_REPETIDA_SEGUNDOS);
-    // Debajo va lo que sigue sin atender, y los botones marcan los 3 pendientes más antiguos (30_bot_autonomia.js).
-    // Si no se pudiera leer la lista, el aviso sale igual, como antes: un botón para esta conversación.
-    let campos = [{ nombre: MANYCHAT_CAMPO_CONVERSACION, valor: String(conversacionId) }];
-    // Una queja llega sola, con su propio botón y sin la lista (Alex, 24-nov: antes sus botones marcaban otros pendientes).
-    if (ALERTAS_SOLAS.indexOf(tipo) === -1) {
-      try { const conPendientes = _botAvisoConPendientes(ss, detalle, conversacionId); detalle = conPendientes.detalle; campos = conPendientes.campos; } catch (e) { Logger.log("Pendientes en el aviso: " + e); }
-    }
-    aviso = manychatAvisarEquipo(ss, _botClaveFlujoAlerta(ss, campos), titulo, detalle, MANYCHAT_MAX_ALERTA, campos);
+    // Cada aviso llega solo, con el botón "Atendida" de ESTA conversación; lo pendiente se recuerda aparte cada 3 h.
+    aviso = manychatAvisarEquipo(ss, MANYCHAT_CLAVE_FLUJO_ALERTA, titulo, detalle, MANYCHAT_MAX_ALERTA, [{ nombre: MANYCHAT_CAMPO_CONVERSACION, valor: String(conversacionId) }]);
     // El texto sugerido va en un mensaje APARTE, solo con el texto, para copiarlo y pegarlo de un toque. Los recordatorios no lo repiten.
     if (aviso.configurado && !/^recordatorio/.test(origen) && ALERTA_CON_SUGERENCIA.indexOf(tipo) !== -1) aviso.sugerencia = manychatSugerenciaEquipo(ss, _botSugerenciaCliente(tipo));
   }
@@ -45,7 +37,7 @@ function botAlertaPersonal(ss, origen, tipo, titulo, detalle, conversacionId) {
 
 // El cuerpo de toda alerta, un dato por renglón (en la plantilla los renglones se vuelven " | ").
 function botDetalleAlerta(canal, texto, conversacionId) {
-  return "📱 " + (canal || "Instagram") + "\n💬 " + String(texto || "").trim() + "\n🔎 Conversación " + conversacionId;
+  return "📱 " + (canal || "Instagram") + "\n📝 " + String(texto || "").trim() + "\n\n" + botEnlaceChat(conversacionId);
 }
 
 // Texto que Rebeca o Yessenia copian y pegan al cliente al tomar la conversación: listo para pegar, sin huecos que llenar ni promesas (reembolsos, fechas).
@@ -75,8 +67,6 @@ function botAtendida(body) {
   _botPendienteAnotarMensaje(ss, pendiente.fila);
   botPausar(conversacionId);
   _botMarcarHumano(conversacionId);   // volver a tocar el botón le da a la persona otros BOT_HUMANO_MINUTOS
-  // Ese caso sale de la lista y el siguiente más antiguo sube a tener botón: se manda la lista al momento (30_bot_autonomia.js).
-  if (pendiente.estado !== PENDIENTE_ESTADO.ATENDIDA) { try { _botAvisarListaActualizada(ss, pendiente); } catch (e) { Logger.log("Lista actualizada: " + e); } }
   return { ok: true, estado: PENDIENTE_ESTADO.ATENDIDA };
 }
 
@@ -151,7 +141,7 @@ function _botMarcarHumano(conversacionId) {
 // a ATENDIDA (menú desplegable) y los recordatorios paran. El sistema no ve lo que se contesta desde Instagram o WhatsApp,
 // así que esa marca es la única forma de saber que ya llegó alguien. Tope: BOT_RECORDATORIOS_MAX; solo mientras
 // haya alguna sucursal abierta (HORARIOS_SUCURSAL): con la tienda cerrada no se recuerda y se retoma al abrir.
-// Se instala una vez con instalarRecordatoriosPendientes().
+// Lo corre la revisión del tablero cada 5 min (tableroPedidosActualizar).
 // ---------------------------------------------------------------------------
 const PENDIENTE_COL = { CONVERSACION: 0, CANAL: 1, DESDE: 2, MOTIVO: 3, ESTADO: 4, RECORDATORIOS: 5, ULTIMO: 6, MENSAJE_CLIENTE: 7 };
 const PENDIENTE_COLUMNAS = 8;
@@ -205,14 +195,24 @@ function _pendienteDesdeMs(texto) {
   return m ? Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4] + MX_OFFSET_HORAS, +m[5]) : 0;
 }
 
-function _pendienteEsDeHoy(desde, ahoraFecha) {
+// Lo de los últimos BOT_PENDIENTE_DIAS_RECORDAR días se recuerda (algo que quedó pendiente a las 18:00 se recuerda al abrir).
+function _pendienteEsReciente(desde, ahoraFecha) {
   const ms = _pendienteDesdeMs(desde);
-  return !!ms && Utilities.formatDate(new Date(ms), TZ_MX, "yyyy-MM-dd") === Utilities.formatDate(ahoraFecha, TZ_MX, "yyyy-MM-dd");
+  return !!ms && ahoraFecha.getTime() - ms < BOT_PENDIENTE_DIAS_RECORDAR * 86400000;
 }
 
-// Trigger cada BOT_RECORDATORIO_MINUTOS. `ahora` solo se pasa en las pruebas.
+// Cada conversación se recuerda cada BOT_RECORDATORIO_MINUTOS. `ahora` solo se pasa en las pruebas.
 function botRecordatoriosPendientes(ahora) {
-  if (!BOT_RECORDATORIOS_ACTIVOS) return { enviados: 0, apagado: true };   // apagado de emergencia (12-nov-2026)
+  if (!BOT_RECORDATORIOS_ACTIVOS) return { enviados: 0, apagado: true };   // apagado de emergencia
+  // Lo corren su trigger (si está instalado) y la revisión del tablero de cada 5 min: el candado evita que dos corridas
+  // al mismo tiempo manden el mismo recordatorio dos veces.
+  const cache = CacheService.getScriptCache();
+  if (cache.get("recordatorios_corriendo")) return { enviados: 0, omitido: "ya hay una corrida en marcha" };
+  cache.put("recordatorios_corriendo", "1", 120);
+  try { return _botRecordar(ahora); } finally { cache.remove("recordatorios_corriendo"); }
+}
+
+function _botRecordar(ahora) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const hoja = ss.getSheetByName(PENDIENTES_HOJA);
   if (!hoja || hoja.getLastRow() < 2) return { enviados: 0 };
@@ -224,8 +224,8 @@ function botRecordatoriosPendientes(ahora) {
   let enviados = 0;
   filas.forEach(function (f, i) {
     if (String(f[PENDIENTE_COL.ESTADO]) !== PENDIENTE_ESTADO.PENDIENTE) return;
-    // Solo se recuerda lo de hoy: una conversación de ayer que nadie marcó se cierra sin avisar (12-nov: pruebas de la noche anterior sonaban toda la mañana).
-    if (!_pendienteEsDeHoy(f[PENDIENTE_COL.DESDE], ahoraFecha)) { hoja.getRange(i + 2, PENDIENTE_COL.ESTADO + 1).setValue(PENDIENTE_ESTADO.SIN_ATENDER); return; }
+    // Lo viejo se cierra sin avisar (12-nov: pruebas de días atrás sonaban toda la mañana).
+    if (!_pendienteEsReciente(f[PENDIENTE_COL.DESDE], ahoraFecha)) { hoja.getRange(i + 2, PENDIENTE_COL.ESTADO + 1).setValue(PENDIENTE_ESTADO.SIN_ATENDER); return; }
     const hechos = Number(f[PENDIENTE_COL.RECORDATORIOS]) || 0;
     const desde = _pendienteDesdeMs(f[PENDIENTE_COL.DESDE]);
     const ultimo = _pendienteDesdeMs(f[PENDIENTE_COL.ULTIMO]) || desde;
@@ -234,11 +234,11 @@ function botRecordatoriosPendientes(ahora) {
     const fila = i + 2;
     if (hechos >= BOT_RECORDATORIOS_MAX) {
       hoja.getRange(fila, PENDIENTE_COL.ESTADO + 1).setValue(PENDIENTE_ESTADO.SIN_ATENDER);
-      botAlertaPersonal(ss, "recordatorio_final", "cliente_esperando", "🚨 Nadie atendió a un cliente", "⏱️ Pasaron " + minutos + " min y se acabaron los recordatorios.\n" + botDetalleAlerta(f[PENDIENTE_COL.CANAL], f[PENDIENTE_COL.MOTIVO], f[PENDIENTE_COL.CONVERSACION]), f[PENDIENTE_COL.CONVERSACION]);
+      botAlertaPersonal(ss, "recordatorio_final", "cliente_esperando", "🚨 Nadie atendió a un cliente", "⏱️ Pasaron " + _botHace(ahoraFecha.getTime() - desde) + " y se acabaron los recordatorios.\n" + botDetalleAlerta(f[PENDIENTE_COL.CANAL], _botDescripcionPendiente(f[PENDIENTE_COL.MOTIVO]), f[PENDIENTE_COL.CONVERSACION]), f[PENDIENTE_COL.CONVERSACION]);
       return;
     }
-    botAlertaPersonal(ss, "recordatorio" + (hechos + 1), "cliente_esperando", "⏰ Un cliente espera a una persona (" + (hechos + 1) + ")",
-      "⏱️ Lleva " + minutos + " min esperando.\n" + botDetalleAlerta(f[PENDIENTE_COL.CANAL], f[PENDIENTE_COL.MOTIVO], f[PENDIENTE_COL.CONVERSACION]) + "\n👉 Al atenderlo toca *Atendida* (o cámbialo en " + PENDIENTES_HOJA + ").", f[PENDIENTE_COL.CONVERSACION]);
+    botAlertaPersonal(ss, "recordatorio" + (hechos + 1), "cliente_esperando", "⏰ Pendiente sin atender (" + (hechos + 1) + " de " + BOT_RECORDATORIOS_MAX + ")",
+      "⏱️ Lleva " + _botHace(ahoraFecha.getTime() - desde) + " esperando.\n" + botDetalleAlerta(f[PENDIENTE_COL.CANAL], _botDescripcionPendiente(f[PENDIENTE_COL.MOTIVO]), f[PENDIENTE_COL.CONVERSACION]) + "\n👉 Al atenderlo toca *Atendida* (o cámbialo en " + PENDIENTES_HOJA + ").", f[PENDIENTE_COL.CONVERSACION]);
     hoja.getRange(fila, PENDIENTE_COL.RECORDATORIOS + 1).setValue(hechos + 1);
     hoja.getRange(fila, PENDIENTE_COL.ULTIMO + 1).setValue(Utilities.formatDate(ahoraFecha, TZ_MX, "yyyy-MM-dd HH:mm"));
     enviados++;
@@ -246,7 +246,7 @@ function botRecordatoriosPendientes(ahora) {
   return { enviados: enviados };
 }
 
-function instalarRecordatoriosPendientes() {
+// Ya no hace falta un trigger propio: lo corre tableroPedidosActualizar cada 5 min. Esto quita el viejo, si quedó instalado.
+function quitarTriggerRecordatoriosPendientes() {
   ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === "botRecordatoriosPendientes") ScriptApp.deleteTrigger(t); });
-  ScriptApp.newTrigger("botRecordatoriosPendientes").timeBased().everyMinutes(BOT_RECORDATORIO_MINUTOS).create();
 }
