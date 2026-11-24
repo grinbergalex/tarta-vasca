@@ -598,6 +598,28 @@ todo el ciclo. Hecho hasta ahora (solo en el proyecto de pruebas, no en producci
   ANULADO con motivo `PEDIDO_MOTIVO_VENDIDO_APARTE` (se lee ENTREGADO) o `PEDIDO_MOTIVO_CANCELADO_SHOPIFY`. Una vez por pedido
   (propiedad `CERR_<pedido>` del sincronizador); solo manda correo si alguno falla.
 
+## Maite en vivo en Instagram y WhatsApp (23-nov-2026, v151–v152)
+
+- **v151**: `BOT_MODO_PRUEBA_CANALES = []` y `BOT_WHATSAPP_ACTIVO = true` (interruptor de emergencia). En ManyChat, el
+  "WhatsApp Default Reply" arranca el flujo de Maite solo si el contacto **no** tiene la etiqueta `no_maite`. La llevan el equipo
+  (Alex, Rebe, Yessi Nava) y GA Soluciones/Gala, que además tiene las automatizaciones pausadas para siempre: dos bots se
+  contestaban en círculo. Para que Alex pruebe desde su celular hay que quitarle `no_maite` (o escribir con la palabra clave "prueba").
+- Alertas a `aviso_hoy_manychat` = Alex, Rebeca y Yessenia (ids de contacto de ManyChat en Configuración).
+- `pedido_datos_transferencia` (Configuración) = la cuenta BBVA de La Tarta Vasca. Maite la da sola al cerrar un pedido con transferencia.
+- **Contestar desde la Bandeja de ManyChat pausa a Maite 1 h en ese chat** y asigna el chat. Enter manda el mensaje: escribirlo en una línea.
+- **v152 — el Uber/DiDi ya no avisa en cuanto el cliente lo menciona** (Alex: "no tienes que avisarnos hasta no tener algo
+  relevante con que accionar"). Maite sigue el pedido normal y, al crearlo con `mensajero`, sale UN aviso con llave, sucursal, día,
+  hora y pago (`_botAvisarMensajero`); el de hoy ya lo trae `pedidoAvisarSiEsDeHoy`. `mensajero` salió del enum de `avisar_al_equipo`.
+  Si lo recoge un mensajero, el pago es por transferencia antes.
+- **Lo que hace más lista a Maite sin publicar nada** (lo lee en vivo de la hoja):
+  - `Bot_Manual` → `preguntas_frecuentes`: agregado el 23-nov kosher (no usamos), caja de 4 o de 3 (ya no existen) y anticipo (no hay:
+    pago completo contra entrega; con Uber, transferencia antes). Así contestaba el equipo antes de Maite.
+  - `ZonasEnvio` → ZNV-50 ($60): agregadas Jesús del Monte, Villa Florence y El Yaqui (3-5 km de Bosques). "Huixquilucan" solo
+    no se agregó a propósito: el municipio llega a ~11 km (círculo de $90). `_botZona` compara por subcadena.
+- **Envíos por distancia**: propuesta de círculos desde Bosques ($60 ≤5 km, $90 5-11 km, $120 11-16 km, más lejos cotiza una
+  persona) en el doc "Envíos por distancia desde Bosques" (artifact) y `envios-por-distancia-bosques.pdf`, para Yessenia.
+  Mientras no se construya, cada colonia que falte en `ZonasEnvio` hace que Maite diga que no llega: es lo que más la traba.
+
 ## Legacy / pendientes
 
 - `cargaInv 17.js`, `ventasmasivoCuaji17.js`, `limpiar apartados.js`:
