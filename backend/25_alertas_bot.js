@@ -13,8 +13,9 @@
 // ============================================================================
 
 // Del tipo que manda el bot a lo que se escribe en la hoja y se usa como prioridad.
-const ALERTA_URGENTES = ["queja_u_observacion", "mensajero", "cliente_esperando", "amenaza_o_legal"];
-const ALERTAS_SOLAS = ["queja_u_observacion"];   // llegan en su propio mensaje: sin la lista de pendientes y fuera de esa lista en los demás avisos
+const ALERTA_URGENTES = ["queja_u_observacion", "mensajero", "cliente_esperando", "amenaza_o_legal", "falla_bot"];
+const ALERTAS_SOLAS = ["queja_u_observacion", "pidio_persona", "falla_bot"];   // llegan en su propio mensaje, sin la lista de pendientes debajo (Alex, 24-nov)
+const PENDIENTES_FUERA_DE_LISTA = ["queja_u_observacion"];                     // las quejas tampoco aparecen en la lista de los demás avisos
 const ALERTA_CON_SUGERENCIA =["queja_u_observacion"];   // solo en quejas va el segundo WhatsApp con el texto para pegarle al cliente (12-nov: cada alerta eran 2 mensajes)
 
 function botAlertaPersonal(ss, origen, tipo, titulo, detalle, conversacionId) {

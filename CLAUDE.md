@@ -662,6 +662,14 @@ todo el ciclo. Hecho hasta ahora (solo en el proyecto de pruebas, no en producci
     llama a `botAtendida` con su campo (`bot_conversacion`, `_2`, `_3`). Sin las claves, se usa el de un botón.
     **Las quejas van aparte** (`ALERTAS_SOLAS`, Alex 24-nov): su aviso llega solo, sin la lista y con su propio botón (antes sus
     botones marcaban otros pendientes), no aparecen en la lista de los demás avisos y atenderlas no manda la lista.
+    También llegan solos (sin lista debajo) "pidió hablar con una persona" y "Maite se trabó" (`ALERTAS_SOLAS`); esos sí siguen
+    en la lista de los demás avisos (solo las quejas quedan fuera, `PENDIENTES_FUERA_DE_LISTA`).
+  - **"Uy, se me trabó" (24-nov)**: con `BOT_MAX_TOKENS` = 1024 la IA a veces se gastaba todo pensando en conversaciones de queja
+    y contestaba en blanco (stop_reason max_tokens, ~7.5 s por llamada); además el mensaje al cliente decía "ya le avisé al equipo"
+    y no salía ningún aviso. Ahora el tope es 4096, una respuesta en blanco tras el reintento es falla de verdad (`ok:false` con
+    el stop_reason) y sale un WhatsApp aparte "⚠️ Maite se trabó con un cliente".
+  - **Elogios (Alex, 24-nov)**: Maite agradece mucho y NO avisa ni pasa con una persona (`observacion` salió del enum de
+    `avisar_al_equipo`); si preguntan algo de la marca que no sabe, contesta lo que sepa sin escalar.
   - **Negritas** (Alex, 24-nov): el título de cada aviso (`aviso_referencia`, con diseño) y los títulos de sección (Ya dio, Falta,
     Sin atender, Para recoger hoy…) van entre `*…*`, que es como WhatsApp marca negritas (`_whatsappNegritas`).
   - **Ecos del WhatsApp Business del celular**: el mensaje de bienvenida y el de ausencia vuelven a disparar el flujo de ManyChat

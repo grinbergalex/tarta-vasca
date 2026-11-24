@@ -138,7 +138,7 @@ const RECOGER_INTERVALO_MIN = 60;        // tamaño de cada horario que elige el
 const RECOGER_DIAS_A_MOSTRAR = 14;       // hasta cuántos días adelante se puede reservar
 // v9 — Bot de Instagram (18_bot_conversacion.js). Las reglas de fechas reutilizan RECOGER_*.
 const BOT_MODELO = "claude-sonnet-5-5";
-const BOT_MAX_TOKENS = 1024;
+const BOT_MAX_TOKENS = 4096;   // 24-nov: con 1024 la IA a veces gastaba todo pensando y contestaba en blanco ("se me trabó") en quejas largas
 const BOT_MAX_VUELTAS_HERRAMIENTAS = 6;     // veces que puede pedir herramientas en un solo turno
 const BOT_MAX_MENSAJES_HISTORIAL = 30;      // mensajes de la conversación que recuerda
 const BOT_HISTORIAL_SEGUNDOS = 21600;       // 6 h: lo que vive en el cache (el cache no guarda más); la conversación completa vive en Bot_Memoria
@@ -161,6 +161,7 @@ const BOT_ARCHIVO_MAX_BYTES_IMAGEN = 5 * 1024 * 1024;   // la IA acepta imágene
 const BOT_ARCHIVO_MAX_BYTES_PDF = 20 * 1024 * 1024;     // y PDF dentro de los 32 MB por petición
 const BOT_ECO_SEGUNDOS = 180;                // el mismo texto otra vez dentro de este lapso es el eco de un mensaje automático del WhatsApp Business
 const BOT_MARCA_SILENCIO = "[SILENCIO]";
+const BOT_FALLA_MENSAJE_MAX = 200;           // caracteres del último mensaje del cliente en el aviso "Maite se trabó"
 const BOT_ALERTA_MAX_PEDIDOS = 3;            // pedidos de la conversación que salen en un aviso al equipo (llave, nombre, fecha, estado)
 const BOT_TEXTO_AUDIO = "Por aquí todavía no puedo escuchar audios 🙏 ¿Me lo escribes en un mensaje? Así te ayudo de inmediato.";
 const BOT_TEXTO_VIDEO = "Por aquí todavía no puedo ver videos 🙏 ¿Me cuentas por escrito qué necesitas? Así te ayudo de inmediato.";

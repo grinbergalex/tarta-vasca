@@ -311,7 +311,7 @@ function _botPendientesAbiertos(ss) {
     if (id) ultimo[id] = { conversacion: id, motivo: String(f[PENDIENTE_COL.MOTIVO] || ""), desde: f[PENDIENTE_COL.DESDE], estado: String(f[PENDIENTE_COL.ESTADO] || "") };
   });
   return Object.keys(ultimo).map(function (id) { return ultimo[id]; })
-    .filter(function (p) { return p.estado !== PENDIENTE_ESTADO.ATENDIDA && ALERTAS_SOLAS.indexOf(String(p.motivo).split(":")[0].trim()) === -1; })   // las quejas van aparte
+    .filter(function (p) { return p.estado !== PENDIENTE_ESTADO.ATENDIDA && PENDIENTES_FUERA_DE_LISTA.indexOf(String(p.motivo).split(":")[0].trim()) === -1; })   // las quejas van aparte
     .sort(function (a, b) { return _pendienteDesdeMs(a.desde) - _pendienteDesdeMs(b.desde); });
 }
 
@@ -368,7 +368,7 @@ function _botListaResto(resto, mostrar, desde, ahoraMs) {
 // esperar al siguiente aviso. Si ya no queda nada, un mensaje corto de que todo está atendido (sin botones).
 function _botAvisarListaActualizada(ss, atendido) {
   const motivo = String((ss.getSheetByName(PENDIENTES_HOJA).getRange(atendido.fila, PENDIENTE_COL.MOTIVO + 1).getValues()[0] || [""])[0]);
-  if (ALERTAS_SOLAS.indexOf(motivo.split(":")[0].trim()) !== -1) return null;   // una queja va aparte: atenderla no manda la lista
+  if (PENDIENTES_FUERA_DE_LISTA.indexOf(motivo.split(":")[0].trim()) !== -1) return null;   // una queja va aparte: atenderla no manda la lista
   const caso = _botDescripcionPendiente(motivo);
   const quedan = _botPendientesAbiertos(ss);
   if (!quedan.length) return manychatAvisarEquipo(ss, MANYCHAT_CLAVE_FLUJO_REPORTE, "✅ Todo atendido", "Se marcó como atendido: " + caso + "\nYa no queda ninguna conversación pendiente.", MANYCHAT_MAX_ALERTA);
