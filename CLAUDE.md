@@ -107,6 +107,11 @@ Solo lee: no toca el repo ni el proyecto de Apps Script.
 
 ## Reglas duras
 
+- **Todo cambio de reglas de Maite que se publique se documenta el mismo día en Notion** (Alex, 24-nov-2026: "que se haga
+  así para siempre"): página "Maite — reglas de atención y pedidos (fuente única)",
+  https://app.notion.com/p/422f8e95dd1181a6a445cd7623fae27a, en su sección y en "Historial de cambios". Vale para el código,
+  `Bot_Manual`, `ZonasEnvio`, `Configuración` y los flujos de ManyChat. Se escribe en términos del negocio, no del código, para
+  que sirva si se cambia de plataforma. Lo construido sin publicar se marca como pendiente.
 - **Antes de cualquier `clasp push`, baja la versión viva y compárala con el repo** (receta de
   "Cómo saber qué está desplegado"). Solo publica si lo único distinto es lo que quieres subir. El
   19-oct-2026 producción (v124) traía el calendario del carrito de Shopify
