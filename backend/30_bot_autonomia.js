@@ -255,8 +255,13 @@ function _botDetalleAlertaOrdenado(ctx, a, textoLibre) {
   const lista = function (x) { return (Array.isArray(x) ? x : []).map(function (s) { return String(s || "").trim(); }).filter(Boolean); };
   const yaDio = lista(a.ya_dio), falta = lista(a.falta), queQuiere = String(a.que_quiere || "").trim();
   const telefono = String(ctx.telefonoCanal || "").replace(/\D/g, "").slice(-10);
+  const pedidos = _botPedidosDeLaConversacion(ctx);
+  const nombre = String(a.cliente || "").trim() || (pedidos[0] ? pedidos[0].cliente : "");
   const lineas = ["📱 " + (ctx.canal || "Instagram") + (telefono.length === 10 ? " · " + telefono.replace(/(\d{2})(\d{4})(\d{4})/, "$1 $2 $3") : "")];
-  if (String(a.cliente || "").trim()) lineas.push("👤 " + String(a.cliente).trim());
+  if (nombre) lineas.push("👤 " + nombre);
+  // Lo que el equipo busca en el sistema de la tarta: la llave del pedido (Ventas, tablero, Apartados), el nombre y la fecha.
+  if (pedidos.length) pedidos.forEach(function (p) { lineas.push("🔑 " + p.referencia + " · " + p.cliente + " · " + _botFechaLegible(p.fechaEntrega) + " · " + p.estado); });
+  else lineas.push("🔑 Sin pedido todavía");
   lineas.push("💬 " + (queQuiere || String(textoLibre || "").trim()));
   const seccion = function (titulo, puntos) {
     if (!puntos.length) return;
@@ -265,6 +270,21 @@ function _botDetalleAlertaOrdenado(ctx, a, textoLibre) {
   };
   seccion("✅ Ya dio:", yaDio);
   seccion("❓ Falta:", falta);
-  lineas.push("", "🔎 Conversación " + ctx.conversacionId);
+  lineas.push("", "🔎 Id de ManyChat: " + ctx.conversacionId);
   return lineas.join("\n");
+}
+
+// Los pedidos con llave de esta conversación (Instagram) o de este mismo número (WhatsApp) que lleva el tablero: primero los
+// abiertos, hasta BOT_ALERTA_MAX_PEDIDOS. Si no se puede leer la hoja, el aviso sale sin ellos.
+function _botPedidosDeLaConversacion(ctx) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet(), ventas = ss.getSheetByName("Ventas");
+    const telefono = String(ctx.telefonoCanal || "").replace(/\D/g, "").slice(-10);
+    const suyos = _tableroLeerPedidos(ss, ventas, _pedidoIndices(ventas)).filter(function (p) {
+      const digitos = String(p.contacto).replace(/\D/g, "");
+      return p.referencia && (String(p.contacto).indexOf(ctx.conversacionId) !== -1 || (telefono.length === 10 && digitos.slice(-10) === telefono));
+    });
+    const abierto = function (p) { return PEDIDO_ESTADOS_ABIERTOS.indexOf(p.estado) !== -1 ? 0 : 1; };
+    return suyos.sort(function (x, y) { return abierto(x) - abierto(y); }).slice(0, BOT_ALERTA_MAX_PEDIDOS);
+  } catch (e) { Logger.log("Pedidos del aviso: " + e); return []; }
 }

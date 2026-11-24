@@ -641,6 +641,8 @@ todo el ciclo. Hecho hasta ahora (solo en el proyecto de pruebas, no en producci
   - **Avisos al equipo en renglones (24-nov, Alex)**: `pasar_a_persona` y `avisar_al_equipo` llevan campos opcionales `cliente`,
     `que_quiere`, `ya_dio[]` y `falta[]`; `_botDetalleAlertaOrdenado` los acomoda en renglones con bullets (y el teléfono en
     WhatsApp). Sin esos campos queda el texto libre, como antes.
+    Cada aviso trae además los pedidos con llave de esa conversación o de ese número (`🔑 TV-… · nombre · fecha · estado`,
+    `_botPedidosDeLaConversacion`, hasta `BOT_ALERTA_MAX_PEDIDOS`) para ubicarlos en el sistema; el id de ManyChat sigue al final.
   - **Ecos del WhatsApp Business del celular**: el mensaje de bienvenida y el de ausencia vuelven a disparar el flujo de ManyChat
     con el último texto del cliente. Antes Maite contestaba "no puedo escuchar audios" (4 de 7 avisos del 23-nov eran esto). Ahora
     el mismo texto otra vez dentro de `BOT_ECO_SEGUNDOS` se calla sin tocar el estado (la respuesta real puede ir en camino).

@@ -161,6 +161,7 @@ const BOT_ARCHIVO_MAX_BYTES_IMAGEN = 5 * 1024 * 1024;   // la IA acepta imágene
 const BOT_ARCHIVO_MAX_BYTES_PDF = 20 * 1024 * 1024;     // y PDF dentro de los 32 MB por petición
 const BOT_ECO_SEGUNDOS = 180;                // el mismo texto otra vez dentro de este lapso es el eco de un mensaje automático del WhatsApp Business
 const BOT_MARCA_SILENCIO = "[SILENCIO]";
+const BOT_ALERTA_MAX_PEDIDOS = 3;            // pedidos de la conversación que salen en un aviso al equipo (llave, nombre, fecha, estado)
 const BOT_TEXTO_AUDIO = "Por aquí todavía no puedo escuchar audios 🙏 ¿Me lo escribes en un mensaje? Así te ayudo de inmediato.";
 const BOT_TEXTO_VIDEO = "Por aquí todavía no puedo ver videos 🙏 ¿Me cuentas por escrito qué necesitas? Así te ayudo de inmediato.";
 const BOT_TEXTO_ARCHIVO_DESCONOCIDO = "No alcancé a abrir lo que me mandaste 🙏 ¿Me lo escribes en un mensaje? Así te ayudo de inmediato.";
