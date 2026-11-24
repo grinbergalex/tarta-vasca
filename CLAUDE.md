@@ -648,9 +648,6 @@ todo el ciclo. Hecho hasta ahora (solo en el proyecto de pruebas, no en producci
     WhatsApp). Sin esos campos queda el texto libre, como antes.
     Cada aviso trae además los pedidos con llave de esa conversación o de ese número (`🔑 TV-… · nombre · fecha · estado`,
     `_botPedidosDeLaConversacion`, hasta `BOT_ALERTA_MAX_PEDIDOS`) para ubicarlos en el sistema; el id de ManyChat sigue al final.
-  - **Ventana de entrega a domicilio (24-nov, Alex)**: `BOT_VENTANA_ENTREGA` = 9:30 a 14:30 (antes 9:00 a 15:00), la misma que
-    el equipo confirma a mano, y el mensaje al cliente dice "aproximadamente" y que la hora exacta depende de la ruta del día.
-    "¿A qué hora llega?" se contesta con el rango, sin escalar (guía de marca, `preguntas_frecuentes`).
   - **Avisos al equipo: uno por caso, con enlace al chat (24-nov, Alex)**: cada aviso llega solo, con el botón "Atendida" de
     ESA conversación y el enlace que la abre en la Bandeja de ManyChat (`botEnlaceChat`, `MANYCHAT_URL_CHAT`; reemplaza al
     "Id de ManyChat"). Lo que sigue sin atender en `Conversaciones_Pendientes` se recuerda cada `BOT_RECORDATORIO_MINUTOS` (180)
