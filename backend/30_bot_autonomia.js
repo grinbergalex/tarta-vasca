@@ -341,7 +341,7 @@ function _botAvisoConPendientes(ss, detalle, conversacionId, ahora) {
   const pendientes = _botPendientesAbiertos(ss);
   const conBoton = pendientes.slice(0, MANYCHAT_CAMPOS_BOTONES.length);
   const campos = MANYCHAT_CAMPOS_BOTONES.map(function (campo, i) {
-    return { nombre: campo, valor: conBoton[i] ? conBoton[i].conversacion : (i === 0 ? String(conversacionId) : "") };
+    return { nombre: campo, valor: conBoton[i] ? conBoton[i].conversacion : (i === 0 ? String(conversacionId) : MANYCHAT_SIN_BOTON) };
   });
   if (!pendientes.length) return { detalle: detalle, campos: campos };
   const lineas = ["", "", "⏳ Sin atender (" + pendientes.length + "). Los botones marcan " + conBoton.map(function (p, i) { return i + 1; }).join(", ") + ":"];
@@ -372,5 +372,13 @@ function _botAvisarListaActualizada(ss, atendido) {
   const quedan = _botPendientesAbiertos(ss);
   if (!quedan.length) return manychatAvisarEquipo(ss, MANYCHAT_CLAVE_FLUJO_REPORTE, "✅ Todo atendido", "Se marcó como atendido: " + caso + "\nYa no queda ninguna conversación pendiente.", MANYCHAT_MAX_ALERTA);
   const lista = _botAvisoConPendientes(ss, "Se marcó como atendido: " + caso, "");
-  return manychatAvisarEquipo(ss, MANYCHAT_CLAVE_FLUJO_ALERTA, "✅ Atendido · quedan " + quedan.length, lista.detalle, MANYCHAT_MAX_ALERTA, lista.campos);
+  return manychatAvisarEquipo(ss, _botClaveFlujoAlerta(ss, lista.campos), "✅ Atendido · quedan " + quedan.length, lista.detalle, MANYCHAT_MAX_ALERTA, lista.campos);
+}
+
+// WhatsApp no deja poner botones condicionales: hay un flujo de ManyChat por número de botones (1, 2 o 3). Se elige el que
+// corresponde a cuántos botones traen conversación; si su clave no está en Configuración, el de un botón (como antes).
+function _botClaveFlujoAlerta(ss, campos) {
+  const botones = campos.filter(function (c) { return c.valor && c.valor !== MANYCHAT_SIN_BOTON; }).length;
+  const clave = botones >= 2 ? MANYCHAT_CLAVE_FLUJO_ALERTA + "_" + botones : MANYCHAT_CLAVE_FLUJO_ALERTA;
+  return clave !== MANYCHAT_CLAVE_FLUJO_ALERTA && String(_cfgVal(ss, clave, "")).trim() ? clave : MANYCHAT_CLAVE_FLUJO_ALERTA;
 }

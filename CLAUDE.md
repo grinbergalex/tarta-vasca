@@ -656,6 +656,10 @@ todo el ciclo. Hecho hasta ahora (solo en el proyecto de pruebas, no en producci
     qué campos traen valor. Ahora el caso queda pendiente ANTES de mandar el aviso, para que entre en su propia lista.
     Al tocar "Atendida" (`botAtendida`) a todo el equipo le llega al momento la lista que queda, con el siguiente más antiguo ya
     con botón (`_botAvisarListaActualizada`); si no queda nada, "✅ Todo atendido" por el flujo de reportes (sin botones).
+    WhatsApp no permite botones condicionales: hay un flujo de ManyChat por número de botones ("Alerta bot (sistema)" = 1,
+    "Alerta bot 2 botones (sistema)" y "Alerta bot 3 botones (sistema)", claves `manychat_flujo_alerta_2` y `_3` en Configuración);
+    `_botClaveFlujoAlerta` elige según cuántos campos traen conversación (los vacíos van con "-", `MANYCHAT_SIN_BOTON`). Cada botón
+    llama a `botAtendida` con su campo (`bot_conversacion`, `_2`, `_3`). Sin las claves, se usa el de un botón.
   - **Ecos del WhatsApp Business del celular**: el mensaje de bienvenida y el de ausencia vuelven a disparar el flujo de ManyChat
     con el último texto del cliente. Antes Maite contestaba "no puedo escuchar audios" (4 de 7 avisos del 23-nov eran esto). Ahora
     el mismo texto otra vez dentro de `BOT_ECO_SEGUNDOS` se calla sin tocar el estado (la respuesta real puede ir en camino).
