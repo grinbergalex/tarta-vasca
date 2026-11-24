@@ -638,6 +638,9 @@ todo el ciclo. Hecho hasta ahora (solo en el proyecto de pruebas, no en producci
     el monto y la llave, nunca "ya entró el pago"—; si implica actuar, confirma con el cliente; si no entiende, pregunta; un sticker
     de cierre → `[SILENCIO]`, no contesta). Audio o video → le pide que lo escriba (transcribir audios = servicio aparte, pendiente
     de que Alex decida). Ninguno manda WhatsApp al equipo: van a la bandeja del POS.
+  - **Avisos al equipo en renglones (24-nov, Alex)**: `pasar_a_persona` y `avisar_al_equipo` llevan campos opcionales `cliente`,
+    `que_quiere`, `ya_dio[]` y `falta[]`; `_botDetalleAlertaOrdenado` los acomoda en renglones con bullets (y el teléfono en
+    WhatsApp). Sin esos campos queda el texto libre, como antes.
   - **Ecos del WhatsApp Business del celular**: el mensaje de bienvenida y el de ausencia vuelven a disparar el flujo de ManyChat
     con el último texto del cliente. Antes Maite contestaba "no puedo escuchar audios" (4 de 7 avisos del 23-nov eran esto). Ahora
     el mismo texto otra vez dentro de `BOT_ECO_SEGUNDOS` se calla sin tocar el estado (la respuesta real puede ir en camino).

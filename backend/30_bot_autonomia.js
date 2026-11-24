@@ -245,3 +245,26 @@ function _botRespuestaSinArchivo(conversacionId, archivo, canal) {
 
 // La IA contesta exactamente BOT_MARCA_SILENCIO cuando un sticker o una imagen solo cierran la conversación.
 function _botEsSilencio(texto) { return String(texto || "").trim() === BOT_MARCA_SILENCIO; }
+
+// ---------------------------------------------------------------------------
+// 5. AVISOS AL EQUIPO FÁCILES DE LEER (Alex, 24-nov-2026: "más fácil de leer con renglones, bullets")
+// ---------------------------------------------------------------------------
+// Antes el aviso era un párrafo ("💬 Cliente quiere… Aún no da… Preguntó…"). Maite ahora lo llena por partes (cliente, qué quiere,
+// qué ya dio, qué falta) y aquí se acomoda en renglones. Si no llenó las partes, queda el texto libre, como antes.
+function _botDetalleAlertaOrdenado(ctx, a, textoLibre) {
+  const lista = function (x) { return (Array.isArray(x) ? x : []).map(function (s) { return String(s || "").trim(); }).filter(Boolean); };
+  const yaDio = lista(a.ya_dio), falta = lista(a.falta), queQuiere = String(a.que_quiere || "").trim();
+  const telefono = String(ctx.telefonoCanal || "").replace(/\D/g, "").slice(-10);
+  const lineas = ["📱 " + (ctx.canal || "Instagram") + (telefono.length === 10 ? " · " + telefono.replace(/(\d{2})(\d{4})(\d{4})/, "$1 $2 $3") : "")];
+  if (String(a.cliente || "").trim()) lineas.push("👤 " + String(a.cliente).trim());
+  lineas.push("💬 " + (queQuiere || String(textoLibre || "").trim()));
+  const seccion = function (titulo, puntos) {
+    if (!puntos.length) return;
+    lineas.push("", titulo);
+    puntos.forEach(function (x) { lineas.push("• " + x); });
+  };
+  seccion("✅ Ya dio:", yaDio);
+  seccion("❓ Falta:", falta);
+  lineas.push("", "🔎 Conversación " + ctx.conversacionId);
+  return lineas.join("\n");
+}
