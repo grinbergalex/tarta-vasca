@@ -26,7 +26,11 @@ function botAlertaPersonal(ss, origen, tipo, titulo, detalle, conversacionId) {
     aviso = { configurado: false, motivo: "ya se avisó hace poco de lo mismo en esta conversación", destinatarios: [], resultados: [] };
   } else {
     cache.put(clave, "1", BOT_ALERTA_REPETIDA_SEGUNDOS);
-    aviso = manychatAvisarEquipo(ss, MANYCHAT_CLAVE_FLUJO_ALERTA, titulo, detalle, MANYCHAT_MAX_ALERTA, [{ nombre: MANYCHAT_CAMPO_CONVERSACION, valor: String(conversacionId) }]);
+    // Debajo va lo que sigue sin atender, y los botones marcan los 3 pendientes más antiguos (30_bot_autonomia.js).
+    // Si no se pudiera leer la lista, el aviso sale igual, como antes: un botón para esta conversación.
+    let campos = [{ nombre: MANYCHAT_CAMPO_CONVERSACION, valor: String(conversacionId) }];
+    try { const conPendientes = _botAvisoConPendientes(ss, detalle, conversacionId); detalle = conPendientes.detalle; campos = conPendientes.campos; } catch (e) { Logger.log("Pendientes en el aviso: " + e); }
+    aviso = manychatAvisarEquipo(ss, MANYCHAT_CLAVE_FLUJO_ALERTA, titulo, detalle, MANYCHAT_MAX_ALERTA, campos);
     // El texto sugerido va en un mensaje APARTE, solo con el texto, para copiarlo y pegarlo de un toque. Los recordatorios no lo repiten.
     if (aviso.configurado && !/^recordatorio/.test(origen) && ALERTA_CON_SUGERENCIA.indexOf(tipo) !== -1) aviso.sugerencia = manychatSugerenciaEquipo(ss, _botSugerenciaCliente(tipo));
   }

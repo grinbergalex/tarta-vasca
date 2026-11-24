@@ -648,6 +648,12 @@ todo el ciclo. Hecho hasta ahora (solo en el proyecto de pruebas, no en producci
     WhatsApp). Sin esos campos queda el texto libre, como antes.
     Cada aviso trae además los pedidos con llave de esa conversación o de ese número (`🔑 TV-… · nombre · fecha · estado`,
     `_botPedidosDeLaConversacion`, hasta `BOT_ALERTA_MAX_PEDIDOS`) para ubicarlos en el sistema; el id de ManyChat sigue al final.
+  - **Cada aviso trae lo que sigue sin atender (24-nov, Alex)**: debajo del caso nuevo va la lista de conversaciones PENDIENTES
+    de `Conversaciones_Pendientes` (las que Maite pasó a una persona), de la más antigua a la más nueva. WhatsApp permite máximo 3
+    botones por mensaje: los llevan las 3 más antiguas, vía los campos de ManyChat `MANYCHAT_CAMPOS_BOTONES` (bot_conversacion,
+    _2, _3; vacíos los que sobran). El resto se lista mientras quepa en `MANYCHAT_MAX_ALERTA` ("…y N más"); si ni así cabe se
+    recorta el texto del caso nuevo, nunca los renglones con botón. El flujo de alertas de ManyChat elige 1, 2 o 3 botones según
+    qué campos traen valor. Ahora el caso queda pendiente ANTES de mandar el aviso, para que entre en su propia lista.
   - **Ecos del WhatsApp Business del celular**: el mensaje de bienvenida y el de ausencia vuelven a disparar el flujo de ManyChat
     con el último texto del cliente. Antes Maite contestaba "no puedo escuchar audios" (4 de 7 avisos del 23-nov eran esto). Ahora
     el mismo texto otra vez dentro de `BOT_ECO_SEGUNDOS` se calla sin tocar el estado (la respuesta real puede ir en camino).

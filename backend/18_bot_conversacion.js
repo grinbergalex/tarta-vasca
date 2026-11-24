@@ -1014,9 +1014,10 @@ function _botPasarAPersona(a, ctx) {
   const encabezado = BOT_ENCABEZADOS_ALERTA[a.tipo] || "🙋 El bot pasa una conversación a una persona";
   const detalle = "Motivo: " + a.motivo + "\nResumen: " + a.resumen + "\nConversación: " + ctx.conversacionId;
   _botAvisar(encabezado, detalle, { sinWhatsapp: true });
+  // Primero queda como pendiente, para que el aviso ya lo cuente en su lista de "sin atender" y le toque botón si es de los 3 más antiguos.
+  botPendienteRegistrar(SpreadsheetApp.getActiveSpreadsheet(), ctx.conversacionId, ctx.canal, ctx.alerta, a.resumen);
   botAlertaPersonal(SpreadsheetApp.getActiveSpreadsheet(), "pasar", ctx.alerta, encabezado, _botDetalleAlertaOrdenado(ctx, a, a.resumen), ctx.conversacionId);
   botPausar(ctx.conversacionId);
-  botPendienteRegistrar(SpreadsheetApp.getActiveSpreadsheet(), ctx.conversacionId, ctx.canal, ctx.alerta, a.resumen);
   return { ok: true, mensaje: "Ya se avisó al equipo." };
 }
 

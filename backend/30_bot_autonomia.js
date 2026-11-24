@@ -288,3 +288,73 @@ function _botPedidosDeLaConversacion(ctx) {
     return suyos.sort(function (x, y) { return abierto(x) - abierto(y); }).slice(0, BOT_ALERTA_MAX_PEDIDOS);
   } catch (e) { Logger.log("Pedidos del aviso: " + e); return []; }
 }
+
+// ---------------------------------------------------------------------------
+// 6. CADA AVISO TRAE LO QUE SIGUE SIN ATENDER (Alex, 24-nov-2026)
+// ---------------------------------------------------------------------------
+// Antes cada aviso era un mensaje suelto con su botón "Atendida", y con varios había que subir en el chat para no olvidar uno.
+// Ahora cada aviso nuevo lleva abajo la lista de conversaciones que siguen PENDIENTES (las que Maite pasó a una persona). WhatsApp
+// permite máximo 3 botones por mensaje: los llevan las 3 más antiguas (las que más esperan), en los campos de ManyChat
+// MANYCHAT_CAMPOS_BOTONES; el flujo de alertas muestra 1, 2 o 3 botones según cuántos campos traigan valor. El resto va en la
+// lista y recibe botón cuando se atienden los de arriba.
+const BOT_PENDIENTE_ETIQUETAS = { queja_u_observacion: "Queja", cotizacion_evento_o_restaurante: "Cotización", pidio_persona: "Pidió persona",
+  factura: "Factura", cambio_o_cancelacion: "Cambio o cancelación", alianza_o_colaboracion: "Colaboración", pedidos_recurrentes_o_cadena: "Pedido recurrente",
+  amenaza_o_legal: "Legal", otro: "Otro" };
+
+// Las conversaciones cuyo último renglón sigue sin atender, de la más antigua a la más nueva.
+function _botPendientesAbiertos(ss) {
+  const hoja = ss.getSheetByName(PENDIENTES_HOJA);
+  if (!hoja || hoja.getLastRow() < 2) return [];
+  const ultimo = {};
+  hoja.getRange(2, 1, hoja.getLastRow() - 1, PENDIENTE_COLUMNAS).getValues().forEach(function (f) {
+    const id = String(f[PENDIENTE_COL.CONVERSACION] || "").trim();
+    if (id) ultimo[id] = { conversacion: id, motivo: String(f[PENDIENTE_COL.MOTIVO] || ""), desde: f[PENDIENTE_COL.DESDE], estado: String(f[PENDIENTE_COL.ESTADO] || "") };
+  });
+  return Object.keys(ultimo).map(function (id) { return ultimo[id]; })
+    .filter(function (p) { return p.estado !== PENDIENTE_ESTADO.ATENDIDA; })
+    .sort(function (a, b) { return _pendienteDesdeMs(a.desde) - _pendienteDesdeMs(b.desde); });
+}
+
+// "2. Pidió persona · Mariana quiere hablar con alguien… · hace 40 min"
+function _botRenglonPendiente(p, n, ahoraMs) {
+  const partes = String(p.motivo).split(":"), tipo = partes.shift().trim();
+  let resumen = partes.join(":").trim();
+  if (resumen.length > BOT_PENDIENTE_RESUMEN_MAX) resumen = resumen.substring(0, BOT_PENDIENTE_RESUMEN_MAX - 1) + "…";
+  return n + ". " + (BOT_PENDIENTE_ETIQUETAS[tipo] || tipo) + (resumen ? " · " + resumen : "") + " · " + _botHace(ahoraMs - _pendienteDesdeMs(p.desde));
+}
+
+function _botHace(ms) {
+  const min = Math.max(0, Math.round(ms / 60000));
+  if (min < 60) return "hace " + min + " min";
+  if (min < 48 * 60) return "hace " + Math.round(min / 60) + " h";
+  return "hace " + Math.round(min / 1440) + " días";
+}
+
+// El detalle con la lista de pendientes debajo, y los campos de ManyChat para los botones (vacíos los que sobran).
+function _botAvisoConPendientes(ss, detalle, conversacionId, ahora) {
+  const ahoraMs = (ahora instanceof Date ? ahora : new Date()).getTime();
+  const pendientes = _botPendientesAbiertos(ss);
+  const conBoton = pendientes.slice(0, MANYCHAT_CAMPOS_BOTONES.length);
+  const campos = MANYCHAT_CAMPOS_BOTONES.map(function (campo, i) {
+    return { nombre: campo, valor: conBoton[i] ? conBoton[i].conversacion : (i === 0 ? String(conversacionId) : "") };
+  });
+  if (!pendientes.length) return { detalle: detalle, campos: campos };
+  const lineas = ["", "", "⏳ Sin atender (" + pendientes.length + "). Los botones marcan " + conBoton.map(function (p, i) { return i + 1; }).join(", ") + ":"];
+  conBoton.forEach(function (p, i) { lineas.push(_botRenglonPendiente(p, i + 1, ahoraMs)); });
+  const resto = pendientes.slice(conBoton.length);
+  // El resto se lista mientras quepa en el mensaje (WhatsApp cortaría a media lista): si no cabe, "…y N más".
+  for (let mostrar = Math.min(resto.length, BOT_PENDIENTES_EN_LISTA); ; mostrar--) {
+    const lista = lineas.concat(_botListaResto(resto, mostrar, conBoton.length, ahoraMs)).join("\n");
+    if (detalle.length + lista.length <= MANYCHAT_MAX_ALERTA) return { detalle: detalle + lista, campos: campos };
+    // Ni sin el resto cabe: se recorta el texto del aviso nuevo, nunca los renglones que llevan botón.
+    if (mostrar === 0) return { detalle: detalle.substring(0, Math.max(0, MANYCHAT_MAX_ALERTA - lista.length - 1)) + "…" + lista, campos: campos };
+  }
+}
+
+function _botListaResto(resto, mostrar, desde, ahoraMs) {
+  if (!resto.length) return [];
+  const lineas = ["", "Hay " + resto.length + " pendiente" + (resto.length === 1 ? "" : "s") + " más (sin botón hasta que se atiendan los de arriba):"];
+  resto.slice(0, mostrar).forEach(function (p, i) { lineas.push(_botRenglonPendiente(p, desde + i + 1, ahoraMs)); });
+  if (resto.length > mostrar) lineas.push("…y " + (resto.length - mostrar) + " más en la hoja " + PENDIENTES_HOJA);
+  return lineas;
+}
