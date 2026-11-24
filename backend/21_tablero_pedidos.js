@@ -173,6 +173,7 @@ function tableroPedidosActualizar() {
     const asignadas = _tableroAsignarReferencias(ss, pedidos);
     let alExcel = 0;
     try { alExcel = pedidosMaiteAlExcel(ss, pedidos); } catch (e) { Logger.log("Pedidos de Maite al Excel de pedidos: " + e); }
+    try { pedidosDeLaNocheAvisar(ss, pedidos); } catch (e) { Logger.log("Aviso de pedidos de la noche: " + e); }   // 31: una hora antes de abrir
     _tableroEscribir(_tableroPrepararHoja(ss, TABLERO_HOJA), pedidos.map(_tableroFila), false);
     SUCURSALES.forEach(function (sucursal) {
       const propios = pedidos.filter(function (p) { return p.sucursal === sucursal; });

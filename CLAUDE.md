@@ -647,6 +647,12 @@ todo el ciclo. Hecho hasta ahora (solo en el proyecto de pruebas, no en producci
     con el último texto del cliente. Antes Maite contestaba "no puedo escuchar audios" (4 de 7 avisos del 23-nov eran esto). Ahora
     el mismo texto otra vez dentro de `BOT_ECO_SEGUNDOS` se calla sin tocar el estado (la respuesta real puede ir en camino).
     Lo de raíz: apagar esos mensajes automáticos en la app de WhatsApp Business, porque Maite ya saluda y contesta.
+- **Pedidos que llegaron en la noche (`31_pedidos_de_la_noche.js`, Alex 24-nov)**: el reporte de entregas de mañana sale a las
+  18:00 y lo que se pedía después (p. ej. a las 22:00 para recoger a primera hora) no avisaba a nadie. Maite ya solo lo acepta
+  si está en la sucursal (descuenta apartados y ruta, deja una pieza de reserva). Ahora, en la hora antes de que abra cada
+  sucursal (`NOCHE_AVISO_MINUTOS_ANTES`), si llegaron pedidos para recoger HOY después del reporte de ayer, sale UN aviso por
+  sucursal (flujo de reportes de ManyChat) con los pedidos y lo que dice el inventario de todo lo de hoy. Sin pedidos, nada.
+  Lo corre `tableroPedidosActualizar` (cada 5 min); qué sucursal ya se avisó vive en la propiedad `AVISO_PEDIDOS_NOCHE`.
 - **Envíos por distancia**: propuesta de círculos desde Bosques ($60 ≤5 km, $90 5-11 km, $120 11-16 km, más lejos cotiza una
   persona) en el doc "Envíos por distancia desde Bosques" (artifact) y `envios-por-distancia-bosques.pdf`, para Yessenia.
   Mientras no se construya, cada colonia que falte en `ZonasEnvio` hace que Maite diga que no llega: es lo que más la traba.
