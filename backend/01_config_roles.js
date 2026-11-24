@@ -234,10 +234,10 @@ const PENDIENTE_ESTADO = { PENDIENTE: "PENDIENTE", ATENDIDA: "ATENDIDA", SIN_ATE
 const BOT_RECORDATORIO_MINUTOS = 30;                                           // cada cuánto se le recuerda al equipo que un cliente espera (12-nov: de 5 a 30, eran demasiados)
 const BOT_RECORDATORIOS_MAX = 3;                                               // tope de recordatorios por conversación (con 30 min = hora y media); después avisa que nadie atendió
 const MX_OFFSET_HORAS = 6;                                                     // México sin horario de verano (UTC-6): sirve para leer fechas de la hoja
-const BOT_WHATSAPP_ACTIVO = true;                                            // interruptor de emergencia de WhatsApp. Hoy Maite solo arranca con BOT_FRASE_PRUEBA (lo decide ManyChat)
+const BOT_WHATSAPP_ACTIVO = true;                                            // interruptor de emergencia de WhatsApp: apagado, Maite no contesta ni manda alertas en WhatsApp
 const BOT_ALERTAS_ACTIVAS = true;                                            // WhatsApp de alerta de Maite al equipo (se apagó el 12-nov por ruido; se prende el 23-nov con Instagram en vivo)
 const BOT_RECORDATORIOS_ACTIVOS = false;                                      // recordatorios de conversaciones pendientes (interruptor; 12-nov se apagaron por ruido)
-const BOT_MODO_PRUEBA_CANALES = ["whatsapp"];                                 // canales donde Maite solo atiende conversaciones activadas con la frase de prueba (23-nov: Instagram en vivo, WhatsApp sigue en prueba)
+const BOT_MODO_PRUEBA_CANALES = [];                                           // canales donde Maite solo atiende conversaciones activadas con la frase de prueba (23-nov: Instagram y WhatsApp en vivo)
 const BOT_PRUEBA_HORAS = 12;                                                  // cuánto dura activa una conversación de prueba desde la última vez que se escribió la frase
 const BOT_PRUEBA_PREFIJO = "bot_prueba_";                                     // propiedad del script por conversación de prueba activa
 const BOT_FRASE_PRUEBA = /probarmaite/gi;                                  // frase que activa a Maite en el modo de pruebas con el equipo (12-nov): se quita del mensaje antes de leerlo
