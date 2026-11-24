@@ -137,6 +137,7 @@ const RECOGER_HORA_CORTE = "17:00";      // pedidos sobre pedido después de est
 const RECOGER_INTERVALO_MIN = 60;        // tamaño de cada horario que elige el cliente
 const RECOGER_DIAS_A_MOSTRAR = 14;       // hasta cuántos días adelante se puede reservar
 // v9 — Bot de Instagram (18_bot_conversacion.js). Las reglas de fechas reutilizan RECOGER_*.
+const BOT_PEDIR_POR = "latartavasca.com o aquí mismo por Instagram";   // mientras WhatsApp esté apagado, a dónde invita Maite a pedir (Rebeca, 24-nov-2026)
 const BOT_MODELO = "claude-sonnet-5-5";
 const BOT_MAX_TOKENS = 4096;   // 24-nov: con 1024 la IA a veces gastaba todo pensando y contestaba en blanco ("se me trabó") en quejas largas
 const BOT_MAX_VUELTAS_HERRAMIENTAS = 6;     // veces que puede pedir herramientas en un solo turno
@@ -265,7 +266,7 @@ const BOT_RECORDATORIO_MINUTOS = 180;                                           
 const BOT_RECORDATORIOS_MAX = 3;                                               // tope de recordatorios por conversación (con 3 h, un día de tienda); después avisa que nadie atendió
 const BOT_PENDIENTE_DIAS_RECORDAR = 2;                                          // lo que lleva más de esto sin atender se cierra como SIN ATENDER sin avisar
 const MX_OFFSET_HORAS = 6;                                                     // México sin horario de verano (UTC-6): sirve para leer fechas de la hoja
-const BOT_WHATSAPP_ACTIVO = true;                                            // interruptor de emergencia de WhatsApp: apagado, Maite no contesta ni manda alertas en WhatsApp
+const BOT_WHATSAPP_ACTIVO = false;                                           // apagado, Maite no contesta en WhatsApp (lo atiende el equipo desde la app). Rebeca, 24-nov-2026: apagado hasta enero; volver a true solo cuando ella lo diga
 const BOT_ALERTAS_ACTIVAS = true;                                            // WhatsApp de alerta de Maite al equipo (se apagó el 12-nov por ruido; se prende el 23-nov con Instagram en vivo)
 const BOT_RECORDATORIOS_ACTIVOS = true;                                      // recordatorios de conversaciones pendientes (interruptor; apagados del 12 al 24-nov por ruido, vuelven cada 3 h)
 const BOT_MODO_PRUEBA_CANALES = [];                                           // canales donde Maite solo atiende conversaciones activadas con la frase de prueba (23-nov: Instagram y WhatsApp en vivo)
