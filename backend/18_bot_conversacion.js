@@ -391,7 +391,7 @@ function _botPrompt(ahora, canal) {
       "5. Cuando ya tengas TODOS los datos (pedido, fecha, hora o dirección, pago, nombre y teléfono), muestra un resumen final corto y pregunta \"¿lo dejo así?\". NUNCA crees el pedido en el mismo mensaje en que te dan el último dato (el teléfono o el nombre): espera el \"sí\" del cliente al resumen y entonces llama crear_pedido. El pedido queda apartado en el sistema como POR CONFIRMAR, con una REFERENCIA, y el equipo recibe el aviso.",
       "6. Cuando crear_pedido sale bien, el SISTEMA le manda al cliente el mensaje de confirmación por ti (referencia, total, pago, recoger y seguimiento): no lo repitas. Si crear_pedido falla, explícale con calidez qué falta o qué cambiar. Lo que debe incluir ese mensaje, por si lo necesitas EN POCOS MENSAJES: su LLAVE (la referencia TV-…; que la guarde: se la da a quien lo atienda en la sucursal para que encuentren su tarta apartada, y sirve para preguntar por su pedido aquí), el total, las indicaciones de pago y las de recoger o entrega tal como vienen en el resultado (indicaciones_pago e indicaciones_entrega), y que el equipo revisa y le confirma. No inventes datos de cuenta, horarios ni reglas: usa solo lo que traiga el resultado. Si el resultado no trae los datos de la transferencia, dile que el equipo se los comparte en un momento.",
       "- Si el cliente pregunta qué pasa si no puede ir por su pedido, NO inventes reglas (plazos, cargos, quién puede recoger, cambios de fecha). Usa solo lo que dicen las indicaciones de recoger del resultado; si no traen una política, dile que te avise por aquí y tú se lo reprogramas (es un cambio: ver CAMBIOS Y CANCELACIONES).",
-      "- Si el cliente pregunta por un pedido, usa consultar_pedido con su llave (referencia TV-…). Si no la tiene, pídele el nombre y el teléfono con los que lo hizo y consulta con esos dos datos. Con la llave, solo da detalles a quien lo hizo en esta conversación o a quien dé los últimos 4 dígitos de su teléfono.",
+      "- Si el cliente pregunta por un pedido, usa consultar_pedido con su llave (referencia TV-…). Si no la tiene, pídele el nombre y el teléfono con los que lo hizo y consulta con esos dos datos. Con la llave, solo da detalles a quien lo hizo en esta conversación o a quien dé los últimos 4 dígitos de su teléfono. Si dice que pidió por el formulario o la página y no tiene llave, consulta con nombre y teléfono: consultar_pedido también busca en el formulario de pedidos (pedidos_formulario). Si ahí aparece, confírmale que sí lo recibimos y NUNCA lo vuelvas a tomar.",
       "- No pides datos de tarjeta. Las formas de pago y las facturas salen de consultar_manual (tema pagos_y_facturas). No hay anticipo: el pago es completo, contra entrega (si lo recoge un Uber o mensajero, por transferencia antes); no pases con una persona por eso. Si piden factura, dices que sí se emiten y que necesitan comunicarse con el equipo, y llamas pasar_a_persona con tipo \"factura\".",
       "- Máximo " + BOT_MAX_PIEZAS_POR_PEDIDO + " piezas por pedido por aquí; más que eso (eventos, regalos corporativos, restaurantes) lo ve una persona.",
       "CAMBIOS Y CANCELACIONES (los resuelves tú, sin pasar con una persona): si el cliente quiere cambiar algo de un pedido que ya hizo (fecha, hora, sucursal, recoger o domicilio, sabores, pago), arma el pedido nuevo igual que uno normal (calcular_fecha_entrega, cotizar_pedido con el ticket completo, su sí al resumen) y llama crear_pedido con reemplaza = la llave del pedido anterior: el nuevo queda apartado y el anterior se cancela solo, y el mensaje de confirmación le dice que la llave nueva reemplaza a la anterior. Si quiere cancelarlo, confirma una vez (\"¿lo cancelo?\") y con su sí llama cancelar_pedido. Si no te da la llave, búscala con consultar_pedido. Solo pasas con una persona (tipo \"cambio_o_cancelacion\") si la herramienta dice que ese pedido no se hizo en esta conversación o ya no se puede cambiar.",
@@ -979,10 +979,19 @@ function _botConsultarPedidoPorNombre(a) {
   const hallados = _tableroLeerPedidos(ss, ventas, _pedidoIndices(ventas)).filter(function (p) {
     return _botMismoTelefono(p.contacto, telefono) && _botMismoNombre(p.cliente, nombre);
   });
-  if (!hallados.length) return { error: "No encuentro un pedido con ese nombre y ese teléfono. Pide la llave (TV-…) o pasa con una persona." };
+  if (!hallados.length) {
+    const delFormulario = _botPedidosDelFormulario(ss, telefono, nombre[0]);
+    if (delFormulario.length) return { pedidos_formulario: delFormulario.slice(0, BOT_CONSULTA_MAX_PEDIDOS), nota: BOT_NOTA_PEDIDO_FORMULARIO };
+    return { error: "No encuentro un pedido con ese nombre y ese teléfono, ni en el sistema ni en el formulario de pedidos. Pide la llave (TV-…) o pasa con una persona." };
+  }
   return { pedidos: hallados.slice(0, BOT_CONSULTA_MAX_PEDIDOS).map(function (p) {
     return { referencia: p.referencia, estado: _botEstadoParaCliente(p.estado), fecha_entrega: p.fechaEntrega, hora: p.hora, entrega: p.canal === BOT_CANAL_DOMICILIO ? "domicilio" : "recoger en " + p.sucursal, pedido: p.items.join(", "), total: p.total };
   }) };
+}
+const BOT_NOTA_PEDIDO_FORMULARIO = "Lo hizo con el formulario de pedidos y SÍ está registrado. Esos pedidos no tienen llave TV- y el formulario no manda confirmación por correo. Confírmale que lo recibimos, con el día, cómo se entrega y lo que pidió. No lo vuelvas a crear.";
+// Abrir el Excel puede fallar o tardar: si falla, Maite sigue como si no lo hubiera encontrado.
+function _botPedidosDelFormulario(ss, telefono, primerNombre) {
+  try { return excelBuscarPedidosFormulario(ss, telefono, primerNombre); } catch (e) { Logger.log("Formulario de pedidos: " + e); return []; }
 }
 // "POR CONFIRMAR" y "CONFIRMADO" son marcas internas de la sucursal: al cliente su pedido le aparece apartado (12-nov: Maite
 // decía "está por confirmar, el equipo te avisará", y nadie le confirma nada).

@@ -114,6 +114,51 @@ function excelPedidoMarcarEstado(ss, referencia, estado) {
   } catch (e) { Logger.log("Excel de pedidos, estado de " + referencia + ": " + e); return false; }
 }
 
+// Pedidos que el cliente hizo con el formulario: no pasan por el sistema ni tienen llave, y el formulario no manda confirmación.
+// Maite los busca cuando el cliente dice que ya pidió y no aparece en Ventas (Alex, 24-nov: Monica Reyes pidió por el formulario,
+// Maite no lo vio y lo tomó otra vez). Mismo teléfono y mismo primer nombre; solo lo registrado hace pocos días o con entrega de
+// ayer en adelante. Los renglones que anotó Maite se saltan: esos ya están en el sistema con su llave.
+function excelBuscarPedidosFormulario(ss, telefono, primerNombre) {
+  const id = String(_cfgVal(ss, EXCEL_PEDIDOS_CLAVE_ID, "")).trim();
+  if (!id) return [];
+  const hoja = SpreadsheetApp.openById(id).getSheetByName(EXCEL_PEDIDOS_HOJA);
+  const ultima = hoja.getLastRow(), n = Math.min(EXCEL_PEDIDOS_BUSQUEDA_FILAS, ultima - 1);
+  if (n < 1) return [];
+  const encabezados = hoja.getRange(1, 1, 1, EXCEL_PEDIDOS_COL_NOTA).getValues()[0];
+  const desde = new Date(Date.now() - EXCEL_PEDIDOS_BUSQUEDA_DIAS * 86400000);
+  const ayer = Utilities.formatDate(new Date(Date.now() - 86400000), TZ_MX, "yyyy-MM-dd");
+  return hoja.getRange(ultima - n + 1, 1, n, EXCEL_PEDIDOS_COL_NOTA).getValues().filter(function (f) {
+    if (String(f[EXCEL_PEDIDOS_COL_NOTA - 1]).indexOf("Maite") === 0) return false;
+    if (String(f[4]).replace(/\D/g, "").indexOf(telefono) === -1) return false;
+    if (_excelNormalizar(f[1]).split(" ").indexOf(primerNombre) === -1) return false;
+    return (f[0] instanceof Date && f[0] >= desde) || _excelFechaIso(f[2]) >= ayer;
+  }).map(function (f) { return _excelPedidoFormulario(f, encabezados); });
+}
+
+function _excelFechaIso(valor) {
+  return valor instanceof Date ? Utilities.formatDate(valor, TZ_MX, "yyyy-MM-dd") : "";
+}
+
+function _excelPedidoFormulario(f, encabezados) {
+  const piezas = [];
+  for (let c = EXCEL_PEDIDOS_PRIMERA_COL_SABOR - 1; c < EXCEL_PEDIDOS_COL_NOTA - 1; c++) {
+    const cantidad = Number(f[c]) || 0;
+    if (cantidad > 0) piezas.push(cantidad + " " + _excelNombrePieza(encabezados[c]));
+  }
+  const direccion = String(f[3] || "").trim();
+  return {
+    registrado: f[0] instanceof Date ? Utilities.formatDate(f[0], TZ_MX, "yyyy-MM-dd HH:mm") : "",
+    fecha_entrega: _excelFechaIso(f[2]) || String(f[2] || ""),
+    entrega: direccion.length > 3 ? direccion : "recoge en sucursal (no dejó dirección)",
+    pedido: piezas.join(", ")
+  };
+}
+
+// "Tarta tradicional de queso (GRANDE, $720)" -> "Tarta tradicional de queso Grande"
+function _excelNombrePieza(encabezado) {
+  return (String(encabezado).split("(")[0].trim() + " " + _excelTamanoDe(encabezado)).trim();
+}
+
 // pedidos: los que ya leyó el tablero. Devuelve cuántos se anotaron.
 function pedidosMaiteAlExcel(ss, pedidos) {
   const id = String(_cfgVal(ss, EXCEL_PEDIDOS_CLAVE_ID, "")).trim();
