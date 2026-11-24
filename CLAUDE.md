@@ -658,6 +658,9 @@ todo el ciclo. Hecho hasta ahora (solo en el proyecto de pruebas, no en producci
     Historia: el mismo día se probó una lista de pendientes debajo de cada aviso con hasta 3 botones (WhatsApp no deja más,
     flujos "Alerta bot 2/3 botones (sistema)" y campos `bot_conversacion_2/_3`, hoy sin uso); con varios pendientes los botones
     marcaban casos que no eran el del aviso, y Alex pidió volver a mensajes independientes con enlace.
+    Una conversación puede tener varios renglones PENDIENTE (queja y luego "pidió persona"): el recordatorio sale UNO por
+    conversación con todos sus motivos y los renglones avanzan juntos, y "Atendida" cierra todos los de esa conversación
+    (`_botFilasPendientes`). Antes (v159) cerraba solo el último y el viejo seguía recordando sin poder cerrarse con el botón.
   - **"Uy, se me trabó" (24-nov)**: con `BOT_MAX_TOKENS` = 1024 la IA a veces se gastaba todo pensando en conversaciones de queja
     y contestaba en blanco (stop_reason max_tokens, ~7.5 s por llamada); además el mensaje al cliente decía "ya le avisé al equipo"
     y no salía ningún aviso. Ahora el tope es 4096, una respuesta en blanco tras el reintento es falla de verdad (`ok:false` con

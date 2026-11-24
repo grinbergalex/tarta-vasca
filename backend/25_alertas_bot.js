@@ -63,7 +63,11 @@ function botAtendida(body) {
   const pendiente = _botPendienteDe(ss, conversacionId);
   if (!pendiente) return { ok: false, error: "No hay una conversación pendiente con ese id." };
   const hoja = ss.getSheetByName(PENDIENTES_HOJA);
-  hoja.getRange(pendiente.fila, PENDIENTE_COL.ESTADO + 1).setValue(PENDIENTE_ESTADO.ATENDIDA);
+  // Todos los renglones pendientes de esa conversación, no solo el último: si quedaba uno viejo (la queja antes del
+  // "pidió persona"), seguía mandando recordatorios y su botón ya no lo podía cerrar (24-nov).
+  _botFilasPendientes(hoja, conversacionId).concat([pendiente.fila]).forEach(function (fila) {
+    hoja.getRange(fila, PENDIENTE_COL.ESTADO + 1).setValue(PENDIENTE_ESTADO.ATENDIDA);
+  });
   _botPendienteAnotarMensaje(ss, pendiente.fila);
   botPausar(conversacionId);
   _botMarcarHumano(conversacionId);   // volver a tocar el botón le da a la persona otros BOT_HUMANO_MINUTOS
@@ -184,6 +188,16 @@ function _botPendienteDe(ss, conversacionId) {
   return null;
 }
 
+// Números de renglón de esa conversación que siguen PENDIENTE.
+function _botFilasPendientes(hoja, conversacionId) {
+  if (!hoja || hoja.getLastRow() < 2) return [];
+  const filas = hoja.getRange(2, 1, hoja.getLastRow() - 1, PENDIENTE_COLUMNAS).getValues(), out = [];
+  filas.forEach(function (f, i) {
+    if (String(f[PENDIENTE_COL.CONVERSACION]) === String(conversacionId) && String(f[PENDIENTE_COL.ESTADO]) === PENDIENTE_ESTADO.PENDIENTE) out.push(i + 2);
+  });
+  return out;
+}
+
 function _botPendienteAnotarMensaje(ss, fila) {
   try { ss.getSheetByName(PENDIENTES_HOJA).getRange(fila, PENDIENTE_COL.MENSAJE_CLIENTE + 1).setValue(Utilities.formatDate(new Date(), TZ_MX, "yyyy-MM-dd HH:mm")); } catch (e) { }
 }
@@ -222,25 +236,36 @@ function _botRecordar(ahora) {
   if (!_botTiendaAbierta(dow, minutosDelDia)) return { enviados: 0, tiendaCerrada: true };
   const filas = hoja.getRange(2, 1, hoja.getLastRow() - 1, 7).getValues();
   let enviados = 0;
+  // Un recordatorio por CONVERSACIÓN, aunque tenga varios renglones pendientes (p. ej. queja y luego "pidió persona"):
+  // manda el más antiguo y los demás renglones de esa conversación siguen su mismo paso (24-nov: llegaban dos por cliente).
+  const grupos = {}, orden = [];
   filas.forEach(function (f, i) {
     if (String(f[PENDIENTE_COL.ESTADO]) !== PENDIENTE_ESTADO.PENDIENTE) return;
     // Lo viejo se cierra sin avisar (12-nov: pruebas de días atrás sonaban toda la mañana).
     if (!_pendienteEsReciente(f[PENDIENTE_COL.DESDE], ahoraFecha)) { hoja.getRange(i + 2, PENDIENTE_COL.ESTADO + 1).setValue(PENDIENTE_ESTADO.SIN_ATENDER); return; }
+    const id = String(f[PENDIENTE_COL.CONVERSACION]);
+    if (!grupos[id]) { grupos[id] = []; orden.push(id); }
+    grupos[id].push({ f: f, fila: i + 2 });
+  });
+  orden.forEach(function (id) {
+    const f = grupos[id][0].f, renglones = grupos[id].map(function (g) { return g.fila; });
     const hechos = Number(f[PENDIENTE_COL.RECORDATORIOS]) || 0;
     const desde = _pendienteDesdeMs(f[PENDIENTE_COL.DESDE]);
     const ultimo = _pendienteDesdeMs(f[PENDIENTE_COL.ULTIMO]) || desde;
-    const minutos = Math.round((ahoraFecha.getTime() - desde) / 60000);
     if (ahoraFecha.getTime() - ultimo < BOT_RECORDATORIO_MINUTOS * 60000) return;
-    const fila = i + 2;
+    const descripcion = grupos[id].map(function (g) { return _botDescripcionPendiente(g.f[PENDIENTE_COL.MOTIVO]); }).join("\n📝 ");
     if (hechos >= BOT_RECORDATORIOS_MAX) {
-      hoja.getRange(fila, PENDIENTE_COL.ESTADO + 1).setValue(PENDIENTE_ESTADO.SIN_ATENDER);
-      botAlertaPersonal(ss, "recordatorio_final", "cliente_esperando", "🚨 Nadie atendió a un cliente", "⏱️ Pasaron " + _botHace(ahoraFecha.getTime() - desde) + " y se acabaron los recordatorios.\n" + botDetalleAlerta(f[PENDIENTE_COL.CANAL], _botDescripcionPendiente(f[PENDIENTE_COL.MOTIVO]), f[PENDIENTE_COL.CONVERSACION]), f[PENDIENTE_COL.CONVERSACION]);
+      renglones.forEach(function (fila) { hoja.getRange(fila, PENDIENTE_COL.ESTADO + 1).setValue(PENDIENTE_ESTADO.SIN_ATENDER); });
+      botAlertaPersonal(ss, "recordatorio_final", "cliente_esperando", "🚨 Nadie atendió a un cliente", "⏱️ Pasaron " + _botHace(ahoraFecha.getTime() - desde) + " y se acabaron los recordatorios.\n" + botDetalleAlerta(f[PENDIENTE_COL.CANAL], descripcion, id), id);
       return;
     }
     botAlertaPersonal(ss, "recordatorio" + (hechos + 1), "cliente_esperando", "⏰ Pendiente sin atender (" + (hechos + 1) + " de " + BOT_RECORDATORIOS_MAX + ")",
-      "⏱️ Lleva " + _botHace(ahoraFecha.getTime() - desde) + " esperando.\n" + botDetalleAlerta(f[PENDIENTE_COL.CANAL], _botDescripcionPendiente(f[PENDIENTE_COL.MOTIVO]), f[PENDIENTE_COL.CONVERSACION]) + "\n👉 Al atenderlo toca *Atendida* (o cámbialo en " + PENDIENTES_HOJA + ").", f[PENDIENTE_COL.CONVERSACION]);
-    hoja.getRange(fila, PENDIENTE_COL.RECORDATORIOS + 1).setValue(hechos + 1);
-    hoja.getRange(fila, PENDIENTE_COL.ULTIMO + 1).setValue(Utilities.formatDate(ahoraFecha, TZ_MX, "yyyy-MM-dd HH:mm"));
+      "⏱️ Lleva " + _botHace(ahoraFecha.getTime() - desde) + " esperando.\n" + botDetalleAlerta(f[PENDIENTE_COL.CANAL], descripcion, id) + "\n👉 Al atenderlo toca *Atendida* (o cámbialo en " + PENDIENTES_HOJA + ").", id);
+    const cuando = Utilities.formatDate(ahoraFecha, TZ_MX, "yyyy-MM-dd HH:mm");
+    renglones.forEach(function (fila) {
+      hoja.getRange(fila, PENDIENTE_COL.RECORDATORIOS + 1).setValue(hechos + 1);
+      hoja.getRange(fila, PENDIENTE_COL.ULTIMO + 1).setValue(cuando);
+    });
     enviados++;
   });
   return { enviados: enviados };
