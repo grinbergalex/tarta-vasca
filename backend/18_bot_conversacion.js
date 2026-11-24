@@ -18,7 +18,6 @@
 // Configuración (hoja): bot_correo_avisos = correo que recibe cada pedido nuevo (opcional).
 // ============================================================================
 const BOT_TEXTO_FALLA = "Uy, se me trabó algo de mi lado 🥺 Ya le avisé al equipo para que te ayude personalmente, y te escriben en un ratito ❤️";
-const BOT_TEXTO_SIN_TEXTO = "Por aquí todavía no puedo escuchar audios ni ver fotos o stickers 🙏 ¿Me lo escribes en un mensaje? Así te ayudo de inmediato.";
 const BOT_TEXTO_TOPE = "Para que te atiendan mejor, le aviso al equipo y una persona sigue contigo personalmente ❤️";
 const BOT_DIAS_NOMBRE = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
@@ -38,12 +37,14 @@ function botConversar(body) {
   if (BOT_MODO_PRUEBA_CANALES.indexOf(String(body.canal || "instagram").toLowerCase()) !== -1 && !_botConversacionDePrueba(conversacionId, _botTextoDelCuerpo(body))) return { ok: true, respuesta: "", fueraDePrueba: true };
   const mensaje = _botSinFrasePrueba(_botTextoDelCuerpo(body)).substring(0, BOT_MAX_CARACTERES_MENSAJE);
   if (!conversacionId) return { ok: false, error: "Falta la conversación." };
-  // Un audio, una foto o un sticker llegan sin texto (o solo con el enlace del archivo): nunca silencio. Si fue justo después de
-  // pedirle el comprobante de la transferencia, se recibe como comprobante (30_bot_autonomia.js); si no, se le pide que lo escriba.
-  if (_botSinTexto(mensaje) || _botEsRepeticion(conversacionId, mensaje)) {
-    const canalSinTexto = String(body.canal || "").toLowerCase() === "whatsapp" ? "WhatsApp" : "Instagram";
-    return _botTerminar(conversacionId, { ok: true, respuesta: _botRespuestaSinTexto(conversacionId, mensaje, canalSinTexto), sinTexto: true });
-  }
+  // Foto, sticker o PDF llegan como un enlace: Maite los VE (30_bot_autonomia.js). Audio, video o lo que no se abre: le pide que lo escriba.
+  const canalMensaje = String(body.canal || "").toLowerCase() === "whatsapp" ? "WhatsApp" : "Instagram";
+  const archivo = _botSinTexto(mensaje) ? _botLeerArchivo(mensaje) : null;
+  if (archivo && !archivo.paraIa) return _botTerminar(conversacionId, { ok: true, respuesta: _botRespuestaSinArchivo(conversacionId, archivo, canalMensaje), sinTexto: true });
+  // El mismo texto otra vez a los pocos segundos es el eco de un mensaje automático del WhatsApp Business del celular (bienvenida,
+  // ausencia), que vuelve a disparar el flujo con el último texto del cliente: Maite calla y no avisa. No toca el estado: la
+  // respuesta al mensaje de verdad puede ir en camino.
+  if (!archivo && _botEsRepeticion(conversacionId, mensaje)) return { ok: true, respuesta: "", eco: true };
   // El mismo mensaje de la misma conversación llegando dos veces seguidas (ManyChat reintenta, o en el piloto quedaron dos flujos
   // esperando) se procesa UNA vez: dos turnos a la vez llegaron a pelear por el mismo pedido (1-nov). La copia no contesta nada.
   if (_botMensajeRepetido(conversacionId, mensaje)) return { ok: true, respuesta: "", duplicado: true };
@@ -64,20 +65,24 @@ function botConversar(body) {
   const canal = String(body.canal || "").toLowerCase() === "whatsapp" ? "WhatsApp" : "Instagram";
   const telefonoCanal = canal === "WhatsApp" ? String(body.telefono || "").replace(/\D/g, "") : "";
   const ctx = { conversacionId: conversacionId, canal: canal, telefonoCanal: telefonoCanal, handoff: false, alerta: "", pedido: null, notaEquipo: memoria.nota, herramientas: [], inicio: Date.now(), ms: { ia: 0, herramientas: 0, vueltas: 0 } };
-  const entrada = _botConLoCallado(conversacionId, mensaje);   // lo que escribió mientras la atendía una persona no se pierde
+  // lo que escribió mientras la atendía una persona no se pierde; un archivo va a la IA como imagen o documento
+  const entrada = archivo ? _botEntradaConArchivo(archivo, _botConLoCallado(conversacionId, "")) : _botConLoCallado(conversacionId, mensaje);
   const turno = _botTurno(apiKey, memoria.mensajes, entrada, ctx);
   if (!turno.ok) {
     // El detalle del error va solo al equipo: al cliente (o a quien esté probando la entrada) nunca se le devuelve.
     _botAvisar("El bot falló", "Conversación " + conversacionId + ". Error: " + turno.error + ". Último mensaje del cliente: " + mensaje);
     return _botTerminar(conversacionId, { ok: true, respuesta: BOT_TEXTO_FALLA, handoff: true });
   }
-  memoria.mensajes.push({ role: "user", content: entrada }, { role: "assistant", content: turno.texto });
+  const silencio = _botEsSilencio(turno.texto);   // un sticker o una imagen que solo cierran la conversación no se contestan
+  // El archivo no se guarda en la memoria (pesa): queda que lo mandó, y lo que Maite contestó dice qué era.
+  memoria.mensajes.push({ role: "user", content: archivo ? "[El cliente mandó " + archivo.nombre + "]" : entrada }, { role: "assistant", content: silencio ? "[No contestaste: solo cerraba la conversación]" : turno.texto });
   _botRecordarUltimo(conversacionId, mensaje);
   memoria.turnos += 1;
   _botGuardarMemoria(conversacionId, memoria, canal);
   _botBitacora(ctx, mensaje, turno.texto);
+  if (archivo) { try { _botAvisar("🖼️ Un cliente mandó " + archivo.nombre, botDetalleAlerta(canal, "Maite contestó: " + (silencio ? "(nada, era un cierre)" : turno.texto), conversacionId), { sinWhatsapp: true }); } catch (e) { } }
   // alerta ("queja", "mensajero", ...): para que ManyChat o el equipo lo distingan de un traspaso normal.
-  const resultado = { ok: true, respuesta: turno.texto, handoff: ctx.handoff, alerta: ctx.alerta, pedido: ctx.pedido };
+  const resultado = { ok: true, respuesta: silencio ? "" : turno.texto, handoff: ctx.handoff, alerta: ctx.alerta, pedido: ctx.pedido };
   if (resultado.respuesta && Date.now() - ctx.inicio > BOT_RESCATE_SEGUNDOS * 1000 && _botEntregarPorSuCuenta(conversacionId, canal, resultado)) return resultado;
   return _botTerminar(conversacionId, resultado);
 }
@@ -243,16 +248,20 @@ function _botTextoDelCuerpo(body) {
   return String(contacto.last_input_text || body.mensaje || "");
 }
 
-// Un sticker, audio o foto llega con el ÚLTIMO texto que escribió el cliente (ManyChat no lo vacía): si llega idéntico a lo
-// que ya se contestó, se trata como mensaje sin texto en vez de repetir la respuesta anterior (12-nov). Solo textos de
-// BOT_REPETICION_MIN_CARACTERES o más: un "sí" repetido es una respuesta normal.
+// Los mensajes automáticos del WhatsApp Business del celular (bienvenida, ausencia) vuelven a disparar el flujo con el ÚLTIMO
+// texto del cliente: el mismo texto, ya contestado, otra vez a los pocos minutos es ese eco (24-nov: Maite le contestaba "no
+// puedo escuchar audios" a clientes que no mandaron audio). Pasado BOT_ECO_SEGUNDOS se contesta normal (el cliente lo reenvió).
+// Solo textos de BOT_REPETICION_MIN_CARACTERES o más: un "sí" repetido es una respuesta normal.
 function _botEsRepeticion(conversacionId, mensaje) {
   if (String(mensaje).length < BOT_REPETICION_MIN_CARACTERES) return false;
-  try { return CacheService.getScriptCache().get("bot_ultimo_" + conversacionId) === hashSimple(mensaje); } catch (e) { return false; }
+  try {
+    const ultimo = String(CacheService.getScriptCache().get("bot_ultimo_" + conversacionId) || "").split("|");
+    return ultimo[0] === hashSimple(mensaje) && Date.now() - Number(ultimo[1] || 0) < BOT_ECO_SEGUNDOS * 1000;
+  } catch (e) { return false; }
 }
 
 function _botRecordarUltimo(conversacionId, mensaje) {
-  try { CacheService.getScriptCache().put("bot_ultimo_" + conversacionId, hashSimple(mensaje), BOT_HISTORIAL_SEGUNDOS); } catch (e) { }
+  try { CacheService.getScriptCache().put("bot_ultimo_" + conversacionId, hashSimple(mensaje) + "|" + Date.now(), BOT_HISTORIAL_SEGUNDOS); } catch (e) { }
 }
 
 // La frase activa la conversación BOT_PRUEBA_HORAS; volver a escribirla las renueva.
@@ -404,6 +413,13 @@ function _botPrompt(ahora, canal) {
     "QUEJAS Y OBSERVACIONES: son lo más importante. Avisa primero (avisar_al_equipo), luego empatiza de verdad, no discutas, no prometas reembolsos ni compensaciones, pide el nombre y el teléfono con los que hizo el pedido (y si puede, una foto), y llama pasar_a_persona con tipo \"queja_u_observacion\" y un resumen completo. Las dos llamadas disparan una alerta urgente para el equipo.",
     "",
     "NOMBRES: el sabor \"Queso\" del menú es la Tradicional de Queso: así lo llamas con el cliente.",
+    "",
+    "IMÁGENES Y ARCHIVOS (decisiones de Alex, 24-nov): cuando el cliente manda una foto, un sticker o un PDF, tú lo VES. Míralo y contesta según lo que ves; no le digas que no puedes ver imágenes.",
+    "- Si es claro, dilo y sigue, sin preguntarle qué es. Un COMPROBANTE de pago: agradece con el monto que ves y, si hay un pedido en esta conversación, su llave; dile que su pedido sigue apartado. NUNCA digas que el pago ya quedó confirmado ni que el dinero ya entró: el equipo lo revisa antes de entregar. Si el monto no coincide con el total del pedido, díselo con amabilidad.",
+    "- Si implica hacer algo (la foto de una tarta = quiere una así; la captura de un pedido), confírmalo con el cliente antes de actuar. Nunca apartes, cambies ni canceles un pedido solo por una imagen: espera su sí.",
+    "- Si no entiendes la imagen o no sabes para qué la mandó, pregúntale con amabilidad qué necesita. No inventes ni adivines.",
+    "- Un sticker o una imagen que solo cierra la conversación (pulgar, corazón, carita, \"gracias\") cuando ya no hay nada pendiente: responde exactamente " + BOT_MARCA_SILENCIO + " y nada más. Si parece una pregunta o una reacción a algo pendiente, contesta corto.",
+    "- No describas la imagen entera ni repitas datos personales o bancarios que vengan en ella.",
     "",
     "MENSAJERO (UBER, DIDI, TAXI U OTRO): si el cliente dice que va a mandar un Uber, un DiDi, un taxi u otro mensajero por su pedido, NO llames avisar_al_equipo ni digas que el equipo coordina nada: un aviso sin nombre ni hora no le sirve al equipo. Sigue con el pedido normal para recoger (sucursal, hora aproximada a la que pasa el mensajero, nombre del pedido) y al crearlo pasa el campo mensajero (Uber, DiDi u otro): con eso el equipo recibe un solo aviso con la llave, la sucursal, el día y la hora. Como el mensajero no puede pagar con tarjeta por el cliente, si lo recoge un mensajero el pago es por transferencia antes de que pase. Al confirmar, dile que el conductor solo tiene que dar la llave o el nombre del pedido al llegar.",
     "",

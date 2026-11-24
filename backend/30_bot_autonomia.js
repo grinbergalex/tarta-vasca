@@ -201,41 +201,47 @@ function _botAnularPedido(pedido, motivo) {
 }
 
 // ---------------------------------------------------------------------------
-// 4. AUDIO, FOTO O STICKER (Alex, 24-nov-2026: "me están llegando muchos mensajes de audio o imágenes o stickers")
+// 4. FOTO, STICKER, PDF Y AUDIO (Alex, 24-nov-2026: "me están llegando muchos mensajes de audio o imágenes o stickers")
 // ---------------------------------------------------------------------------
-// ManyChat manda un archivo sin texto, con su enlace, o repitiendo el ÚLTIMO texto del cliente; así que casi nunca se sabe si fue
-// foto o audio. La mayoría eran comprobantes de transferencia justo después de que Maite pidió mandarlo: ahora se reciben como tal.
-// Ya no sale WhatsApp al equipo por esto (eran decenas por noche): queda en la bandeja del POS y en Alertas_Bot.
-function _botRespuestaSinTexto(conversacionId, mensaje, canal) {
+// ManyChat manda un archivo como un enlace en el último texto del cliente (WhatsApp: manybot-files…/x.jpeg; Instagram:
+// lookaside.fbsbx.com sin extensión). Los enlaces abren sin sesión y dicen su tipo, así que se descarga y se decide por el tipo real:
+//  - foto, sticker (webp) o PDF → Maite lo VE: va a la IA como bloque de imagen o documento (reglas en el prompt: IMÁGENES Y ARCHIVOS);
+//  - audio, video o algo que no se abre → se le pide que lo escriba (la IA no oye audios; transcribirlos es un servicio aparte).
+// Ninguno manda WhatsApp al equipo: quedan en la bandeja del POS.
+const BOT_TIPOS_IMAGEN = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+
+// { paraIa: true, nombre, bloque } para foto/sticker/PDF ("una imagen", "un PDF"); { paraIa: false, tipo: "audio"|"video"|"otro" } para lo demás.
+function _botLeerArchivo(mensaje) {
+  const url = String(mensaje || "").trim();
+  if (!/^https?:\/\/\S+$/i.test(url)) return { paraIa: false, tipo: "otro" };
+  let resp;
+  try { resp = UrlFetchApp.fetch(url, { muteHttpExceptions: true, followRedirects: true }); } catch (e) { Logger.log("Archivo: " + e); return { paraIa: false, tipo: "otro" }; }
+  if (resp.getResponseCode() !== 200) return { paraIa: false, tipo: "otro" };
+  const blob = resp.getBlob(), tipo = String(blob.getContentType() || "").split(";")[0].trim().toLowerCase(), bytes = blob.getBytes();
+  if (/^audio\//.test(tipo)) return { paraIa: false, tipo: "audio" };
+  if (/^video\//.test(tipo)) return { paraIa: false, tipo: "video" };
+  if (BOT_TIPOS_IMAGEN.indexOf(tipo) !== -1 && bytes.length <= BOT_ARCHIVO_MAX_BYTES_IMAGEN)
+    return { paraIa: true, nombre: tipo === "image/webp" ? "un sticker o una imagen" : "una imagen", bloque: { type: "image", source: { type: "base64", media_type: tipo, data: Utilities.base64Encode(bytes) } } };
+  if (tipo === "application/pdf" && bytes.length <= BOT_ARCHIVO_MAX_BYTES_PDF)
+    return { paraIa: true, nombre: "un PDF", bloque: { type: "document", source: { type: "base64", media_type: "application/pdf", data: Utilities.base64Encode(bytes) } } };
+  return { paraIa: false, tipo: "otro" };
+}
+
+// Lo que se le manda a la IA en lugar del enlace: el archivo y una línea que dice qué es.
+function _botEntradaConArchivo(archivo, textoPrevio) {
+  return [archivo.bloque, { type: "text", text: (textoPrevio ? textoPrevio + "\n" : "") + "[El cliente mandó " + archivo.nombre + ". Míralo y contesta según IMÁGENES Y ARCHIVOS.]" }];
+}
+
+// Audio, video o lo que no se pudo abrir: se le pide que lo escriba, queda en la bandeja del POS y Maite lo recuerda.
+function _botRespuestaSinArchivo(conversacionId, archivo, canal) {
+  const respuesta = archivo.tipo === "audio" ? BOT_TEXTO_AUDIO : archivo.tipo === "video" ? BOT_TEXTO_VIDEO : BOT_TEXTO_ARCHIVO_DESCONOCIDO;
+  const titulo = archivo.tipo === "audio" ? "🎤 Un cliente mandó un audio" : archivo.tipo === "video" ? "🎬 Un cliente mandó un video" : "📎 Un cliente mandó algo que Maite no pudo abrir";
+  try { _botAvisar(titulo, botDetalleAlerta(canal, "Maite le pidió que lo escriba.", conversacionId), { sinWhatsapp: true }); } catch (e) { }
   const memoria = _botCargarMemoria(conversacionId);
-  const audio = /\.(ogg|opus|mp3|m4a|aac|amr|wav|mpga)(\?|$)|audio/i.test(String(mensaje || ""));
-  const pago = audio ? null : _botPagoPendiente(memoria.mensajes);
-  let respuesta, titulo;
-  if (pago) {
-    respuesta = "¡Gracias" + (pago.nombre ? ", " + pago.nombre : "") + "! Recibí tu comprobante. Tu pedido " + pago.llave + " sigue apartado; el equipo revisa el pago con tu llave y no tienes que hacer nada más.";
-    titulo = "🧾 Comprobante de transferencia recibido · " + pago.llave;
-  } else {
-    respuesta = audio ? BOT_TEXTO_SIN_TEXTO : "Recibí tu mensaje, pero por aquí no alcanzo a ver imágenes ni escuchar audios 🙏 ¿Me lo escribes? Así te ayudo de inmediato.";
-    titulo = audio ? "🎤 Un cliente mandó un audio" : "🖼️ Un cliente mandó una imagen, sticker o audio";
-  }
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const detalle = botDetalleAlerta(canal, (pago ? "Revisa el comprobante en el chat contra la llave " + pago.llave + " antes de entregar." : "Maite le pidió que lo escriba.") + (/^https?:/i.test(String(mensaje)) ? "\n" + mensaje : ""), conversacionId);
-  try { _botAvisar(titulo, detalle, { sinWhatsapp: true }); } catch (e) { }
-  try { _botRegistrarAlerta(ss, "avisar", pago ? "comprobante" : "sin_texto", conversacionId, titulo, detalle, { configurado: false, motivo: "sin WhatsApp: va en la bandeja del POS", destinatarios: [], resultados: [] }); } catch (e) { }
-  memoria.mensajes.push({ role: "user", content: pago ? "[El cliente mandó una imagen: su comprobante de la transferencia]" : "[El cliente mandó una imagen, un sticker o un audio que no puedes ver]" }, { role: "assistant", content: respuesta });
+  memoria.mensajes.push({ role: "user", content: "[El cliente mandó " + (archivo.tipo === "audio" ? "un audio" : archivo.tipo === "video" ? "un video" : "un archivo") + " que no puedes abrir]" }, { role: "assistant", content: respuesta });
   _botGuardarMemoria(conversacionId, memoria, canal);
   return respuesta;
 }
 
-// El pedido con transferencia que Maite acaba de cerrar en esta conversación: { llave, nombre } o null.
-function _botPagoPendiente(mensajes) {
-  const recientes = mensajes.slice(-BOT_COMPROBANTE_MENSAJES).filter(function (m) { return m.role === "assistant"; }).map(function (m) { return String(m.content); });
-  for (let i = recientes.length - 1; i >= 0; i--) {
-    const llave = recientes[i].match(/TV-\d{4}-\d{2}/);
-    if (llave && /transferencia/i.test(recientes.join(" "))) {
-      const nombre = (recientes.join("\n").match(/(?:Listo|Gracias),\s+([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)/) || [])[1] || "";
-      return { llave: llave[0], nombre: nombre };
-    }
-  }
-  return null;
-}
+// La IA contesta exactamente BOT_MARCA_SILENCIO cuando un sticker o una imagen solo cierran la conversación.
+function _botEsSilencio(texto) { return String(texto || "").trim() === BOT_MARCA_SILENCIO; }

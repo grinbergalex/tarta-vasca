@@ -631,10 +631,17 @@ todo el ciclo. Hecho hasta ahora (solo en el proyecto de pruebas, no en producci
     solo). Solo pedidos de esa conversación (Instagram) o de ese mismo número (WhatsApp) y abiertos. El `opId` incluye entrega y
     sucursal: con las mismas tartas, recoger→domicilio es otra operación (si no, `registrarVenta` devolvía el pedido viejo).
   - Ya no pasa con una persona por anticipo (no hay), por zona, ni por cambios de sus propios pedidos.
-  - **Audio, foto o sticker (24-nov, Alex: "me están llegando muchos")**: ManyChat los manda sin texto, con el enlace, o repitiendo
-    el último texto del cliente. Ya NO mandan WhatsApp al equipo (eran decenas por noche; la mayoría, comprobantes): quedan en la
-    bandeja del POS y en `Alertas_Bot`. Si llega en los últimos `BOT_COMPROBANTE_MENSAJES` después de cerrar un pedido con
-    transferencia, Maite lo recibe como comprobante ("Recibí tu comprobante, tu pedido TV-… sigue apartado"); si no, pide que lo escriba.
+  - **Foto, sticker, PDF y audio (24-nov, decisiones de Alex)**: ManyChat los manda como un enlace en el último texto
+    (WhatsApp: `manybot-files…/x.jpeg`; Instagram: `lookaside.fbsbx.com` sin extensión). Los enlaces abren sin sesión:
+    `_botLeerArchivo` los descarga y decide por el tipo real. Foto, sticker (webp) o PDF → van a la IA como bloque de imagen o
+    documento y **Maite los ve** (reglas "IMÁGENES Y ARCHIVOS" del prompt: si es claro lo dice y sigue —un comprobante: gracias con
+    el monto y la llave, nunca "ya entró el pago"—; si implica actuar, confirma con el cliente; si no entiende, pregunta; un sticker
+    de cierre → `[SILENCIO]`, no contesta). Audio o video → le pide que lo escriba (transcribir audios = servicio aparte, pendiente
+    de que Alex decida). Ninguno manda WhatsApp al equipo: van a la bandeja del POS.
+  - **Ecos del WhatsApp Business del celular**: el mensaje de bienvenida y el de ausencia vuelven a disparar el flujo de ManyChat
+    con el último texto del cliente. Antes Maite contestaba "no puedo escuchar audios" (4 de 7 avisos del 23-nov eran esto). Ahora
+    el mismo texto otra vez dentro de `BOT_ECO_SEGUNDOS` se calla sin tocar el estado (la respuesta real puede ir en camino).
+    Lo de raíz: apagar esos mensajes automáticos en la app de WhatsApp Business, porque Maite ya saluda y contesta.
 - **Envíos por distancia**: propuesta de círculos desde Bosques ($60 ≤5 km, $90 5-11 km, $120 11-16 km, más lejos cotiza una
   persona) en el doc "Envíos por distancia desde Bosques" (artifact) y `envios-por-distancia-bosques.pdf`, para Yessenia.
   Mientras no se construya, cada colonia que falte en `ZonasEnvio` hace que Maite diga que no llega: es lo que más la traba.
