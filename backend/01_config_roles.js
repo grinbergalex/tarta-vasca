@@ -141,7 +141,21 @@ const BOT_MODELO = "claude-sonnet-5-5";
 const BOT_MAX_TOKENS = 1024;
 const BOT_MAX_VUELTAS_HERRAMIENTAS = 6;     // veces que puede pedir herramientas en un solo turno
 const BOT_MAX_MENSAJES_HISTORIAL = 30;      // mensajes de la conversación que recuerda
-const BOT_HISTORIAL_SEGUNDOS = 21600;       // 6 h: la conversación se olvida sola
+const BOT_HISTORIAL_SEGUNDOS = 21600;       // 6 h: lo que vive en el cache (el cache no guarda más); la conversación completa vive en Bot_Memoria
+const BOT_HOJA_MEMORIA = "Bot_Memoria";      // una fila por conversación: lo que se dijo y las notas del equipo (Maite retoma al día siguiente)
+const BOT_MEMORIA_DIAS = 14;                 // pasado esto la conversación empieza de cero
+const BOT_MAX_CARACTERES_MEMORIA = 45000;    // una celda de Sheets aguanta 50,000
+// Envío por distancia desde la cocina cuando la colonia no está en ZonasEnvio (Alex, 23-nov-2026: "resolver sin humanos").
+// Línea recta desde Bosques. Más lejos del último círculo no se entrega a domicilio: se ofrece recoger.
+const BOT_ENVIO_CIRCULOS = [
+  { hastaKm: 5,  costo: 60,  zona: "Círculo 1 (hasta 5 km de Bosques)" },
+  { hastaKm: 11, costo: 90,  zona: "Círculo 2 (5 a 11 km de Bosques)" },
+  { hastaKm: 16, costo: 120, zona: "Círculo 3 (11 a 16 km de Bosques)" }
+];
+const BOT_ORIGEN_APROX = { lat: 19.3950, lon: -99.2540, fuente: "aproximado (Bosques de las Lomas)" };   // si no se puede ubicar la dirección de la cocina
+const BOT_GEO_LIMITES = { sur: 19.05, oeste: -99.45, norte: 19.75, este: -98.85 };   // la zona metropolitana: fuera de aquí la dirección se ubicó mal
+const BOT_GEO_CACHE_SEGUNDOS = 21600;
+const BOT_MOTIVO_CANCELADO_CLIENTE = "Cancelado por el cliente (Maite)";
 const BOT_MAX_TURNOS_POR_CONVERSACION = 60; // tope para cuidar el gasto de IA
 const BOT_MAX_CARACTERES_MENSAJE = 1000;
 // --- Pedidos con seguimiento (v9) -------------------------------------------------

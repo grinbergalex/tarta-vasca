@@ -616,6 +616,19 @@ todo el ciclo. Hecho hasta ahora (solo en el proyecto de pruebas, no en producci
     pago completo contra entrega; con Uber, transferencia antes). Así contestaba el equipo antes de Maite.
   - `ZonasEnvio` → ZNV-50 ($60): agregadas Jesús del Monte, Villa Florence y El Yaqui (3-5 km de Bosques). "Huixquilucan" solo
     no se agregó a propósito: el municipio llega a ~11 km (círculo de $90). `_botZona` compara por subcadena.
+- **Maite resuelve sola (`30_bot_autonomia.js`, Alex: "haz lo necesario para poder resolver sin humanos")**:
+  - **Memoria por días**: la conversación vive en la hoja `Bot_Memoria` (se crea sola; `BOT_MEMORIA_DIAS` = 14); antes el cache la
+    olvidaba a las 6 h y el cliente que contestaba al día siguiente empezaba de cero. El tope de turnos se reinicia cada 6 h.
+  - **Nota del equipo** (columna `nota_equipo` de `Bot_Memoria`): Maite NO ve lo que se le escribe al cliente desde la Bandeja de
+    ManyChat. Quien conteste a mano deja ahí qué le dijo, y Maite sigue desde eso. Para una conversación sin fila, se agrega una
+    fila con solo el id y la nota (lo hablado sigue en el cache y no se pierde).
+  - **Envío por distancia**: si la colonia no está en `ZonasEnvio`, `_botZona` ubica la dirección (geocodificador de Google de Apps
+    Script; si no está disponible, OpenStreetMap) y cobra por `BOT_ENVIO_CIRCULOS` desde Bosques. Un municipio entero o una dirección
+    que no se ubica → pide calle y número; más de 16 km → ofrece recoger. Nunca dice "no llegamos" por no encontrar la colonia.
+  - **Cambios y cancelaciones**: `cancelar_pedido` y `crear_pedido` con `reemplaza` (el nuevo se crea y el viejo se cancela y libera
+    solo). Solo pedidos de esa conversación (Instagram) o de ese mismo número (WhatsApp) y abiertos. El `opId` incluye entrega y
+    sucursal: con las mismas tartas, recoger→domicilio es otra operación (si no, `registrarVenta` devolvía el pedido viejo).
+  - Ya no pasa con una persona por anticipo (no hay), por zona, ni por cambios de sus propios pedidos.
 - **Envíos por distancia**: propuesta de círculos desde Bosques ($60 ≤5 km, $90 5-11 km, $120 11-16 km, más lejos cotiza una
   persona) en el doc "Envíos por distancia desde Bosques" (artifact) y `envios-por-distancia-bosques.pdf`, para Yessenia.
   Mientras no se construya, cada colonia que falte en `ZonasEnvio` hace que Maite diga que no llega: es lo que más la traba.
