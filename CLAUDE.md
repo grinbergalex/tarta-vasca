@@ -622,8 +622,10 @@ todo el ciclo. Hecho hasta ahora (solo en el proyecto de pruebas, no en producci
   - **Nota del equipo** (columna `nota_equipo` de `Bot_Memoria`): Maite NO ve lo que se le escribe al cliente desde la Bandeja de
     ManyChat. Quien conteste a mano deja ahí qué le dijo, y Maite sigue desde eso. Para una conversación sin fila, se agrega una
     fila con solo el id y la nota (lo hablado sigue en el cache y no se pierde).
-  - **Envío por distancia**: si la colonia no está en `ZonasEnvio`, `_botZona` ubica la dirección (geocodificador de Google de Apps
-    Script; si no está disponible, OpenStreetMap) y cobra por `BOT_ENVIO_CIRCULOS` desde Bosques. Un municipio entero o una dirección
+  - **Envío por distancia**: si la colonia no está en `ZonasEnvio`, `_botZona` ubica la dirección con OpenStreetMap (por `UrlFetchApp`,
+    que ya tiene permiso: el geocodificador de Google de Apps Script podría pedir un permiso nuevo y dejar a Maite muda) y cobra por
+    `BOT_ENVIO_CIRCULOS` desde Bosques. Prueba dirección completa, sin número, colonia sola y calle sola; `place_rank` < 17 es un
+    municipio entero. Un municipio entero o una dirección
     que no se ubica → pide calle y número; más de 16 km → ofrece recoger. Nunca dice "no llegamos" por no encontrar la colonia.
   - **Cambios y cancelaciones**: `cancelar_pedido` y `crear_pedido` con `reemplaza` (el nuevo se crea y el viejo se cancela y libera
     solo). Solo pedidos de esa conversación (Instagram) o de ese mismo número (WhatsApp) y abiertos. El `opId` incluye entrega y

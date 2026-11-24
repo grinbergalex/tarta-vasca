@@ -152,9 +152,11 @@ const BOT_ENVIO_CIRCULOS = [
   { hastaKm: 11, costo: 90,  zona: "Círculo 2 (5 a 11 km de Bosques)" },
   { hastaKm: 16, costo: 120, zona: "Círculo 3 (11 a 16 km de Bosques)" }
 ];
-const BOT_ORIGEN_APROX = { lat: 19.3950, lon: -99.2540, fuente: "aproximado (Bosques de las Lomas)" };   // si no se puede ubicar la dirección de la cocina
+const BOT_ORIGEN_APROX = { lat: 19.3950, lon: -99.2540 };   // Bosques (aproximado, el mismo punto del análisis de círculos que vio Yessenia)
 const BOT_GEO_LIMITES = { sur: 19.05, oeste: -99.45, norte: 19.75, este: -98.85 };   // la zona metropolitana: fuera de aquí la dirección se ubicó mal
 const BOT_GEO_CACHE_SEGUNDOS = 21600;
+const BOT_GEO_RANGO_COLONIA = 17;            // place_rank de OpenStreetMap: menos que esto es un municipio o una ciudad entera
+const BOT_GEO_MARGEN_MUNICIPIO_KM = 8;       // un municipio entero cuyo centro queda a más de 16+8 km se da por lejos sin pedir más datos
 const BOT_MOTIVO_CANCELADO_CLIENTE = "Cancelado por el cliente (Maite)";
 const BOT_MAX_TURNOS_POR_CONVERSACION = 60; // tope para cuidar el gasto de IA
 const BOT_MAX_CARACTERES_MENSAJE = 1000;

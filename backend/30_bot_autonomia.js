@@ -6,7 +6,7 @@
 //     le hablaba. Ahora la conversación vive en la hoja Bot_Memoria (BOT_MEMORIA_DIAS) y el cache solo acelera.
 //     La columna "nota_equipo" la escribe una persona (o Claude) cuando le contesta al cliente desde la Bandeja de ManyChat:
 //     Maite no ve esos mensajes, y con la nota sabe qué se le dijo y sigue desde ahí.
-//  2. ENVÍO: si la colonia no está en ZonasEnvio, Maite decía que no llegábamos. Ahora ubica la dirección y cobra por
+//  2. ENVÍO: si la colonia no está en ZonasEnvio, Maite decía que no llegábamos. Ahora ubica la dirección (OpenStreetMap) y cobra por
 //     distancia a Bosques (BOT_ENVIO_CIRCULOS). La lista sigue mandando cuando la colonia está en ella.
 //  3. CAMBIOS: cambiar o cancelar un pedido pasaba a una persona. Ahora Maite cancela un pedido suyo (de esta misma
 //     conversación o de este mismo WhatsApp) y, para cambiarlo, crea el nuevo con `reemplaza` y el viejo se cancela solo.
@@ -92,73 +92,62 @@ function _botBloqueNotaEquipo(nota) {
 // ---------------------------------------------------------------------------
 // 2. ENVÍO POR DISTANCIA
 // ---------------------------------------------------------------------------
-// La colonia que no está en ZonasEnvio se ubica (con la dirección, si la hay) y se cobra por círculo.
+// La colonia que no está en ZonasEnvio se ubica (con la dirección, si la hay) y se cobra por círculo desde Bosques.
+// Solo OpenStreetMap por UrlFetchApp, que ya tiene permiso: el geocodificador de Google de Apps Script podría pedir un permiso
+// nuevo, y un permiso sin autorizar deja a Maite sin contestar a nadie (ya pasó el 1-nov con UrlFetchApp).
 function _botZonaPorDistancia(colonia, direccion) {
-  const texto = [direccion, colonia].map(function (s) { return String(s || "").trim(); }).filter(Boolean).join(", ");
-  if (!texto) return { cubierta: false, motivo: "Falta la dirección." };
-  const lugar = _botUbicar(texto);
+  const lugar = _botUbicar(colonia, direccion);
   if (!lugar) return { cubierta: false, sin_ubicar: true, motivo: "No pude ubicar esa dirección. Pídele al cliente la calle con número y la colonia (o una referencia cercana) y vuelve a consultar. No le digas que no llegamos." };
-  if (lugar.muy_general) return { cubierta: false, sin_ubicar: true, motivo: "Eso es un municipio o una zona muy grande y el costo depende de dónde exactamente. Pídele la colonia o la calle con número y vuelve a consultar. No le digas que no llegamos." };
-  const origen = _botOrigenEnvios();
-  const km = _botDistanciaKm(origen.lat, origen.lon, lugar.lat, lugar.lon);
+  const km = _botDistanciaKm(BOT_ORIGEN_APROX.lat, BOT_ORIGEN_APROX.lon, lugar.lat, lugar.lon);
+  const ultimo = BOT_ENVIO_CIRCULOS[BOT_ENVIO_CIRCULOS.length - 1].hastaKm;
+  // Un municipio entero (Huixquilucan) no dice dónde: se pide la colonia. Salvo que todo él quede lejísimos (Coacalco).
+  if (lugar.muy_general && km <= ultimo + BOT_GEO_MARGEN_MUNICIPIO_KM) return { cubierta: false, sin_ubicar: true, motivo: "Eso es un municipio o una zona muy grande y el costo depende de dónde exactamente. Pídele la colonia o la calle con número y vuelve a consultar. No le digas que no llegamos." };
   const circulo = BOT_ENVIO_CIRCULOS.filter(function (c) { return km <= c.hastaKm; })[0];
   if (!circulo) return { cubierta: false, lejos: true, distancia_km: Math.round(km * 10) / 10, motivo: "Esa dirección está fuera de nuestra zona de entrega a domicilio. Dilo con amabilidad y ofrece recoger en una sucursal." };
   return { cubierta: true, zona: circulo.zona, costo_envio: circulo.costo, por_distancia: true, distancia_km: Math.round(km * 10) / 10, ubicada_como: lugar.direccion };
 }
 
-// { lat, lon, direccion, muy_general } o null. Primero el geocodificador de Google (Apps Script); si no está disponible, OpenStreetMap.
-function _botUbicar(texto) {
+// { lat, lon, direccion, muy_general } o null. OpenStreetMap no encuentra direcciones con número ni nombres de conjuntos
+// ("Residencial Altarea"), así que prueba de lo más preciso a lo más general y se queda con el primero que no sea un municipio entero.
+function _botUbicar(colonia, direccion) {
+  const col = String(colonia || "").replace(/^\s*(col\.?|colonia)\s+/i, "").trim(), dir = String(direccion || "").trim();
+  const calle = dir.replace(/(#\s*)?\d+[\w-]*/g, "").replace(/\s+,/g, ",").replace(/\s{2,}/g, " ").trim();   // sin número exterior ni interior
+  const intentos = [[dir, col].filter(Boolean).join(", "), [calle, col].filter(Boolean).join(", "), col, calle]
+    .filter(function (t, i, todos) { return t && t.replace(/[\s,]/g, "") && todos.indexOf(t) === i; });
+  let general = null;
+  for (let i = 0; i < intentos.length; i++) {
+    const lugar = _botUbicarTexto(intentos[i]);
+    if (lugar && !lugar.muy_general) return lugar;
+    if (lugar && !general) general = lugar;
+  }
+  return general;
+}
+
+function _botUbicarTexto(texto) {
   const clave = "bot_geo_" + hashSimple(_botSinAcentos(texto));
   const cache = CacheService.getScriptCache();
   try { const guardado = cache.get(clave); if (guardado) return JSON.parse(guardado); } catch (e) { }
   let lugar = null;
-  try { lugar = _botUbicarGoogle(texto); } catch (e) { Logger.log("Geocodificador de Google: " + e); }
-  if (!lugar) { try { lugar = _botUbicarOsm(texto); } catch (e) { Logger.log("OpenStreetMap: " + e); } }
+  try { lugar = _botUbicarOsm(texto); } catch (e) { Logger.log("OpenStreetMap: " + e); }
   if (lugar && !_botDentroDeLimites(lugar)) lugar = null;
   try { if (lugar) cache.put(clave, JSON.stringify(lugar), BOT_GEO_CACHE_SEGUNDOS); } catch (e) { }
   return lugar;
 }
 
-const BOT_GEO_TIPOS_GENERALES = ["locality", "administrative_area_level_1", "administrative_area_level_2", "administrative_area_level_3", "country", "colloquial_area"];
-
-function _botUbicarGoogle(texto) {
-  const L = BOT_GEO_LIMITES;
-  const r = Maps.newGeocoder().setRegion("mx").setLanguage("es").setBounds(L.sur, L.oeste, L.norte, L.este).geocode(texto + ", México");
-  if (!r || r.status !== "OK" || !r.results || !r.results.length) return null;
-  const x = r.results[0];
-  const general = (x.types || []).every(function (t) { return BOT_GEO_TIPOS_GENERALES.indexOf(t) !== -1 || t === "political"; });
-  return { lat: x.geometry.location.lat, lon: x.geometry.location.lng, direccion: x.formatted_address, muy_general: general };
-}
-
 function _botUbicarOsm(texto) {
   const L = BOT_GEO_LIMITES;
-  const url = "https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=mx&bounded=1&addressdetails=0" +
+  const url = "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=mx&bounded=1&addressdetails=0" +
     "&viewbox=" + [L.oeste, L.norte, L.este, L.sur].join(",") + "&q=" + encodeURIComponent(texto);
   const resp = UrlFetchApp.fetch(url, { muteHttpExceptions: true, headers: { "User-Agent": "tarta-vasca-envios/1.0" } });
   if (resp.getResponseCode() !== 200) return null;
   const d = JSON.parse(resp.getContentText() || "[]");
   if (!d.length) return null;
-  const general = ["city", "administrative", "state", "county", "municipality", "town"].indexOf(String(d[0].type)) !== -1;
-  return { lat: Number(d[0].lat), lon: Number(d[0].lon), direccion: String(d[0].display_name || ""), muy_general: general };
+  return { lat: Number(d[0].lat), lon: Number(d[0].lon), direccion: String(d[0].display_name || ""), muy_general: Number(d[0].place_rank) < BOT_GEO_RANGO_COLONIA };   // ciudad o municipio = 12-16; colonia = 18-22; calle = 26+
 }
 
 function _botDentroDeLimites(p) {
   const L = BOT_GEO_LIMITES;
   return p.lat >= L.sur && p.lat <= L.norte && p.lon >= L.oeste && p.lon <= L.este;
-}
-
-// Bosques (la cocina): se ubica UNA vez por su dirección y se guarda; si no se puede, el punto aproximado (BOT_ORIGEN_APROX).
-function _botOrigenEnvios() {
-  const props = PropertiesService.getScriptProperties();
-  try { const g = props.getProperty("BOT_ORIGEN_ENVIOS"); if (g) return JSON.parse(g); } catch (e) { }
-  let origen = null;
-  try {
-    const p = _botUbicarGoogle(BOT_SUCURSALES_INFO[SUCURSAL_COCINA].direccion + ", Ciudad de México");
-    if (p && !p.muy_general && _botDentroDeLimites(p)) origen = { lat: p.lat, lon: p.lon, fuente: p.direccion };
-  } catch (e) { Logger.log("Origen de envíos: " + e); }
-  if (!origen) return BOT_ORIGEN_APROX;
-  props.setProperty("BOT_ORIGEN_ENVIOS", JSON.stringify(origen));
-  return origen;
 }
 
 function _botDistanciaKm(lat1, lon1, lat2, lon2) {
