@@ -332,7 +332,7 @@ const BOT_RESULTADO_SEGUNDOS = 600;         // cuánto se guarda la respuesta li
 const BOT_SUCURSALES_INFO = {
 "Polanco":    { direccion: "Calle Arquímedes 69, Col. Polanco", mapa: "https://maps.app.goo.gl/8SgqYN1heaJwBbSu5" },
 "Cuajimalpa": { direccion: "Av. Noche de Paz 14, local 16B, Col. Granjas Navidad", mapa: "https://maps.app.goo.gl/qHVxeqaJqz8RAETN8" },
-"Bosques":    { direccion: "Bosques de la Reforma 1372, junto a La Macaria, Col. Lomas del Chamizal, CP 05129", mapa: "https://www.google.com/maps/search/?api=1&query=Bosques+de+la+Reforma+1372%2C+Lomas+del+Chamizal%2C+05129+Ciudad+de+Mexico" }
+"Bosques":    { direccion: "Bosques de la Reforma 1372, Piso 1, Col. Lomas del Chamizal, CP 05129", mapa: "https://www.google.com/maps/search/?api=1&query=Bosques+de+la+Reforma+1372%2C+Lomas+del+Chamizal%2C+05129+Ciudad+de+Mexico" }
 };
 function getHorarioHoy(sucursal, fecha) {
 fecha = fecha || new Date();
