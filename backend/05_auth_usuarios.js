@@ -19,7 +19,7 @@ const permisos = getPermisos(rol);
 // Mergear permisos extra del usuario
 const extra = leerPermisosExtraUsuario(usuario);
 if (extra) Object.keys(extra).forEach(k => { if (extra[k] === true) permisos[k] = true; });
-return { ok: true, token, usuario, rol, sucursal, permisos };
+return { ok: true, token, usuario, rol, sucursal, permisos, debeCambiarPassword: debeCambiarPassword(usuario) };
 }
 return { ok: false, error: "Usuario no encontrado." };
 }
@@ -272,7 +272,7 @@ for (let i = 1; i < datos.length; i++) if (datos[i][0]===usuario) return { ok: f
 const headers = hoja.getRange(1, 1, 1, hoja.getLastColumn()).getValues()[0];
 const nuevaFila = [usuario, hashSimple(password), rol, sucursal, "TRUE", "", new Date().toISOString(), sesion.usuario];
 while (nuevaFila.length < headers.length) nuevaFila.push("");
-hoja.appendRow(nuevaFila);
+hoja.appendRow(nuevaFila); marcarPasswordTemporal(usuario, true);
 registrarAuditoria(sesion.usuario, sesion.rol, "CREAR_USUARIO", `${usuario} (${rol} - ${sucursal})`);
 return { ok: true, mensaje: `✅ Usuario "${usuario}" creado.` };
 }
@@ -313,7 +313,7 @@ const cambiosLog = [];
 // Password (opcional)
 if (campos.password && typeof campos.password === "string" && campos.password.length > 0) {
 hoja.getRange(filaIdx + 1, 2).setValue(hashSimple(campos.password));
-cambiosLog.push("password");
+if (usuarioObjetivo !== sesion.usuario) { marcarPasswordTemporal(usuarioObjetivo, true); cerrarSesionesUsuario(usuarioObjetivo); } cambiosLog.push("password");
 }
 // Rol (validar)
 let cambioRol = false;
@@ -392,7 +392,7 @@ const datos = hoja.getDataRange().getValues();
 for (let i = 1; i < datos.length; i++) {
 if (datos[i][0]===usuario) {
 if (sesion.usuario===usuario&&datos[i][1]!==hashSimple(passwordActual)) return { ok: false, error: "Contraseña actual incorrecta." };
-hoja.getRange(i+1,2).setValue(hashSimple(passwordNuevo));
+if (sesion.usuario===usuario) { if (String(passwordNuevo).length < PWT_MIN_LARGO) return { ok: false, error: "La contraseña nueva debe tener al menos " + PWT_MIN_LARGO + " caracteres." }; if (passwordNuevo === passwordActual) return { ok: false, error: "La contraseña nueva debe ser distinta a la actual." }; } hoja.getRange(i+1,2).setValue(hashSimple(passwordNuevo)); marcarPasswordTemporal(usuario, sesion.usuario!==usuario); if (sesion.usuario!==usuario) cerrarSesionesUsuario(usuario);
 registrarAuditoria(sesion.usuario, sesion.rol, "CAMBIO_PASSWORD", `Contraseña cambiada: ${usuario}`);
 return { ok: true, mensaje: "✅ Contraseña actualizada." };
 }
