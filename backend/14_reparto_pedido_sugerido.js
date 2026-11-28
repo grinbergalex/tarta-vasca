@@ -217,7 +217,7 @@ generado: Utilities.formatDate(hoy, tz, "yyyy-MM-dd HH:mm")
 //  - Excluye ventas de RUTA (esas se planean según pedidos de clientes) y mermas/regalos/reservas
 //    (la base es la misma que el "potencial": tipo_op = Venta).
 //  - Sugerido = promedio del potencial × 1.15, redondeado HACIA ARRIBA.
-const _HORAS_APERTURA_PS = { "Bosques": { abre: 9, cierra: 18 }, "Cuajimalpa": { abre: 9, cierra: 18 }, "Polanco": { abre: 11, cierra: 19 } };
+const _HORAS_APERTURA_PS = { "Bosques": { abre: 9, cierra: 16 }, "Cuajimalpa": { abre: 9, cierra: 18 }, "Polanco": { abre: 11, cierra: 19 } };
 const _DIAS_ES = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
 function _dowFromStr(fechaStr) { // fechaStr "yyyy-MM-dd" -> 0=Dom..6=Sab
 const p = fechaStr.split("-"); return new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2])).getDay();
@@ -370,7 +370,7 @@ var REP_PARAMS = { capTartas: 13, jornadaMin: 360, horaInicio: 8.560, minServici
 velKmh: 18, factorVial: 1.35, choferes: 3 };
 // ⚠ Coordenadas aproximadas de Bosques de las Lomas — ajusta lat/lon a la direccion exacta de la cocina.
 var REP_DEPOT  = { nombre: "Cocina "+SUCURSAL_COCINA, lat: 19.3950, lon: -99.2540,
-dir: "Bosques de las Lomas, Cuajimalpa, Ciudad de México" };
+dir: "Bosques de la Reforma 1372, Lomas del Chamizal, CP 05129, Ciudad de México" };
 var REP_PRECIO_TARTA = 650; // respaldo si el pedido no trae monto
 // (punto 2) Local Tarta Vasca Polanco como parada opcional en la ruta.
 // ⚠ Coordenadas aproximadas de Polanco — ajusta lat/lon a la dirección exacta del local.
