@@ -42,7 +42,7 @@ function _tiendaListasHoy(ss) {
       listas[suc].push({ k: partes[0] + "|" + partes[1], max: disp - (RECOGER_MIN_PIEZAS_MISMO_DIA - 1) });
     }
   });
-  return listas;
+  if (listas["Bosques"]) listas["Bosques"] = []; return listas; // Bosques: solo con anticipacion
 }
 
 // Mismo criterio que invSaldos, en una sola lectura de la hoja:
