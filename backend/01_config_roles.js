@@ -116,18 +116,18 @@ const SUCURSAL_LEGADO_DESTINO_TRANSFER = "Polanco";    // y lo unico transferibl
 // UNICA fuente de verdad: la caja, el cierre automático, los reportes del día y la
 // recolección de la tienda en línea leen de aquí.
 const HORARIO_ENTRE_SEMANA = { abre: "09:00", cierra: "18:00" };
-const HORARIO_SABADO_COCINA = { abre: "09:00", cierra: "15:00" };
+const HORARIO_SABADO_COCINA = { abre: "09:00", cierra: "14:00" }; const HORARIO_SEMANA_COCINA = { abre: "09:00", cierra: "16:00" };
 const HORARIO_FIN_SEMANA_CUAJIMALPA = { abre: "11:00", cierra: "15:00" };  // sábado y domingo (Alex, 24-nov-2026)
 const HORARIO_POLANCO = { abre: "11:00", cierra: "19:00" };
 const HORARIO_CERRADO = { abre: "00:00", cierra: "00:00", cerrado: true };  // lo que ve el código en un día sin atención
 const HORARIOS_SUCURSAL = {
-"Bosques":    [null, HORARIO_ENTRE_SEMANA, HORARIO_ENTRE_SEMANA, HORARIO_ENTRE_SEMANA, HORARIO_ENTRE_SEMANA, HORARIO_ENTRE_SEMANA, HORARIO_SABADO_COCINA],
+"Bosques":    [null, HORARIO_SEMANA_COCINA, HORARIO_SEMANA_COCINA, HORARIO_SEMANA_COCINA, HORARIO_SEMANA_COCINA, HORARIO_SEMANA_COCINA, HORARIO_SABADO_COCINA],
 "Cuajimalpa": [HORARIO_FIN_SEMANA_CUAJIMALPA, HORARIO_ENTRE_SEMANA, HORARIO_ENTRE_SEMANA, HORARIO_ENTRE_SEMANA, HORARIO_ENTRE_SEMANA, HORARIO_ENTRE_SEMANA, HORARIO_FIN_SEMANA_CUAJIMALPA],
 "Polanco":    [HORARIO_POLANCO, HORARIO_POLANCO, HORARIO_POLANCO, HORARIO_POLANCO, HORARIO_POLANCO, HORARIO_POLANCO, HORARIO_POLANCO]
 };
 // v7.6 — Tienda en línea: recolección en sucursal (calendario del carrito de Shopify).
 // Es el mismo horario de atención (HORARIOS_SUCURSAL); solo las sucursales donde se recoge.
-const RECOGER_HORARIOS = {
+const RECOGER_HORARIOS = { "Bosques": HORARIOS_SUCURSAL["Bosques"],
 "Cuajimalpa": HORARIOS_SUCURSAL["Cuajimalpa"],
 "Polanco":    HORARIOS_SUCURSAL["Polanco"]
 };
@@ -332,7 +332,7 @@ const BOT_RESULTADO_SEGUNDOS = 600;         // cuánto se guarda la respuesta li
 const BOT_SUCURSALES_INFO = {
 "Polanco":    { direccion: "Calle Arquímedes 69, Col. Polanco", mapa: "https://maps.app.goo.gl/8SgqYN1heaJwBbSu5" },
 "Cuajimalpa": { direccion: "Av. Noche de Paz 14, local 16B, Col. Granjas Navidad", mapa: "https://maps.app.goo.gl/qHVxeqaJqz8RAETN8" },
-"Bosques":    { direccion: "Av. Stim 1374, Lomas del Chamizal, Cuajimalpa de Morelos", mapa: "https://maps.app.goo.gl/FK1PCmWkxqKNLTYW6" }
+"Bosques":    { direccion: "Bosques de la Reforma 1372, junto a La Macaria, Col. Lomas del Chamizal, CP 05129", mapa: "https://www.google.com/maps/search/?api=1&query=Bosques+de+la+Reforma+1372%2C+Lomas+del+Chamizal%2C+05129+Ciudad+de+Mexico" }
 };
 function getHorarioHoy(sucursal, fecha) {
 fecha = fecha || new Date();
