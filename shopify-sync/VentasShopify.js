@@ -35,10 +35,10 @@
 // Necesita la llave de Shopify con el permiso read_orders (ver GUIA_LLAVE.md).
 // ============================================================================
 
-const SUCURSAL_ENVIOS = "Cuajimalpa";            // de aquí salen todos los envíos a domicilio
-const SUCURSALES_RECOGER = ["Polanco", "Cuajimalpa"];  // se busca en el nombre del punto de recolección
+const SUCURSAL_ENVIOS = "Bosques"; const SUCURSAL_RECOGER_BASE = "Cuajimalpa";            // de aquí salen todos los envíos a domicilio
+const SUCURSALES_RECOGER = ["Polanco", "Bosques", "Cuajimalpa"];  // se busca en el nombre del punto de recolección
 const POS_API_URL = "https://script.google.com/macros/s/AKfycbxJfDX3lwu5AE9GDA1WGZ3_MP3AAGPsCz54CdzS_cnE9zxQArN1zLmjnZixwc2A13eF/exec";
-const SUFIJO_PROPIEDAD_SUCURSAL = { "Cuajimalpa": "CUAJI", "Polanco": "POLANCO" };
+const SUFIJO_PROPIEDAD_SUCURSAL = { "Cuajimalpa": "CUAJI", "Polanco": "POLANCO", "Bosques": "BOSQUES" };
 const CANAL_DOMICILIO = "Domicilio";
 const CANAL_RECOGER = "Tienda";
 const METODO_PAGO_SHOPIFY = "Shopify";
@@ -131,7 +131,7 @@ function traducirPedido_(pedido, hoja) {
 // de recolección ("La Tarta Vasca" = Cuajimalpa, "La Tarta Vasca Polanco").
 function sucursalDeRecoleccion_(tituloEnvio) {
   const t = String(tituloEnvio).toLowerCase();
-  return SUCURSALES_RECOGER.filter(s => t.indexOf(s.toLowerCase()) !== -1)[0] || SUCURSAL_ENVIOS;
+  return SUCURSALES_RECOGER.filter(s => t.indexOf(s.toLowerCase()) !== -1)[0] || SUCURSAL_RECOGER_BASE;
 }
 
 // "Saturday, 03 October 2026" -> "2026-10-03" (formato de la app de entregas).
@@ -266,7 +266,7 @@ function porCerrar_(pedidos, idRegistrado, yaCerrado) {
     .map(p => ({ pedido: p.name, idVenta: idRegistrado(p.name), cancelado: !!p.cancelledAt }));
 }
 
-function cerrarUnPedido_(c, sucursal, props) {
+function cerrarUnPedido_(c, sucursal, props) { const otras = Object.keys(SUFIJO_PROPIEDAD_SUCURSAL).filter(s => s !== sucursal); let r = cerrarEnSucursal_(c, sucursal, props); while (!r.ok && /lo gestiona/i.test(r.error || "") && otras.length) r = cerrarEnSucursal_(c, otras.shift(), props); return r; } function cerrarEnSucursal_(c, sucursal, props) {
   const sufijo = SUFIJO_PROPIEDAD_SUCURSAL[sucursal];
   try {
     const cuerpo = { accion: "pedidoCerrarDesdeShopify", idVenta: c.idVenta, cancelado: c.cancelado };
