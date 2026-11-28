@@ -95,7 +95,7 @@ if (accion === "botRespuesta") return botRespuesta(body);              // v9 —
 if (accion === "botAtendida") return botAtendida(body);                  // v9 — botón ATENDIDA del WhatsApp de alerta (protegida con BOT_TOKEN)
 const sesion = validarToken(body.token);
 if (!sesion.ok) return { ok: false, error: "Sesión inválida o expirada. Vuelve a iniciar sesión." };
-switch (accion) {
+if (debeCambiarPassword(sesion.usuario) && !(accion === "cambiarPassword" && body.usuario === sesion.usuario)) { return { ok: false, debeCambiarPassword: true, error: "Antes de continuar crea tu contraseña nueva." }; } switch (accion) {
 case "bootstrap":               return bootstrap(body, sesion);   // v7.1 — arranque en 1 sola peticion
 case "getStock":                return getStock(body, sesion);
 case "altaProduccion":          return altaProduccion(body, sesion);
