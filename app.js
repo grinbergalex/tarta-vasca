@@ -245,11 +245,11 @@ async function doLogin() {
   btn.disabled=true;btn.textContent="Entrando...";err.style.display="none";
   const device_info = navigator.userAgent.substring(0,80);
   const res=await api("login",{usuario,password,device_info,device_id:_deviceId()});
-  if(res.ok){S.token=res.token;S.usuario=res.usuario;S.rol=res.rol;S.sucursal=res.sucursal;S.permisos=res.permisos||null;_guardarSesion();iniciarApp();}
+  if(res.ok){S.token=res.token;S.usuario=res.usuario;S.rol=res.rol;S.sucursal=res.sucursal;S.permisos=res.permisos||null; L("login-pass").value=""; if(res.debeCambiarPassword) pedirPasswordNueva(password); else{_guardarSesion();iniciarApp();} }
   else{err.textContent=res.error||"Error al iniciar sesión.";err.style.display="block";}
   btn.disabled=false;btn.textContent="Entrar";
 }
-// ---- Sesion persistente ----
+const PW_MIN_LARGO = 8; function pedirPasswordNueva(actual){ const previa = L("pw-obligatoria"); if(previa) previa.remove(); const capa = document.createElement("div"); capa.id = "pw-obligatoria"; capa.style.cssText = "position:fixed;inset:0;z-index:1000;background:var(--bg,#fff);display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto"; capa.innerHTML = '<form style="width:100%;max-width:360px">' + '<div class="modal-title">Crea tu contraseña nueva</div>' + '<p style="font-size:13px;color:var(--muted);margin-bottom:12px">Entraste con una contraseña temporal. Pon una tuya de al menos ' + PW_MIN_LARGO + ' caracteres y no la compartas.</p>' + '<div class="form-group"><label class="form-label">Contraseña nueva</label><input class="form-input" type="password" id="pwo-nueva" autocomplete="new-password"></div>' + '<div class="form-group"><label class="form-label">Repítela</label><input class="form-input" type="password" id="pwo-repetir" autocomplete="new-password"></div>' + '<div class="login-error" id="pwo-error"></div>' + '<button type="submit" class="btn-login" id="pwo-guardar">Guardar y entrar</button>' + '</form>'; document.body.appendChild(capa); const err = L("pwo-error"), btn = L("pwo-guardar"); const fallo = m => { err.textContent = m; err.style.display = "block"; }; capa.querySelector("form").addEventListener("submit", async ev => { ev.preventDefault(); const nueva = L("pwo-nueva").value, repetir = L("pwo-repetir").value; if(nueva.length < PW_MIN_LARGO) return fallo("Debe tener al menos " + PW_MIN_LARGO + " caracteres."); if(nueva !== repetir) return fallo("Las dos contraseñas no coinciden."); if(nueva === actual) return fallo("Debe ser distinta a la temporal."); btn.disabled = true; btn.textContent = "Guardando..."; err.style.display = "none"; const res = await api("cambiarPassword", {usuario:S.usuario, passwordActual:actual, passwordNuevo:nueva}); if(res && res.ok){ capa.remove(); _guardarSesion(); iniciarApp(); toast("Contraseña actualizada"); return; } btn.disabled = false; btn.textContent = "Guardar y entrar"; if(!S.token){ capa.remove(); return; } fallo((res && res.error) || "No se pudo guardar. Intenta de nuevo."); }); L("pwo-nueva").focus(); } // ---- Sesion persistente ----
 // El token vivia solo en memoria: cualquier recarga de la pagina dejaba fuera a
 // la vendedora. Al imprimir por PassPRNT la app se lleva la pantalla y al volver
 // Chrome puede recargar, asi que la sesion tiene que sobrevivir a la recarga.
@@ -286,7 +286,7 @@ function _restaurarSesion(){
 }
 // Si el servidor dice que el token ya no sirve, se tira el guardado para que la
 // siguiente carga muestre el login y no una sesion zombie.
-function _chequeoSesion(res){
+function _chequeoSesion(res){ try{ if(res && res.debeCambiarPassword && res.ok===false && S.token){ _borrarSesion(); S.token=null; const a=L("app"), l=L("login-screen"), e=L("login-error"); if(a) a.style.display="none"; if(l) l.style.display="flex"; if(e){ e.textContent="Vuelve a entrar para crear tu contraseña nueva."; e.style.display="block"; } return res; } }catch(e){}
   try{
     if(res && res.ok===false && /Sesi[oó]n inv[aá]lida|expirada/i.test(res.error||"")){
       _borrarSesion();
